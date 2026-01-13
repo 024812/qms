@@ -1,412 +1,139 @@
-# 🧪 Production Testing Checklist
+# 🧪 生产测试清单 / Production Testing Checklist
 
-**Deployment Date**: 2025-11-10  
-**Environment**: Production (Vercel)  
-**URL**: https://qms-app-omega.vercel.app
-
----
-
-## 🎯 Quick Test (5 minutes)
-
-### 1. Basic Access ✅
-
-- [ ] Open https://qms-app-omega.vercel.app
-- [ ] Page loads without errors
-- [ ] No console errors (F12 → Console)
-- [ ] Login page appears
-
-### 2. Authentication ✅
-
-- [ ] Login with password
-- [ ] Redirects to dashboard
-- [ ] Session persists on refresh
-
-### 3. Dashboard ✅
-
-- [ ] Statistics cards display correctly
-- [ ] Weather forecast shows (top of page)
-- [ ] Current use tab shows quilts
-- [ ] No console errors
-
-### 4. Core Functions ✅
-
-- [ ] Navigate to Quilts page
-- [ ] List displays correctly
-- [ ] Click on a quilt to view details
-- [ ] No errors in console
+**最后更新 / Last Updated**: 2026-01-07  
+**环境 / Environment**: Production (Vercel)  
+**URL**: https://your-app-domain.vercel.app
 
 ---
 
-## 🔍 Detailed Test (15 minutes)
+## 🎯 快速测试 (5 分钟) / Quick Test
 
-### 1. Console Check (Most Important!)
+### 1. 基本访问 / Basic Access
 
-**Open Browser Console** (F12 → Console)
+- [ ] 打开生产 URL
+- [ ] 页面加载无错误
+- [ ] 无控制台错误 (F12 → Console)
+- [ ] 登录页面显示正常
 
-**Expected**:
+### 2. 认证 / Authentication
 
-- ✅ No red errors
-- ✅ No console.log from production code
-- ✅ Only performance logs (if any) should have environment checks
+- [ ] 使用密码登录
+- [ ] 重定向到仪表板
+- [ ] 刷新后 Session 保持
 
-**Check for**:
+### 3. 仪表板 / Dashboard
 
-- ❌ No "console.log" from components
-- ❌ No "console.error" from API routes
-- ❌ No "Uncaught" errors
-- ❌ No "Failed to fetch" errors
+- [ ] 统计卡片显示正确
+- [ ] 天气预报显示（页面顶部）
+- [ ] 当前使用标签显示被子
+- [ ] 无控制台错误
 
-### 2. Pages Test
+### 4. 核心功能 / Core Functions
 
-#### Dashboard (/)
-
-- [ ] Weather forecast displays
-- [ ] Statistics cards show correct numbers
-- [ ] "Current Use" tab works
-- [ ] "Historical Use" tab works
-- [ ] "Recommended" tab works
-- [ ] No loading errors
-
-#### Quilts (/quilts)
-
-- [ ] List displays all quilts
-- [ ] Search works
-- [ ] Filter works
-- [ ] Add new quilt button works
-- [ ] Edit quilt works
-- [ ] Delete quilt works (with confirmation)
-- [ ] Status change works
-- [ ] Image upload works
-
-#### Usage (/usage)
-
-- [ ] Usage records display
-- [ ] Calendar view works
-- [ ] Add usage record works
-- [ ] Edit usage record works
-- [ ] Delete usage record works
-
-#### Analytics (/analytics)
-
-- [ ] Charts display correctly
-- [ ] Data loads without errors
-- [ ] No console errors
-
-#### Settings (/settings)
-
-- [ ] Page loads
-- [ ] Change password works
-- [ ] Language switch works
-- [ ] Database stats display
-
-#### Weather (/weather)
-
-- [ ] Weather page loads
-- [ ] 7-day forecast displays
-- [ ] Temperature data shows
-
-### 3. Notifications Test
-
-**Check Notification Icon** (top right)
-
-- [ ] Notification icon displays
-- [ ] Unread count shows (if any)
-- [ ] Click opens notification panel
-- [ ] Notifications display correctly
-- [ ] Mark as read works
-- [ ] Delete notification works
-
-### 4. API Routes Test
-
-**Open Network Tab** (F12 → Network)
-
-**Test these endpoints**:
-
-- [ ] `/api/trpc/quilts.getAll` - Returns quilt data
-- [ ] `/api/trpc/dashboard.getStats` - Returns stats
-- [ ] `/api/weather` - Returns weather data
-- [ ] `/api/trpc/notifications.getAll` - Returns notifications
-
-**Expected**:
-
-- ✅ Status 200 for all requests
-- ✅ Response time < 1 second
-- ❌ No 404 errors
-- ❌ No 500 errors
-
-### 5. Performance Test
-
-**Open Lighthouse** (F12 → Lighthouse)
-
-Run audit and check:
-
-- [ ] Performance > 80
-- [ ] Accessibility > 90
-- [ ] Best Practices > 90
-- [ ] SEO > 80
-
-**Or manually check**:
-
-- [ ] Page load < 2 seconds
-- [ ] Navigation smooth
-- [ ] No lag when typing
-- [ ] Images load quickly
+- [ ] 导航到被子管理页面
+- [ ] 列表显示正确
+- [ ] 点击被子查看详情
+- [ ] 无控制台错误
 
 ---
 
-## 🐛 Bug Check
+## 🔍 详细测试 (15 分钟) / Detailed Test
 
-### Common Issues to Look For
+### 1. 控制台检查 / Console Check
 
-#### 1. Console Errors
+打开浏览器控制台 (F12 → Console)
 
-```
-Open Console (F12)
-Look for:
-- Red error messages
-- "Uncaught" errors
-- "Failed to fetch"
-- "TypeError"
-```
+预期结果:
 
-#### 2. Network Errors
+- 无红色错误
+- 无生产代码的 console.log
+- 仅性能日志（如有）应有环境检查
 
-```
-Open Network tab (F12)
-Look for:
-- Red (failed) requests
-- 404 Not Found
-- 500 Internal Server Error
-- Slow requests (> 3s)
-```
+### 2. 页面测试 / Pages Test
 
-#### 3. Visual Issues
+#### 仪表板 (/)
 
-- [ ] Layout looks correct
-- [ ] No broken images
-- [ ] Text readable
-- [ ] Colors correct
-- [ ] Responsive on mobile
+- [ ] 天气预报显示
+- [ ] 统计卡片显示正确数字
+- [ ] "当前使用" 标签正常
+- [ ] "历史使用" 标签正常
 
-#### 4. Functionality Issues
+#### 被子管理 (/quilts)
 
-- [ ] All buttons work
-- [ ] Forms submit correctly
-- [ ] Dialogs open/close
-- [ ] Data saves correctly
-- [ ] Search works
+- [ ] 列表显示所有被子
+- [ ] 搜索功能正常
+- [ ] 筛选功能正常
+- [ ] 添加/编辑/删除被子正常
+- [ ] 状态变更正常
 
----
+#### 使用记录 (/usage)
 
-## 📊 Verification Results
+- [ ] 使用记录显示
+- [ ] 日历视图正常
+- [ ] 添加/编辑/删除使用记录正常
 
-### ✅ What Should Work
+#### 数据分析 (/analytics)
 
-After cleanup, these should be **improved**:
+- [ ] 图表显示正确
+- [ ] 数据加载无错误
 
-- ✅ No console.log in production code
-- ✅ Cleaner console output
-- ✅ Better code organization
-- ✅ Faster page loads (less debug code)
+#### 设置 (/settings)
 
-### 🔍 What to Monitor
+- [ ] 页面加载
+- [ ] 修改密码正常
+- [ ] 语言切换正常
 
-These should be **unchanged** (still working):
+### 3. API 路由测试 / API Routes Test
 
-- ✅ All pages load correctly
-- ✅ All features work
-- ✅ Data displays correctly
-- ✅ User interactions work
+打开网络标签 (F12 → Network)
 
----
+测试端点:
 
-## 🚨 If You Find Issues
+- `/api/quilts` - 返回被子数据
+- `/api/dashboard` - 返回统计数据
+- `/api/weather` - 返回天气数据
+- `/api/usage` - 返回使用记录
 
-### Console Errors
+预期: 所有请求状态 200，响应时间 < 1 秒
 
-**If you see console.log**:
+### 4. 性能测试 / Performance Test
 
-1. Note which page/action triggered it
-2. Check if it's from:
-   - Performance monitoring (OK - has env check)
-   - Test/Admin APIs (OK - intentional)
-   - Production code (NOT OK - report it)
+打开 Lighthouse (F12 → Lighthouse)
 
-**If you see errors**:
+目标:
 
-1. Copy the full error message
-2. Note what you were doing
-3. Check if functionality still works
-4. Report if it breaks something
-
-### Functionality Issues
-
-**If something doesn't work**:
-
-1. Try refreshing the page (Ctrl+Shift+R)
-2. Clear browser cache
-3. Try in incognito mode
-4. Check if it worked before deployment
-
-### Performance Issues
-
-**If page is slow**:
-
-1. Check Network tab for slow requests
-2. Check if it's a data issue (too many records)
-3. Try on different network
-4. Compare with before deployment
+- Performance > 80
+- Accessibility > 90
+- Best Practices > 90
+- SEO > 80
 
 ---
 
-## 📝 Testing Commands
+## 成功标准 / Success Criteria
 
-### Browser Console Tests
+### 必须通过（关键）
 
-```javascript
-// 1. Check for console.log pollution
-// Open Console (F12) and navigate through pages
-// Should see minimal console output
+- 任何页面无控制台错误
+- 登录正常
+- 仪表板加载
+- 被子页面正常
+- 所有 API 调用成功
 
-// 2. Test API manually
-fetch('/api/weather')
-  .then(r => r.json())
-  .then(console.log);
+### 应该通过（重要）
 
-// 3. Check service worker
-navigator.serviceWorker.getRegistrations().then(regs => console.log('SW registered:', regs.length));
-
-// 4. Check notifications
-fetch('/api/trpc/notifications.getUnreadCount')
-  .then(r => r.json())
-  .then(console.log);
-```
-
-### Network Tab Checks
-
-```
-1. Open Network tab (F12)
-2. Refresh page
-3. Look for:
-   - All requests return 200
-   - No 404 errors
-   - No 500 errors
-   - Response times < 1s
-```
+- 生产代码无 console.log
+- 天气显示正确
+- 所有页面加载 < 2s
 
 ---
 
-## ✅ Success Criteria
+## 相关文档 / Related Documentation
 
-### Must Pass (Critical)
-
-- [ ] ✅ No console errors on any page
-- [ ] ✅ Login works
-- [ ] ✅ Dashboard loads
-- [ ] ✅ Quilts page works
-- [ ] ✅ Can add/edit/delete quilts
-- [ ] ✅ All API calls succeed
-
-### Should Pass (Important)
-
-- [ ] ✅ No console.log from production code
-- [ ] ✅ Weather displays correctly
-- [ ] ✅ Notifications work
-- [ ] ✅ All pages load < 2s
-- [ ] ✅ No visual glitches
-
-### Nice to Have (Optional)
-
-- [ ] ✅ Lighthouse score > 80
-- [ ] ✅ No ESLint warnings in console
-- [ ] ✅ Smooth animations
-- [ ] ✅ Mobile responsive
+- [部署指南](./DEPLOYMENT_SUMMARY.md)
+- [Vercel 部署指南](./guides/VERCEL_DEPLOYMENT_GUIDE.md)
+- [缓存修复指南](./guides/CACHE-FIX-GUIDE.md)
 
 ---
 
-## 📊 Test Report Template
-
-After testing, fill this out:
-
-```
-## Test Results - [Date]
-
-### Environment
-- URL: https://qms-app-omega.vercel.app
-- Browser: [Chrome/Firefox/Safari]
-- Device: [Desktop/Mobile]
-
-### Quick Test Results
-- [ ] Basic Access: PASS/FAIL
-- [ ] Authentication: PASS/FAIL
-- [ ] Dashboard: PASS/FAIL
-- [ ] Core Functions: PASS/FAIL
-
-### Console Check
-- Console Errors: [Number] errors found
-- Console.log: [Clean/Has debug logs]
-- Network Errors: [Number] failed requests
-
-### Issues Found
-1. [Issue description]
-2. [Issue description]
-
-### Overall Status
-✅ PASS - Ready for production
-⚠️ PASS with warnings - Minor issues
-❌ FAIL - Critical issues found
-
-### Notes
-[Any additional observations]
-```
-
----
-
-## 🎯 Quick Test Script
-
-**5-Minute Smoke Test**:
-
-1. **Open site** → https://qms-app-omega.vercel.app
-2. **Open Console** → F12 → Console tab
-3. **Login** → Enter password
-4. **Check Dashboard** → Should load with stats
-5. **Check Console** → Should be clean (no red errors)
-6. **Go to Quilts** → Click "被子管理"
-7. **Check List** → Should show quilts
-8. **Check Console** → Still clean?
-9. **Click a Quilt** → Should open details
-10. **Final Console Check** → Any errors?
-
-**Result**:
-
-- ✅ If console is clean and everything works → SUCCESS!
-- ⚠️ If minor warnings but works → ACCEPTABLE
-- ❌ If errors or broken features → NEEDS FIX
-
----
-
-## 📞 Need Help?
-
-### Where to Look
-
-1. **Console Errors** → F12 → Console
-2. **Network Issues** → F12 → Network
-3. **Performance** → F12 → Lighthouse
-4. **Vercel Logs** → Vercel Dashboard → Functions
-
-### What to Report
-
-If you find issues:
-
-- Screenshot of error
-- What you were doing
-- Browser and device
-- Console error message (if any)
-
----
-
-**Testing Guide Version**: 1.0  
-**Created**: 2025-11-10  
-**Status**: Ready for testing
-
-**🎉 Happy Testing!**
+**测试指南版本**: 2.0  
+**维护者**: QMS Team

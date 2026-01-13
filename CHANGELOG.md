@@ -5,6 +5,52 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.0] - 2026-01-13
+
+### 🎨 UI Modernization
+
+This release focuses on comprehensive UI modernization with shadcn/ui components and dark mode support.
+
+#### Dark Mode Support
+
+- **ThemeProvider**: Integrated next-themes for system-aware theme switching
+- **ThemeToggle**: New component supporting light/dark/system modes
+- **CSS Variables**: Complete dark mode color scheme using CSS custom properties
+- **Component Updates**: All components updated to use CSS variables instead of hardcoded colors
+
+#### shadcn Sidebar Migration
+
+- **AppSidebar**: New sidebar component using shadcn/ui Sidebar primitives
+- **SidebarRail**: Drag-to-collapse functionality
+- **Keyboard Shortcuts**: Ctrl+B to toggle sidebar
+- **Mobile Support**: Sheet-based sidebar on mobile devices
+
+#### Command Palette
+
+- **CommandPalette**: New Ctrl+K command palette for quick navigation
+- **Quilt Search**: Search quilts by name, color, location
+- **Page Navigation**: Quick access to all pages
+- **Theme Switching**: Change theme from command palette
+
+#### Navigation Improvements
+
+- **Breadcrumb**: Auto-generated breadcrumb navigation based on route
+- **AppHeader**: Redesigned header with breadcrumb, theme toggle, and command palette trigger
+
+#### Accessibility
+
+- **ARIA Labels**: shadcn components include built-in ARIA support
+- **Keyboard Navigation**: Full keyboard support for all interactive elements
+- **Reduced Motion**: Respects prefers-reduced-motion media query
+- **Color Contrast**: WCAG AA compliant color scheme
+
+#### Components Updated for Dark Mode
+
+- UsageCalendar, TemperatureDisplay, UsageTracker, UsageHistoryTable
+- DashboardAlerts, SeasonalChart, RecentUsageList
+- QuiltFilters, ErrorBoundary, ImportUpload, ImportResults
+- WeatherForecast, WeatherWidget
+
 ## [1.2.0] - 2026-01-07
 
 ### 🔄 2026 Comprehensive Project Review
@@ -394,6 +440,7 @@ This is the first stable release of the Quilt Management System (QMS)!
 
 ---
 
+[1.3.0]: https://github.com/ohengcom/qms-app/compare/v1.2.0...v1.3.0
 [1.2.0]: https://github.com/ohengcom/qms-app/compare/v1.1.0...v1.2.0
 [1.1.0]: https://github.com/ohengcom/qms-app/compare/v1.0.1...v1.1.0
 [1.0.1]: https://github.com/ohengcom/qms-app/compare/v1.0.0...v1.0.1

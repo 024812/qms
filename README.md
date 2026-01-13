@@ -416,8 +416,8 @@ For questions or issues, please open an issue on GitHub.
 
 ---
 
-**Version**: 1.2.0  
+**Version**: 1.3.0  
 **Status**: ✅ Production Ready  
-**Last Updated**: 2026-01-07
+**Last Updated**: 2026-01-13
 
 Made with ❤️ for better home organization

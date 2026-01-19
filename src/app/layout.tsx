@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from 'next';
 import { Inter } from 'next/font/google';
 import { Suspense } from 'react';
 import './globals.css';
+import { SessionProvider } from '@/components/providers/SessionProvider';
 import { QueryProvider } from '@/components/providers/QueryProvider';
 import { ThemeProvider } from '@/components/providers/ThemeProvider';
 import { LanguageProvider } from '@/lib/language-provider';
@@ -40,17 +41,19 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className={`${inter.className} h-full`} suppressHydrationWarning>
         <ThemeProvider defaultTheme="system" storageKey="qms-theme">
           <ErrorBoundary>
-            <LanguageProvider>
-              <QueryProvider>
-                <GlobalErrorHandler />
-                <Suspense fallback={null}>
-                  <ConditionalLayout>{children}</ConditionalLayout>
-                </Suspense>
-                <Toaster />
-                <SonnerToaster position="top-right" richColors closeButton />
-                {process.env.NODE_ENV === 'development' && <AccessibilityAudit />}
-              </QueryProvider>
-            </LanguageProvider>
+            <SessionProvider>
+              <LanguageProvider>
+                <QueryProvider>
+                  <GlobalErrorHandler />
+                  <Suspense fallback={null}>
+                    <ConditionalLayout>{children}</ConditionalLayout>
+                  </Suspense>
+                  <Toaster />
+                  <SonnerToaster position="top-right" richColors closeButton />
+                  {process.env.NODE_ENV === 'development' && <AccessibilityAudit />}
+                </QueryProvider>
+              </LanguageProvider>
+            </SessionProvider>
           </ErrorBoundary>
         </ThemeProvider>
       </body>

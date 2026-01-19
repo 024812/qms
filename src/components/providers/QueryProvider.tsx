@@ -1,7 +1,6 @@
 'use client';
 
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { SessionProvider } from 'next-auth/react';
 import { useState } from 'react';
 
 // Initialize Zod with Chinese error messages for client-side validation
@@ -34,9 +33,5 @@ export function QueryProvider({ children }: { children: React.ReactNode }) {
       })
   );
 
-  return (
-    <SessionProvider>
-      <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
-    </SessionProvider>
-  );
+  return <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>;
 }

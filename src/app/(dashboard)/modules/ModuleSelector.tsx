@@ -90,33 +90,6 @@ export function ModuleSelector() {
 
   return (
     <div className="space-y-6">
-      {/* Active Modules Summary */}
-      {activeModules.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg">已订阅的模块</CardTitle>
-            <CardDescription>您当前订阅了 {activeModules.length} 个模块</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="flex flex-wrap gap-2">
-              {activeModules.map((moduleId) => {
-                const moduleData = allModules.find((m) => m.id === moduleId);
-                if (!moduleData) return null;
-
-                const IconComponent = (LucideIcons as any)[moduleData.icon] || LucideIcons.Package;
-
-                return (
-                  <Badge key={moduleId} variant="default" className="px-3 py-1.5">
-                    <IconComponent className="w-4 h-4 mr-1.5" />
-                    {moduleData.name}
-                  </Badge>
-                );
-              })}
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
       {/* Available Modules Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {allModules.map((module) => {
@@ -196,7 +169,7 @@ export function ModuleSelector() {
             <div className="flex-1">
               <h3 className="font-medium mb-1">关于模块订阅</h3>
               <p className="text-sm text-muted-foreground">
-                订阅模块后，您可以在导航栏中访问该模块的功能。如果您只订阅了一个模块，系统会在登录后直接跳转到该模块页面。您可以随时在此页面管理您的模块订阅。
+                订阅模块后，您可以在导航栏中访问该模块的功能。如果您只订阅了一个模块，系统会在登录后直接跳转到该模块页面。您可以随时在此页面管理您的模块订阅。当前已订阅 {activeModules.length} 个模块。
               </p>
             </div>
           </div>

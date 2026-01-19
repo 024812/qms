@@ -60,7 +60,7 @@ const getStaticNavigation = (t: (key: string) => string) => [
 export function AppSidebar() {
   const pathname = usePathname();
   const { t } = useLanguage();
-  const { data: session } = useSession();
+  const { data: session, status } = useSession();
   
   const staticNavigation = getStaticNavigation(t);
   const allModules = getAllModules();
@@ -68,8 +68,15 @@ export function AppSidebar() {
   // Get user's active modules (default to empty array if no session)
   const activeModuleIds = session?.user?.activeModules || [];
   
+  // Debug logging
+  console.log('AppSidebar - Session status:', status);
+  console.log('AppSidebar - Active modules:', activeModuleIds);
+  console.log('AppSidebar - All modules:', allModules.map(m => m.id));
+  
   // Filter modules based on user's active modules
   const activeModules = allModules.filter(module => activeModuleIds.includes(module.id));
+  
+  console.log('AppSidebar - Filtered active modules:', activeModules.map(m => m.name));
   
   // Create module navigation items
   const moduleNavigation = activeModules.map(module => ({

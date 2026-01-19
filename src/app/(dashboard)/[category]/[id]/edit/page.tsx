@@ -1,13 +1,20 @@
 /**
  * Dynamic Module Edit Item Page
- * 
+ *
  * This page provides a form to edit an existing item for any registered module.
- * It uses Next.js 16 Form component for progressive enhancement.
- * 
- * Requirements: 3.1, 3.3
+ * Uses Next.js 16 useActionState hook for progressive enhancement.
+ *
+ * Following Next.js 16 best practices from Context7:
+ * - Pass Server Action directly to form (no inline wrapper)
+ * - Server Action handles all validation and error handling
+ * - Form component uses useActionState for state management
+ *
+ * Requirements: 3.1, 3.3, 5.1, 8.2
+ *
+ * Reference: https://nextjs.org/docs/app/guides/forms
  */
 
-import { notFound, redirect } from 'next/navigation';
+import { notFound } from 'next/navigation';
 import { auth } from '@/auth';
 import { getModule } from '@/modules/registry';
 import { getItemById, updateItem } from '@/app/actions/items';
@@ -31,8 +38,8 @@ export default async function EditItemPage({ params }: PageProps) {
   }
 
   // Get module configuration
-  const module = getModule(params.category);
-  if (!module) {
+  const moduleConfig = getModule(params.category);
+  if (!moduleConfig) {
     return notFound();
   }
 
@@ -40,53 +47,13 @@ export default async function EditItemPage({ params }: PageProps) {
   let item;
   try {
     item = await getItemById(params.id);
-  } catch (error) {
+  } catch {
     return notFound();
   }
 
   // Verify item type matches category
   if (item.type !== params.category) {
     return notFound();
-  }
-
-  // Server action to handle form submission
-  async function handleSubmit(formData: FormData) {
-    'use server';
-
-    // Re-fetch module in server action context
-    const actionModule = getModule(params.category);
-    if (!actionModule) {
-      throw new Error(`Module ${params.category} not found`);
-    }
-
-    const name = formData.get('name') as string;
-    const status = formData.get('status') as 'in_use' | 'storage' | 'maintenance' | 'lost';
-
-    // Collect attributes from form data
-    const attributes: Record<string, any> = {};
-    for (const field of actionModule.formFields) {
-      const value = formData.get(`attributes.${field.name}`);
-      if (value !== null && value !== '') {
-        // Convert to appropriate type
-        if (field.type === 'number') {
-          attributes[field.name] = parseFloat(value as string);
-        } else if (field.type === 'date') {
-          attributes[field.name] = value as string;
-        } else {
-          attributes[field.name] = value;
-        }
-      }
-    }
-
-    // Update item
-    await updateItem(params.id, {
-      name,
-      status,
-      attributes,
-    });
-
-    // Redirect to item detail page
-    redirect(`/${params.category}/${params.id}`);
   }
 
   return (
@@ -99,19 +66,17 @@ export default async function EditItemPage({ params }: PageProps) {
             返回详情
           </Button>
         </Link>
-        <h1 className="text-3xl font-bold">编辑{module.name}</h1>
-        <p className="text-muted-foreground mt-1">
-          修改 {item.name} 的信息
-        </p>
+        <h1 className="text-3xl font-bold">编辑{moduleConfig.name}</h1>
+        <p className="text-muted-foreground mt-1">修改 {item.name} 的信息</p>
       </div>
 
-      {/* Form */}
+      {/* Form - Pass Server Action directly (Next.js 16 best practice) */}
       <div className="bg-card border rounded-lg p-6">
         <ItemForm
           moduleType={params.category}
           initialData={item}
-          action={handleSubmit}
-          onCancel={() => redirect(`/${params.category}/${params.id}`)}
+          action={updateItem}
+          redirectPath={`/${params.category}/${params.id}`}
         />
       </div>
     </div>

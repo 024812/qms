@@ -7,7 +7,7 @@
  * Requirements: 5.3 - Consistent API response format
  */
 
-import { usageRepository } from '@/lib/repositories/usage.repository';
+import { getAllActiveUsageRecords } from '@/lib/data/usage';
 import { createSuccessResponse, createInternalErrorResponse } from '@/lib/api/response';
 
 /**
@@ -18,7 +18,7 @@ import { createSuccessResponse, createInternalErrorResponse } from '@/lib/api/re
  */
 export async function GET() {
   try {
-    const records = await usageRepository.getAllActive();
+    const records = await getAllActiveUsageRecords();
 
     return createSuccessResponse({ records }, { total: records.length, hasMore: false });
   } catch (error) {

@@ -7,8 +7,8 @@
  * Requirements: 5.3 - Consistent API response format
  */
 
-import { quiltRepository } from '@/lib/repositories/quilt.repository';
-import { usageRepository } from '@/lib/repositories/usage.repository';
+import { getQuilts } from '@/lib/data/quilts';
+import { getUsageRecords, getAllActiveUsageRecords } from '@/lib/data/usage';
 import { createSuccessResponse, createInternalErrorResponse } from '@/lib/api/response';
 
 /**
@@ -22,9 +22,9 @@ import { createSuccessResponse, createInternalErrorResponse } from '@/lib/api/re
  */
 export async function GET() {
   try {
-    const quilts = await quiltRepository.findAll();
-    const usageRecords = await usageRepository.findAll();
-    const activeUsage = await usageRepository.getAllActive();
+    const quilts = await getQuilts();
+    const usageRecords = await getUsageRecords();
+    const activeUsage = await getAllActiveUsageRecords();
 
     return createSuccessResponse({
       stats: {

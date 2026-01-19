@@ -1,13 +1,20 @@
 /**
  * Dynamic Module New Item Page
- * 
+ *
  * This page provides a form to create a new item for any registered module.
- * It uses Next.js 16 Form component for progressive enhancement.
- * 
- * Requirements: 3.1, 3.3
+ * Uses Next.js 16 useActionState hook for progressive enhancement.
+ *
+ * Following Next.js 16 best practices from Context7:
+ * - Pass Server Action directly to form (no inline wrapper)
+ * - Server Action handles all validation and error handling
+ * - Form component uses useActionState for state management
+ *
+ * Requirements: 3.1, 3.3, 5.1, 8.1
+ *
+ * Reference: https://nextjs.org/docs/app/guides/forms
  */
 
-import { notFound, redirect } from 'next/navigation';
+import { notFound } from 'next/navigation';
 import { auth } from '@/auth';
 import { getModule } from '@/modules/registry';
 import { createItem } from '@/app/actions/items';
@@ -30,48 +37,9 @@ export default async function NewItemPage({ params }: PageProps) {
   }
 
   // Get module configuration
-  const module = getModule(params.category);
-  if (!module) {
+  const moduleConfig = getModule(params.category);
+  if (!moduleConfig) {
     return notFound();
-  }
-
-  // Server action to handle form submission
-  async function handleSubmit(formData: FormData) {
-    'use server';
-
-    // Re-fetch module in server action context
-    const actionModule = getModule(params.category);
-    if (!actionModule) {
-      throw new Error(`Module ${params.category} not found`);
-    }
-
-    const name = formData.get('name') as string;
-
-    // Collect attributes from form data
-    const attributes: Record<string, any> = {};
-    for (const field of actionModule.formFields) {
-      const value = formData.get(`attributes.${field.name}`);
-      if (value) {
-        // Convert to appropriate type
-        if (field.type === 'number') {
-          attributes[field.name] = parseFloat(value as string);
-        } else if (field.type === 'date') {
-          attributes[field.name] = value as string;
-        } else {
-          attributes[field.name] = value;
-        }
-      }
-    }
-
-    // Create item
-    const item = await createItem({
-      type: params.category,
-      name,
-      attributes,
-    });
-
-    // Redirect to item detail page
-    redirect(`/${params.category}/${item.id}`);
   }
 
   return (
@@ -84,18 +52,16 @@ export default async function NewItemPage({ params }: PageProps) {
             返回列表
           </Button>
         </Link>
-        <h1 className="text-3xl font-bold">新建{module.name}</h1>
-        <p className="text-muted-foreground mt-1">
-          填写以下信息创建新的{module.name}
-        </p>
+        <h1 className="text-3xl font-bold">新建{moduleConfig.name}</h1>
+        <p className="text-muted-foreground mt-1">填写以下信息创建新的{moduleConfig.name}</p>
       </div>
 
-      {/* Form */}
+      {/* Form - Pass Server Action directly (Next.js 16 best practice) */}
       <div className="bg-card border rounded-lg p-6">
         <ItemForm
           moduleType={params.category}
-          action={handleSubmit}
-          onCancel={() => redirect(`/${params.category}`)}
+          action={createItem}
+          redirectPath={`/${params.category}`}
         />
       </div>
     </div>

@@ -10,7 +10,7 @@
 
 import { NextRequest } from 'next/server';
 import { sql } from '@/lib/neon';
-import { quiltRepository } from '@/lib/repositories/quilt.repository';
+import { countQuilts, createQuilt } from '@/lib/data/quilts';
 import { withRateLimit, rateLimiters } from '@/lib/rate-limit';
 import { createSuccessResponse, createInternalErrorResponse } from '@/lib/api/response';
 
@@ -85,7 +85,7 @@ export async function POST(request: NextRequest) {
       `;
 
       // Check if database is already set up
-      const quiltCount = await quiltRepository.count();
+      const quiltCount = await countQuilts();
 
       if (quiltCount > 0) {
         return createSuccessResponse({
@@ -94,9 +94,9 @@ export async function POST(request: NextRequest) {
         });
       }
 
-      // Create sample quilts using Repository
+      // Create sample quilts using data access layer
       const quilts = await Promise.all([
-        quiltRepository.create({
+        createQuilt({
           name: 'Premium Down Winter Quilt',
           season: 'WINTER',
           lengthCm: 220,
@@ -112,7 +112,7 @@ export async function POST(request: NextRequest) {
           currentStatus: 'STORAGE',
           notes: 'Excellent for very cold nights',
         }),
-        quiltRepository.create({
+        createQuilt({
           name: 'Cotton Comfort Quilt',
           season: 'SPRING_AUTUMN',
           lengthCm: 200,
@@ -128,7 +128,7 @@ export async function POST(request: NextRequest) {
           currentStatus: 'STORAGE',
           notes: 'Perfect for mild weather',
         }),
-        quiltRepository.create({
+        createQuilt({
           name: 'Light Summer Quilt',
           season: 'SUMMER',
           lengthCm: 200,
@@ -160,8 +160,8 @@ export async function POST(request: NextRequest) {
 export async function GET(request: NextRequest) {
   return withRateLimit(request, rateLimiters.api, async () => {
     try {
-      // Check database status using Repository
-      const quiltCount = await quiltRepository.count();
+      // Check database status using data access layer
+      const quiltCount = await countQuilts();
 
       return createSuccessResponse({
         status: '数据库已连接',

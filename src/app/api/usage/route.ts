@@ -11,7 +11,7 @@
 
 import { NextRequest } from 'next/server';
 import { z } from 'zod';
-import { usageRepository } from '@/lib/repositories/usage.repository';
+import { getUsageRecords, createUsageRecord } from '@/lib/data/usage';
 import { sanitizeApiInput } from '@/lib/sanitization';
 import {
   createValidationErrorResponse,
@@ -62,7 +62,7 @@ export async function GET(request: NextRequest) {
     };
 
     // Fetch usage records
-    const records = await usageRepository.findAll(filters);
+    const records = await getUsageRecords(filters);
 
     return createSuccessResponse(
       { records },
@@ -109,7 +109,7 @@ export async function POST(request: NextRequest) {
     const { quiltId, startDate, endDate, usageType, notes } = validationResult.data;
 
     // Create the usage record
-    const record = await usageRepository.createUsageRecord({
+    const record = await createUsageRecord({
       quiltId,
       startDate,
       endDate,

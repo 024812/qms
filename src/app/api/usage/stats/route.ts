@@ -9,7 +9,7 @@
  * Requirements: 6.1, 6.2 - Repository pattern for database operations
  */
 
-import { statsRepository } from '@/lib/repositories/stats.repository';
+import { getSimpleUsageStats } from '@/lib/data/stats';
 import { createSuccessResponse, createInternalErrorResponse } from '@/lib/api/response';
 
 /**
@@ -24,8 +24,8 @@ import { createSuccessResponse, createInternalErrorResponse } from '@/lib/api/re
  */
 export async function GET() {
   try {
-    // Use repository for all database operations (Requirements: 6.1, 6.2)
-    const stats = await statsRepository.getSimpleUsageStats();
+    // Use data access layer for all database operations
+    const stats = await getSimpleUsageStats();
 
     return createSuccessResponse({ stats });
   } catch (error) {

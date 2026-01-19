@@ -8,7 +8,7 @@
  */
 
 import { NextRequest } from 'next/server';
-import { usageRepository } from '@/lib/repositories/usage.repository';
+import { getUsageRecordsByQuiltId, getActiveUsageRecord, getUsageStats } from '@/lib/data/usage';
 import { createSuccessResponse, createInternalErrorResponse } from '@/lib/api/response';
 
 interface RouteParams {
@@ -30,16 +30,16 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     const includeStats = searchParams.get('includeStats') === 'true';
 
     // Fetch usage records for the quilt
-    const records = await usageRepository.findByQuiltId(quiltId);
+    const records = await getUsageRecordsByQuiltId(quiltId);
 
     // Optionally include statistics
     let stats = null;
     if (includeStats) {
-      stats = await usageRepository.getUsageStats(quiltId);
+      stats = await getUsageStats(quiltId);
     }
 
     // Get active record if any
-    const activeRecord = await usageRepository.getActiveUsageRecord(quiltId);
+    const activeRecord = await getActiveUsageRecord(quiltId);
 
     return createSuccessResponse(
       {

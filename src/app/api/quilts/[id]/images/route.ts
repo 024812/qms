@@ -11,7 +11,7 @@
 
 import { NextRequest } from 'next/server';
 import { z } from 'zod';
-import { quiltRepository } from '@/lib/repositories/quilt.repository';
+import { getQuiltById, updateQuilt } from '@/lib/data/quilts';
 import { sanitizeApiInput } from '@/lib/sanitization';
 import {
   createSuccessResponse,
@@ -71,13 +71,13 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
     const { mainImage, attachmentImages } = validationResult.data;
 
     // Get current quilt
-    const quilt = await quiltRepository.findById(id);
+    const quilt = await getQuiltById(id);
     if (!quilt) {
       return createNotFoundResponse('被子');
     }
 
     // Update with new images
-    const updatedQuilt = await quiltRepository.update(id, {
+    const updatedQuilt = await updateQuilt(id, {
       mainImage: mainImage !== undefined ? mainImage : quilt.mainImage,
       attachmentImages: attachmentImages !== undefined ? attachmentImages : quilt.attachmentImages,
     });
@@ -123,7 +123,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
     }
 
     // Get current quilt
-    const quilt = await quiltRepository.findById(id);
+    const quilt = await getQuiltById(id);
     if (!quilt) {
       return createNotFoundResponse('被子');
     }
@@ -143,7 +143,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
     newImages.splice(imageIndex, 1);
 
     // Update quilt
-    const updatedQuilt = await quiltRepository.update(id, {
+    const updatedQuilt = await updateQuilt(id, {
       attachmentImages: newImages,
     });
 

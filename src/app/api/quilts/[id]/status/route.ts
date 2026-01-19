@@ -12,7 +12,7 @@
 
 import { NextRequest } from 'next/server';
 import { z } from 'zod';
-import { quiltRepository } from '@/lib/repositories/quilt.repository';
+import { updateQuiltStatusWithUsageRecord } from '@/lib/data/quilts';
 import { sanitizeApiInput } from '@/lib/sanitization';
 import {
   createSuccessResponse,
@@ -78,7 +78,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
     const { status, usageType, notes } = validationResult.data;
 
     // Update status with atomic usage record management
-    const result = await quiltRepository.updateStatusWithUsageRecord(id, status, usageType, notes);
+    const result = await updateQuiltStatusWithUsageRecord(id, status, usageType, notes);
 
     if (!result.quilt) {
       return createNotFoundResponse('被子');

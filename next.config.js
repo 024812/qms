@@ -46,6 +46,9 @@ const nextConfig = {
   poweredByHeader: false,
   generateEtags: true,
 
+  // Cache Components (Next.js 16)
+  cacheComponents: true,
+
   // Experimental features (Next.js 16)
   experimental: {
     // Optimize package imports for better tree-shaking

@@ -11,7 +11,7 @@
  */
 
 import { NextRequest } from 'next/server';
-import { quiltRepository } from '@/lib/repositories/quilt.repository';
+import { getQuiltById, updateQuilt, deleteQuilt } from '@/lib/data/quilts';
 import { updateQuiltSchema } from '@/lib/validations/quilt';
 import { sanitizeApiInput } from '@/lib/sanitization';
 import {
@@ -39,7 +39,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       return createBadRequestResponse('被子 ID 是必需的');
     }
 
-    const quilt = await quiltRepository.findById(id);
+    const quilt = await getQuiltById(id);
 
     if (!quilt) {
       return createNotFoundResponse('被子');
@@ -87,14 +87,14 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
     }
 
     // Check if quilt exists
-    const existingQuilt = await quiltRepository.findById(id);
+    const existingQuilt = await getQuiltById(id);
     if (!existingQuilt) {
       return createNotFoundResponse('被子');
     }
 
     // Update the quilt (exclude id from data)
     const { id: _id, ...updateData } = validationResult.data;
-    const quilt = await quiltRepository.update(id, updateData);
+    const quilt = await updateQuilt(id, updateData);
 
     if (!quilt) {
       return createNotFoundResponse('被子');
@@ -120,12 +120,12 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
     }
 
     // Check if quilt exists
-    const existingQuilt = await quiltRepository.findById(id);
+    const existingQuilt = await getQuiltById(id);
     if (!existingQuilt) {
       return createNotFoundResponse('被子');
     }
 
-    const success = await quiltRepository.delete(id);
+    const success = await deleteQuilt(id);
 
     if (!success) {
       return createNotFoundResponse('被子');

@@ -9,7 +9,7 @@
  */
 
 import { dbLogger } from '@/lib/logger';
-import { statsRepository } from '@/lib/repositories/stats.repository';
+import { getDashboardStats } from '@/lib/data/stats';
 import { createSuccessResponse, createInternalErrorResponse } from '@/lib/api/response';
 
 /**
@@ -23,8 +23,8 @@ import { createSuccessResponse, createInternalErrorResponse } from '@/lib/api/re
  */
 export async function GET() {
   try {
-    // Use repository for all database operations (Requirements: 6.1, 6.2)
-    const dashboardStats = await statsRepository.getDashboardStats();
+    // Use data access layer for all database operations
+    const dashboardStats = await getDashboardStats();
 
     const today = new Date();
     const currentMonth = today.getMonth() + 1;

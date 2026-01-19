@@ -12,7 +12,7 @@
 
 import { NextRequest } from 'next/server';
 import { z } from 'zod';
-import { usageRepository } from '@/lib/repositories/usage.repository';
+import { getUsageRecordById, updateUsageRecord, deleteUsageRecord } from '@/lib/data/usage';
 import { sanitizeApiInput } from '@/lib/sanitization';
 import {
   createSuccessResponse,
@@ -48,7 +48,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
   try {
     const { id } = await params;
 
-    const record = await usageRepository.findById(id);
+    const record = await getUsageRecordById(id);
 
     if (!record) {
       return createNotFoundResponse('使用记录');
@@ -89,13 +89,13 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
     }
 
     // Check if record exists
-    const existingRecord = await usageRepository.findById(id);
+    const existingRecord = await getUsageRecordById(id);
     if (!existingRecord) {
       return createNotFoundResponse('使用记录');
     }
 
     // Update the record
-    const record = await usageRepository.update(id, validationResult.data);
+    const record = await updateUsageRecord(id, validationResult.data);
 
     if (!record) {
       return createNotFoundResponse('使用记录');
@@ -117,13 +117,13 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
     const { id } = await params;
 
     // Check if record exists
-    const existingRecord = await usageRepository.findById(id);
+    const existingRecord = await getUsageRecordById(id);
     if (!existingRecord) {
       return createNotFoundResponse('使用记录');
     }
 
     // Delete the record
-    const success = await usageRepository.delete(id);
+    const success = await deleteUsageRecord(id);
 
     if (!success) {
       return createNotFoundResponse('使用记录');

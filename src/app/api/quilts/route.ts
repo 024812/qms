@@ -10,7 +10,7 @@
  */
 
 import { NextRequest } from 'next/server';
-import { quiltRepository } from '@/lib/repositories/quilt.repository';
+import { getQuilts, countQuilts, createQuilt } from '@/lib/data/quilts';
 import { createQuiltSchema, quiltFiltersSchema } from '@/lib/validations/quilt';
 import { sanitizeApiInput, sanitizeSearchQuery } from '@/lib/sanitization';
 import {
@@ -85,10 +85,7 @@ export async function GET(request: NextRequest) {
     };
 
     // Fetch quilts and count
-    const [quilts, total] = await Promise.all([
-      quiltRepository.findAll(filters),
-      quiltRepository.count(filters),
-    ]);
+    const [quilts, total] = await Promise.all([getQuilts(filters), countQuilts(filters)]);
 
     return createSuccessResponse(
       { quilts },
@@ -133,7 +130,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Create the quilt
-    const quilt = await quiltRepository.create(validationResult.data);
+    const quilt = await createQuilt(validationResult.data);
 
     return createCreatedResponse({ quilt });
   } catch (error) {

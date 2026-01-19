@@ -10,14 +10,14 @@
  */
 
 import { NextRequest } from 'next/server';
-import { statsRepository } from '@/lib/repositories/stats.repository';
+import { getAnalyticsData } from '@/lib/data/stats';
 import { createSuccessResponse, createInternalErrorResponse } from '@/lib/api/response';
 
 // GET /api/analytics - Get comprehensive analytics data
 export async function GET(_request: NextRequest) {
   try {
-    // Use repository for all database operations (Requirements: 6.1, 6.2)
-    const analyticsData = await statsRepository.getAnalyticsData();
+    // Use data access layer for all database operations
+    const analyticsData = await getAnalyticsData();
 
     return createSuccessResponse({
       analytics: {

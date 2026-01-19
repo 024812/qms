@@ -157,16 +157,21 @@ export function AppSidebar() {
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
-              {session?.user?.role === 'admin' && (
-                <SidebarMenuItem>
-                  <SidebarMenuButton asChild isActive={pathname === '/users'} tooltip="用户管理">
-                    <Link href="/users" prefetch={false}>
-                      <User className="h-4 w-4" />
-                      <span>用户管理</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              )}
+              {(() => {
+                const isAdmin = session?.user?.role === 'admin';
+                console.log('AppSidebar - User role:', session?.user?.role);
+                console.log('AppSidebar - Is admin:', isAdmin);
+                return isAdmin ? (
+                  <SidebarMenuItem>
+                    <SidebarMenuButton asChild isActive={pathname === '/users'} tooltip="用户管理">
+                      <Link href="/users" prefetch={false}>
+                        <User className="h-4 w-4" />
+                        <span>用户管理</span>
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                ) : null;
+              })()}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>

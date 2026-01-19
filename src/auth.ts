@@ -69,21 +69,25 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
             return null;
           }
 
-          // Verify password
-          const passwordMatch = await bcrypt.compare(password, user.password);
+          // Verify password (using hashedPassword field)
+          const passwordMatch = await bcrypt.compare(password, user.hashedPassword);
 
           if (!passwordMatch) {
             console.error('Invalid password for user:', email);
             return null;
           }
 
+          // Extract role and activeModules from preferences
+          const role = user.preferences?.role || 'member';
+          const activeModules = user.preferences?.activeModules || [];
+
           // Return user object (without password)
           return {
             id: user.id,
             name: user.name,
             email: user.email,
-            role: user.role,
-            activeModules: user.activeModules,
+            role,
+            activeModules,
           };
         } catch (error) {
           console.error('Authorization error:', error);

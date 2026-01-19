@@ -44,18 +44,22 @@ export async function subscribeToModule(moduleId: string) {
   }
 
   // Check if already subscribed
-  const currentModules = user.activeModules || [];
+  const currentModules = user.preferences?.activeModules || [];
   if (currentModules.includes(moduleId)) {
     return { success: true, message: 'Already subscribed to this module' };
   }
 
-  // Add module to activeModules
+  // Add module to activeModules in preferences
   const updatedModules = [...currentModules, moduleId];
+  const updatedPreferences = {
+    ...user.preferences,
+    activeModules: updatedModules,
+  };
 
   await db
     .update(users)
     .set({
-      activeModules: updatedModules,
+      preferences: updatedPreferences,
       updatedAt: new Date(),
     })
     .where(eq(users.id, session.user.id));
@@ -89,14 +93,18 @@ export async function unsubscribeFromModule(moduleId: string) {
     throw new Error('User not found');
   }
 
-  // Remove module from activeModules
-  const currentModules = user.activeModules || [];
+  // Remove module from activeModules in preferences
+  const currentModules = user.preferences?.activeModules || [];
   const updatedModules = currentModules.filter((m) => m !== moduleId);
+  const updatedPreferences = {
+    ...user.preferences,
+    activeModules: updatedModules,
+  };
 
   await db
     .update(users)
     .set({
-      activeModules: updatedModules,
+      preferences: updatedPreferences,
       updatedAt: new Date(),
     })
     .where(eq(users.id, session.user.id));
@@ -136,18 +144,23 @@ export async function toggleModuleSubscription(moduleId: string) {
     throw new Error('User not found');
   }
 
-  // Toggle subscription
-  const currentModules = user.activeModules || [];
+  // Toggle subscription in preferences
+  const currentModules = user.preferences?.activeModules || [];
   const isSubscribed = currentModules.includes(moduleId);
 
   const updatedModules = isSubscribed
     ? currentModules.filter((m) => m !== moduleId)
     : [...currentModules, moduleId];
 
+  const updatedPreferences = {
+    ...user.preferences,
+    activeModules: updatedModules,
+  };
+
   await db
     .update(users)
     .set({
-      activeModules: updatedModules,
+      preferences: updatedPreferences,
       updatedAt: new Date(),
     })
     .where(eq(users.id, session.user.id));
@@ -175,7 +188,7 @@ export async function getUserActiveModules() {
   }
 
   const [user] = await db
-    .select({ activeModules: users.activeModules })
+    .select({ preferences: users.preferences })
     .from(users)
     .where(eq(users.id, session.user.id))
     .limit(1);
@@ -184,5 +197,5 @@ export async function getUserActiveModules() {
     throw new Error('User not found');
   }
 
-  return user.activeModules || [];
+  return user.preferences?.activeModules || [];
 }

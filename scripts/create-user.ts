@@ -9,6 +9,7 @@
 
 import { sql } from '../src/lib/neon';
 import bcrypt from 'bcryptjs';
+import { randomUUID } from 'crypto';
 import * as readline from 'readline';
 
 const rl = readline.createInterface({
@@ -55,12 +56,15 @@ async function createUser() {
     console.log('\n⏳ Hashing password...');
     const hashedPassword = await bcrypt.hash(password, 12);
 
+    // Generate UUID for id field
+    const userId = randomUUID();
+
     // Create user
     console.log('⏳ Creating user...');
     const result = await sql`
-      INSERT INTO users (name, email, password, role, active_modules)
-      VALUES (${name}, ${email}, ${hashedPassword}, 'admin', '["quilts"]'::jsonb)
-      RETURNING id, name, email, role
+      INSERT INTO users (id, name, email, hashed_password, preferences, created_at, updated_at)
+      VALUES (${userId}, ${name}, ${email}, ${hashedPassword}, '{"role": "admin", "activeModules": ["quilts"]}'::jsonb, NOW(), NOW())
+      RETURNING id, name, email, preferences
     `;
 
     const user = result[0];
@@ -70,8 +74,8 @@ async function createUser() {
     console.log(`  ID: ${user.id}`);
     console.log(`  Name: ${user.name}`);
     console.log(`  Email: ${user.email}`);
-    console.log(`  Role: ${user.role}`);
-    console.log(`  Active Modules: quilts`);
+    console.log(`  Role: ${user.preferences?.role || 'member'}`);
+    console.log(`  Active Modules: ${user.preferences?.activeModules?.join(', ') || 'none'}`);
     console.log('\n🔐 You can now login with:');
     console.log(`  Email: ${email}`);
     console.log(`  Password: (the password you entered)\n`);

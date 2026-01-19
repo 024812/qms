@@ -49,16 +49,22 @@ export const itemTypeEnum = pgEnum('item_type', ['quilt', 'card', 'shoe', 'racke
  * Stores user accounts with authentication and module subscription information
  * 
  * Requirements: 8.1 (Authentication and RBAC)
+ * 
+ * Note: Production database uses TEXT for id (not UUID with default)
+ * and stores role/activeModules in preferences JSONB field
  */
 export const users = pgTable(
   'users',
   {
-    id: uuid('id').defaultRandom().primaryKey(),
+    id: text('id').primaryKey(), // Production uses TEXT, not UUID with default
     name: text('name').notNull(),
     email: text('email').notNull().unique(),
-    password: text('password').notNull(),
-    role: userRoleEnum('role').notNull().default('member'),
-    activeModules: jsonb('active_modules').$type<string[]>().notNull().default([]),
+    hashedPassword: text('hashed_password').notNull(), // Production uses hashed_password
+    preferences: jsonb('preferences').$type<{
+      role?: string;
+      activeModules?: string[];
+      [key: string]: any;
+    }>().notNull().default({}), // Production stores role and activeModules here
     createdAt: timestamp('created_at').notNull().defaultNow(),
     updatedAt: timestamp('updated_at').notNull().defaultNow(),
   },

@@ -55,7 +55,8 @@
     "db:studio": "drizzle-kit studio",
     "db:drop": "drizzle-kit drop",
     "migrate:quilts": "tsx scripts/migrate-quilts-to-items.ts",
-    "verify:quilt-module": "tsx scripts/verify-quilt-module.ts"
+    "verify:quilt-module": "tsx scripts/verify-quilt-module.ts",
+    "create-user": "tsx scripts/create-user.ts"
   },
   "dependencies": {
     "@auth/core": "^0.41.0",

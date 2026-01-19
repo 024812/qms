@@ -193,17 +193,27 @@ export async function loginUser(formData: FormData): Promise<LoginResult> {
       redirect: false,
     });
 
-    if (!result) {
+    // Check if sign in was successful
+    if (result?.error) {
+      console.error('Sign in error:', result.error);
       return {
         success: false,
-        message: 'Login failed',
-        error: 'Invalid credentials',
+        message: '登录失败',
+        error: '邮箱或密码错误',
+      };
+    }
+
+    if (!result?.ok) {
+      return {
+        success: false,
+        message: '登录失败',
+        error: '无法完成登录，请重试',
       };
     }
 
     return {
       success: true,
-      message: 'Login successful',
+      message: '登录成功',
     };
   } catch (error) {
     console.error('Login error:', error);

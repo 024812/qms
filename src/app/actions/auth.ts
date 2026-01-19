@@ -96,15 +96,22 @@ export async function registerUser(formData: FormData): Promise<RegisterResult> 
     const saltRounds = 10;
     const hashedPassword = await bcrypt.hash(password, saltRounds);
 
-    // Create user
+    // Generate UUID for id field
+    const { randomUUID } = await import('crypto');
+    const userId = randomUUID();
+
+    // Create user with preferences
     await db
       .insert(users)
       .values({
+        id: userId,
         name,
         email,
-        password: hashedPassword,
-        role: 'member',
-        activeModules: [],
+        hashedPassword,
+        preferences: {
+          role: 'member',
+          activeModules: [],
+        },
       })
       .returning();
 

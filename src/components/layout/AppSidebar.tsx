@@ -65,7 +65,7 @@ export function AppSidebar() {
   const staticNavigation = getStaticNavigation(t);
   const allModules = getAllModules();
   
-  // Get user's active modules
+  // Get user's active modules (default to empty array if no session)
   const activeModuleIds = session?.user?.activeModules || [];
   
   // Filter modules based on user's active modules

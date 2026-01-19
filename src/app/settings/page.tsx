@@ -6,56 +6,74 @@ import { Badge } from '@/components/ui/badge';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import { Database, Shield, MousePointerClick, Info, Globe } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Database, Shield, Info, Globe, Grid3x3, Check, Loader2 } from 'lucide-react';
 import { toast } from '@/lib/toast';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import { ChangePasswordDialog } from '@/components/settings/ChangePasswordDialog';
 import {
   useAppSettings,
-  useUpdateAppSettings,
   useDatabaseStats,
   useSystemInfo,
 } from '@/hooks/useSettings';
+import { getAllModules } from '@/modules/registry';
+import { useEffect, useState, useTransition } from 'react';
+import { getUserActiveModules, toggleModuleSubscription } from '@/app/actions/modules';
 
 export default function SettingsPage() {
   const { t, language } = useLanguage();
+  const [isPending, startTransition] = useTransition();
+  const [activeModules, setActiveModules] = useState<string[]>([]);
+  const [loadingModules, setLoadingModules] = useState(true);
+
+  const allModules = getAllModules();
 
   // Fetch data
   const { data: appSettings, isLoading: settingsLoading } = useAppSettings();
   const { data: dbStats, isLoading: dbLoading } = useDatabaseStats();
   const { data: systemInfo, isLoading: systemLoading } = useSystemInfo();
 
-  // Mutations
-  const updateSettings = useUpdateAppSettings();
-
-  // Use double click action directly from settings
-  const doubleClickAction =
-    (appSettings?.doubleClickAction as 'none' | 'status' | 'edit' | 'view') || 'status';
-
-  const handleDoubleClickActionChange = async (value: 'none' | 'status' | 'edit' | 'view') => {
-    try {
-      await updateSettings.mutateAsync({ doubleClickAction: value });
-      toast.success(
-        t('language') === 'zh' ? '设置已保存' : 'Settings saved',
-        t('language') === 'zh' ? '双击行为已更新' : 'Double-click behavior updated'
-      );
-    } catch (error) {
-      toast.error(
-        t('language') === 'zh' ? '保存失败' : 'Save failed',
-        error instanceof Error
-          ? error.message
-          : t('language') === 'zh'
-            ? '请重试'
-            : 'Please try again'
-      );
+  // Fetch active modules
+  useEffect(() => {
+    async function fetchModules() {
+      try {
+        const modules = await getUserActiveModules();
+        setActiveModules(modules);
+      } catch (error) {
+        console.error('Failed to fetch modules:', error);
+      } finally {
+        setLoadingModules(false);
+      }
     }
+    fetchModules();
+  }, []);
+
+  const handleToggleModule = async (moduleId: string) => {
+    startTransition(async () => {
+      try {
+        const result = await toggleModuleSubscription(moduleId);
+        if (result.subscribed) {
+          setActiveModules(prev => [...prev, moduleId]);
+          toast.success(
+            language === 'zh' ? '模块已启用' : 'Module enabled',
+            language === 'zh' ? '模块已添加到你的列表' : 'Module added to your list'
+          );
+        } else {
+          setActiveModules(prev => prev.filter(id => id !== moduleId));
+          toast.success(
+            language === 'zh' ? '模块已禁用' : 'Module disabled',
+            language === 'zh' ? '模块已从你的列表移除' : 'Module removed from your list'
+          );
+        }
+        // Reload to update sidebar
+        window.location.reload();
+      } catch (error) {
+        toast.error(
+          language === 'zh' ? '操作失败' : 'Operation failed',
+          error instanceof Error ? error.message : language === 'zh' ? '请重试' : 'Please try again'
+        );
+      }
+    });
   };
 
   if (settingsLoading || dbLoading || systemLoading) {
@@ -70,303 +88,160 @@ export default function SettingsPage() {
   }
 
   return (
-    <div className="space-y-6">
-      {/* Two-column layout: 2/3 for settings, 1/3 for info */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Left column - Settings (2/3 width) */}
-        <div className="lg:col-span-2 space-y-6">
-          {/* Language Settings */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center space-x-2">
-                <Globe className="w-5 h-5" />
-                <span>{language === 'zh' ? '语言设置' : 'Language Settings'}</span>
-              </CardTitle>
-              <CardDescription>
-                {language === 'zh' ? '选择应用程序显示语言' : 'Choose application display language'}
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="language">
-                  {language === 'zh' ? '语言' : t('settings.sections.app.language')}
-                </Label>
-                <div className="flex items-center gap-3">
-                  <LanguageSwitcher />
-                  <span className="text-sm text-muted-foreground">
-                    {language === 'zh' ? '当前语言：中文' : 'Current language: English'}
-                  </span>
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  {language === 'zh'
-                    ? '更改语言后立即生效，无需刷新页面'
-                    : 'Language changes take effect immediately without page refresh'}
-                </p>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Quilt Management Settings */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center space-x-2">
-                <MousePointerClick className="w-5 h-5" />
-                <span>{language === 'zh' ? '被子管理设置' : 'Quilt Management Settings'}</span>
-              </CardTitle>
-              <CardDescription>
-                {language === 'zh'
-                  ? '配置被子列表的交互行为'
-                  : 'Configure quilt list interaction behavior'}
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="double-click-action">
-                  {language === 'zh' ? '被子列表双击行为' : 'Quilt List Double-click Behavior'}
-                </Label>
-                <Select
-                  value={doubleClickAction}
-                  onValueChange={value =>
-                    handleDoubleClickActionChange(value as 'none' | 'status' | 'edit' | 'view')
-                  }
-                >
-                  <SelectTrigger id="double-click-action">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">
-                      <div className="flex flex-col items-start">
-                        <span className="font-medium">
-                          {language === 'zh' ? '无动作' : 'No Action'}
-                        </span>
-                        <span className="text-xs text-muted-foreground">
-                          {language === 'zh' ? '双击不执行任何操作' : 'Double-click does nothing'}
-                        </span>
-                      </div>
-                    </SelectItem>
-                    <SelectItem value="view">
-                      <div className="flex flex-col items-start">
-                        <span className="font-medium">
-                          {language === 'zh' ? '查看详情' : 'View Details'}
-                        </span>
-                        <span className="text-xs text-muted-foreground">
-                          {language === 'zh'
-                            ? '双击查看被子详情'
-                            : 'Double-click to view quilt details'}
-                        </span>
-                      </div>
-                    </SelectItem>
-                    <SelectItem value="status">
-                      <div className="flex flex-col items-start">
-                        <span className="font-medium">
-                          {language === 'zh' ? '修改状态' : 'Change Status'}
-                        </span>
-                        <span className="text-xs text-muted-foreground">
-                          {language === 'zh'
-                            ? '双击打开状态修改对话框'
-                            : 'Double-click opens status dialog'}
-                        </span>
-                      </div>
-                    </SelectItem>
-                    <SelectItem value="edit">
-                      <div className="flex flex-col items-start">
-                        <span className="font-medium">
-                          {language === 'zh' ? '编辑被子' : 'Edit Quilt'}
-                        </span>
-                        <span className="text-xs text-muted-foreground">
-                          {language === 'zh' ? '双击打开编辑表单' : 'Double-click opens edit form'}
-                        </span>
-                      </div>
-                    </SelectItem>
-                  </SelectContent>
-                </Select>
-                <p className="text-xs text-muted-foreground">
-                  {language === 'zh'
-                    ? '设置在被子列表中双击行时的默认行为'
-                    : 'Set the default behavior when double-clicking a row in the quilt list'}
-                </p>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="usage-double-click-action">
-                  {language === 'zh' ? '使用记录双击行为' : 'Usage Record Double-click Behavior'}
-                </Label>
-                <Select
-                  value={(appSettings?.usageDoubleClickAction as string) || 'view'}
-                  onValueChange={async value => {
-                    try {
-                      await updateSettings.mutateAsync({
-                        usageDoubleClickAction: value as 'none' | 'view' | 'edit',
-                      });
-                      toast.success(
-                        language === 'zh' ? '设置已保存' : 'Settings saved',
-                        language === 'zh'
-                          ? '使用记录双击行为已更新'
-                          : 'Usage record double-click behavior updated'
-                      );
-                    } catch (error) {
-                      toast.error(
-                        language === 'zh' ? '保存失败' : 'Save failed',
-                        error instanceof Error
-                          ? error.message
-                          : language === 'zh'
-                            ? '请重试'
-                            : 'Please try again'
-                      );
-                    }
-                  }}
-                >
-                  <SelectTrigger id="usage-double-click-action">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">
-                      <div className="flex flex-col items-start">
-                        <span className="font-medium">
-                          {language === 'zh' ? '无动作' : 'No Action'}
-                        </span>
-                        <span className="text-xs text-muted-foreground">
-                          {language === 'zh' ? '双击不执行任何操作' : 'Double-click does nothing'}
-                        </span>
-                      </div>
-                    </SelectItem>
-                    <SelectItem value="view">
-                      <div className="flex flex-col items-start">
-                        <span className="font-medium">
-                          {language === 'zh' ? '查看详情' : 'View Details'}
-                        </span>
-                        <span className="text-xs text-muted-foreground">
-                          {language === 'zh'
-                            ? '双击查看被子详情'
-                            : 'Double-click to view quilt details'}
-                        </span>
-                      </div>
-                    </SelectItem>
-                    <SelectItem value="edit">
-                      <div className="flex flex-col items-start">
-                        <span className="font-medium">
-                          {language === 'zh' ? '编辑记录' : 'Edit Record'}
-                        </span>
-                        <span className="text-xs text-muted-foreground">
-                          {language === 'zh'
-                            ? '双击编辑使用记录'
-                            : 'Double-click to edit usage record'}
-                        </span>
-                      </div>
-                    </SelectItem>
-                  </SelectContent>
-                </Select>
-                <p className="text-xs text-muted-foreground">
-                  {language === 'zh'
-                    ? '设置在使用记录列表中双击行时的默认行为'
-                    : 'Set the default behavior when double-clicking a row in the usage record list'}
-                </p>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Security Settings */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center space-x-2">
-                <Shield className="w-5 h-5" />
-                <span>{language === 'zh' ? '安全设置' : 'Security Settings'}</span>
-              </CardTitle>
-              <CardDescription>
-                {language === 'zh'
-                  ? '管理您的账户安全和密码'
-                  : 'Manage your account security and password'}
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <ChangePasswordDialog />
-            </CardContent>
-          </Card>
+    <div className="container mx-auto py-8 px-4">
+      <div className="max-w-4xl mx-auto space-y-6">
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold mb-2">
+            {language === 'zh' ? '用户设置' : 'User Settings'}
+          </h1>
+          <p className="text-muted-foreground">
+            {language === 'zh' ? '管理你的模块订阅、语言和账户设置' : 'Manage your module subscriptions, language and account settings'}
+          </p>
         </div>
 
-        {/* Right column - System Info (1/3 width) */}
-        <div className="space-y-6">
-          {/* Database Connection Status */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center space-x-2">
-                <Database className="w-5 h-5" />
-                <span>{t('settings.sections.database.title')}</span>
-              </CardTitle>
-              <CardDescription>{t('settings.sections.database.description')}</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label>{t('settings.sections.database.provider')}</Label>
-                <Input value={dbStats?.provider || 'Neon Serverless PostgreSQL'} disabled />
+        {/* Module Subscription */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center space-x-2">
+              <Grid3x3 className="w-5 h-5" />
+              <span>{language === 'zh' ? '模块订阅' : 'Module Subscription'}</span>
+            </CardTitle>
+            <CardDescription>
+              {language === 'zh' ? '选择要使用的功能模块' : 'Choose which modules to use'}
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {loadingModules ? (
+              <div className="flex items-center justify-center py-8">
+                <Loader2 className="h-6 w-6 animate-spin" />
               </div>
-              <div className="space-y-2">
-                <Label>{t('settings.sections.database.connectionStatus')}</Label>
-                <div className="flex items-center space-x-2">
-                  <div
-                    className={`w-2 h-2 rounded-full ${dbStats?.connected ? 'bg-green-500' : 'bg-destructive'}`}
-                  ></div>
-                  <Badge variant={dbStats?.connected ? 'default' : 'destructive'}>
-                    {dbStats?.connected
-                      ? t('settings.sections.database.connected')
-                      : language === 'zh'
-                        ? '未连接'
-                        : 'Disconnected'}
-                  </Badge>
-                </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {allModules.map(module => {
+                  const isActive = activeModules.includes(module.id);
+                  return (
+                    <div
+                      key={module.id}
+                      className={`relative p-4 border rounded-lg transition-all ${isActive ? 'border-primary bg-primary/5' : 'border-border hover:border-primary/50'
+                        }`}
+                    >
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <h3 className="font-medium">{module.name}</h3>
+                          <p className="text-sm text-muted-foreground mt-1">
+                            {module.description}
+                          </p>
+                        </div>
+                        <Button
+                          size="sm"
+                          variant={isActive ? 'default' : 'outline'}
+                          onClick={() => handleToggleModule(module.id)}
+                          disabled={isPending}
+                          className="shrink-0 ml-4"
+                        >
+                          {isPending ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : isActive ? (
+                            <>
+                              <Check className="h-4 w-4 mr-1" />
+                              {language === 'zh' ? '已订阅' : 'Subscribed'}
+                            </>
+                          ) : (
+                            language === 'zh' ? '订阅' : 'Subscribe'
+                          )}
+                        </Button>
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
-            </CardContent>
-          </Card>
+            )}
+          </CardContent>
+        </Card>
 
-          {/* System Info */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center space-x-2">
-                <Info className="w-5 h-5" />
-                <span>{t('settings.sections.system.title')}</span>
-              </CardTitle>
-              <CardDescription>
+        {/* Language Settings */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center space-x-2">
+              <Globe className="w-5 h-5" />
+              <span>{language === 'zh' ? '语言设置' : 'Language Settings'}</span>
+            </CardTitle>
+            <CardDescription>
+              {language === 'zh' ? '选择应用程序显示语言' : 'Choose application display language'}
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="language">
+                {language === 'zh' ? '语言' : t('settings.sections.app.language')}
+              </Label>
+              <div className="flex items-center gap-3">
+                <LanguageSwitcher />
+                <span className="text-sm text-muted-foreground">
+                  {language === 'zh' ? '当前语言：中文' : 'Current language: English'}
+                </span>
+              </div>
+              <p className="text-xs text-muted-foreground">
                 {language === 'zh'
-                  ? '系统版本和部署信息'
-                  : 'System version and deployment information'}
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <div className="flex items-center justify-between py-2 border-b">
-                <div className="flex items-center space-x-2">
-                  <Info className="w-4 h-4 text-muted-foreground" />
-                  <span className="text-sm text-muted-foreground">
-                    {t('settings.sections.system.version')}
-                  </span>
-                </div>
-                <span className="text-sm font-medium">{systemInfo?.version || '-'}</span>
+                  ? '更改语言后立即生效，无需刷新页面'
+                  : 'Language changes take effect immediately without page refresh'}
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Security Settings */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center space-x-2">
+              <Shield className="w-5 h-5" />
+              <span>{language === 'zh' ? '安全设置' : 'Security Settings'}</span>
+            </CardTitle>
+            <CardDescription>
+              {language === 'zh'
+                ? '管理您的账户安全和密码'
+                : 'Manage your account security and password'}
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <ChangePasswordDialog />
+          </CardContent>
+        </Card>
+
+        {/* System Info - Compact */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center space-x-2">
+              <Info className="w-5 h-5" />
+              <span>{language === 'zh' ? '系统信息' : 'System Info'}</span>
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+              <div>
+                <span className="text-muted-foreground">{language === 'zh' ? '版本' : 'Version'}</span>
+                <p className="font-medium">{systemInfo?.version || '-'}</p>
               </div>
-              <div className="flex items-center justify-between py-2 border-b">
-                <div className="flex items-center space-x-2">
-                  <Info className="w-4 h-4 text-muted-foreground" />
-                  <span className="text-sm text-muted-foreground">
-                    {t('settings.sections.system.deployment')}
-                  </span>
-                </div>
-                <span className="text-sm font-medium">{systemInfo?.deployment || 'Vercel'}</span>
+              <div>
+                <span className="text-muted-foreground">{language === 'zh' ? '部署' : 'Deployment'}</span>
+                <p className="font-medium">{systemInfo?.deployment || 'Vercel'}</p>
               </div>
-              <div className="flex items-center justify-between py-2">
-                <div className="flex items-center space-x-2">
-                  <Info className="w-4 h-4 text-muted-foreground" />
-                  <span className="text-sm text-muted-foreground">
-                    {language === 'zh' ? '环境' : 'Environment'}
-                  </span>
+              <div>
+                <span className="text-muted-foreground">{language === 'zh' ? '数据库' : 'Database'}</span>
+                <div className="flex items-center gap-1">
+                  <div className={`w-2 h-2 rounded-full ${dbStats?.connected ? 'bg-green-500' : 'bg-destructive'}`} />
+                  <span className="font-medium">{dbStats?.connected ? 'Connected' : 'Disconnected'}</span>
                 </div>
-                <Badge
-                  variant={systemInfo?.environment === 'production' ? 'default' : 'secondary'}
-                  className="capitalize"
-                >
+              </div>
+              <div>
+                <span className="text-muted-foreground">{language === 'zh' ? '环境' : 'Environment'}</span>
+                <Badge variant={systemInfo?.environment === 'production' ? 'default' : 'secondary'} className="capitalize">
                   {systemInfo?.environment || 'production'}
                 </Badge>
               </div>
-            </CardContent>
-          </Card>
-        </div>
+            </div>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );

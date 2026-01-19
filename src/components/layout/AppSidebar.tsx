@@ -4,7 +4,22 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import { useLanguage } from '@/lib/language-provider';
-import { Home, Package, BarChart3, Settings, Calendar, Github, Upload, Grid3x3, CreditCard, Bed, User } from 'lucide-react';
+import {
+  Home,
+  Package,
+  BarChart3,
+  Settings,
+  Calendar,
+  Github,
+  Upload,
+  Grid3x3,
+  CreditCard,
+  Bed,
+  User,
+  Users,
+  Loader2,
+  Wrench
+} from 'lucide-react';
 import packageJson from '../../../package.json';
 import { getAllModules } from '@/modules/registry';
 
@@ -14,76 +29,95 @@ import {
   SidebarFooter,
   SidebarGroup,
   SidebarGroupContent,
-  SidebarGroupLabel,
+
   SidebarHeader,
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  SidebarMenuSub,
+  SidebarMenuSubButton,
+  SidebarMenuSubItem,
   SidebarRail,
 } from '@/components/ui/sidebar';
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from '@/components/ui/collapsible';
+import { ChevronRight } from 'lucide-react';
 
 // Icon mapping for modules
-const moduleIcons: Record<string, any> = {
+import { LucideIcon } from 'lucide-react';
+
+const moduleIcons: Record<string, LucideIcon> = {
   Bed,
   CreditCard,
   Package,
 };
 
-const getStaticNavigation = (t: (key: string) => string) => [
-  {
-    name: t('navigation.dashboard'),
-    href: '/',
-    icon: Home,
-  },
-  {
-    name: t('navigation.usage'),
-    href: '/usage',
-    icon: Calendar,
-  },
-  {
-    name: t('navigation.analytics'),
-    href: '/analytics',
-    icon: BarChart3,
-  },
-  {
-    name: t('navigation.reports'),
-    href: '/reports',
-    icon: Upload,
-  },
-  {
-    name: t('navigation.settings'),
-    href: '/settings',
-    icon: Settings,
-  },
-];
+// Module-specific navigation items
+const moduleNavigation: Record<string, Array<{ name: string; href: string; icon: LucideIcon }>> = {
+  quilt: [
+    { name: '被子列表', href: '/quilts', icon: Package },
+    { name: '使用跟踪', href: '/usage', icon: Calendar },
+    { name: '数据分析', href: '/analytics', icon: BarChart3 },
+    { name: '导入导出', href: '/reports', icon: Upload },
+  ],
+  card: [
+    { name: '卡片列表', href: '/cards', icon: CreditCard },
+    // Add more card-specific navigation as needed
+  ],
+};
 
 export function AppSidebar() {
   const pathname = usePathname();
   const { t } = useLanguage();
   const { data: session, status } = useSession();
-  
-  const staticNavigation = getStaticNavigation(t);
+
   const allModules = getAllModules();
-  
-  // Get user's active modules (default to empty array if no session)
-  const activeModuleIds = session?.user?.activeModules || [];
-  
-  // Debug logging
-  console.log('AppSidebar - Session status:', status);
-  console.log('AppSidebar - Active modules:', activeModuleIds);
-  console.log('AppSidebar - All modules:', allModules.map(m => m.id));
-  
-  // Filter modules based on user's active modules
-  const activeModules = allModules.filter(module => activeModuleIds.includes(module.id));
-  
-  console.log('AppSidebar - Filtered active modules:', activeModules.map(m => m.name));
-  
-  // Create module navigation items
-  const moduleNavigation = activeModules.map(module => ({
-    name: module.name,
-    href: `/${module.id}s`, // e.g., /quilts, /cards
-    icon: moduleIcons[module.icon] || Package,
-  }));
+
+  // Get user's active modules
+  const activeModuleIds = (session?.user?.activeModules as string[]) || [];
+  const isAdmin = session?.user?.role === 'admin';
+
+  // Filter modules based on user's subscriptions
+  const subscribedModules = allModules.filter(module => activeModuleIds.includes(module.id));
+
+  // Determine which module is currently active based on pathname
+  const getCurrentModuleId = () => {
+    if (pathname.startsWith('/quilts') || pathname.startsWith('/usage') ||
+      pathname.startsWith('/analytics') || pathname.startsWith('/reports')) {
+      return 'quilt';
+    }
+    if (pathname.startsWith('/cards')) {
+      return 'card';
+    }
+    return null;
+  };
+
+  const currentModuleId = getCurrentModuleId();
+
+  // Loading state
+  if (status === 'loading') {
+    return (
+      <Sidebar collapsible="icon">
+        <SidebarHeader className="border-b border-sidebar-border">
+          <Link href="/" className="flex items-center gap-2 px-2 py-1">
+            <Package className="h-6 w-6 text-blue-600 shrink-0" />
+            <div className="flex flex-col group-data-[collapsible=icon]:hidden">
+              <span className="text-sm font-bold leading-tight">QMS</span>
+              <span className="text-xs text-muted-foreground">家庭物品管理系统</span>
+            </div>
+          </Link>
+        </SidebarHeader>
+        <SidebarContent>
+          <div className="flex items-center justify-center py-8">
+            <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+          </div>
+        </SidebarContent>
+      </Sidebar>
+    );
+  }
 
   return (
     <Sidebar collapsible="icon">
@@ -98,80 +132,163 @@ export function AppSidebar() {
       </SidebarHeader>
 
       <SidebarContent>
-        {/* Static Navigation */}
-        <SidebarGroup>
-          <SidebarGroupLabel>主菜单</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {staticNavigation.map(item => {
-                const isActive = pathname === item.href;
-                return (
-                  <SidebarMenuItem key={item.name}>
-                    <SidebarMenuButton asChild isActive={isActive} tooltip={item.name}>
-                      <Link href={item.href} prefetch={false}>
-                        <item.icon className="h-4 w-4" />
-                        <span>{item.name}</span>
+        {/* My Modules - Show subscribed modules with their sub-navigation */}
+        {subscribedModules.map(module => {
+          const IconComponent = moduleIcons[module.icon] || Package;
+          const moduleNav = moduleNavigation[module.id] || [];
+          const isModuleActive = currentModuleId === module.id;
+          const hasSubNav = moduleNav.length > 0;
+
+          if (hasSubNav) {
+            return (
+              <SidebarGroup key={module.id}>
+                <SidebarGroupContent>
+                  <SidebarMenu>
+                    <Collapsible
+                      asChild
+                      defaultOpen={isModuleActive}
+                      className="group/collapsible"
+                    >
+                      <SidebarMenuItem>
+                        <CollapsibleTrigger asChild>
+                          <SidebarMenuButton
+                            tooltip={module.name}
+                            isActive={isModuleActive}
+                          >
+                            <IconComponent className="h-4 w-4" />
+                            <span>{module.name}</span>
+                            <ChevronRight className="ml-auto h-4 w-4 transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
+                          </SidebarMenuButton>
+                        </CollapsibleTrigger>
+                        <CollapsibleContent>
+                          <SidebarMenuSub>
+                            {moduleNav.map(item => (
+                              <SidebarMenuSubItem key={item.href}>
+                                <SidebarMenuSubButton
+                                  asChild
+                                  isActive={pathname === item.href || pathname.startsWith(item.href + '/')}
+                                >
+                                  <Link href={item.href} prefetch={false}>
+                                    <item.icon className="h-4 w-4" />
+                                    <span>{item.name}</span>
+                                  </Link>
+                                </SidebarMenuSubButton>
+                              </SidebarMenuSubItem>
+                            ))}
+                          </SidebarMenuSub>
+                        </CollapsibleContent>
+                      </SidebarMenuItem>
+                    </Collapsible>
+                  </SidebarMenu>
+                </SidebarGroupContent>
+              </SidebarGroup>
+            );
+          }
+
+          // Module without sub-navigation
+          return (
+            <SidebarGroup key={module.id}>
+              <SidebarGroupContent>
+                <SidebarMenu>
+                  <SidebarMenuItem>
+                    <SidebarMenuButton
+                      asChild
+                      isActive={isModuleActive}
+                      tooltip={module.name}
+                    >
+                      <Link href={`/${module.id}s`} prefetch={false}>
+                        <IconComponent className="h-4 w-4" />
+                        <span>{module.name}</span>
                       </Link>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
-                );
-              })}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
+                </SidebarMenu>
+              </SidebarGroupContent>
+            </SidebarGroup>
+          );
+        })}
 
-        {/* Module Navigation */}
-        {moduleNavigation.length > 0 && (
+        {/* Admin Section - Only visible to admins, collapsible */}
+        {isAdmin && (
           <SidebarGroup>
-            <SidebarGroupLabel>我的模块</SidebarGroupLabel>
             <SidebarGroupContent>
               <SidebarMenu>
-                {moduleNavigation.map(item => {
-                  const isActive = pathname.startsWith(item.href);
-                  return (
-                    <SidebarMenuItem key={item.name}>
-                      <SidebarMenuButton asChild isActive={isActive} tooltip={item.name}>
-                        <Link href={item.href} prefetch={false}>
-                          <item.icon className="h-4 w-4" />
-                          <span>{item.name}</span>
-                        </Link>
+                <Collapsible
+                  asChild
+                  defaultOpen={pathname.startsWith('/users') || pathname.startsWith('/admin') || pathname === '/quilts/settings'}
+                  className="group/collapsible"
+                >
+                  <SidebarMenuItem>
+                    <CollapsibleTrigger asChild>
+                      <SidebarMenuButton
+                        tooltip="系统管理"
+                        isActive={pathname.startsWith('/users') || pathname.startsWith('/admin') || pathname === '/quilts/settings'}
+                      >
+                        <Wrench className="h-4 w-4" />
+                        <span>系统管理</span>
+                        <ChevronRight className="ml-auto h-4 w-4 transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
                       </SidebarMenuButton>
-                    </SidebarMenuItem>
-                  );
-                })}
+                    </CollapsibleTrigger>
+                    <CollapsibleContent>
+                      <SidebarMenuSub>
+                        <SidebarMenuSubItem>
+                          <SidebarMenuSubButton
+                            asChild
+                            isActive={pathname === '/users'}
+                          >
+                            <Link href="/users" prefetch={false}>
+                              <Users className="h-4 w-4" />
+                              <span>用户管理</span>
+                            </Link>
+                          </SidebarMenuSubButton>
+                        </SidebarMenuSubItem>
+                        <SidebarMenuSubItem>
+                          <SidebarMenuSubButton
+                            asChild
+                            isActive={pathname === '/admin/settings'}
+                          >
+                            <Link href="/admin/settings" prefetch={false}>
+                              <Settings className="h-4 w-4" />
+                              <span>系统配置</span>
+                            </Link>
+                          </SidebarMenuSubButton>
+                        </SidebarMenuSubItem>
+                        <SidebarMenuSubItem>
+                          <SidebarMenuSubButton
+                            asChild
+                            isActive={pathname === '/quilts/settings'}
+                          >
+                            <Link href="/quilts/settings" prefetch={false}>
+                              <Bed className="h-4 w-4" />
+                              <span>被子管理设置</span>
+                            </Link>
+                          </SidebarMenuSubButton>
+                        </SidebarMenuSubItem>
+                      </SidebarMenuSub>
+                    </CollapsibleContent>
+                  </SidebarMenuItem>
+                </Collapsible>
               </SidebarMenu>
             </SidebarGroupContent>
           </SidebarGroup>
         )}
 
-        {/* Module Management */}
+        {/* User Settings - Visible to all users */}
         <SidebarGroup>
-          <SidebarGroupLabel>管理</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               <SidebarMenuItem>
-                <SidebarMenuButton asChild isActive={pathname === '/modules'} tooltip="模块管理">
-                  <Link href="/modules" prefetch={false}>
-                    <Grid3x3 className="h-4 w-4" />
-                    <span>模块管理</span>
+                <SidebarMenuButton
+                  asChild
+                  isActive={pathname === '/settings' || pathname === '/modules'}
+                  tooltip="用户设置"
+                >
+                  <Link href="/settings" prefetch={false}>
+                    <Settings className="h-4 w-4" />
+                    <span>用户设置</span>
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
-              {(() => {
-                const isAdmin = session?.user?.role === 'admin';
-                console.log('AppSidebar - User role:', session?.user?.role);
-                console.log('AppSidebar - Is admin:', isAdmin);
-                return isAdmin ? (
-                  <SidebarMenuItem>
-                    <SidebarMenuButton asChild isActive={pathname === '/users'} tooltip="用户管理">
-                      <Link href="/users" prefetch={false}>
-                        <User className="h-4 w-4" />
-                        <span>用户管理</span>
-                      </Link>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                ) : null;
-              })()}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>

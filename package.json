@@ -59,15 +59,19 @@
     "create-user": "tsx scripts/create-user.ts",
     "add-oheng-user": "tsx scripts/add-oheng-user.ts",
     "check-user-role": "tsx scripts/check-user-role.ts",
-    "fix-user-modules": "tsx scripts/fix-user-modules.ts"
+    "fix-user-modules": "tsx scripts/fix-user-modules.ts",
+    "test-login": "tsx scripts/test-login.ts",
+    "diagnose-auth": "tsx scripts/diagnose-vercel-auth.ts"
   },
   "dependencies": {
     "@auth/core": "^0.41.0",
     "@auth/drizzle-adapter": "^1.11.1",
     "@hookform/resolvers": "^5.2.2",
     "@neondatabase/serverless": "^1.0.2",
+    "@radix-ui/react-alert-dialog": "^1.1.15",
     "@radix-ui/react-avatar": "^1.1.11",
     "@radix-ui/react-checkbox": "^1.3.3",
+    "@radix-ui/react-collapsible": "^1.1.12",
     "@radix-ui/react-dialog": "^1.1.15",
     "@radix-ui/react-dropdown-menu": "^2.1.16",
     "@radix-ui/react-label": "^2.1.8",

@@ -166,17 +166,27 @@ type LoginResult = {
  */
 export async function loginUser(formData: FormData): Promise<LoginResult> {
   try {
+    console.log('[LOGIN] Starting login process');
+    console.log('[LOGIN] Environment check:', {
+      hasSecret: !!process.env.NEXTAUTH_SECRET,
+      hasDbUrl: !!process.env.DATABASE_URL,
+      nodeEnv: process.env.NODE_ENV,
+    });
+
     // Extract form data
     const rawData = {
       email: formData.get('email') as string,
       password: formData.get('password') as string,
     };
 
+    console.log('[LOGIN] Attempting login for:', rawData.email);
+
     // Validate input
     const validationResult = loginSchema.safeParse(rawData);
 
     if (!validationResult.success) {
       const errors = validationResult.error.issues.map((err) => err.message).join(', ');
+      console.error('[LOGIN] Validation failed:', errors);
       return {
         success: false,
         message: 'Validation failed',
@@ -186,37 +196,39 @@ export async function loginUser(formData: FormData): Promise<LoginResult> {
 
     const { email, password } = validationResult.data;
 
-    // Attempt sign in
-    const result = await signIn('credentials', {
-      email,
-      password,
-      redirect: false,
-    });
+    // Attempt sign in - Auth.js v5 behavior:
+    // - Returns undefined on success (when redirect: false)
+    // - Throws CredentialsSignin error on failure
+    console.log('[LOGIN] Calling signIn with credentials');
+    try {
+      await signIn('credentials', {
+        email,
+        password,
+        redirect: false,
+      });
 
-    // Check if sign in was successful
-    if (result?.error) {
-      console.error('Sign in error:', result.error);
+      // If we reach here, login succeeded
+      console.log('[LOGIN] Login successful for:', email);
+      return {
+        success: true,
+        message: '登录成功',
+      };
+    } catch (signInError) {
+      console.error('[LOGIN] Sign in error:', signInError);
       return {
         success: false,
         message: '登录失败',
         error: '邮箱或密码错误',
       };
     }
-
-    if (!result?.ok) {
-      return {
-        success: false,
-        message: '登录失败',
-        error: '无法完成登录，请重试',
-      };
-    }
-
-    return {
-      success: true,
-      message: '登录成功',
-    };
   } catch (error) {
-    console.error('Login error:', error);
+    console.error('[LOGIN] Login error:', error);
+    if (error instanceof Error) {
+      console.error('[LOGIN] Error details:', {
+        message: error.message,
+        stack: error.stack,
+      });
+    }
     return {
       success: false,
       message: 'Login failed',

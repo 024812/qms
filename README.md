@@ -1,16 +1,26 @@
-# QMS - Quilt Management System 🛏️
+# QMS - Family Item Management System 🏠
 
 **[English](README.md) | [中文](README_zh.md)**
 
-> **Production-Ready Inventory Management for Home Bedding**
+> **Modular Family Item Management System**
 
-A modern Next.js application with Neon PostgreSQL that transforms simple Excel-based quilt tracking into an intelligent inventory management system.
+A modern Next.js application with Neon PostgreSQL that provides a modular, extensible platform for managing various family items including quilts, trading cards, and more.
 
 **🌐 Live Demo**: https://qms-app-omega.vercel.app
 
 ## ✨ Key Features
 
-### 📊 Core Functionality
+### 📦 Modular Architecture
+
+- **Multi-Module Support**: Extensible system supporting multiple item types
+  - 🛏️ **Quilt Management**: Bedding inventory with usage tracking
+  - 🃏 **Trading Cards**: Trading card collection management
+  - 🔧 *More modules coming soon...*
+- **Dynamic Sidebar Navigation**: Collapsible module-specific sub-menus
+- **Module Subscription**: Users can subscribe/unsubscribe to modules
+- **Role-Based Access**: Admin-only system management features
+
+### 📊 Core Functionality (Quilt Module)
 
 - **Quilt Management**: Complete CRUD operations with auto-generated names and numbers
 - **Image Management**: Upload and manage quilt photos with Cloudinary integration
@@ -248,32 +258,47 @@ npm run update-quilt-names     # Update quilt names
 qms-app/
 ├── src/
 │   ├── app/                   # Next.js App Router pages
-│   │   ├── api/              # API routes (weather, auth, health)
+│   │   ├── api/              # API routes
 │   │   ├── login/            # Login page
-│   │   ├── quilts/           # Quilt management
+│   │   ├── quilts/           # Quilt module pages
 │   │   ├── usage/            # Usage tracking
-│   │   ├── analytics/        # Analytics
-│   │   ├── settings/         # Settings page
-│   │   └── reports/          # Reports
+│   │   ├── analytics/        # Data analytics
+│   │   ├── settings/         # User settings
+│   │   ├── users/            # User management (admin)
+│   │   ├── admin/            # Admin settings
+│   │   └── (dashboard)/      # Dashboard route group
 │   ├── components/           # React components
+│   │   ├── layout/          # Layout components (AppSidebar, AppHeader)
 │   │   ├── ui/              # Base UI components (Radix-based)
 │   │   ├── motion/          # Animation components
 │   │   ├── quilts/          # Quilt-specific components
 │   │   ├── usage/           # Usage tracking components
-│   │   ├── weather/         # Weather display components
 │   │   └── dashboard/       # Dashboard components
+│   ├── modules/             # Module system
+│   │   ├── types.ts         # Module type definitions
+│   │   ├── registry.ts      # Module registry
+│   │   ├── quilts/          # Quilt module config
+│   │   └── cards/           # Card module config
 │   ├── hooks/               # Custom hooks
 │   ├── lib/                 # Utilities
 │   │   ├── repositories/   # Database repository pattern
-│   │   ├── validations/    # Zod schemas and validation
-│   │   ├── neon.ts         # Database connection
-│   │   ├── auth.ts         # Authentication
-│   │   └── i18n.ts         # Internationalization
-│   └── server/             # Server code (tRPC routers)
+│   │   ├── validations/    # Zod schemas
+│   │   └── neon.ts         # Database connection
+│   └── server/             # Server code
 ├── scripts/                # Utility scripts
-├── docs/                   # Documentation
-│   └── guides/            # Implementation guides
-└── .kiro/specs/           # Feature specifications
+└── docs/                   # Documentation
+```
+
+### Sidebar Navigation Structure
+
+```
+├── 被子管理 ▸ (被子列表, 使用跟踪, 数据分析, 导入导出)
+├── 球星卡管理 ▸ (卡片列表)
+├── 系统管理 ▸ [Admin Only, Collapsible]
+│   ├── 用户管理
+│   ├── 系统配置
+│   └── 被子管理设置
+└── 用户设置 (模块订阅 + 语言 + 密码)
 ```
 
 ## 🎨 UI Components
@@ -416,8 +441,8 @@ For questions or issues, please open an issue on GitHub.
 
 ---
 
-**Version**: 1.3.0  
+**Version**: 2026.01.19  
 **Status**: ✅ Production Ready  
-**Last Updated**: 2026-01-13
+**Last Updated**: 2026-01-19
 
 Made with ❤️ for better home organization

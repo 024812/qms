@@ -57,7 +57,9 @@
     "migrate:quilts": "tsx scripts/migrate-quilts-to-items.ts",
     "verify:quilt-module": "tsx scripts/verify-quilt-module.ts",
     "create-user": "tsx scripts/create-user.ts",
-    "add-oheng-user": "tsx scripts/add-oheng-user.ts"
+    "add-oheng-user": "tsx scripts/add-oheng-user.ts",
+    "check-user-role": "tsx scripts/check-user-role.ts",
+    "fix-user-modules": "tsx scripts/fix-user-modules.ts"
   },
   "dependencies": {
     "@auth/core": "^0.41.0",

@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from 'next';
 import { Inter } from 'next/font/google';
+import { Suspense } from 'react';
 import './globals.css';
 import { QueryProvider } from '@/components/providers/QueryProvider';
 import { ThemeProvider } from '@/components/providers/ThemeProvider';
@@ -42,7 +43,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             <LanguageProvider>
               <QueryProvider>
                 <GlobalErrorHandler />
-                <ConditionalLayout>{children}</ConditionalLayout>
+                <Suspense fallback={null}>
+                  <ConditionalLayout>{children}</ConditionalLayout>
+                </Suspense>
                 <Toaster />
                 <SonnerToaster position="top-right" richColors closeButton />
                 {process.env.NODE_ENV === 'development' && <AccessibilityAudit />}

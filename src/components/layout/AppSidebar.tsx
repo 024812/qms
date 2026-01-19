@@ -2,9 +2,11 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useSession } from 'next-auth/react';
 import { useLanguage } from '@/lib/language-provider';
-import { Home, Package, BarChart3, Settings, Calendar, Github, Upload } from 'lucide-react';
+import { Home, Package, BarChart3, Settings, Calendar, Github, Upload, Grid3x3, CreditCard, Bed } from 'lucide-react';
 import packageJson from '../../../package.json';
+import { getAllModules } from '@/modules/registry';
 
 import {
   Sidebar,
@@ -12,6 +14,7 @@ import {
   SidebarFooter,
   SidebarGroup,
   SidebarGroupContent,
+  SidebarGroupLabel,
   SidebarHeader,
   SidebarMenu,
   SidebarMenuButton,
@@ -19,16 +22,18 @@ import {
   SidebarRail,
 } from '@/components/ui/sidebar';
 
-const getNavigation = (t: (key: string) => string) => [
+// Icon mapping for modules
+const moduleIcons: Record<string, any> = {
+  Bed,
+  CreditCard,
+  Package,
+};
+
+const getStaticNavigation = (t: (key: string) => string) => [
   {
     name: t('navigation.dashboard'),
     href: '/',
     icon: Home,
-  },
-  {
-    name: t('navigation.quilts'),
-    href: '/quilts',
-    icon: Package,
   },
   {
     name: t('navigation.usage'),
@@ -55,7 +60,23 @@ const getNavigation = (t: (key: string) => string) => [
 export function AppSidebar() {
   const pathname = usePathname();
   const { t } = useLanguage();
-  const navigation = getNavigation(t);
+  const { data: session } = useSession();
+  
+  const staticNavigation = getStaticNavigation(t);
+  const allModules = getAllModules();
+  
+  // Get user's active modules
+  const activeModuleIds = session?.user?.activeModules || [];
+  
+  // Filter modules based on user's active modules
+  const activeModules = allModules.filter(module => activeModuleIds.includes(module.id));
+  
+  // Create module navigation items
+  const moduleNavigation = activeModules.map(module => ({
+    name: module.name,
+    href: `/${module.id}s`, // e.g., /quilts, /cards
+    icon: moduleIcons[module.icon] || Package,
+  }));
 
   return (
     <Sidebar collapsible="icon">
@@ -64,16 +85,18 @@ export function AppSidebar() {
           <Package className="h-6 w-6 text-blue-600 shrink-0" />
           <div className="flex flex-col group-data-[collapsible=icon]:hidden">
             <span className="text-sm font-bold leading-tight">QMS</span>
-            <span className="text-xs text-muted-foreground">家庭被子管理系统</span>
+            <span className="text-xs text-muted-foreground">家庭物品管理系统</span>
           </div>
         </Link>
       </SidebarHeader>
 
       <SidebarContent>
+        {/* Static Navigation */}
         <SidebarGroup>
+          <SidebarGroupLabel>主菜单</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {navigation.map(item => {
+              {staticNavigation.map(item => {
                 const isActive = pathname === item.href;
                 return (
                   <SidebarMenuItem key={item.name}>
@@ -86,6 +109,47 @@ export function AppSidebar() {
                   </SidebarMenuItem>
                 );
               })}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+
+        {/* Module Navigation */}
+        {moduleNavigation.length > 0 && (
+          <SidebarGroup>
+            <SidebarGroupLabel>我的模块</SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {moduleNavigation.map(item => {
+                  const isActive = pathname.startsWith(item.href);
+                  return (
+                    <SidebarMenuItem key={item.name}>
+                      <SidebarMenuButton asChild isActive={isActive} tooltip={item.name}>
+                        <Link href={item.href} prefetch={false}>
+                          <item.icon className="h-4 w-4" />
+                          <span>{item.name}</span>
+                        </Link>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  );
+                })}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        )}
+
+        {/* Module Management */}
+        <SidebarGroup>
+          <SidebarGroupLabel>管理</SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild isActive={pathname === '/modules'} tooltip="模块管理">
+                  <Link href="/modules" prefetch={false}>
+                    <Grid3x3 className="h-4 w-4" />
+                    <span>模块管理</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>

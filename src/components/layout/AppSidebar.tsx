@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import { useLanguage } from '@/lib/language-provider';
-import { Home, Package, BarChart3, Settings, Calendar, Github, Upload, Grid3x3, CreditCard, Bed } from 'lucide-react';
+import { Home, Package, BarChart3, Settings, Calendar, Github, Upload, Grid3x3, CreditCard, Bed, User } from 'lucide-react';
 import packageJson from '../../../package.json';
 import { getAllModules } from '@/modules/registry';
 
@@ -150,6 +150,16 @@ export function AppSidebar() {
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
+              {session?.user?.role === 'admin' && (
+                <SidebarMenuItem>
+                  <SidebarMenuButton asChild isActive={pathname === '/users'} tooltip="用户管理">
+                    <Link href="/users" prefetch={false}>
+                      <User className="h-4 w-4" />
+                      <span>用户管理</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              )}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>

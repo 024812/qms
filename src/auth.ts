@@ -100,22 +100,52 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
     /**
      * JWT callback - extends JWT token with user data
      */
-    async jwt({ token, user }) {
+    async jwt({ token, user, trigger }) {
       if (user) {
         token.id = user.id;
         token.role = user.role;
         token.activeModules = user.activeModules;
       }
+      
+      // On update trigger, refresh user data from database
+      if (trigger === 'update' && token.id) {
+        const [updatedUser] = await db
+          .select()
+          .from(users)
+          .where(eq(users.id, token.id as string))
+          .limit(1);
+        
+        if (updatedUser) {
+          token.role = updatedUser.preferences?.role || 'member';
+          token.activeModules = updatedUser.preferences?.activeModules || [];
+        }
+      }
+      
       return token;
     },
     /**
      * Session callback - extends session with user data from JWT
+     * Also refreshes activeModules from database to ensure latest data
      */
     async session({ session, token }) {
       if (token && session.user) {
         session.user.id = token.id as string;
-        session.user.role = token.role as string;
-        session.user.activeModules = token.activeModules as string[];
+        
+        // Always fetch latest user data from database for session
+        const [user] = await db
+          .select()
+          .from(users)
+          .where(eq(users.id, token.id as string))
+          .limit(1);
+        
+        if (user) {
+          session.user.role = user.preferences?.role || 'member';
+          session.user.activeModules = user.preferences?.activeModules || [];
+        } else {
+          // Fallback to token data if user not found
+          session.user.role = token.role as string;
+          session.user.activeModules = token.activeModules as string[];
+        }
       }
       return session;
     },

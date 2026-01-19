@@ -64,8 +64,10 @@ export function ModuleSelector() {
           result.message
         );
 
-        // Refresh the page to update middleware logic
-        router.refresh();
+        // Refresh the page to update session and sidebar
+        setTimeout(() => {
+          window.location.reload();
+        }, 500);
       }
     } catch (err) {
       console.error('Failed to toggle module:', err);

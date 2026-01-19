@@ -2,6 +2,13 @@
  * Quilt Repository
  *
  * Handles all database operations for quilts with type safety and proper error handling.
+ * 
+ * Next.js 16 Caching Strategy:
+ * - Read operations (findById, findAll, findByStatus, findBySeason) use "use cache" with appropriate lifetimes
+ * - Write operations (create, update, delete) invalidate relevant cache tags using updateTag()
+ * - Cache tags: 'quilts', 'quilts-{id}', 'quilts-status-{status}', 'quilts-season-{season}'
+ * 
+ * Requirements: 9.2 - Next.js 16 caching with cacheLife() and cacheTag()
  */
 
 import { sql, withTransaction } from '@/lib/neon';
@@ -16,6 +23,8 @@ import {
   rowToUsageRecord,
 } from '@/lib/database/types';
 import { QuiltStatus, Season, UsageType } from '@/lib/validations/quilt';
+import { unstable_cacheLife as cacheLife, unstable_cacheTag as cacheTag } from 'next/cache';
+import { updateTag } from 'next/cache';
 
 // Valid sort fields that map to database columns
 export type QuiltSortField =
@@ -83,8 +92,17 @@ export class QuiltRepository extends BaseRepositoryImpl<QuiltRow, Quilt> {
 
   /**
    * Find a quilt by ID
+   * 
+   * Caching: 5 minutes (frequently accessed, moderate update frequency)
+   * Cache tags: 'quilts', 'quilts-{id}'
+   * 
+   * Requirements: 9.2 - Next.js 16 caching
    */
   async findById(id: string): Promise<Quilt | null> {
+    'use cache';
+    cacheLife('minutes'); // 5 minutes
+    cacheTag('quilts', `quilts-${id}`);
+    
     return this.executeQuery(
       async () => {
         const rows = (await sql`
@@ -384,11 +402,24 @@ export class QuiltRepository extends BaseRepositoryImpl<QuiltRow, Quilt> {
    *
    * This method builds dynamic WHERE clauses to filter at the database level,
    * and applies ORDER BY before LIMIT/OFFSET to ensure correct pagination.
+   * 
+   * Caching: 2 minutes (list data, frequent updates)
+   * Cache tags: 'quilts', 'quilts-list', plus specific tags based on filters
    *
    * Requirements: 6.1 - Database-level filtering
    * Requirements: 14.1 - Sort-before-paginate
+   * Requirements: 9.2 - Next.js 16 caching
    */
   async findAll(filters: QuiltFilters = {}): Promise<Quilt[]> {
+    'use cache';
+    cacheLife('seconds'); // 2 minutes (120 seconds)
+    
+    // Build cache tags based on filters
+    const tags = ['quilts', 'quilts-list'];
+    if (filters.status) tags.push(`quilts-status-${filters.status}`);
+    if (filters.season) tags.push(`quilts-season-${filters.season}`);
+    cacheTag(...tags);
+    
     return this.executeQuery(
       async () => {
         const {
@@ -447,8 +478,17 @@ export class QuiltRepository extends BaseRepositoryImpl<QuiltRow, Quilt> {
 
   /**
    * Find quilts by status
+   * 
+   * Caching: 2 minutes (status-specific queries)
+   * Cache tags: 'quilts', 'quilts-status-{status}'
+   * 
+   * Requirements: 9.2 - Next.js 16 caching
    */
   async findByStatus(status: QuiltStatus): Promise<Quilt[]> {
+    'use cache';
+    cacheLife('seconds'); // 2 minutes
+    cacheTag('quilts', `quilts-status-${status}`);
+    
     return this.executeQuery(
       async () => {
         const rows = (await sql`
@@ -465,8 +505,17 @@ export class QuiltRepository extends BaseRepositoryImpl<QuiltRow, Quilt> {
 
   /**
    * Find quilts by season
+   * 
+   * Caching: 5 minutes (seasonal data changes infrequently)
+   * Cache tags: 'quilts', 'quilts-season-{season}'
+   * 
+   * Requirements: 9.2 - Next.js 16 caching
    */
   async findBySeason(season: Season): Promise<Quilt[]> {
+    'use cache';
+    cacheLife('minutes'); // 5 minutes
+    cacheTag('quilts', `quilts-season-${season}`);
+    
     return this.executeQuery(
       async () => {
         const rows = (await sql`
@@ -514,6 +563,10 @@ export class QuiltRepository extends BaseRepositoryImpl<QuiltRow, Quilt> {
 
   /**
    * Create a new quilt
+   * 
+   * Cache invalidation: Invalidates 'quilts', 'quilts-list', status and season specific tags
+   * 
+   * Requirements: 9.2 - Next.js 16 cache invalidation
    */
   async create(data: CreateQuiltData): Promise<Quilt> {
     return this.executeQuery(
@@ -559,8 +612,16 @@ export class QuiltRepository extends BaseRepositoryImpl<QuiltRow, Quilt> {
           ) RETURNING *
         `) as QuiltRow[];
 
+        const quilt = this.rowToModel(rows[0]);
+        
+        // Invalidate cache tags
+        updateTag('quilts');
+        updateTag('quilts-list');
+        updateTag(`quilts-status-${quilt.currentStatus}`);
+        updateTag(`quilts-season-${quilt.season}`);
+
         dbLogger.info('Quilt created successfully', { id, itemNumber });
-        return this.rowToModel(rows[0]);
+        return quilt;
       },
       'create',
       { data }
@@ -569,6 +630,10 @@ export class QuiltRepository extends BaseRepositoryImpl<QuiltRow, Quilt> {
 
   /**
    * Update a quilt
+   * 
+   * Cache invalidation: Invalidates specific quilt, list, and related status/season tags
+   * 
+   * Requirements: 9.2 - Next.js 16 cache invalidation
    */
   async update(id: string, data: Partial<CreateQuiltData>): Promise<Quilt | null> {
     return this.executeQuery(
@@ -622,8 +687,25 @@ export class QuiltRepository extends BaseRepositoryImpl<QuiltRow, Quilt> {
           return null;
         }
 
+        const updated = this.rowToModel(rows[0]);
+        
+        // Invalidate cache tags
+        updateTag('quilts');
+        updateTag('quilts-list');
+        updateTag(`quilts-${id}`);
+        
+        // Invalidate old and new status/season tags if they changed
+        if (current.currentStatus !== updated.currentStatus) {
+          updateTag(`quilts-status-${current.currentStatus}`);
+          updateTag(`quilts-status-${updated.currentStatus}`);
+        }
+        if (current.season !== updated.season) {
+          updateTag(`quilts-season-${current.season}`);
+          updateTag(`quilts-season-${updated.season}`);
+        }
+
         dbLogger.info('Quilt updated successfully', { id });
-        return this.rowToModel(rows[0]);
+        return updated;
       },
       'update',
       { id, data }
@@ -632,12 +714,20 @@ export class QuiltRepository extends BaseRepositoryImpl<QuiltRow, Quilt> {
 
   /**
    * Update quilt status only (without usage record management)
+   * 
+   * Cache invalidation: Invalidates specific quilt and status tags
    *
    * @deprecated Use updateStatusWithUsageRecord for atomic status changes with usage tracking
+   * 
+   * Requirements: 9.2 - Next.js 16 cache invalidation
    */
   async updateStatus(id: string, status: QuiltStatus): Promise<Quilt | null> {
     return this.executeQuery(
       async () => {
+        // Get current status for cache invalidation
+        const current = await this.findById(id);
+        const oldStatus = current?.currentStatus;
+        
         const now = new Date().toISOString();
 
         const rows = (await sql`
@@ -652,8 +742,19 @@ export class QuiltRepository extends BaseRepositoryImpl<QuiltRow, Quilt> {
           return null;
         }
 
+        const updated = this.rowToModel(rows[0]);
+        
+        // Invalidate cache tags
+        updateTag('quilts');
+        updateTag('quilts-list');
+        updateTag(`quilts-${id}`);
+        if (oldStatus) {
+          updateTag(`quilts-status-${oldStatus}`);
+        }
+        updateTag(`quilts-status-${status}`);
+
         dbLogger.info('Quilt status updated', { id, status });
-        return this.rowToModel(rows[0]);
+        return updated;
       },
       'updateStatus',
       { id, status }
@@ -839,10 +940,17 @@ export class QuiltRepository extends BaseRepositoryImpl<QuiltRow, Quilt> {
 
   /**
    * Delete a quilt and its related records
+   * 
+   * Cache invalidation: Invalidates all quilt-related caches
+   * 
+   * Requirements: 9.2 - Next.js 16 cache invalidation
    */
   async delete(id: string): Promise<boolean> {
     return this.executeQuery(
       async () => {
+        // Get quilt info for cache invalidation before deletion
+        const quilt = await this.findById(id);
+        
         // Delete related records first
         await sql`DELETE FROM usage_records WHERE quilt_id = ${id}`;
         await sql`DELETE FROM maintenance_records WHERE quilt_id = ${id}`;
@@ -855,6 +963,15 @@ export class QuiltRepository extends BaseRepositoryImpl<QuiltRow, Quilt> {
 
         const success = result.length > 0;
         if (success) {
+          // Invalidate cache tags
+          updateTag('quilts');
+          updateTag('quilts-list');
+          updateTag(`quilts-${id}`);
+          if (quilt) {
+            updateTag(`quilts-status-${quilt.currentStatus}`);
+            updateTag(`quilts-season-${quilt.season}`);
+          }
+          
           dbLogger.info('Quilt deleted successfully', { id });
         }
         return success;

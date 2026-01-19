@@ -7,9 +7,22 @@ import { ThemeToggle } from '@/components/ui/theme-toggle';
 import { useLanguage } from '@/lib/language-provider';
 import { Separator } from '@/components/ui/separator';
 import { AppBreadcrumb } from './AppBreadcrumb';
+import { signOut } from 'next-auth/react';
 
 export function AppHeader() {
   const { t } = useLanguage();
+
+  const handleLogout = async () => {
+    // eslint-disable-next-line no-alert
+    if (confirm(t('auth.logoutConfirm'))) {
+      try {
+        await signOut({ callbackUrl: '/login' });
+      } catch {
+        // eslint-disable-next-line no-alert
+        alert(t('common.failedToLogout'));
+      }
+    }
+  };
 
   return (
     <header className="sticky top-0 z-40 flex h-16 shrink-0 items-center gap-2 border-b bg-background px-4">
@@ -56,18 +69,7 @@ export function AppHeader() {
           variant="ghost"
           size="sm"
           className="flex items-center gap-2 text-destructive hover:text-destructive hover:bg-destructive/10"
-          onClick={async () => {
-            // eslint-disable-next-line no-alert
-            if (confirm(t('auth.logoutConfirm'))) {
-              try {
-                await fetch('/api/auth/logout', { method: 'POST' });
-                window.location.href = '/login';
-              } catch {
-                // eslint-disable-next-line no-alert
-                alert(t('common.failedToLogout'));
-              }
-            }
-          }}
+          onClick={handleLogout}
           title={t('auth.logout')}
         >
           <User className="h-4 w-4" />

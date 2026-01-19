@@ -1,17 +1,17 @@
 /**
- * Login Page
+ * User Registration Page
  * 
- * This page provides a login form using Next.js 16 Form component with Server Actions.
+ * This page provides a registration form for new users using Next.js 16 Form component.
  * Implements progressive enhancement - works without JavaScript.
  * 
- * Requirements: 8.1 (User authentication)
+ * Requirements: 8.1 (User registration and authentication)
  */
 
 import { redirect } from 'next/navigation';
 import { auth } from '@/auth';
-import { LoginForm } from './LoginForm';
+import { RegisterForm } from './RegisterForm';
 
-export default async function LoginPage() {
+export default async function RegisterPage() {
   // Redirect if already authenticated
   const session = await auth();
   if (session) {
@@ -38,19 +38,19 @@ export default async function LoginPage() {
             </svg>
           </div>
           <h2 className="text-3xl font-extrabold text-foreground">
-            登录账户
+            创建新账户
           </h2>
           <p className="mt-2 text-sm text-muted-foreground">
             或者{' '}
             <a
-              href="/register"
+              href="/login"
               className="font-medium text-primary hover:text-primary/80"
             >
-              创建新账户
+              登录已有账户
             </a>
           </p>
         </div>
-        <LoginForm />
+        <RegisterForm />
       </div>
     </div>
   );

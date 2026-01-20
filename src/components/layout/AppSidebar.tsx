@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import { useLanguage } from '@/lib/language-provider';
+import { useState, useEffect } from 'react';
 import {
   Home,
   Package,
@@ -100,6 +101,52 @@ export function AppSidebar() {
   // On homepage, expand all modules by default
   const isHomePage = pathname === '/' || pathname === '/modules';
 
+  // State for controlling collapsible sections
+  const [openModules, setOpenModules] = useState<Record<string, boolean>>({});
+  const [adminOpen, setAdminOpen] = useState(false);
+
+  // Initialize open states on mount and when pathname changes
+  useEffect(() => {
+    const newOpenStates: Record<string, boolean> = {};
+    
+    subscribedModules.forEach(module => {
+      // Open if it's the current module or if we're on homepage
+      newOpenStates[module.id] = module.id === currentModuleId || isHomePage;
+    });
+    
+    setOpenModules(newOpenStates);
+    
+    // Open admin section if on admin pages or homepage
+    setAdminOpen(
+      pathname.startsWith('/users') || 
+      pathname.startsWith('/admin') || 
+      pathname === '/quilts/settings' ||
+      isHomePage
+    );
+  }, [pathname, currentModuleId, isHomePage, subscribedModules]);
+  
+  // State to control which collapsibles are open
+  const [openModules, setOpenModules] = useState<Record<string, boolean>>({});
+  const [adminOpen, setAdminOpen] = useState(false);
+  
+  // Initialize open state on mount and when pathname changes
+  useEffect(() => {
+    const newOpenState: Record<string, boolean> = {};
+    
+    subscribedModules.forEach(module => {
+      const isModuleActive = currentModuleId === module.id;
+      newOpenState[module.id] = isModuleActive || isHomePage;
+    });
+    
+    setOpenModules(newOpenState);
+    
+    // Admin section
+    const isAdminActive = pathname.startsWith('/users') || 
+                         pathname.startsWith('/admin') || 
+                         pathname === '/quilts/settings';
+    setAdminOpen(isAdminActive || isHomePage);
+  }, [pathname, subscribedModules.length, currentModuleId, isHomePage]);
+
   // Loading state
   if (status === 'loading') {
     return (
@@ -149,7 +196,8 @@ export function AppSidebar() {
                   <SidebarMenu>
                     <Collapsible
                       asChild
-                      defaultOpen={isModuleActive || isHomePage}
+                      open={openModules[module.id] || false}
+                      onOpenChange={(open) => setOpenModules(prev => ({ ...prev, [module.id]: open }))}
                       className="group/collapsible"
                     >
                       <SidebarMenuItem>
@@ -218,7 +266,8 @@ export function AppSidebar() {
               <SidebarMenu>
                 <Collapsible
                   asChild
-                  defaultOpen={pathname.startsWith('/users') || pathname.startsWith('/admin') || pathname === '/quilts/settings'}
+                  open={adminOpen}
+                  onOpenChange={setAdminOpen}
                   className="group/collapsible"
                 >
                   <SidebarMenuItem>

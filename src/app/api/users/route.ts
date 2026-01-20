@@ -5,13 +5,14 @@
  * POST /api/users - Create new user (admin only)
  *
  * Requirements: 8.1 (User management)
+ * 
+ * Note: This uses the actual production database schema with "user" table (singular)
  */
 
 import { NextRequest } from 'next/server';
 import { auth } from '@/auth';
 import { db } from '@/db';
-import { users } from '@/db/schema';
-import { eq } from 'drizzle-orm';
+import { sql } from 'drizzle-orm';
 import { hashPassword } from '@/lib/auth/password';
 import {
   createSuccessResponse,
@@ -27,33 +28,41 @@ export async function GET() {
   try {
     const session = await auth();
 
+    console.log('[API /api/users] Session:', session?.user);
+
     // Check authentication and admin role
     if (!session?.user || session.user.role !== 'admin') {
+      console.log('[API /api/users] Unauthorized access attempt');
       return createUnauthorizedResponse('需要管理员权限');
     }
 
-    // Fetch all users (exclude password)
-    const allUsers = await db
-      .select({
-        id: users.id,
-        name: users.name,
-        email: users.email,
-        preferences: users.preferences,
-        createdAt: users.createdAt,
-        updatedAt: users.updatedAt,
-      })
-      .from(users)
-      .orderBy(users.createdAt);
+    // Fetch all users from actual database table "user" (not "users")
+    const result = await db.execute(sql`
+      SELECT id, name, email, role, created_at as "createdAt"
+      FROM "user"
+      ORDER BY created_at
+    `);
 
-    // Transform users to include role and activeModules
+    const allUsers = result.rows as Array<{
+      id: string;
+      name: string | null;
+      email: string;
+      role: string | null;
+      createdAt: Date;
+    }>;
+
+    console.log('[API /api/users] Found users:', allUsers.length);
+    console.log('[API /api/users] Users:', allUsers.map(u => ({ email: u.email, name: u.name })));
+
+    // Transform users to match expected format
     const transformedUsers = allUsers.map(user => ({
       id: user.id,
-      name: user.name,
+      name: user.name || '',
       email: user.email,
-      role: user.preferences?.role || 'member',
-      activeModules: user.preferences?.activeModules || [],
+      role: user.role?.toLowerCase() || 'member',
+      activeModules: [], // TODO: Add activeModules support to database
       createdAt: user.createdAt,
-      updatedAt: user.updatedAt,
+      updatedAt: user.createdAt, // Use createdAt as updatedAt for now
     }));
 
     return createSuccessResponse({
@@ -79,7 +88,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { name, email, password, role = 'member', activeModules = [] } = body;
+    const { name, email, password, role = 'MEMBER' } = body;
 
     // Validate required fields
     if (!name || !email || !password) {
@@ -98,38 +107,34 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if email already exists
-    const [existingUser] = await db.select().from(users).where(eq(users.email, email)).limit(1);
+    const existingResult = await db.execute(sql`
+      SELECT id FROM "user" WHERE email = ${email} LIMIT 1
+    `);
 
-    if (existingUser) {
+    if (existingResult.rows.length > 0) {
       return createBadRequestResponse('该邮箱已被注册');
     }
 
     // Hash password
     const hashedPassword = await hashPassword(password);
 
-    // Generate user ID
-    const userId = `user_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+    // Generate user ID (UUID format to match existing users)
+    const userId = crypto.randomUUID();
 
-    // Create user
-    const [newUser] = await db
-      .insert(users)
-      .values({
-        id: userId,
-        name,
-        email,
-        hashedPassword,
-        preferences: {
-          role,
-          activeModules,
-        },
-      })
-      .returning({
-        id: users.id,
-        name: users.name,
-        email: users.email,
-        preferences: users.preferences,
-        createdAt: users.createdAt,
-      });
+    // Create user in actual database table
+    const result = await db.execute(sql`
+      INSERT INTO "user" (id, name, email, password, role, created_at)
+      VALUES (${userId}, ${name}, ${email}, ${hashedPassword}, ${role.toUpperCase()}, NOW())
+      RETURNING id, name, email, role, created_at as "createdAt"
+    `);
+
+    const newUser = result.rows[0] as {
+      id: string;
+      name: string;
+      email: string;
+      role: string;
+      createdAt: Date;
+    };
 
     return createSuccessResponse(
       {
@@ -137,8 +142,8 @@ export async function POST(request: NextRequest) {
           id: newUser.id,
           name: newUser.name,
           email: newUser.email,
-          role: newUser.preferences?.role || 'member',
-          activeModules: newUser.preferences?.activeModules || [],
+          role: newUser.role.toLowerCase(),
+          activeModules: [],
           createdAt: newUser.createdAt,
         },
       },

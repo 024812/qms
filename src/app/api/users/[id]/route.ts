@@ -5,13 +5,14 @@
  * DELETE /api/users/[id] - Delete user (admin only)
  *
  * Requirements: 8.1 (User management)
+ * 
+ * Note: This uses the actual production database schema with "user" table (singular)
  */
 
 import { NextRequest } from 'next/server';
 import { auth } from '@/auth';
 import { db } from '@/db';
-import { users } from '@/db/schema';
-import { eq } from 'drizzle-orm';
+import { sql } from 'drizzle-orm';
 import { hashPassword } from '@/lib/auth/password';
 import {
   createSuccessResponse,
@@ -24,7 +25,10 @@ import {
 /**
  * PATCH /api/users/[id] - Update user
  */
-export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export async function PATCH(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
   try {
     const session = await auth();
 
@@ -35,28 +39,24 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
 
     const { id } = await params;
     const body = await request.json();
-    const { name, email, password, role, activeModules } = body;
+    const { name, email, password, role } = body;
 
     // Check if user exists
-    const [existingUser] = await db.select().from(users).where(eq(users.id, id)).limit(1);
+    const existingResult = await db.execute(sql`
+      SELECT id, name, email, role FROM "user" WHERE id = ${id} LIMIT 1
+    `);
 
-    if (!existingUser) {
+    if (existingResult.rows.length === 0) {
       return createNotFoundResponse('用户不存在');
     }
 
-    // Prepare update data
-    const updateData: {
-      name?: string;
-      email?: string;
-      hashedPassword?: string;
-      preferences?: Record<string, unknown>;
-      updatedAt: Date;
-    } = {
-      updatedAt: new Date(),
-    };
+    // Build update query dynamically
+    const updates: string[] = [];
+    const values: unknown[] = [];
 
     if (name !== undefined) {
-      updateData.name = name;
+      updates.push(`name = $${updates.length + 1}`);
+      values.push(name);
     }
 
     if (email !== undefined) {
@@ -67,13 +67,16 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
       }
 
       // Check if email is already taken by another user
-      const [emailUser] = await db.select().from(users).where(eq(users.email, email)).limit(1);
+      const emailCheckResult = await db.execute(sql`
+        SELECT id FROM "user" WHERE email = ${email} AND id != ${id} LIMIT 1
+      `);
 
-      if (emailUser && emailUser.id !== id) {
+      if (emailCheckResult.rows.length > 0) {
         return createBadRequestResponse('该邮箱已被其他用户使用');
       }
 
-      updateData.email = email;
+      updates.push(`email = $${updates.length + 1}`);
+      values.push(email);
     }
 
     if (password !== undefined && password !== '') {
@@ -81,36 +84,63 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
       if (password.length < 6) {
         return createBadRequestResponse('密码至少需要6个字符');
       }
-      updateData.hashedPassword = await hashPassword(password);
+      const hashedPassword = await hashPassword(password);
+      updates.push(`password = $${updates.length + 1}`);
+      values.push(hashedPassword);
     }
 
-    // Update preferences (role and activeModules)
-    if (role !== undefined || activeModules !== undefined) {
-      const currentPreferences = existingUser.preferences || {};
-      updateData.preferences = {
-        ...currentPreferences,
-        ...(role !== undefined && { role }),
-        ...(activeModules !== undefined && { activeModules }),
+    if (role !== undefined) {
+      updates.push(`role = $${updates.length + 1}`);
+      values.push(role.toUpperCase());
+    }
+
+    // If no updates, return current user
+    if (updates.length === 0) {
+      const user = existingResult.rows[0] as {
+        id: string;
+        name: string;
+        email: string;
+        role: string;
       };
+      return createSuccessResponse({
+        user: {
+          id: user.id,
+          name: user.name,
+          email: user.email,
+          role: user.role.toLowerCase(),
+          activeModules: [],
+          updatedAt: new Date(),
+        },
+      });
     }
 
-    // Update user
-    const [updatedUser] = await db.update(users).set(updateData).where(eq(users.id, id)).returning({
-      id: users.id,
-      name: users.name,
-      email: users.email,
-      preferences: users.preferences,
-      updatedAt: users.updatedAt,
-    });
+    // Add id to values for WHERE clause
+    values.push(id);
+
+    // Execute update
+    const updateQuery = `
+      UPDATE "user"
+      SET ${updates.join(', ')}
+      WHERE id = $${values.length}
+      RETURNING id, name, email, role
+    `;
+
+    const result = await db.execute(sql.raw(updateQuery, values));
+    const updatedUser = result.rows[0] as {
+      id: string;
+      name: string;
+      email: string;
+      role: string;
+    };
 
     return createSuccessResponse({
       user: {
         id: updatedUser.id,
         name: updatedUser.name,
         email: updatedUser.email,
-        role: updatedUser.preferences?.role || 'member',
-        activeModules: updatedUser.preferences?.activeModules || [],
-        updatedAt: updatedUser.updatedAt,
+        role: updatedUser.role.toLowerCase(),
+        activeModules: [],
+        updatedAt: new Date(),
       },
     });
   } catch (error) {
@@ -142,14 +172,18 @@ export async function DELETE(
     }
 
     // Check if user exists
-    const [existingUser] = await db.select().from(users).where(eq(users.id, id)).limit(1);
+    const existingResult = await db.execute(sql`
+      SELECT id FROM "user" WHERE id = ${id} LIMIT 1
+    `);
 
-    if (!existingUser) {
+    if (existingResult.rows.length === 0) {
       return createNotFoundResponse('用户不存在');
     }
 
-    // Delete user (cascade will delete related items and logs)
-    await db.delete(users).where(eq(users.id, id));
+    // Delete user (cascade will delete related data)
+    await db.execute(sql`
+      DELETE FROM "user" WHERE id = ${id}
+    `);
 
     return createSuccessResponse({
       message: '用户已删除',

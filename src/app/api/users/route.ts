@@ -92,7 +92,9 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { name, email, password, role = 'MEMBER' } = body;
+    const { name, email, password, role = 'MEMBER', activeModules = [] } = body;
+
+    console.log('[API /api/users POST] Creating user:', { name, email, role, activeModules });
 
     // Validate required fields
     if (!name || !email || !password) {
@@ -128,11 +130,13 @@ export async function POST(request: NextRequest) {
     // Prepare preferences
     const preferences = {
       role: role.toLowerCase(),
-      activeModules: [],
+      activeModules: activeModules,
       defaultView: 'grid',
       seasonalReminders: true,
       notificationsEnabled: true,
     };
+
+    console.log('[API /api/users POST] Preferences:', preferences);
 
     // Create user in actual database table
     const result = await db.execute(sql`

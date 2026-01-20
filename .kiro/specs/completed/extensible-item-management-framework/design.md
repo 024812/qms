@@ -16,24 +16,28 @@
 **实施阶段：**
 
 **阶段 1：用户管理系统**
+
 - 用户注册、登录、认证
 - 基于角色的访问控制（RBAC）
 - 模块订阅管理
 - 仪表盘和模块选择器
 
 **阶段 2：被子管理子系统**
+
 - 迁移现有被子管理功能
 - 适配新的框架架构
 - 数据迁移脚本
 - 验证框架的可扩展性
 
 **阶段 3：球星卡管理子系统**
+
 - 球星卡片的CRUD操作
 - 卡片评级和价值追踪
 - 收藏统计和分析
 - 验证多模块共存
 
 **未来扩展：**
+
 - 鞋子管理（球鞋收藏）
 - 球拍管理（网球/羽毛球拍）
 - 其他收藏品类型
@@ -52,6 +56,7 @@
 - **测试**: Vitest + Testing Library + fast-check
 
 **技术栈选择理由：**
+
 - **Next.js 16.1**: 最新版本，支持 Form 组件、cacheLife API 等新特性
 - **Auth.js v5**: 最新认证方案，与 Next.js 16 深度集成
 - **Drizzle ORM**: 轻量级、类型安全，支持 JSONB 和 .$type<T>() 类型推断
@@ -217,7 +222,7 @@ import { z } from 'zod';
 
 /**
  * Auth.js v5 配置
- * 
+ *
  * 最佳实践：
  * - 使用 Credentials Provider 进行用户名/密码认证
  * - 在 authorize 函数中验证用户凭据
@@ -231,7 +236,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         email: { label: 'Email', type: 'email' },
         password: { label: 'Password', type: 'password' },
       },
-      authorize: async (credentials) => {
+      authorize: async credentials => {
         // 验证输入
         const parsedCredentials = z
           .object({
@@ -247,11 +252,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         const { email, password } = parsedCredentials.data;
 
         // 查询用户
-        const [user] = await db
-          .select()
-          .from(users)
-          .where(eq(users.email, email))
-          .limit(1);
+        const [user] = await db.select().from(users).where(eq(users.email, email)).limit(1);
 
         if (!user) {
           throw new Error('Invalid credentials');
@@ -308,14 +309,14 @@ import { auth } from '@/auth';
 
 /**
  * Next.js Middleware with Auth.js v5
- * 
+ *
  * 最佳实践：
  * - 使用 auth() 作为 middleware 包装器
  * - 在 middleware 中访问 req.auth
  * - 使用 matcher 配置排除静态资源
  * - 实现基于用户模块的重定向逻辑
  */
-export default auth((req) => {
+export default auth(req => {
   const { auth } = req;
   const { pathname } = req.nextUrl;
 
@@ -338,12 +339,12 @@ export default auth((req) => {
   // 仪表盘重定向逻辑
   if (auth && pathname === '/') {
     const activeModules = auth.user.activeModules || [];
-    
+
     // 单模块用户直接跳转到模块页面
     if (activeModules.length === 1) {
       return Response.redirect(new URL(`/${activeModules[0]}`, req.url));
     }
-    
+
     // 多模块用户显示模块选择器（保持在 / 路径）
   }
 });
@@ -452,34 +453,34 @@ import { ReactNode } from 'react';
 export interface ModuleDefinition {
   /** 模块唯一标识符 */
   id: string;
-  
+
   /** 模块显示名称 */
   name: string;
-  
+
   /** 模块描述 */
   description: string;
-  
+
   /** 模块图标（lucide-react 图标名称） */
   icon: string;
-  
+
   /** 模块颜色主题 */
   color: string;
-  
+
   /** Attributes 的 Zod Schema */
   attributesSchema: z.ZodObject<any>;
-  
+
   /** 列表卡片组件 */
   CardComponent: React.ComponentType<{ item: any }>;
-  
+
   /** 详情视图组件 */
   DetailComponent: React.ComponentType<{ item: any }>;
-  
+
   /** 表单字段配置 */
   formFields: FormFieldConfig[];
-  
+
   /** 列表显示的列配置 */
   listColumns: ColumnConfig[];
-  
+
   /** 统计指标配置（可选） */
   statsConfig?: StatsConfig;
 }
@@ -578,12 +579,12 @@ export const quiltModule: ModuleDefinition = {
   description: '管理家中的被子，记录使用情况和保养信息',
   icon: 'Bed',
   color: 'blue',
-  
+
   attributesSchema: quiltAttributesSchema,
-  
+
   CardComponent: QuiltCard,
   DetailComponent: QuiltDetail,
-  
+
   formFields: [
     {
       name: 'brand',
@@ -671,7 +672,7 @@ export const quiltModule: ModuleDefinition = {
       placeholder: '其他说明信息',
     },
   ],
-  
+
   listColumns: [
     {
       key: 'name',
@@ -680,7 +681,7 @@ export const quiltModule: ModuleDefinition = {
     {
       key: 'attributes.size',
       label: '尺寸',
-      render: (value) => {
+      render: value => {
         const sizeMap = {
           single: '单人',
           double: '双人',
@@ -693,30 +694,30 @@ export const quiltModule: ModuleDefinition = {
     {
       key: 'attributes.warmthLevel',
       label: '保暖等级',
-      render: (value) => `${value}级`,
+      render: value => `${value}级`,
     },
     {
       key: 'status',
       label: '状态',
     },
   ],
-  
+
   statsConfig: {
     metrics: [
       {
         key: 'total',
         label: '总数量',
-        calculate: (items) => items.length,
+        calculate: items => items.length,
       },
       {
         key: 'inUse',
         label: '使用中',
-        calculate: (items) => items.filter(i => i.status === 'in_use').length,
+        calculate: items => items.filter(i => i.status === 'in_use').length,
       },
       {
         key: 'avgWarmth',
         label: '平均保暖等级',
-        calculate: (items) => {
+        calculate: items => {
           const sum = items.reduce((acc, i) => acc + (i.attributes.warmthLevel || 0), 0);
           return (sum / items.length).toFixed(1);
         },
@@ -747,14 +748,14 @@ interface ItemCardProps {
 
 export function ItemCard({ item, onClick }: ItemCardProps) {
   const module = getModule(item.type);
-  
+
   if (!module) {
     return <div>Unknown module type: {item.type}</div>;
   }
 
   // 使用模块特定的卡片组件
   const { CardComponent } = module;
-  
+
   return (
     <Card className="cursor-pointer hover:shadow-lg transition-shadow" onClick={onClick}>
       <CardContent className="p-4">
@@ -821,7 +822,7 @@ import { Label } from '@/components/ui/label';
 /**
  * 通用表单组件
  * 基于模块配置动态生成表单字段
- * 
+ *
  * Next.js 16 最佳实践：
  * - 使用 <Form> 组件实现渐进增强（无需 JavaScript 也能工作）
  * - 直接传递 Server Action 到 action 属性
@@ -837,7 +838,7 @@ interface ItemFormProps {
 
 export function ItemForm({ moduleType, initialData, action, onCancel }: ItemFormProps) {
   const module = getModule(moduleType);
-  
+
   if (!module) {
     throw new Error(`Module ${moduleType} not found`);
   }
@@ -887,7 +888,7 @@ export function ItemForm({ moduleType, initialData, action, onCancel }: ItemForm
  */
 function renderFormInput(config: FormFieldConfig, defaultValue?: any) {
   const fieldName = `attributes.${config.name}`;
-  
+
   switch (config.type) {
     case 'text':
       return (
@@ -899,7 +900,7 @@ function renderFormInput(config: FormFieldConfig, defaultValue?: any) {
           required={config.required}
         />
       );
-    
+
     case 'number':
       return (
         <Input
@@ -911,7 +912,7 @@ function renderFormInput(config: FormFieldConfig, defaultValue?: any) {
           required={config.required}
         />
       );
-    
+
     case 'select':
       return (
         <select
@@ -929,7 +930,7 @@ function renderFormInput(config: FormFieldConfig, defaultValue?: any) {
           ))}
         </select>
       );
-    
+
     case 'date':
       return (
         <Input
@@ -940,7 +941,7 @@ function renderFormInput(config: FormFieldConfig, defaultValue?: any) {
           required={config.required}
         />
       );
-    
+
     case 'textarea':
       return (
         <Textarea
@@ -952,7 +953,7 @@ function renderFormInput(config: FormFieldConfig, defaultValue?: any) {
           rows={4}
         />
       );
-    
+
     default:
       return (
         <Input
@@ -991,7 +992,7 @@ export default function NewItemPage({ params }: { params: { category: string } }
     'use server';
 
     const name = formData.get('name') as string;
-    
+
     // 收集 attributes
     const attributes: Record<string, any> = {};
     for (const field of module.formFields) {
@@ -1013,7 +1014,7 @@ export default function NewItemPage({ params }: { params: { category: string } }
   return (
     <div className="container mx-auto py-8">
       <h1 className="text-3xl font-bold mb-6">新建{module.name}</h1>
-      
+
       <Form action={handleSubmit} className="space-y-6">
         <div>
           <label htmlFor="name" className="block text-sm font-medium mb-2">
@@ -1138,27 +1139,29 @@ export const userRoleEnum = pgEnum('user_role', ['admin', 'member']);
  * 物品状态枚举
  */
 export const itemStatusEnum = pgEnum('item_status', [
-  'in_use',      // 使用中
-  'storage',     // 存储中
+  'in_use', // 使用中
+  'storage', // 存储中
   'maintenance', // 维护中
-  'lost',        // 丢失
+  'lost', // 丢失
 ]);
 
 /**
  * 物品类型枚举
  */
 export const itemTypeEnum = pgEnum('item_type', [
-  'quilt',   // 被子
-  'shoe',    // 鞋子
-  'racket',  // 球拍
-  'card',    // 球星卡片
+  'quilt', // 被子
+  'shoe', // 鞋子
+  'racket', // 球拍
+  'card', // 球星卡片
 ]);
 
 /**
  * 用户表
  */
 export const users = pgTable('users', {
-  id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+  id: text('id')
+    .primaryKey()
+    .$defaultFn(() => crypto.randomUUID()),
   name: text('name').notNull(),
   email: text('email').notNull().unique(),
   password: text('password').notNull(), // Bcrypt hash
@@ -1174,22 +1177,26 @@ export const users = pgTable('users', {
  * 所有物品类型存储在同一张表中，特定字段存储在 attributes JSONB 字段
  */
 export const items = pgTable('items', {
-  id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+  id: text('id')
+    .primaryKey()
+    .$defaultFn(() => crypto.randomUUID()),
   type: itemTypeEnum('type').notNull(),
   name: text('name').notNull(),
   status: itemStatusEnum('status').notNull().default('storage'),
-  ownerId: text('owner_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
-  
+  ownerId: text('owner_id')
+    .notNull()
+    .references(() => users.id, { onDelete: 'cascade' }),
+
   // ★ 核心：存储特定字段的 JSONB 列
   // 使用 .$type<T>() 提供编译时类型检查
   attributes: jsonb('attributes').$type<Record<string, any>>().notNull().default({}),
-  
+
   // 图片 URL 数组
   images: jsonb('images').$type<string[]>().notNull().default([]),
-  
+
   // 元数据（可选）
   metadata: jsonb('metadata').$type<Record<string, any>>(),
-  
+
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
 });
@@ -1199,9 +1206,15 @@ export const items = pgTable('items', {
  * 记录所有物品的操作历史
  */
 export const usageLogs = pgTable('usage_logs', {
-  id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
-  itemId: text('item_id').notNull().references(() => items.id, { onDelete: 'cascade' }),
-  userId: text('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  id: text('id')
+    .primaryKey()
+    .$defaultFn(() => crypto.randomUUID()),
+  itemId: text('item_id')
+    .notNull()
+    .references(() => items.id, { onDelete: 'cascade' }),
+  userId: text('user_id')
+    .notNull()
+    .references(() => users.id, { onDelete: 'cascade' }),
   action: text('action').notNull(), // 'created', 'updated', 'status_changed', 'used', etc.
   snapshot: jsonb('snapshot').$type<Record<string, any>>(), // 操作时的关键属性快照
   notes: text('notes'),
@@ -1300,7 +1313,7 @@ import { MODULE_REGISTRY } from '@/modules/registry';
 
 /**
  * 创建物品
- * 
+ *
  * 最佳实践：
  * - 在 Server Action 开始时验证认证状态
  * - 使用 Zod schema 验证输入数据
@@ -1328,14 +1341,17 @@ export async function createItem(data: {
   const validatedAttributes = module.attributesSchema.parse(data.attributes);
 
   // 插入数据库
-  const [item] = await db.insert(items).values({
-    type: data.type as any,
-    name: data.name,
-    ownerId: session.user.id,
-    attributes: validatedAttributes,
-    images: data.images || [],
-    status: 'storage',
-  }).returning();
+  const [item] = await db
+    .insert(items)
+    .values({
+      type: data.type as any,
+      name: data.name,
+      ownerId: session.user.id,
+      attributes: validatedAttributes,
+      images: data.images || [],
+      status: 'storage',
+    })
+    .returning();
 
   // 记录日志
   await db.insert(usageLogs).values({
@@ -1347,17 +1363,17 @@ export async function createItem(data: {
 
   // 重新验证路径以更新缓存（Next.js 16 最佳实践）
   revalidatePath(`/${data.type}`);
-  
+
   // 更新缓存标签（Next.js 16 新特性）
   updateTag('items');
   updateTag(`items-${data.type}`);
-  
+
   return item;
 }
 
 /**
  * 获取物品列表
- * 
+ *
  * Next.js 16 最佳实践：
  * - 使用 "use cache" 指令启用缓存
  * - 使用 cacheLife() 定义缓存策略
@@ -1366,15 +1382,18 @@ export async function createItem(data: {
  * - 实现分页以提高性能
  * - 使用 sql 模板标签进行聚合查询
  */
-export async function getItems(type: string, options?: {
-  page?: number;
-  pageSize?: number;
-  status?: string;
-}) {
+export async function getItems(
+  type: string,
+  options?: {
+    page?: number;
+    pageSize?: number;
+    status?: string;
+  }
+) {
   'use cache';
   cacheLife('minutes'); // 缓存 5 分钟
   cacheTag('items', `items-${type}`);
-  
+
   const session = await auth();
   if (!session?.user?.id) {
     throw new Error('You must be signed in to perform this action');
@@ -1383,10 +1402,7 @@ export async function getItems(type: string, options?: {
   const { page = 1, pageSize = 20, status } = options || {};
   const offset = (page - 1) * pageSize;
 
-  const conditions = [
-    eq(items.type, type as any),
-    eq(items.ownerId, session.user.id),
-  ];
+  const conditions = [eq(items.type, type as any), eq(items.ownerId, session.user.id)];
 
   if (status) {
     conditions.push(eq(items.status, status as any));
@@ -1427,10 +1443,7 @@ export async function getItemById(id: string) {
   const [item] = await db
     .select()
     .from(items)
-    .where(and(
-      eq(items.id, id),
-      eq(items.ownerId, session.user.id)
-    ))
+    .where(and(eq(items.id, id), eq(items.ownerId, session.user.id)))
     .limit(1);
 
   if (!item) {
@@ -1443,12 +1456,15 @@ export async function getItemById(id: string) {
 /**
  * 更新物品
  */
-export async function updateItem(id: string, data: {
-  name?: string;
-  status?: string;
-  attributes?: Record<string, any>;
-  images?: string[];
-}) {
+export async function updateItem(
+  id: string,
+  data: {
+    name?: string;
+    status?: string;
+    attributes?: Record<string, any>;
+    images?: string[];
+  }
+) {
   const session = await auth();
   if (!session?.user?.id) {
     throw new Error('You must be signed in to perform this action');
@@ -1484,11 +1500,11 @@ export async function updateItem(id: string, data: {
   // 重新验证多个路径
   revalidatePath(`/${item.type}`);
   revalidatePath(`/${item.type}/${id}`);
-  
+
   // 更新缓存标签
   updateTag('items');
   updateTag(`items-${item.type}`);
-  
+
   return updated;
 }
 
@@ -1506,7 +1522,7 @@ export async function deleteItem(id: string) {
   await db.delete(items).where(eq(items.id, id));
 
   revalidatePath(`/${item.type}`);
-  
+
   // 更新缓存标签
   updateTag('items');
   updateTag(`items-${item.type}`);
@@ -1534,7 +1550,7 @@ export async function getUsageLogs(itemId: string) {
 
 ## 正确性属性
 
-*属性是一个特征或行为，应该在系统的所有有效执行中保持为真——本质上是关于系统应该做什么的形式化陈述。属性作为人类可读规范和机器可验证正确性保证之间的桥梁。*
+_属性是一个特征或行为，应该在系统的所有有效执行中保持为真——本质上是关于系统应该做什么的形式化陈述。属性作为人类可读规范和机器可验证正确性保证之间的桥梁。_
 
 ### 属性 1: 模块注册和检索一致性
 
@@ -1698,8 +1714,6 @@ export async function getUsageLogs(itemId: string) {
 
 **验证需求: 9.4**
 
-
-
 ## 错误处理
 
 ### 错误分类
@@ -1714,23 +1728,23 @@ export enum ErrorCode {
   VALIDATION_ERROR = 'VALIDATION_ERROR',
   INVALID_CONFIG = 'INVALID_CONFIG',
   INVALID_INPUT = 'INVALID_INPUT',
-  
+
   // 认证错误 (401)
   UNAUTHORIZED = 'UNAUTHORIZED',
   INVALID_TOKEN = 'INVALID_TOKEN',
-  
+
   // 授权错误 (403)
   FORBIDDEN = 'FORBIDDEN',
   INSUFFICIENT_PERMISSIONS = 'INSUFFICIENT_PERMISSIONS',
-  
+
   // 资源错误 (404)
   NOT_FOUND = 'NOT_FOUND',
   MODULE_NOT_FOUND = 'MODULE_NOT_FOUND',
-  
+
   // 冲突错误 (409)
   CONFLICT = 'CONFLICT',
   DUPLICATE_MODULE = 'DUPLICATE_MODULE',
-  
+
   // 服务器错误 (500)
   INTERNAL_ERROR = 'INTERNAL_ERROR',
   DATABASE_ERROR = 'DATABASE_ERROR',
@@ -1787,11 +1801,13 @@ interface ErrorResponse {
 ### 单元测试
 
 单元测试专注于：
+
 - 特定示例，展示正确行为
 - 组件之间的集成点
 - 边缘情况和错误条件
 
 **示例**:
+
 ```typescript
 // src/modules/quilts/__tests__/quilt-service.test.ts
 
@@ -1803,9 +1819,9 @@ describe('QuiltService', () => {
       size: 'Queen',
       material: 'Cotton',
     };
-    
+
     const quilt = await quiltService.create(data);
-    
+
     expect(quilt.id).toBeDefined();
     expect(quilt.brand).toBe('TestBrand');
     expect(quilt.status).toBe('active');
@@ -1813,7 +1829,7 @@ describe('QuiltService', () => {
 
   it('should reject creation with missing required fields', async () => {
     const data = { userId: 'user-1' }; // missing required fields
-    
+
     await expect(quiltService.create(data)).rejects.toThrow(ValidationError);
   });
 });
@@ -1828,6 +1844,7 @@ describe('QuiltService', () => {
 - 标签格式: **Feature: extensible-item-management-framework, Property {number}: {property_text}**
 
 **配置**:
+
 ```typescript
 // vitest.config.ts
 
@@ -1842,6 +1859,7 @@ export default defineConfig({
 ```
 
 **示例**:
+
 ```typescript
 // src/modules/__tests__/registry.property.test.ts
 
@@ -1857,14 +1875,11 @@ import { z } from 'zod';
 describe('Module Registry Properties', () => {
   it('should retrieve registered modules consistently', () => {
     fc.assert(
-      fc.property(
-        fc.constantFrom(...Object.keys(MODULE_REGISTRY)),
-        (moduleId) => {
-          const module = getModule(moduleId);
-          expect(module).toBeDefined();
-          expect(module?.id).toBe(moduleId);
-        }
-      ),
+      fc.property(fc.constantFrom(...Object.keys(MODULE_REGISTRY)), moduleId => {
+        const module = getModule(moduleId);
+        expect(module).toBeDefined();
+        expect(module?.id).toBe(moduleId);
+      }),
       { numRuns: 100 }
     );
   });
@@ -1932,16 +1947,16 @@ describe('Item CRUD Properties', () => {
             condition: fc.constantFrom('new', 'good', 'fair', 'poor'),
           }),
         }),
-        async (itemData) => {
+        async itemData => {
           // 创建物品
           const created = await createItem(itemData);
-          
+
           // 检索物品
           const retrieved = await getItemById(created.id);
-          
+
           // 验证 attributes 往返一致性
           expect(retrieved.attributes).toEqual(created.attributes);
-          
+
           // 清理
           await deleteItem(created.id);
         }
@@ -1973,15 +1988,15 @@ describe('Item CRUD Properties', () => {
           // Create
           const created = await createItem(itemData);
           expect(created.id).toBeDefined();
-          
+
           // Read
           const read = await getItemById(created.id);
           expect(read.name).toBe(itemData.name);
-          
+
           // Update
           const updated = await updateItem(created.id, { name: newName });
           expect(updated.name).toBe(newName);
-          
+
           // Delete
           await deleteItem(created.id);
           await expect(getItemById(created.id)).rejects.toThrow();
@@ -2059,27 +2074,30 @@ describe('Item CRUD Properties', () => {
 
 async function migrateQuilts() {
   console.log('Starting quilt data migration...');
-  
+
   // 1. 读取旧表数据
   const oldQuilts = await db.select().from(oldQuiltsTable);
   console.log(`Found ${oldQuilts.length} quilts to migrate`);
-  
+
   // 2. 转换数据格式
   const migratedCount = 0;
-  
+
   for (const oldQuilt of oldQuilts) {
     try {
-      await db.transaction(async (tx) => {
+      await db.transaction(async tx => {
         // 插入基础表
-        const [baseItem] = await tx.insert(baseItems).values({
-          id: oldQuilt.id,
-          moduleType: 'quilts',
-          userId: oldQuilt.user_id,
-          status: oldQuilt.status || 'active',
-          createdAt: oldQuilt.created_at,
-          updatedAt: oldQuilt.updated_at,
-        }).returning();
-        
+        const [baseItem] = await tx
+          .insert(baseItems)
+          .values({
+            id: oldQuilt.id,
+            moduleType: 'quilts',
+            userId: oldQuilt.user_id,
+            status: oldQuilt.status || 'active',
+            createdAt: oldQuilt.created_at,
+            updatedAt: oldQuilt.updated_at,
+          })
+          .returning();
+
         // 插入扩展表
         await tx.insert(quilts).values({
           id: baseItem.id,
@@ -2096,7 +2114,7 @@ async function migrateQuilts() {
           usageCount: oldQuilt.usage_count || 0,
           lastUsedAt: oldQuilt.last_used_at,
         });
-        
+
         migratedCount++;
       });
     } catch (error) {
@@ -2104,16 +2122,17 @@ async function migrateQuilts() {
       throw error; // 失败时回滚整个迁移
     }
   }
-  
+
   // 3. 验证数据完整性
-  const newCount = await db.select({ count: sql`count(*)` })
+  const newCount = await db
+    .select({ count: sql`count(*)` })
     .from(baseItems)
     .where(eq(baseItems.moduleType, 'quilts'));
-  
+
   if (newCount[0].count !== oldQuilts.length) {
     throw new Error('Data integrity check failed: record count mismatch');
   }
-  
+
   console.log(`Successfully migrated ${migratedCount} quilts`);
 }
 ```
@@ -2403,4 +2422,3 @@ async function migrateQuilts() {
    - 使用测试数据库
    - 测试认证和授权流程
    - 测试错误处理
-

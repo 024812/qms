@@ -15,7 +15,7 @@ A modern Next.js application with Neon PostgreSQL that provides a modular, exten
 - **Multi-Module Support**: Extensible system supporting multiple item types
   - 🛏️ **Quilt Management**: Bedding inventory with usage tracking
   - 🃏 **Trading Cards**: Trading card collection management
-  - 🔧 *More modules coming soon...*
+  - 🔧 _More modules coming soon..._
 - **Dynamic Sidebar Navigation**: Collapsible module-specific sub-menus
 - **Module Subscription**: Users can subscribe/unsubscribe to modules
 - **Role-Based Access**: Admin-only system management features
@@ -370,6 +370,43 @@ qms-app/
   - Advanced filtering system
   - Dashboard with statistics
 
+### ✅ Completed (v2026.01.21) - Project Cleanup & Spec Archival
+
+- **Project Organization**
+  - Archived all completed specs to `.kiro/specs/completed/`
+  - Moved incomplete specs to `.kiro/specs/archived/`
+  - Cleaned up project directory structure
+  - Updated documentation
+- **Version Management**
+  - Bumped version to 2026.01.21
+  - Updated README files (English & Chinese)
+  - Consolidated release notes
+
+### ✅ Completed (v2026.01.20) - User Management & UI Enhancements
+
+- **User Management System**
+  - Complete CRUD operations for users (admin only)
+  - Role-based access control (admin/member)
+  - Module subscription management per user
+  - Password management in users table
+  - User creation with module assignments
+- **UI/UX Improvements**
+  - Beautiful welcome homepage with feature showcase
+  - Sidebar auto-refresh after login
+  - Module navigation improvements
+  - Removed "Import/Export" from quilt module menu (moved to admin settings)
+- **Bug Fixes**
+  - Fixed password change functionality (now updates users table)
+  - Fixed user list display (API response format)
+  - Fixed module selection saving on user creation
+  - Fixed sidebar infinite loop issue
+  - Fixed SessionProvider configuration for auto-refresh
+- **Sports Card Module**
+  - Market data integration (eBay, PSA, Beckett, 130Point)
+  - Value estimation algorithm
+  - Card grading support
+  - Image upload for cards
+
 ### ✅ Completed (v1.2.0) - 2026 Comprehensive Review
 
 - **Dependency Upgrades**
@@ -441,8 +478,8 @@ For questions or issues, please open an issue on GitHub.
 
 ---
 
-**Version**: 2026.01.19  
+**Version**: 2026.01.21  
 **Status**: ✅ Production Ready  
-**Last Updated**: 2026-01-19
+**Last Updated**: 2026-01-21
 
 Made with ❤️ for better home organization

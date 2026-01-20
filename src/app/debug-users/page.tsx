@@ -16,9 +16,24 @@ export default async function DebugUsersPage() {
   let users: any[] = [];
   let error: any = null;
   let rawResult: any = null;
+  let tables: any[] = [];
+  let tablesError: any = null;
 
+  // First, check what tables exist
   try {
-    // Direct database query
+    const tablesResult = await db.execute(sql`
+      SELECT table_name 
+      FROM information_schema.tables 
+      WHERE table_schema = 'public'
+      ORDER BY table_name
+    `);
+    tables = tablesResult.rows;
+  } catch (err) {
+    tablesError = err;
+  }
+
+  // Try to query users from "user" table
+  try {
     const result = await db.execute(sql`
       SELECT id, name, email, role, created_at
       FROM "user"
@@ -43,9 +58,30 @@ export default async function DebugUsersPage() {
           </pre>
         </div>
 
+        <div className="border rounded p-4 bg-blue-50">
+          <h2 className="font-semibold mb-2">数据库中的表</h2>
+          {tablesError ? (
+            <pre className="text-xs text-red-600">
+              {JSON.stringify(tablesError, null, 2)}
+            </pre>
+          ) : (
+            <div className="space-y-1">
+              {tables.length === 0 ? (
+                <p className="text-gray-500">没有找到表</p>
+              ) : (
+                tables.map((table: any) => (
+                  <div key={table.table_name} className="text-sm font-mono">
+                    • {table.table_name}
+                  </div>
+                ))
+              )}
+            </div>
+          )}
+        </div>
+
         {error && (
           <div className="border border-red-500 rounded p-4 bg-red-50">
-            <h2 className="font-semibold mb-2 text-red-700">错误</h2>
+            <h2 className="font-semibold mb-2 text-red-700">查询 "user" 表时出错</h2>
             <pre className="text-xs text-red-600">
               {JSON.stringify(error, null, 2)}
             </pre>

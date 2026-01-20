@@ -85,7 +85,22 @@ const nextConfig = {
             key: 'Permissions-Policy',
             value: 'camera=(), microphone=(), geolocation=(), payment=(), usb=(), bluetooth=()',
           },
-          // Note: CSP is now handled in proxy.ts with nonce generation
+          // Practical Content Security Policy
+          {
+            key: 'Content-Security-Policy',
+            value: [
+              "default-src 'self'",
+              "script-src 'self' 'unsafe-eval' 'unsafe-inline'", // Next.js requires these
+              "style-src 'self' 'unsafe-inline'", // Tailwind requires unsafe-inline
+              "img-src 'self' blob: data:",
+              "font-src 'self' data:",
+              "connect-src 'self' ws: wss:",
+              "object-src 'none'",
+              "base-uri 'self'",
+              "form-action 'self'",
+              "frame-ancestors 'none'",
+            ].join('; '),
+          },
           // Enable HSTS (HTTP Strict Transport Security)
           {
             key: 'Strict-Transport-Security',

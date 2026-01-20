@@ -15,6 +15,14 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import {
   BarChart3,
   TrendingDown,
   TrendingUp,
@@ -589,65 +597,59 @@ export default function AnalyticsPage() {
             </CardHeader>
             <CardContent>
               <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead>
-                    <tr className="border-b">
-                      <th className="px-4 py-3 text-left text-xs font-bold text-muted-foreground uppercase">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="font-bold uppercase">
                         {language === 'zh' ? '排名' : 'Rank'}
-                      </th>
-                      <th className="px-4 py-3 text-left text-xs font-bold text-muted-foreground uppercase">
+                      </TableHead>
+                      <TableHead className="font-bold uppercase">
                         {language === 'zh' ? '编号' : 'Item #'}
-                      </th>
-                      <th className="px-4 py-3 text-left text-xs font-bold text-muted-foreground uppercase">
+                      </TableHead>
+                      <TableHead className="font-bold uppercase">
                         {language === 'zh' ? '名称' : 'Name'}
-                      </th>
-                      <th className="px-4 py-3 text-left text-xs font-bold text-muted-foreground uppercase">
+                      </TableHead>
+                      <TableHead className="font-bold uppercase">
                         {language === 'zh' ? '季节' : 'Season'}
-                      </th>
-                      <th className="px-4 py-3 text-center text-xs font-bold text-muted-foreground uppercase">
+                      </TableHead>
+                      <TableHead className="text-center font-bold uppercase">
                         {language === 'zh'
                           ? `使用次数 (${getPeriodLabel()})`
                           : `Usage Count (${getPeriodLabel()})`}
-                      </th>
-                      <th className="px-4 py-3 text-center text-xs font-bold text-muted-foreground uppercase">
+                      </TableHead>
+                      <TableHead className="text-center font-bold uppercase">
                         {language === 'zh' ? '最后使用' : 'Last Used'}
-                      </th>
-                      <th className="px-4 py-3 text-left text-xs font-bold text-muted-foreground uppercase">
+                      </TableHead>
+                      <TableHead className="font-bold uppercase">
                         {language === 'zh' ? '建议' : 'Recommendation'}
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-200">
+                      </TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
                     {filteredStats.length === 0 ? (
-                      <tr>
-                        <td colSpan={7} className="px-4 py-8 text-center text-muted-foreground">
+                      <TableRow>
+                        <TableCell colSpan={7} className="h-24 text-center text-muted-foreground">
                           {language === 'zh' ? '暂无数据' : 'No data available'}
-                        </td>
-                      </tr>
+                        </TableCell>
+                      </TableRow>
                     ) : (
                       filteredStats.map((stat, index) => (
-                        <tr
+                        <TableRow
                           key={stat.quiltId}
                           className={`
                             hover:bg-gray-50 transition-colors
-                            ${stat.recommendation === 'consider_removal' ? 'bg-red-50' : ''}
-                            ${stat.recommendation === 'low_usage' ? 'bg-yellow-50' : ''}
+                            ${stat.recommendation === 'consider_removal' ? 'bg-red-50 hover:bg-red-100' : ''}
+                            ${stat.recommendation === 'low_usage' ? 'bg-yellow-50 hover:bg-yellow-100' : ''}
                           `}
                         >
-                          <td className="px-4 py-3 text-sm font-medium font-medium">
-                            #{index + 1}
-                          </td>
-                          <td className="px-4 py-3 text-sm text-foreground">#{stat.itemNumber}</td>
-                          <td className="px-4 py-3 text-sm font-medium font-medium">
-                            {stat.quiltName}
-                          </td>
-                          <td className="px-4 py-3 text-sm text-foreground">
-                            {t(`season.${stat.season}`)}
-                          </td>
-                          <td className="px-4 py-3 text-sm text-center font-semibold font-medium">
+                          <TableCell className="font-medium">#{index + 1}</TableCell>
+                          <TableCell>#{stat.itemNumber}</TableCell>
+                          <TableCell className="font-medium">{stat.quiltName}</TableCell>
+                          <TableCell>{t(`season.${stat.season}`)}</TableCell>
+                          <TableCell className="text-center font-semibold text-primary">
                             {getUsageCount(stat)}
-                          </td>
-                          <td className="px-4 py-3 text-sm text-center text-foreground">
+                          </TableCell>
+                          <TableCell className="text-center">
                             {stat.daysSinceLastUse !== null
                               ? language === 'zh'
                                 ? `${stat.daysSinceLastUse}天前`
@@ -655,10 +657,10 @@ export default function AnalyticsPage() {
                               : language === 'zh'
                                 ? '从未使用'
                                 : 'Never used'}
-                          </td>
-                          <td className="px-4 py-3">
+                          </TableCell>
+                          <TableCell>
                             <span
-                              className={`inline-flex items-center px-2 py-1 rounded text-xs font-medium ${
+                              className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
                                 stat.recommendation === 'keep'
                                   ? 'bg-green-100 text-green-800'
                                   : stat.recommendation === 'low_usage'
@@ -668,12 +670,12 @@ export default function AnalyticsPage() {
                             >
                               {stat.recommendationReason}
                             </span>
-                          </td>
-                        </tr>
+                          </TableCell>
+                        </TableRow>
                       ))
                     )}
-                  </tbody>
-                </table>
+                  </TableBody>
+                </Table>
               </div>
             </CardContent>
           </Card>

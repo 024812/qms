@@ -68,27 +68,29 @@ export function QuiltToolbar({
         </div>
 
         {/* View Mode Toggle */}
-        <div className="flex gap-2">
+        <div className="flex gap-1 bg-muted/20 p-1 rounded-lg border">
           <Button
-            variant={viewMode === 'list' ? 'default' : 'outline'}
-            size="icon"
+            variant={viewMode === 'list' ? 'secondary' : 'ghost'}
+            size="sm"
             onClick={() => onViewModeChange('list')}
             title={t('language') === 'zh' ? '列表视图' : 'List View'}
+            className="h-8 w-8 p-0"
           >
             <List className="w-4 h-4" />
           </Button>
           <Button
-            variant={viewMode === 'grid' ? 'default' : 'outline'}
-            size="icon"
+            variant={viewMode === 'grid' ? 'secondary' : 'ghost'}
+            size="sm"
             onClick={() => onViewModeChange('grid')}
             title={t('language') === 'zh' ? '网格视图' : 'Grid View'}
+            className="h-8 w-8 p-0"
           >
             <Grid3x3 className="w-4 h-4" />
           </Button>
         </div>
 
         {/* Add Button */}
-        <Button onClick={onAddQuilt}>
+        <Button onClick={onAddQuilt} className="shadow-lg hover:shadow-xl transition-all">
           <Plus className="w-4 h-4 mr-2" />
           {t('quilts.actions.add')}
         </Button>
@@ -103,9 +105,9 @@ export function QuiltToolbar({
 
       {/* Batch Actions Bar */}
       {isSelectMode && (
-        <div className="flex items-center justify-between p-4 bg-muted rounded-lg">
+        <div className="flex items-center justify-between p-3 bg-accent/30 border border-accent rounded-lg animate-in fade-in slide-in-from-top-2">
           <div className="flex items-center gap-4">
-            <span className="text-sm font-medium">
+            <span className="text-sm font-medium text-primary">
               {t('language') === 'zh' ? `已选择 ${selectedCount} 项` : `${selectedCount} selected`}
             </span>
             <Button
@@ -113,12 +115,13 @@ export function QuiltToolbar({
               size="sm"
               onClick={onBatchDelete}
               disabled={selectedCount === 0}
+              className="shadow-sm"
             >
               <Trash2 className="w-4 h-4 mr-2" />
               {t('quilts.actions.batchDelete')}
             </Button>
           </div>
-          <Button variant="outline" size="sm" onClick={onSelectModeToggle}>
+          <Button variant="ghost" size="sm" onClick={onSelectModeToggle}>
             {t('common.cancel')}
           </Button>
         </div>

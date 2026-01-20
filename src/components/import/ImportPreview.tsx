@@ -6,6 +6,14 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/useToast';
 import { FileSpreadsheet, AlertTriangle, CheckCircle, Eye, Upload, Loader2 } from 'lucide-react';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
 
 interface ImportResults {
   success: boolean;
@@ -238,37 +246,37 @@ export function ImportPreview({
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b">
-                    <th className="text-left p-2">Item #</th>
-                    <th className="text-left p-2">Name</th>
-                    <th className="text-left p-2">Season</th>
-                    <th className="text-left p-2">Color</th>
-                    <th className="text-left p-2">Brand</th>
-                    <th className="text-left p-2">Location</th>
-                    <th className="text-left p-2">Status</th>
-                  </tr>
-                </thead>
-                <tbody>
+            <div className="rounded-md border">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Item #</TableHead>
+                    <TableHead>Name</TableHead>
+                    <TableHead>Season</TableHead>
+                    <TableHead>Color</TableHead>
+                    <TableHead>Brand</TableHead>
+                    <TableHead>Location</TableHead>
+                    <TableHead>Status</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
                   {preview.preview.slice(0, 5).map((row: any, index: number) => (
-                    <tr key={index} className="border-b hover:bg-gray-50">
-                      <td className="p-2">{row.itemNumber}</td>
-                      <td className="p-2">{row.name}</td>
-                      <td className="p-2">
+                    <TableRow key={index}>
+                      <TableCell>{row.itemNumber}</TableCell>
+                      <TableCell>{row.name}</TableCell>
+                      <TableCell>
                         <Badge variant="outline">{row.season}</Badge>
-                      </td>
-                      <td className="p-2">{row.color || '-'}</td>
-                      <td className="p-2">{row.brand || '-'}</td>
-                      <td className="p-2">{row.location || '-'}</td>
-                      <td className="p-2">
+                      </TableCell>
+                      <TableCell>{row.color || '-'}</TableCell>
+                      <TableCell>{row.brand || '-'}</TableCell>
+                      <TableCell>{row.location || '-'}</TableCell>
+                      <TableCell>
                         <Badge variant="secondary">Ready to Import</Badge>
-                      </td>
-                    </tr>
+                      </TableCell>
+                    </TableRow>
                   ))}
-                </tbody>
-              </table>
+                </TableBody>
+              </Table>
             </div>
           </CardContent>
         </Card>

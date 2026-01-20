@@ -4,6 +4,7 @@ import { Edit, Trash2, History, Eye, Image as ImageIcon } from 'lucide-react';
 import { HighlightText } from '@/components/ui/highlight-text';
 import type { Quilt } from '@/types/quilt';
 import { useLanguage } from '@/lib/language-provider';
+import { TableRow, TableCell } from '@/components/ui/table';
 
 interface QuiltTableRowProps {
   quilt: Quilt;
@@ -34,35 +35,55 @@ export function QuiltTableRow({
 }: QuiltTableRowProps) {
   const { t, language } = useLanguage();
 
-  const getSeasonColor = (season: string) => {
+  const getSeasonVariant = (
+    season: string
+  ):
+    | 'default'
+    | 'secondary'
+    | 'destructive'
+    | 'outline'
+    | 'success'
+    | 'warning'
+    | 'info'
+    | 'neutral' => {
     switch (season) {
       case 'WINTER':
-        return 'bg-blue-100 text-blue-800';
+        return 'info';
       case 'SUMMER':
-        return 'bg-orange-100 text-orange-800';
+        return 'warning';
       case 'SPRING_AUTUMN':
-        return 'bg-green-100 text-green-800';
+        return 'success';
       default:
-        return 'bg-muted text-muted-foreground';
+        return 'neutral';
     }
   };
 
-  const getStatusColor = (status: string) => {
+  const getStatusVariant = (
+    status: string
+  ):
+    | 'default'
+    | 'secondary'
+    | 'destructive'
+    | 'outline'
+    | 'success'
+    | 'warning'
+    | 'info'
+    | 'neutral' => {
     switch (status) {
       case 'IN_USE':
-        return 'bg-green-100 text-green-800';
+        return 'success';
       case 'STORAGE':
-        return 'bg-gray-100 text-gray-800';
+        return 'neutral';
       case 'MAINTENANCE':
-        return 'bg-yellow-100 text-yellow-800';
+        return 'warning';
       default:
-        return 'bg-muted text-muted-foreground';
+        return 'neutral';
     }
   };
 
   return (
-    <tr
-      className="border-b transition-colors hover:bg-muted/50 cursor-pointer"
+    <TableRow
+      className="cursor-pointer"
       onDoubleClick={onDoubleClick}
       title={
         onDoubleClick
@@ -73,68 +94,117 @@ export function QuiltTableRow({
       }
     >
       {isSelectMode && (
-        <td className="p-4 align-middle">
+        <TableCell className="w-12 text-center">
           <input
             type="checkbox"
             checked={isSelected}
             onChange={onSelectToggle}
-            className="w-4 h-4 rounded border-gray-300"
+            className="w-4 h-4 rounded border-gray-300 accent-primary"
           />
-        </td>
+        </TableCell>
       )}
-      <td className="p-4 align-middle text-center font-medium">#{quilt.itemNumber}</td>
-      <td className="p-4 align-middle text-center">
+      <TableCell className="text-center font-medium">
+        <span className="font-mono text-xs text-muted-foreground">#</span>
+        {quilt.itemNumber}
+      </TableCell>
+      <TableCell className="text-center">
         <HighlightText text={quilt.name} searchTerm={searchTerm} />
-      </td>
-      <td className="p-4 align-middle text-center">
-        <Badge variant="outline" className={getSeasonColor(quilt.season)}>
-          {t(`season.${quilt.season}`)}
-        </Badge>
-      </td>
-      <td className="p-4 align-middle text-center text-sm text-muted-foreground">
-        {quilt.lengthCm && quilt.widthCm ? `${quilt.lengthCm}×${quilt.widthCm}cm` : '-'}
-      </td>
-      <td className="p-4 align-middle text-center text-sm text-muted-foreground">
-        {quilt.weightGrams ?? '-'}g
-      </td>
-      <td className="p-4 align-middle text-center text-sm text-muted-foreground">
+      </TableCell>
+      <TableCell className="text-center">
+        <Badge variant={getSeasonVariant(quilt.season)}>{t(`season.${quilt.season}`)}</Badge>
+      </TableCell>
+      <TableCell className="text-center text-sm text-muted-foreground">
+        {quilt.lengthCm && quilt.widthCm ? (
+          <span className="font-mono text-xs">
+            {quilt.lengthCm}×{quilt.widthCm}
+            <span className="text-muted-foreground/60">cm</span>
+          </span>
+        ) : (
+          '-'
+        )}
+      </TableCell>
+      <TableCell className="text-center text-sm text-muted-foreground">
+        {quilt.weightGrams ? (
+          <span className="font-mono text-xs">
+            {quilt.weightGrams}
+            <span className="text-muted-foreground/60">g</span>
+          </span>
+        ) : (
+          '-'
+        )}
+      </TableCell>
+      <TableCell className="text-center text-sm text-muted-foreground">
         {quilt.fillMaterial}
-      </td>
-      <td className="p-4 align-middle text-center text-sm text-muted-foreground">{quilt.color}</td>
-      <td className="p-4 align-middle text-center text-sm text-muted-foreground">
-        {quilt.location}
-      </td>
-      <td className="p-4 align-middle text-center">
-        <Badge className={getStatusColor(quilt.currentStatus)}>
+      </TableCell>
+      <TableCell className="text-center text-sm text-muted-foreground">{quilt.color}</TableCell>
+      <TableCell className="text-center text-sm text-muted-foreground">{quilt.location}</TableCell>
+      <TableCell className="text-center">
+        <Badge variant={getStatusVariant(quilt.currentStatus)}>
           {t(`status.${quilt.currentStatus}`)}
         </Badge>
-      </td>
-      <td className="p-4 align-middle text-center">
+      </TableCell>
+      <TableCell className="text-center">
         <div className="flex items-center justify-center gap-1">
           {onViewImages && (
             <Button
               variant="ghost"
-              size="sm"
-              onClick={onViewImages}
+              size="icon"
+              className="h-8 w-8 text-muted-foreground hover:text-primary"
+              onClick={e => {
+                e.stopPropagation();
+                onViewImages();
+              }}
               title={language === 'zh' ? '查看图片' : 'View Images'}
             >
               <ImageIcon className="w-4 h-4" />
             </Button>
           )}
-          <Button variant="ghost" size="sm" onClick={onEdit}>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8 text-muted-foreground hover:text-primary"
+            onClick={e => {
+              e.stopPropagation();
+              onEdit();
+            }}
+          >
             <Edit className="w-4 h-4" />
           </Button>
-          <Button variant="ghost" size="sm" onClick={onStatusChange}>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8 text-muted-foreground hover:text-primary"
+            onClick={e => {
+              e.stopPropagation();
+              onStatusChange();
+            }}
+          >
             <History className="w-4 h-4" />
           </Button>
-          <Button variant="ghost" size="sm" onClick={onViewHistory}>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8 text-muted-foreground hover:text-primary"
+            onClick={e => {
+              e.stopPropagation();
+              onViewHistory();
+            }}
+          >
             <Eye className="w-4 h-4" />
           </Button>
-          <Button variant="ghost" size="sm" onClick={onDelete}>
-            <Trash2 className="w-4 h-4 text-destructive" />
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8 text-muted-foreground hover:text-destructive"
+            onClick={e => {
+              e.stopPropagation();
+              onDelete();
+            }}
+          >
+            <Trash2 className="w-4 h-4" />
           </Button>
         </div>
-      </td>
-    </tr>
+      </TableCell>
+    </TableRow>
   );
 }

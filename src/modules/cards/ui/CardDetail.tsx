@@ -16,6 +16,7 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import {
   User,
   Calendar,
@@ -25,9 +26,19 @@ import {
   MapPin,
   FileText,
   CreditCard,
+  ExternalLink,
+  TrendingUp,
 } from 'lucide-react';
 import Image from 'next/image';
 import type { CardItem, SportType, GradingCompany, CardStatus } from '../schema';
+import {
+  generateCardSearchQuery,
+  getEbaySearchUrl,
+  getPSACardFactsUrl,
+  getBeckettSearchUrl,
+  get130PointUrl,
+  estimateCardValue,
+} from '@/lib/services/card-market';
 
 interface CardDetailProps {
   item: CardItem;
@@ -164,6 +175,25 @@ export function CardDetail({ item }: CardDetailProps) {
     allImages.push(...item.attachmentImages);
   }
 
+  // Generate market data
+  const searchQuery = generateCardSearchQuery({
+    playerName: item.playerName,
+    year: item.year,
+    brand: item.brand,
+    series: item.series || undefined,
+    cardNumber: item.cardNumber || undefined,
+    gradingCompany: item.gradingCompany !== 'UNGRADED' ? item.gradingCompany : undefined,
+    grade: item.grade || undefined,
+  });
+
+  const estimatedRange = estimateCardValue({
+    year: item.year,
+    gradingCompany: item.gradingCompany,
+    grade: item.grade || undefined,
+    isAutographed: item.isAutographed,
+    hasMemorabilia: item.hasMemorabilia,
+  });
+
   return (
     <article className="space-y-6">
       {/* Image Gallery - Requirements: 9.1, 9.2 (Semantic HTML, descriptive alt text) */}
@@ -291,6 +321,103 @@ export function CardDetail({ item }: CardDetailProps) {
               }
               fullWidth
             />
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Market Data - External Links */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center gap-2">
+            <TrendingUp className="w-5 h-5" aria-hidden="true" />
+            <CardTitle>市场数据</CardTitle>
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {/* Estimated Value Range */}
+          {estimatedRange && (
+            <div className="p-4 bg-muted rounded-lg">
+              <div className="text-sm text-muted-foreground mb-2">估计价值区间</div>
+              <div className="flex items-baseline gap-2">
+                <span className="text-2xl font-bold text-foreground">
+                  ${estimatedRange.low} - ${estimatedRange.high}
+                </span>
+                <span className="text-sm text-muted-foreground">
+                  (预估: ${estimatedRange.estimated})
+                </span>
+              </div>
+              <p className="text-xs text-muted-foreground mt-2">
+                * 基于卡片属性的估算，实际价格可能有所不同
+              </p>
+            </div>
+          )}
+
+          {/* External Market Links */}
+          <div>
+            <div className="text-sm font-medium mb-3">查看市场价格</div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <Button variant="outline" className="justify-start" asChild>
+                <a
+                  href={getEbaySearchUrl(searchQuery)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-2"
+                >
+                  <ExternalLink className="w-4 h-4" aria-hidden="true" />
+                  <span>eBay 已售记录</span>
+                </a>
+              </Button>
+
+              <Button variant="outline" className="justify-start" asChild>
+                <a
+                  href={getPSACardFactsUrl({
+                    playerName: item.playerName,
+                    year: item.year,
+                    brand: item.brand,
+                  })}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-2"
+                >
+                  <ExternalLink className="w-4 h-4" aria-hidden="true" />
+                  <span>PSA CardFacts</span>
+                </a>
+              </Button>
+
+              <Button variant="outline" className="justify-start" asChild>
+                <a
+                  href={getBeckettSearchUrl(searchQuery)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-2"
+                >
+                  <ExternalLink className="w-4 h-4" aria-hidden="true" />
+                  <span>Beckett 价格指南</span>
+                </a>
+              </Button>
+
+              <Button variant="outline" className="justify-start" asChild>
+                <a
+                  href={get130PointUrl({
+                    playerName: item.playerName,
+                    year: item.year,
+                    brand: item.brand,
+                  })}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-2"
+                >
+                  <ExternalLink className="w-4 h-4" aria-hidden="true" />
+                  <span>130Point 销售数据</span>
+                </a>
+              </Button>
+            </div>
+          </div>
+
+          {/* Search Query Info */}
+          <div className="text-xs text-muted-foreground pt-2 border-t">
+            <span className="font-medium">搜索关键词: </span>
+            <span className="font-mono">{searchQuery}</span>
           </div>
         </CardContent>
       </Card>

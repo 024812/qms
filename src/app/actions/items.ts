@@ -29,6 +29,20 @@
 
 'use server';
 
+/**
+ * Map module ID to database type
+ * Module IDs are plural (quilts, cards) but database types are singular (quilt, card)
+ */
+function moduleIdToDbType(moduleId: string): 'quilt' | 'card' | 'shoe' | 'racket' {
+  const mapping: Record<string, 'quilt' | 'card' | 'shoe' | 'racket'> = {
+    'quilts': 'quilt',
+    'cards': 'card',
+    'shoes': 'shoe',
+    'rackets': 'racket',
+  };
+  return mapping[moduleId] || moduleId as 'quilt' | 'card' | 'shoe' | 'racket';
+}
+
 import {
   revalidatePath,
   unstable_cacheLife as cacheLife,
@@ -164,11 +178,14 @@ export async function createItem(
       };
     }
 
+    // Map module ID to database type
+    const dbType = moduleIdToDbType(validatedFields.data.type);
+
     // Insert into database
     const [item] = await db
       .insert(items)
       .values({
-        type: validatedFields.data.type as 'quilt' | 'card' | 'shoe' | 'racket',
+        type: dbType,
         name: validatedFields.data.name,
         ownerId: session.user.id,
         attributes: moduleValidation.data,
@@ -246,9 +263,12 @@ export async function getItems(
   const { page = 1, pageSize = 20, status } = options || {};
   const offset = (page - 1) * pageSize;
 
+  // Map module ID to database type
+  const dbType = moduleIdToDbType(type);
+
   // Build query conditions
   const conditions = [
-    eq(items.type, type as 'quilt' | 'card' | 'shoe' | 'racket'),
+    eq(items.type, dbType),
     eq(items.ownerId, session.user.id),
   ];
 

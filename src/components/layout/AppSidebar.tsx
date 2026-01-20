@@ -87,10 +87,10 @@ export function AppSidebar() {
   const getCurrentModuleId = () => {
     if (pathname.startsWith('/quilts') || pathname.startsWith('/usage') ||
       pathname.startsWith('/analytics') || pathname.startsWith('/reports')) {
-      return 'quilt';
+      return 'quilts';
     }
     if (pathname.startsWith('/cards')) {
-      return 'card';
+      return 'cards';
     }
     return null;
   };

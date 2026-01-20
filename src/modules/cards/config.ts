@@ -24,7 +24,7 @@ import { CardDetail } from './ui/CardDetail';
  * - Storage and condition
  */
 export const cardModule: ModuleDefinition = {
-  id: 'card',
+  id: 'cards',
   name: '球星卡管理',
   description: '管理体育球星卡收藏，追踪价值和评级信息',
   icon: 'CreditCard',

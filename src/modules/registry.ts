@@ -16,11 +16,11 @@ import { cardModule } from './cards/config';
  * Uses Strategy Pattern to dynamically select module configuration by type
  */
 export const MODULE_REGISTRY: Record<string, ModuleDefinition> = {
-  quilt: quiltModule,
-  card: cardModule,
+  quilts: quiltModule,
+  cards: cardModule,
   // Future modules:
-  // shoe: shoeModule,
-  // racket: racketModule,
+  // shoes: shoeModule,
+  // rackets: racketModule,
 };
 
 /**

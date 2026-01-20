@@ -28,7 +28,7 @@ import { QuiltDetail } from './ui/QuiltDetail';
  * - groupId (for grouping related quilts)
  */
 export const quiltModule: ModuleDefinition = {
-  id: 'quilt',
+  id: 'quilts',
   name: '被子管理',
   description: '管理家中的被子，记录使用情况和保养信息',
   icon: 'Bed',

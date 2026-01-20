@@ -5,8 +5,9 @@
  * DELETE /api/users/[id] - Delete user (admin only)
  *
  * Requirements: 8.1 (User management)
- *
- * Note: This uses the actual production database schema with "user" table (singular)
+ * 
+ * Note: This uses the actual production database schema with "users" table
+ * Schema: id (text), email (text), name (text), hashed_password (text), preferences (jsonb)
  */
 
 import { NextRequest } from 'next/server';
@@ -25,7 +26,10 @@ import {
 /**
  * PATCH /api/users/[id] - Update user
  */
-export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export async function PATCH(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
   try {
     const session = await auth();
 
@@ -36,11 +40,11 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
 
     const { id } = await params;
     const body = await request.json();
-    const { name, email, password, role } = body;
+    const { name, email, password, role, activeModules } = body;
 
     // Check if user exists
     const existingResult = await db.execute(sql`
-      SELECT id, name, email, role, password FROM "users" WHERE id = ${id} LIMIT 1
+      SELECT id, name, email, hashed_password, preferences FROM "users" WHERE id = ${id} LIMIT 1
     `);
 
     if (existingResult.rows.length === 0) {
@@ -51,15 +55,21 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
       id: string;
       name: string;
       email: string;
-      role: string;
-      password: string;
+      hashed_password: string | null;
+      preferences: any;
     };
 
-    // Prepare updated values (use existing if not provided)
+    // Prepare updated values
     const updatedName = name !== undefined ? name : existingUser.name;
-    const updatedRole = role !== undefined ? role.toUpperCase() : existingUser.role;
     const updatedEmail = email !== undefined ? email : existingUser.email;
-    let updatedPassword = existingUser.password; // Keep existing password by default
+    let updatedHashedPassword = existingUser.hashed_password;
+    
+    // Update preferences
+    const updatedPreferences = {
+      ...existingUser.preferences,
+      role: role !== undefined ? role.toLowerCase() : (existingUser.preferences?.role || 'member'),
+      activeModules: activeModules !== undefined ? activeModules : (existingUser.preferences?.activeModules || []),
+    };
 
     // Validate email if provided
     if (email !== undefined) {
@@ -83,23 +93,27 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
       if (password.length < 6) {
         return createBadRequestResponse('密码至少需要6个字符');
       }
-      updatedPassword = await hashPassword(password);
+      updatedHashedPassword = await hashPassword(password);
     }
 
     // Execute update
     const result = await db.execute(sql`
       UPDATE "users"
-      SET name = ${updatedName}, email = ${updatedEmail}, role = ${updatedRole}
-      ${password !== undefined && password !== '' ? sql`, password = ${updatedPassword}` : sql``}
+      SET 
+        name = ${updatedName}, 
+        email = ${updatedEmail}, 
+        hashed_password = ${updatedHashedPassword},
+        preferences = ${JSON.stringify(updatedPreferences)},
+        updated_at = NOW()
       WHERE id = ${id}
-      RETURNING id, name, email, role
+      RETURNING id, name, email, preferences
     `);
 
     const updatedUser = result.rows[0] as {
       id: string;
       name: string;
       email: string;
-      role: string;
+      preferences: any;
     };
 
     return createSuccessResponse({
@@ -107,8 +121,8 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
         id: updatedUser.id,
         name: updatedUser.name,
         email: updatedUser.email,
-        role: updatedUser.role.toLowerCase(),
-        activeModules: [],
+        role: updatedUser.preferences?.role || 'member',
+        activeModules: updatedUser.preferences?.activeModules || [],
         updatedAt: new Date(),
       },
     });

@@ -39,7 +39,7 @@ export async function GET() {
     // Fetch all users from actual database table "users" (plural)
     console.log('[API /api/users] Executing query...');
     const result = await db.execute(sql`
-      SELECT id, name, email, role, created_at as "createdAt"
+      SELECT id, name, email, preferences, created_at as "createdAt"
       FROM "users"
       ORDER BY created_at
     `);
@@ -51,7 +51,7 @@ export async function GET() {
       id: string;
       name: string | null;
       email: string;
-      role: string | null;
+      preferences: any;
       createdAt: Date;
     }>;
 
@@ -63,10 +63,10 @@ export async function GET() {
       id: user.id,
       name: user.name || '',
       email: user.email,
-      role: user.role?.toLowerCase() || 'member',
-      activeModules: [], // TODO: Add activeModules support to database
+      role: user.preferences?.role || 'member',
+      activeModules: user.preferences?.activeModules || [],
       createdAt: user.createdAt,
-      updatedAt: user.createdAt, // Use createdAt as updatedAt for now
+      updatedAt: user.createdAt,
     }));
 
     return createSuccessResponse({
@@ -122,21 +122,30 @@ export async function POST(request: NextRequest) {
     // Hash password
     const hashedPassword = await hashPassword(password);
 
-    // Generate user ID (UUID format to match existing users)
-    const userId = crypto.randomUUID();
+    // Generate user ID (using cuid format to match existing users)
+    const userId = `user_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+
+    // Prepare preferences
+    const preferences = {
+      role: role.toLowerCase(),
+      activeModules: [],
+      defaultView: 'grid',
+      seasonalReminders: true,
+      notificationsEnabled: true,
+    };
 
     // Create user in actual database table
     const result = await db.execute(sql`
-      INSERT INTO "users" (id, name, email, password, role, created_at)
-      VALUES (${userId}, ${name}, ${email}, ${hashedPassword}, ${role.toUpperCase()}, NOW())
-      RETURNING id, name, email, role, created_at as "createdAt"
+      INSERT INTO "users" (id, name, email, hashed_password, preferences, created_at, updated_at)
+      VALUES (${userId}, ${name}, ${email}, ${hashedPassword}, ${JSON.stringify(preferences)}, NOW(), NOW())
+      RETURNING id, name, email, preferences, created_at as "createdAt"
     `);
 
     const newUser = result.rows[0] as {
       id: string;
       name: string;
       email: string;
-      role: string;
+      preferences: any;
       createdAt: Date;
     };
 
@@ -146,8 +155,8 @@ export async function POST(request: NextRequest) {
           id: newUser.id,
           name: newUser.name,
           email: newUser.email,
-          role: newUser.role.toLowerCase(),
-          activeModules: [],
+          role: newUser.preferences?.role || 'member',
+          activeModules: newUser.preferences?.activeModules || [],
           createdAt: newUser.createdAt,
         },
       },

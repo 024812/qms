@@ -5,6 +5,7 @@ import { PackageOpen, Plus, Loader2 } from 'lucide-react';
 import { EmptyState } from '@/components/ui/empty-state';
 import { Button } from '@/components/ui/button';
 import { CardCard } from '@/modules/cards/ui/CardCard';
+import { CardImageUpload } from '@/components/cards/CardImageUpload';
 import type { CardItem } from '@/modules/cards/schema';
 import {
   Dialog,
@@ -379,35 +380,12 @@ export default function CardsPage() {
             </div>
 
             {/* Images */}
-            <div className="space-y-4">
-              <h3 className="font-semibold text-sm">卡片图片</h3>
-              
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="frontImage">正面图片（人物面）</Label>
-                  <Input
-                    id="frontImage"
-                    type="url"
-                    placeholder="图片URL"
-                    value={formData.frontImage}
-                    onChange={(e) => setFormData({ ...formData, frontImage: e.target.value })}
-                  />
-                  <p className="text-xs text-muted-foreground">球星卡正面（人物面）图片</p>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="backImage">反面图片</Label>
-                  <Input
-                    id="backImage"
-                    type="url"
-                    placeholder="图片URL"
-                    value={formData.backImage}
-                    onChange={(e) => setFormData({ ...formData, backImage: e.target.value })}
-                  />
-                  <p className="text-xs text-muted-foreground">球星卡反面图片</p>
-                </div>
-              </div>
-            </div>
+            <CardImageUpload
+              frontImage={formData.frontImage}
+              backImage={formData.backImage}
+              onFrontImageChange={(image) => setFormData({ ...formData, frontImage: image })}
+              onBackImageChange={(image) => setFormData({ ...formData, backImage: image })}
+            />
 
             {/* Notes */}
             <div className="space-y-2">

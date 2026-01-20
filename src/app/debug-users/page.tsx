@@ -13,9 +13,9 @@ export default async function DebugUsersPage() {
     return <div className="p-8">需要管理员权限</div>;
   }
 
-  let users = [];
-  let error = null;
-  let rawResult = null;
+  let users: any[] = [];
+  let error: any = null;
+  let rawResult: any = null;
 
   try {
     // Direct database query

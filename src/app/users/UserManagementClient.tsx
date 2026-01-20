@@ -105,11 +105,13 @@ export function UserManagementClient({ currentUserId }: UserManagementClientProp
       console.log('[UserManagement] Response data:', data);
       
       if (response.ok) {
-        setUsers(data.users || []);
-        console.log('[UserManagement] Set users:', data.users?.length || 0);
+        // API returns { success: true, data: { users: [...], total: ... } }
+        const users = data.data?.users || data.users || [];
+        setUsers(users);
+        console.log('[UserManagement] Set users:', users.length);
       } else {
         console.error('[UserManagement] Error response:', data);
-        error('错误', '获取用户列表失败');
+        error('错误', data.error?.message || '获取用户列表失败');
       }
     } catch (err) {
       console.error('[UserManagement] Failed to fetch users:', err);

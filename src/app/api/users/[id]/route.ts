@@ -5,7 +5,7 @@
  * DELETE /api/users/[id] - Delete user (admin only)
  *
  * Requirements: 8.1 (User management)
- * 
+ *
  * Note: This uses the actual production database schema with "user" table (singular)
  */
 
@@ -25,10 +25,7 @@ import {
 /**
  * PATCH /api/users/[id] - Update user
  */
-export async function PATCH(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const session = await auth();
 
@@ -43,24 +40,29 @@ export async function PATCH(
 
     // Check if user exists
     const existingResult = await db.execute(sql`
-      SELECT id, name, email, role FROM "user" WHERE id = ${id} LIMIT 1
+      SELECT id, name, email, role, password FROM "user" WHERE id = ${id} LIMIT 1
     `);
 
     if (existingResult.rows.length === 0) {
       return createNotFoundResponse('用户不存在');
     }
 
-    // Build update query dynamically
-    const updates: string[] = [];
-    const values: unknown[] = [];
+    const existingUser = existingResult.rows[0] as {
+      id: string;
+      name: string;
+      email: string;
+      role: string;
+      password: string;
+    };
 
-    if (name !== undefined) {
-      updates.push(`name = $${updates.length + 1}`);
-      values.push(name);
-    }
+    // Prepare updated values (use existing if not provided)
+    const updatedName = name !== undefined ? name : existingUser.name;
+    const updatedRole = role !== undefined ? role.toUpperCase() : existingUser.role;
+    const updatedEmail = email !== undefined ? email : existingUser.email;
+    let updatedPassword = existingUser.password; // Keep existing password by default
 
+    // Validate email if provided
     if (email !== undefined) {
-      // Validate email format
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
       if (!emailRegex.test(email)) {
         return createBadRequestResponse('邮箱格式不正确');
@@ -74,58 +76,25 @@ export async function PATCH(
       if (emailCheckResult.rows.length > 0) {
         return createBadRequestResponse('该邮箱已被其他用户使用');
       }
-
-      updates.push(`email = $${updates.length + 1}`);
-      values.push(email);
     }
 
+    // Hash new password if provided
     if (password !== undefined && password !== '') {
-      // Validate password length
       if (password.length < 6) {
         return createBadRequestResponse('密码至少需要6个字符');
       }
-      const hashedPassword = await hashPassword(password);
-      updates.push(`password = $${updates.length + 1}`);
-      values.push(hashedPassword);
+      updatedPassword = await hashPassword(password);
     }
-
-    if (role !== undefined) {
-      updates.push(`role = $${updates.length + 1}`);
-      values.push(role.toUpperCase());
-    }
-
-    // If no updates, return current user
-    if (updates.length === 0) {
-      const user = existingResult.rows[0] as {
-        id: string;
-        name: string;
-        email: string;
-        role: string;
-      };
-      return createSuccessResponse({
-        user: {
-          id: user.id,
-          name: user.name,
-          email: user.email,
-          role: user.role.toLowerCase(),
-          activeModules: [],
-          updatedAt: new Date(),
-        },
-      });
-    }
-
-    // Add id to values for WHERE clause
-    values.push(id);
 
     // Execute update
-    const updateQuery = `
+    const result = await db.execute(sql`
       UPDATE "user"
-      SET ${updates.join(', ')}
-      WHERE id = $${values.length}
+      SET name = ${updatedName}, email = ${updatedEmail}, role = ${updatedRole}
+      ${password !== undefined && password !== '' ? sql`, password = ${updatedPassword}` : sql``}
+      WHERE id = ${id}
       RETURNING id, name, email, role
-    `;
+    `);
 
-    const result = await db.execute(sql.raw(updateQuery, values));
     const updatedUser = result.rows[0] as {
       id: string;
       name: string;
@@ -153,7 +122,7 @@ export async function PATCH(
  * DELETE /api/users/[id] - Delete user
  */
 export async function DELETE(
-  request: NextRequest,
+  _request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {

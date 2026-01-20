@@ -39,6 +39,40 @@ export default async function CategoryListPage({ params, searchParams }: PagePro
     return notFound();
   }
 
+  // Check if user has subscribed to this module
+  const { getUserActiveModules } = await import('@/app/actions/modules');
+  const activeModules = await getUserActiveModules();
+  
+  if (!activeModules.includes(params.category)) {
+    return (
+      <div className="container mx-auto py-8">
+        <div className="max-w-2xl mx-auto text-center space-y-6">
+          <div className="w-16 h-16 mx-auto rounded-full bg-muted flex items-center justify-center">
+            <Plus className="w-8 h-8 text-muted-foreground" />
+          </div>
+          <div>
+            <h1 className="text-2xl font-bold mb-2">未订阅此模块</h1>
+            <p className="text-muted-foreground">
+              您还没有订阅 <strong>{module.name}</strong> 模块。
+              请先在模块管理页面订阅此模块。
+            </p>
+          </div>
+          <div className="flex gap-4 justify-center">
+            <Link href="/modules">
+              <Button>
+                <Plus className="mr-2 h-4 w-4" />
+                订阅模块
+              </Button>
+            </Link>
+            <Link href="/">
+              <Button variant="outline">返回首页</Button>
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   // Parse query parameters
   const page = parseInt(searchParams.page || '1', 10);
   const status = searchParams.status;

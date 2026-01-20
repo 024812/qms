@@ -155,24 +155,28 @@ type LoginResult = {
   error?: string;
 };
 
+import { redirect } from 'next/navigation';
+
 /**
  * Login user
  * 
  * This function:
  * 1. Validates input using Zod
  * 2. Attempts to sign in using Auth.js
- * 3. Returns result with success status
+ * 3. Redirects on success (Server-Side Redirect)
  * 
- * @param formData - Form data containing email and password
- * @returns LoginResult with success status and message
+ * @param prevState - Previous state (for useActionState)
+ * @param formData - Form data containing email, password, and optional callbackUrl
  */
-export async function loginUser(formData: FormData): Promise<LoginResult> {
+export async function loginUser(prevState: any, formData: FormData) {
   try {
     // Extract form data
     const rawData = {
       email: formData.get('email') as string,
       password: formData.get('password') as string,
     };
+
+    const callbackUrl = (formData.get('callbackUrl') as string) || '/';
 
     // Validate input
     const validationResult = loginSchema.safeParse(rawData);
@@ -197,20 +201,24 @@ export async function loginUser(formData: FormData): Promise<LoginResult> {
         password,
         redirect: false,
       });
-
-      // If we reach here, login succeeded
-      return {
-        success: true,
-        message: '登录成功',
-      };
-    } catch {
+      // NOTE: Success will continue below
+    } catch (error) {
+      // Re-throw if it's not a credentials error (should usually be caught by signIn internal check)
       return {
         success: false,
         message: '登录失败',
         error: '邮箱或密码错误',
       };
     }
+
+    // Success - Perform Server-Side Redirect
+    // This throws a NEXT_REDIRECT error which Next.js handles
   } catch (error) {
+    // If the error is a NEXT_REDIRECT, re-throw it so Next.js can handle the redirect
+    if ((error as Error).message === 'NEXT_REDIRECT') {
+      throw error;
+    }
+
     if (process.env.NODE_ENV === 'development') {
       console.error('[LOGIN] Login error:', error);
     }
@@ -220,4 +228,7 @@ export async function loginUser(formData: FormData): Promise<LoginResult> {
       error: error instanceof Error ? error.message : 'Invalid credentials',
     };
   }
+
+  // Redirect must be outside the try-catch block or re-thrown
+  redirect((formData.get('callbackUrl') as string) || '/');
 }

@@ -4,7 +4,7 @@
  * Client component that handles user login with:
  * - Progressive enhancement using Next.js 16 Form (when available)
  * - Client-side validation feedback
- * - Server Action integration
+ * - Server Action integration (Server-Side Redirect)
  * - Error handling and display
  * 
  * Requirements: 8.1 (User authentication)
@@ -12,9 +12,9 @@
 
 'use client';
 
-import { useActionState , useEffect } from 'react';
+import { useActionState } from 'react';
 import { loginUser } from '@/app/actions/auth';
-import { useRouter } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
@@ -26,22 +26,10 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
  * Login form component
  */
 export function LoginForm() {
-  const router = useRouter();
-  const [state, formAction, isPending] = useActionState(
-    async (prevState: any, formData: FormData) => {
-      const result = await loginUser(formData);
-      return result;
-    },
-    null
-  );
+  const searchParams = useSearchParams();
+  const callbackUrl = searchParams.get('callbackUrl') || '/';
 
-  // Redirect on successful login
-  useEffect(() => {
-    if (state?.success) {
-      router.push('/');
-      router.refresh();
-    }
-  }, [state?.success, router]);
+  const [state, formAction, isPending] = useActionState(loginUser, null);
 
   return (
     <Card className="shadow-lg">
@@ -50,6 +38,8 @@ export function LoginForm() {
       </CardHeader>
       <CardContent>
         <form action={formAction} className="space-y-6">
+          <input type="hidden" name="callbackUrl" value={callbackUrl} />
+
           {/* Email field */}
           <div className="space-y-2">
             <Label htmlFor="email">邮箱</Label>
@@ -91,15 +81,6 @@ export function LoginForm() {
                     {state.error}
                   </div>
                 )}
-              </AlertDescription>
-            </Alert>
-          )}
-
-          {/* Success message */}
-          {state?.success && (
-            <Alert className="bg-green-50 text-green-800 border-green-200">
-              <AlertDescription>
-                登录成功！正在跳转...
               </AlertDescription>
             </Alert>
           )}

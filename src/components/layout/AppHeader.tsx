@@ -8,7 +8,7 @@ import { ThemeToggle } from '@/components/ui/theme-toggle';
 import { useLanguage } from '@/lib/language-provider';
 import { Separator } from '@/components/ui/separator';
 import { AppBreadcrumb } from './AppBreadcrumb';
-import { signOut } from 'next-auth/react';
+import { logoutUser } from '@/app/actions/logout';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -28,7 +28,7 @@ export function AppHeader() {
   const handleLogout = async () => {
     setIsLoggingOut(true);
     try {
-      await signOut({ callbackUrl: '/login' });
+      await logoutUser();
     } catch {
       setIsLoggingOut(false);
     }

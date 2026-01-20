@@ -96,6 +96,9 @@ export function AppSidebar() {
   };
 
   const currentModuleId = getCurrentModuleId();
+  
+  // On homepage, expand all modules by default
+  const isHomePage = pathname === '/' || pathname === '/modules';
 
   // Loading state
   if (status === 'loading') {
@@ -146,7 +149,7 @@ export function AppSidebar() {
                   <SidebarMenu>
                     <Collapsible
                       asChild
-                      defaultOpen={isModuleActive}
+                      defaultOpen={isModuleActive || isHomePage}
                       className="group/collapsible"
                     >
                       <SidebarMenuItem>

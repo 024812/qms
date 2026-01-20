@@ -1,9 +1,9 @@
 /**
  * Sports Card Module Schema
- * 
+ *
  * This module schema defines the structure for managing sports card collections.
  * It supports various sports, grading systems, and value tracking.
- * 
+ *
  * Requirements: 2.2, 5.2
  */
 
@@ -18,23 +18,13 @@ import { z } from 'zod';
  */
 export const SportType = {
   BASKETBALL: 'BASKETBALL',
-  BASEBALL: 'BASEBALL',
-  FOOTBALL: 'FOOTBALL',
   SOCCER: 'SOCCER',
-  HOCKEY: 'HOCKEY',
   OTHER: 'OTHER',
 } as const;
 
 export type SportType = (typeof SportType)[keyof typeof SportType];
 
-export const SportTypeSchema = z.enum([
-  'BASKETBALL',
-  'BASEBALL',
-  'FOOTBALL',
-  'SOCCER',
-  'HOCKEY',
-  'OTHER',
-]);
+export const SportTypeSchema = z.enum(['BASKETBALL', 'SOCCER', 'OTHER']);
 
 /**
  * Card condition/grading systems
@@ -72,7 +62,7 @@ export const CardStatusSchema = z.enum(['COLLECTION', 'FOR_SALE', 'SOLD', 'GRADI
 
 /**
  * Card attributes schema for the module registry
- * 
+ *
  * This defines all the fields specific to sports cards:
  * - Player information (name, team, position)
  * - Card details (year, brand, series, card number)
@@ -83,139 +73,69 @@ export const CardStatusSchema = z.enum(['COLLECTION', 'FOR_SALE', 'SOLD', 'GRADI
  */
 export const cardAttributesSchema = z.object({
   // Player Information
-  playerName: z
-    .string()
-    .min(1, 'Player name is required')
-    .max(100, 'Player name too long')
-    .trim(),
-  
+  playerName: z.string().min(1, 'Player name is required').max(100, 'Player name too long').trim(),
+
   sport: SportTypeSchema,
-  
-  team: z
-    .string()
-    .max(100, 'Team name too long')
-    .optional(),
-  
-  position: z
-    .string()
-    .max(50, 'Position too long')
-    .optional(),
-  
+
+  team: z.string().max(100, 'Team name too long').optional(),
+
+  position: z.string().max(50, 'Position too long').optional(),
+
   // Card Details
   year: z
     .number()
     .int('Year must be an integer')
     .min(1800, 'Year too old')
     .max(new Date().getFullYear() + 1, 'Year cannot be in the future'),
-  
-  brand: z
-    .string()
-    .min(1, 'Brand is required')
-    .max(100, 'Brand name too long')
-    .trim(),
-  
-  series: z
-    .string()
-    .max(100, 'Series name too long')
-    .optional(),
-  
-  cardNumber: z
-    .string()
-    .max(50, 'Card number too long')
-    .optional(),
-  
+
+  brand: z.string().min(1, 'Brand is required').max(100, 'Brand name too long').trim(),
+
+  series: z.string().max(100, 'Series name too long').optional(),
+
+  cardNumber: z.string().max(50, 'Card number too long').optional(),
+
   // Grading Information
   gradingCompany: GradingCompanySchema.optional().default('UNGRADED'),
-  
-  grade: z
-    .number()
-    .min(1, 'Grade must be at least 1')
-    .max(10, 'Grade cannot exceed 10')
-    .optional(),
-  
-  certificationNumber: z
-    .string()
-    .max(100, 'Certification number too long')
-    .optional(),
-  
+
+  grade: z.number().min(1, 'Grade must be at least 1').max(10, 'Grade cannot exceed 10').optional(),
+
+  certificationNumber: z.string().max(100, 'Certification number too long').optional(),
+
   // Value Information
-  purchasePrice: z
-    .number()
-    .min(0, 'Purchase price cannot be negative')
-    .optional(),
-  
-  purchaseDate: z
-    .date()
-    .max(new Date(), 'Purchase date cannot be in the future')
-    .optional(),
-  
-  currentValue: z
-    .number()
-    .min(0, 'Current value cannot be negative')
-    .optional(),
-  
-  estimatedValue: z
-    .number()
-    .min(0, 'Estimated value cannot be negative')
-    .optional(),
-  
-  lastValueUpdate: z
-    .date()
-    .optional(),
-  
+  purchasePrice: z.number().min(0, 'Purchase price cannot be negative').optional(),
+
+  purchaseDate: z.date().max(new Date(), 'Purchase date cannot be in the future').optional(),
+
+  currentValue: z.number().min(0, 'Current value cannot be negative').optional(),
+
+  estimatedValue: z.number().min(0, 'Estimated value cannot be negative').optional(),
+
+  lastValueUpdate: z.date().optional(),
+
   // Physical Details
-  parallel: z
-    .string()
-    .max(100, 'Parallel name too long')
-    .optional(),
-  
-  serialNumber: z
-    .string()
-    .max(50, 'Serial number too long')
-    .optional(),
-  
-  isAutographed: z
-    .boolean()
-    .optional()
-    .default(false),
-  
-  hasMemorabilia: z
-    .boolean()
-    .optional()
-    .default(false),
-  
-  memorabiliaType: z
-    .string()
-    .max(100, 'Memorabilia type too long')
-    .optional(),
-  
+  parallel: z.string().max(100, 'Parallel name too long').optional(),
+
+  serialNumber: z.string().max(50, 'Serial number too long').optional(),
+
+  isAutographed: z.boolean().optional().default(false),
+
+  hasMemorabilia: z.boolean().optional().default(false),
+
+  memorabiliaType: z.string().max(100, 'Memorabilia type too long').optional(),
+
   // Storage and Condition
   status: CardStatusSchema.optional().default('COLLECTION'),
-  
-  location: z
-    .string()
-    .max(200, 'Location too long')
-    .optional(),
-  
-  storageType: z
-    .string()
-    .max(100, 'Storage type too long')
-    .optional(),
-  
-  condition: z
-    .string()
-    .max(500, 'Condition description too long')
-    .optional(),
-  
+
+  location: z.string().max(200, 'Location too long').optional(),
+
+  storageType: z.string().max(100, 'Storage type too long').optional(),
+
+  condition: z.string().max(500, 'Condition description too long').optional(),
+
   // Additional Information
-  notes: z
-    .string()
-    .max(2000, 'Notes too long')
-    .optional(),
-  
-  tags: z
-    .array(z.string().max(50))
-    .optional(),
+  notes: z.string().max(2000, 'Notes too long').optional(),
+
+  tags: z.array(z.string().max(50)).optional(),
 });
 
 /**
@@ -433,10 +353,10 @@ export function calculateValueChange(
   purchasePrice: number | null
 ): { change: number; percentage: number } | null {
   if (!currentValue || !purchasePrice || purchasePrice === 0) return null;
-  
+
   const change = currentValue - purchasePrice;
   const percentage = (change / purchasePrice) * 100;
-  
+
   return {
     change: Math.round(change * 100) / 100,
     percentage: Math.round(percentage * 100) / 100,
@@ -449,10 +369,7 @@ export function calculateValueChange(
 export function getSportDisplayName(sport: SportType): string {
   const sportMap: Record<SportType, string> = {
     BASKETBALL: '篮球',
-    BASEBALL: '棒球',
-    FOOTBALL: '橄榄球',
     SOCCER: '足球',
-    HOCKEY: '冰球',
     OTHER: '其他',
   };
   return sportMap[sport] || sport;

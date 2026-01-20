@@ -1,18 +1,20 @@
 /**
  * Sports Card Module Configuration
- * 
+ *
  * Comprehensive configuration for managing sports card collections.
  * Supports multiple sports, grading systems, and value tracking.
- * 
+ *
  * Requirements: 5.1, 5.2
  */
 
 import { ModuleDefinition } from '../types';
 import { cardAttributesSchema } from './schema';
+import { CardCard } from './ui/CardCard';
+import { CardDetail } from './ui/CardDetail';
 
 /**
  * Sports Card module configuration
- * 
+ *
  * This configuration defines all fields for sports card management:
  * - Player information (name, sport, team, position)
  * - Card details (year, brand, series, card number)
@@ -31,10 +33,10 @@ export const cardModule: ModuleDefinition = {
   attributesSchema: cardAttributesSchema,
 
   // Card component for list view
-  CardComponent: undefined, // Will be lazy-loaded: () => import('./ui/CardCard').then(m => m.CardCard)
+  CardComponent: CardCard,
 
   // Detail component for detail view
-  DetailComponent: undefined, // Will be lazy-loaded: () => import('./ui/CardDetail').then(m => m.CardDetail)
+  DetailComponent: CardDetail,
 
   // ============================================================================
   // COMPREHENSIVE FORM FIELDS
@@ -56,10 +58,7 @@ export const cardModule: ModuleDefinition = {
       required: true,
       options: [
         { label: '篮球', value: 'BASKETBALL' },
-        { label: '棒球', value: 'BASEBALL' },
-        { label: '橄榄球', value: 'FOOTBALL' },
         { label: '足球', value: 'SOCCER' },
-        { label: '冰球', value: 'HOCKEY' },
         { label: '其他', value: 'OTHER' },
       ],
       description: '球星卡所属的运动类型',
@@ -294,7 +293,7 @@ export const cardModule: ModuleDefinition = {
     {
       key: 'itemNumber',
       label: '编号',
-      render: (value) => `#${value}`,
+      render: value => `#${value}`,
     },
     {
       key: 'playerName',
@@ -311,13 +310,10 @@ export const cardModule: ModuleDefinition = {
     {
       key: 'sport',
       label: '运动',
-      render: (value) => {
+      render: value => {
         const sportMap: Record<string, string> = {
           BASKETBALL: '篮球',
-          BASEBALL: '棒球',
-          FOOTBALL: '橄榄球',
           SOCCER: '足球',
-          HOCKEY: '冰球',
           OTHER: '其他',
         };
         return sportMap[value as string] || value;
@@ -335,7 +331,7 @@ export const cardModule: ModuleDefinition = {
     {
       key: 'currentValue',
       label: '当前价值',
-      render: (value) => {
+      render: value => {
         if (!value) return '-';
         return `$${Number(value).toLocaleString('en-US', { minimumFractionDigits: 2 })}`;
       },
@@ -343,17 +339,17 @@ export const cardModule: ModuleDefinition = {
     {
       key: 'isAutographed',
       label: '签名',
-      render: (value) => (value ? '✓' : '-'),
+      render: value => (value ? '✓' : '-'),
     },
     {
       key: 'hasMemorabilia',
       label: '实物',
-      render: (value) => (value ? '✓' : '-'),
+      render: value => (value ? '✓' : '-'),
     },
     {
       key: 'status',
       label: '状态',
-      render: (value) => {
+      render: value => {
         const statusMap: Record<string, string> = {
           COLLECTION: '收藏中',
           FOR_SALE: '待售',
@@ -375,23 +371,20 @@ export const cardModule: ModuleDefinition = {
       {
         key: 'total',
         label: '总数量',
-        calculate: (items) => items.length,
+        calculate: items => items.length,
       },
       {
         key: 'bySport',
         label: '按运动分类',
-        calculate: (items) => {
+        calculate: items => {
           const sportCounts: Record<string, number> = {};
-          items.forEach((item) => {
+          items.forEach(item => {
             const sport = item.sport || 'OTHER';
             sportCounts[sport] = (sportCounts[sport] || 0) + 1;
           });
           const sportMap: Record<string, string> = {
             BASKETBALL: '篮球',
-            BASEBALL: '棒球',
-            FOOTBALL: '橄榄球',
             SOCCER: '足球',
-            HOCKEY: '冰球',
             OTHER: '其他',
           };
           return Object.entries(sportCounts)
@@ -402,7 +395,7 @@ export const cardModule: ModuleDefinition = {
       {
         key: 'byStatus',
         label: '按状态统计',
-        calculate: (items) => {
+        calculate: items => {
           const statusCounts: Record<string, number> = {
             COLLECTION: 0,
             FOR_SALE: 0,
@@ -410,7 +403,7 @@ export const cardModule: ModuleDefinition = {
             GRADING: 0,
             DISPLAY: 0,
           };
-          items.forEach((item) => {
+          items.forEach(item => {
             const status = item.status || 'COLLECTION';
             if (status in statusCounts) {
               statusCounts[status as keyof typeof statusCounts]++;
@@ -424,17 +417,17 @@ export const cardModule: ModuleDefinition = {
       {
         key: 'graded',
         label: '已评级',
-        calculate: (items) => {
-          const graded = items.filter((i) => i.gradingCompany && i.gradingCompany !== 'UNGRADED');
+        calculate: items => {
+          const graded = items.filter(i => i.gradingCompany && i.gradingCompany !== 'UNGRADED');
           return `${graded.length}/${items.length}`;
         },
       },
       {
         key: 'avgGrade',
         label: '平均评级',
-        calculate: (items) => {
+        calculate: items => {
           const gradedItems = items.filter(
-            (i) => i.gradingCompany && i.gradingCompany !== 'UNGRADED' && i.grade
+            i => i.gradingCompany && i.gradingCompany !== 'UNGRADED' && i.grade
           );
           if (gradedItems.length === 0) return '无数据';
           const sum = gradedItems.reduce((acc, i) => acc + (i.grade || 0), 0);
@@ -446,8 +439,8 @@ export const cardModule: ModuleDefinition = {
       {
         key: 'totalValue',
         label: '总价值',
-        calculate: (items) => {
-          const itemsWithValue = items.filter((i) => i.currentValue);
+        calculate: items => {
+          const itemsWithValue = items.filter(i => i.currentValue);
           if (itemsWithValue.length === 0) return '无数据';
           const sum = itemsWithValue.reduce((acc, i) => acc + (i.currentValue || 0), 0);
           return `$${sum.toLocaleString('en-US', { minimumFractionDigits: 2 })}`;
@@ -456,8 +449,8 @@ export const cardModule: ModuleDefinition = {
       {
         key: 'avgValue',
         label: '平均价值',
-        calculate: (items) => {
-          const itemsWithValue = items.filter((i) => i.currentValue);
+        calculate: items => {
+          const itemsWithValue = items.filter(i => i.currentValue);
           if (itemsWithValue.length === 0) return '无数据';
           const sum = itemsWithValue.reduce((acc, i) => acc + (i.currentValue || 0), 0);
           return `$${(sum / itemsWithValue.length).toLocaleString('en-US', { minimumFractionDigits: 2 })}`;
@@ -466,8 +459,8 @@ export const cardModule: ModuleDefinition = {
       {
         key: 'totalInvestment',
         label: '总投资',
-        calculate: (items) => {
-          const itemsWithPrice = items.filter((i) => i.purchasePrice);
+        calculate: items => {
+          const itemsWithPrice = items.filter(i => i.purchasePrice);
           if (itemsWithPrice.length === 0) return '无数据';
           const sum = itemsWithPrice.reduce((acc, i) => acc + (i.purchasePrice || 0), 0);
           return `$${sum.toLocaleString('en-US', { minimumFractionDigits: 2 })}`;
@@ -476,8 +469,8 @@ export const cardModule: ModuleDefinition = {
       {
         key: 'roi',
         label: '投资回报率',
-        calculate: (items) => {
-          const itemsWithBoth = items.filter((i) => i.purchasePrice && i.currentValue);
+        calculate: items => {
+          const itemsWithBoth = items.filter(i => i.purchasePrice && i.currentValue);
           if (itemsWithBoth.length === 0) return '无数据';
           const totalInvestment = itemsWithBoth.reduce((acc, i) => acc + (i.purchasePrice || 0), 0);
           const totalValue = itemsWithBoth.reduce((acc, i) => acc + (i.currentValue || 0), 0);
@@ -491,16 +484,16 @@ export const cardModule: ModuleDefinition = {
       {
         key: 'autographed',
         label: '签名卡',
-        calculate: (items) => {
-          const autographed = items.filter((i) => i.isAutographed);
+        calculate: items => {
+          const autographed = items.filter(i => i.isAutographed);
           return `${autographed.length}/${items.length}`;
         },
       },
       {
         key: 'memorabilia',
         label: '实物卡',
-        calculate: (items) => {
-          const memorabilia = items.filter((i) => i.hasMemorabilia);
+        calculate: items => {
+          const memorabilia = items.filter(i => i.hasMemorabilia);
           return `${memorabilia.length}/${items.length}`;
         },
       },
@@ -509,9 +502,9 @@ export const cardModule: ModuleDefinition = {
       {
         key: 'topBrands',
         label: '主要品牌',
-        calculate: (items) => {
+        calculate: items => {
           const brands: Record<string, number> = {};
-          items.forEach((item) => {
+          items.forEach(item => {
             const brand = item.brand || '未知';
             brands[brand] = (brands[brand] || 0) + 1;
           });

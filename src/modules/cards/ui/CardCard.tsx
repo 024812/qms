@@ -1,23 +1,25 @@
 /**
  * CardCard Component for Module System
- * 
+ *
  * This component displays a sports card in the module system's list view.
- * It shows key card information including player, sport, grading, and value.
- * 
+ *
  * Key features:
- * - Displays player name, sport, and year
- * - Shows grading information (company and grade)
- * - Displays current value and status
- * - Shows special features (autograph, memorabilia)
- * - Compatible with module registry system
- * 
- * Requirements: 4.1
+ * - Displays player name, sport, year, and brand
+ * - Shows grading information if available
+ * - Displays current value and special features (autograph, memorabilia)
+ * - Responsive design with image optimization
+ *
+ * Requirements: 1.1, 1.2, 2.1, 2.2
+ *
+ * @param {CardCardProps} props - Component props
+ * @param {CardItem} props.item - Card item to display
+ * @returns {JSX.Element} Card component
  */
 
 import { Badge } from '@/components/ui/badge';
-import { CreditCard, TrendingUp, Award, Pen, Star } from 'lucide-react';
+import { CreditCard } from 'lucide-react';
 import Image from 'next/image';
-import type { CardItem } from '../schema';
+import type { CardItem, SportType, CardStatus } from '../schema';
 
 interface CardCardProps {
   item: CardItem;
@@ -25,64 +27,73 @@ interface CardCardProps {
 
 /**
  * Get sport badge color based on sport type
+ *
+ * Requirements: 2.8 - Sport type badge colors with dark mode support
  */
-function getSportColor(sport: string) {
-  switch (sport) {
-    case 'BASKETBALL':
-      return 'bg-orange-100 text-orange-800 border-orange-200';
-    case 'BASEBALL':
-      return 'bg-blue-100 text-blue-800 border-blue-200';
-    case 'FOOTBALL':
-      return 'bg-green-100 text-green-800 border-green-200';
-    case 'SOCCER':
-      return 'bg-purple-100 text-purple-800 border-purple-200';
-    case 'HOCKEY':
-      return 'bg-cyan-100 text-cyan-800 border-cyan-200';
-    default:
-      return 'bg-gray-100 text-gray-800 border-gray-200';
-  }
+function getSportBadgeColor(sport: SportType): string {
+  const colorMap: Record<SportType, string> = {
+    BASKETBALL:
+      'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200 border-orange-200',
+    SOCCER:
+      'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200 border-purple-200',
+    OTHER: 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200 border-gray-200',
+  };
+  return colorMap[sport] || colorMap.OTHER;
 }
 
 /**
  * Get status badge color based on status type
+ *
+ * Requirements: 2.9 - Status badge colors with dark mode support
  */
-function getStatusColor(status: string) {
-  switch (status) {
-    case 'COLLECTION':
-      return 'bg-blue-100 text-blue-800';
-    case 'FOR_SALE':
-      return 'bg-green-100 text-green-800';
-    case 'SOLD':
-      return 'bg-gray-100 text-gray-800';
-    case 'GRADING':
-      return 'bg-yellow-100 text-yellow-800';
-    case 'DISPLAY':
-      return 'bg-purple-100 text-purple-800';
-    default:
-      return 'bg-gray-100 text-gray-800';
-  }
+function getStatusBadgeColor(status: CardStatus): string {
+  const colorMap: Record<CardStatus, string> = {
+    COLLECTION: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200',
+    FOR_SALE: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200',
+    SOLD: 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200',
+    GRADING: 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200',
+    DISPLAY: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200',
+  };
+  return colorMap[status] || colorMap.COLLECTION;
 }
 
 /**
  * Get localized sport label
+ *
+ * Requirements: 4.3 - Sport type localization
  */
-function getSportLabel(sport: string): string {
-  const sportMap: Record<string, string> = {
+function getSportLabel(sport: SportType): string {
+  const sportMap: Record<SportType, string> = {
     BASKETBALL: '篮球',
-    BASEBALL: '棒球',
-    FOOTBALL: '橄榄球',
     SOCCER: '足球',
-    HOCKEY: '冰球',
     OTHER: '其他',
   };
   return sportMap[sport] || sport;
 }
 
 /**
- * Get localized status label
+ * Get localized grading company label
+ *
+ * Requirements: 4.4 - Grading company localization
  */
-function getStatusLabel(status: string): string {
-  const statusMap: Record<string, string> = {
+function getGradingCompanyLabel(company: string): string {
+  const companyMap: Record<string, string> = {
+    PSA: 'PSA',
+    BGS: 'BGS (Beckett)',
+    SGC: 'SGC',
+    CGC: 'CGC',
+    UNGRADED: '未评级',
+  };
+  return companyMap[company] || company;
+}
+
+/**
+ * Get localized status label
+ *
+ * Requirements: 4.5 - Status localization
+ */
+function getStatusLabel(status: CardStatus): string {
+  const statusMap: Record<CardStatus, string> = {
     COLLECTION: '收藏中',
     FOR_SALE: '待售',
     SOLD: '已售出',
@@ -94,36 +105,43 @@ function getStatusLabel(status: string): string {
 
 /**
  * Format currency value
+ *
+ * Requirements: 2.10, 4.2 - Currency formatting
  */
-function formatCurrency(value: number | null): string {
+function formatCurrency(value: number | null | undefined): string {
   if (value === null || value === undefined) return '-';
-  return `$${value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  return `$${value.toLocaleString('en-US', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  })}`;
 }
 
 /**
  * CardCard Component
- * 
+ *
  * Displays a sports card item in a card format with:
  * - Main image (if available)
  * - Item number
- * - Player name and team
- * - Sport and status badges
- * - Year, brand, and series
- * - Grading information
- * - Current value
+ * - Player name
+ * - Sport type and status badges
+ * - Grading information (if graded)
+ * - Year and brand
+ * - Current value (if available)
  * - Special features (autograph, memorabilia)
- * 
+ *
  * Note: This component does NOT include the Card wrapper - that's handled by the parent ItemCard component.
+ *
+ * Requirements: 1.1-1.13, 2.1-2.10, 9.1-9.5 (Accessibility)
  */
 export function CardCard({ item }: CardCardProps) {
   return (
-    <>
-      {/* Main Image */}
+    <article>
+      {/* Main Image - Requirements: 1.10, 1.11, 1.12, 1.13, 2.1, 9.2 (Semantic HTML) */}
       {item.mainImage && (
         <div className="mb-3 relative h-40 bg-muted rounded-md overflow-hidden">
           <Image
             src={item.mainImage}
-            alt={`${item.playerName} - ${item.year} ${item.brand}`}
+            alt={`${item.playerName} - ${item.year} ${item.brand} ${item.series || ''} 球星卡${item.gradingCompany !== 'UNGRADED' ? ` - ${getGradingCompanyLabel(item.gradingCompany)} ${item.grade}` : ''}`}
             fill
             className="object-cover"
             sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
@@ -133,77 +151,73 @@ export function CardCard({ item }: CardCardProps) {
       )}
 
       <div className="space-y-2">
-        {/* Header: Item Number and Player Name */}
-        <div className="flex items-start justify-between">
+        {/* Header: Item Number and Player Name - Requirements: 1.1, 1.2, 2.5, 2.7, 9.2 (Semantic HTML) */}
+        <header className="flex items-start justify-between">
           <div className="flex-1">
             <div className="flex items-center gap-2 mb-1">
-              <CreditCard className="w-4 h-4 text-muted-foreground" />
-              <span className="text-xs text-muted-foreground">
-                #{item.itemNumber}
-              </span>
+              <CreditCard className="w-4 h-4 text-muted-foreground" aria-hidden="true" />
+              <span className="text-xs text-muted-foreground">#{item.itemNumber}</span>
             </div>
             <h3 className="font-semibold text-foreground">{item.playerName}</h3>
-            {item.team && (
-              <p className="text-sm text-muted-foreground">{item.team}</p>
-            )}
           </div>
-        </div>
+        </header>
 
-        {/* Badges: Sport and Status */}
-        <div className="flex flex-wrap gap-2">
-          <Badge variant="outline" className={getSportColor(item.sport)}>
+        {/* Badges: Sport Type, Grading, Status - Requirements: 1.3, 1.5, 1.9, 2.3, 2.4, 2.8, 2.9, 9.4 (Icon labels) */}
+        <div className="flex flex-wrap gap-2" role="list" aria-label="卡片标签">
+          <Badge variant="outline" className={getSportBadgeColor(item.sport)} role="listitem">
             {getSportLabel(item.sport)}
           </Badge>
-          <Badge className={getStatusColor(item.status)}>
+
+          {/* Grading Badge - Only show if graded */}
+          {item.gradingCompany !== 'UNGRADED' && item.grade && (
+            <Badge
+              variant="outline"
+              className="bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200 border-amber-200"
+              role="listitem"
+            >
+              {getGradingCompanyLabel(item.gradingCompany)} {item.grade}
+            </Badge>
+          )}
+
+          <Badge className={getStatusBadgeColor(item.status)} role="listitem">
             {getStatusLabel(item.status)}
           </Badge>
         </div>
 
-        {/* Card Details: Year, Brand, Series */}
-        <div className="text-sm text-muted-foreground space-y-1">
-          <div className="font-medium">
-            {item.year} {item.brand}
-            {item.series && ` - ${item.series}`}
+        {/* Details: Year, Brand, Value, Special Features - Requirements: 1.4, 1.6, 1.7, 1.8, 2.10, 9.2 (Semantic HTML) */}
+        <section className="text-sm text-muted-foreground space-y-1">
+          {/* Year and Brand */}
+          <div>
+            <span className="sr-only">年份和品牌: </span>
+            {item.year} • {item.brand}
           </div>
-          
-          {/* Grading Information */}
-          {item.gradingCompany && item.gradingCompany !== 'UNGRADED' && (
-            <div className="flex items-center gap-1">
-              <Award className="w-3 h-3" />
-              <span>
-                {item.gradingCompany}
-                {item.grade && ` ${item.grade}`}
-              </span>
-            </div>
-          )}
-          
-          {/* Current Value */}
-          {item.currentValue && (
-            <div className="flex items-center gap-1 font-medium text-foreground">
-              <TrendingUp className="w-3 h-3" />
-              <span>{formatCurrency(item.currentValue)}</span>
-            </div>
-          )}
-        </div>
 
-        {/* Special Features */}
-        {(item.isAutographed || item.hasMemorabilia) && (
-          <div className="flex gap-2 pt-1">
-            {item.isAutographed && (
-              <div className="flex items-center gap-1 text-xs text-blue-600">
-                <Pen className="w-3 h-3" />
-                <span>签名</span>
-              </div>
+          {/* Current Value and Special Features */}
+          <div className="flex items-center gap-2 flex-wrap">
+            {/* Current Value */}
+            {item.currentValue && (
+              <span className="font-medium text-foreground">
+                <span className="sr-only">当前价值: </span>
+                {formatCurrency(item.currentValue)}
+              </span>
             )}
+
+            {/* Autograph Marker */}
+            {item.isAutographed && (
+              <span className="text-xs" aria-label="已签名">
+                ✓签名
+              </span>
+            )}
+
+            {/* Memorabilia Marker */}
             {item.hasMemorabilia && (
-              <div className="flex items-center gap-1 text-xs text-purple-600">
-                <Star className="w-3 h-3" />
-                <span>实物</span>
-              </div>
+              <span className="text-xs" aria-label="含实物">
+                ✓实物
+              </span>
             )}
           </div>
-        )}
+        </section>
       </div>
-    </>
+    </article>
   );
 }

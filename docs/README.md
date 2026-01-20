@@ -9,35 +9,30 @@ This directory contains all technical documentation for QMS (Quilt Management Sy
 
 ## 📖 核心文档 / Core Documentation
 
-### 项目概览 / Project Overview
+### 快速开始 / Quick Start
 
-- **[INDEX.md](./INDEX.md)** - 文档索引和快速导航
+- **[QUICK_START.md](./QUICK_START.md)** - 5分钟快速开始指南
 - **[PROJECT_SUMMARY.md](./PROJECT_SUMMARY.md)** - 项目总结和完成度
 
-### 技术文档 / Technical Documentation
+### 开发标准 / Development Standards
 
-- **[PROJECT_SUMMARY.md](./PROJECT_SUMMARY.md)** - 项目架构和功能总结
-- **[DEPLOYMENT_SUMMARY.md](./DEPLOYMENT_SUMMARY.md)** - 部署配置和说明
-
-### 部署文档 / Deployment Documentation
-
-- **[DEPLOYMENT_SUMMARY.md](./DEPLOYMENT_SUMMARY.md)** - 部署总结
-- **[PRODUCTION_TESTING_CHECKLIST.md](./PRODUCTION_TESTING_CHECKLIST.md)** - 生产测试清单
-
-### 备份与恢复 / Backup & Restore
-
-- **[BACKUP_QUICK_START.md](./BACKUP_QUICK_START.md)** - 备份快速开始
-- **[BACKUP_RESTORE_GUIDE.md](./BACKUP_RESTORE_GUIDE.md)** - 完整备份恢复指南
+- **[MODULE_STANDARD.md](./MODULE_STANDARD.md)** - 子模块开发标准（完整版）
+- **[MODULE_STANDARD_SUMMARY.md](./MODULE_STANDARD_SUMMARY.md)** - 子模块开发快速参考
 
 ---
 
-## 🔧 实现指南 / Implementation Guides
+## 🔧 操作指南 / Implementation Guides
 
 位于 `docs/guides/` 目录：
 
 ### 数据库 / Database
 
 - **[INITIALIZE-DATABASE.md](./guides/INITIALIZE-DATABASE.md)** - 数据库初始化
+
+### 备份与恢复 / Backup & Restore
+
+- **[BACKUP_QUICK_START.md](./guides/BACKUP_QUICK_START.md)** - 备份快速开始
+- **[BACKUP_RESTORE_GUIDE.md](./guides/BACKUP_RESTORE_GUIDE.md)** - 完整备份恢复指南
 
 ### 认证与安全 / Authentication & Security
 
@@ -57,25 +52,35 @@ This directory contains all technical documentation for QMS (Quilt Management Sy
 
 ---
 
+## 📦 历史归档 / Archive
+
+位于 `docs/archive/` 目录，包含项目演进过程中的历史文档：
+
+- 阶段检查点文档
+- 完成总结文档
+- 代码分析文档
+
+---
+
 ## 🎨 设计系统 / Design System
 
 ### 颜色系统 / Color System
 
-基于 UI/UX Pro Max 研究结果：
+基于语义化颜色系统：
 
-| 用途       | 颜色       | Hex     |
-| ---------- | ---------- | ------- |
-| Primary    | Trust Blue | #2563EB |
-| Secondary  | Light Blue | #3B82F6 |
-| CTA        | Orange     | #F97316 |
-| Background | Light Gray | #F8FAFC |
-| Text       | Dark Slate | #1E293B |
+| 用途        | 变量名        | 说明                |
+| ----------- | ------------- | ------------------- |
+| Primary     | `primary`     | 主色调 - Trust Blue |
+| Secondary   | `secondary`   | 次要色调            |
+| Muted       | `muted`       | 柔和色调            |
+| Accent      | `accent`      | 强调色调            |
+| Destructive | `destructive` | 危险/删除操作       |
 
 ### 组件库 / Component Library
 
 - 基于 Shadcn UI + Radix UI
 - 统一的 Card, Table, Badge, Button 等组件
-- 语义化颜色：`primary`, `secondary`, `muted`, `accent`, `destructive`
+- 完整的表单组件（Input, Select, Textarea, DatePicker）
 
 ### 间距系统 / Spacing System
 
@@ -89,15 +94,16 @@ This directory contains all technical documentation for QMS (Quilt Management Sy
 
 ### 当前版本 / Current Version
 
-- **版本**: 1.1.0
+- **版本**: v2026.01.20
 - **状态**: ✅ 生产就绪
 
 ### 技术栈 / Tech Stack
 
-- **前端**: Next.js 16 + React 19 + TypeScript
-- **样式**: Tailwind CSS 4 + Shadcn UI
-- **数据获取**: React Query
-- **数据库**: Neon PostgreSQL
+- **前端**: Next.js 16.1.1 + React 19.2.3 + TypeScript 5.9+
+- **样式**: Tailwind CSS 4.1+ + Shadcn UI
+- **数据获取**: TanStack Query 5.90+
+- **数据库**: Neon PostgreSQL + Drizzle ORM 0.45+
+- **认证**: NextAuth.js 5.0
 - **部署**: Vercel
 
 ---
@@ -107,9 +113,8 @@ This directory contains all technical documentation for QMS (Quilt Management Sy
 - [主 README](../README.md)
 - [中文 README](../README_zh.md)
 - [CHANGELOG](../CHANGELOG.md)
-- [需求规格索引](../.kiro/specs/SPECS-INDEX.md)
 
 ---
 
-**最后更新 / Last Updated**: 2026-01-07  
+**最后更新 / Last Updated**: 2026-01-20  
 **维护者 / Maintainer**: QMS Team

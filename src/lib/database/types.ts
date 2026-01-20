@@ -248,3 +248,176 @@ export function isUsageType(value: unknown): value is UsageType {
     ['REGULAR', 'GUEST', 'SPECIAL_OCCASION', 'SEASONAL_ROTATION'].includes(value)
   );
 }
+
+// ============================================================================
+// Card Types (for independent cards table)
+// ============================================================================
+
+import type { CardItem, SportType, GradingCompany, CardStatus } from '@/modules/cards/schema';
+
+/**
+ * Database row type for cards table (snake_case - matches PostgreSQL schema)
+ *
+ * Requirements: 5.6 - Type-safe database row definitions
+ */
+export interface CardRow {
+  id: string;
+  user_id: string;
+  item_number: number;
+  player_name: string;
+  sport: string;
+  team: string | null;
+  position: string | null;
+  year: number;
+  brand: string;
+  series: string | null;
+  card_number: string | null;
+  grading_company: string;
+  grade: string | null; // numeric stored as string
+  certification_number: string | null;
+  purchase_price: string | null; // numeric stored as string
+  purchase_date: string | null; // date stored as string
+  current_value: string | null; // numeric stored as string
+  estimated_value: string | null; // numeric stored as string
+  parallel: string | null;
+  serial_number: string | null;
+  is_autographed: boolean;
+  has_memorabilia: boolean;
+  memorabilia_type: string | null;
+  status: string;
+  location: string | null;
+  storage_type: string | null;
+  condition: string | null;
+  notes: string | null;
+  main_image: string | null;
+  attachment_images: string[] | null;
+  created_at: string;
+  updated_at: string;
+}
+
+/**
+ * Convert a database row to a CardItem application model
+ *
+ * Transforms snake_case database columns to camelCase application properties.
+ * Handles type conversions for numeric and date fields.
+ *
+ * Requirements: 5.6, 5.7 - Type-safe row to model conversion
+ */
+export function rowToCardItem(row: CardRow): CardItem {
+  return {
+    id: row.id,
+    type: 'card',
+    itemNumber: row.item_number,
+    playerName: row.player_name,
+    sport: row.sport as SportType,
+    team: row.team,
+    position: row.position,
+    year: row.year,
+    brand: row.brand,
+    series: row.series,
+    cardNumber: row.card_number,
+    gradingCompany: row.grading_company as GradingCompany,
+    grade: row.grade ? parseFloat(row.grade) : null,
+    certificationNumber: row.certification_number,
+    purchasePrice: row.purchase_price ? parseFloat(row.purchase_price) : null,
+    purchaseDate: row.purchase_date ? new Date(row.purchase_date) : null,
+    currentValue: row.current_value ? parseFloat(row.current_value) : null,
+    estimatedValue: row.estimated_value ? parseFloat(row.estimated_value) : null,
+    lastValueUpdate: null, // Not stored in cards table yet
+    parallel: row.parallel,
+    serialNumber: row.serial_number,
+    isAutographed: row.is_autographed,
+    hasMemorabilia: row.has_memorabilia,
+    memorabiliaType: row.memorabilia_type,
+    status: row.status as CardStatus,
+    location: row.location,
+    storageType: row.storage_type,
+    condition: row.condition,
+    notes: row.notes,
+    tags: null, // Not stored in cards table yet
+    mainImage: row.main_image,
+    attachmentImages: row.attachment_images,
+    createdAt: new Date(row.created_at),
+    updatedAt: new Date(row.updated_at),
+  };
+}
+
+/**
+ * Convert a CardItem application model to a database row (partial for updates)
+ *
+ * Transforms camelCase application properties to snake_case database columns.
+ * Handles type conversions for numeric and date fields.
+ *
+ * Requirements: 5.6, 5.7 - Type-safe model to row conversion
+ */
+export function cardItemToRow(item: Partial<CardItem>): Partial<CardRow> {
+  const row: Partial<CardRow> = {};
+
+  if (item.id !== undefined) row.id = item.id;
+  if (item.itemNumber !== undefined) row.item_number = item.itemNumber;
+  if (item.playerName !== undefined) row.player_name = item.playerName;
+  if (item.sport !== undefined) row.sport = item.sport;
+  if (item.team !== undefined) row.team = item.team;
+  if (item.position !== undefined) row.position = item.position;
+  if (item.year !== undefined) row.year = item.year;
+  if (item.brand !== undefined) row.brand = item.brand;
+  if (item.series !== undefined) row.series = item.series;
+  if (item.cardNumber !== undefined) row.card_number = item.cardNumber;
+  if (item.gradingCompany !== undefined) row.grading_company = item.gradingCompany;
+  if (item.grade !== undefined) row.grade = item.grade !== null ? item.grade.toString() : null;
+  if (item.certificationNumber !== undefined) row.certification_number = item.certificationNumber;
+  if (item.purchasePrice !== undefined)
+    row.purchase_price = item.purchasePrice !== null ? item.purchasePrice.toString() : null;
+  if (item.purchaseDate !== undefined)
+    row.purchase_date = item.purchaseDate ? item.purchaseDate.toISOString() : null;
+  if (item.currentValue !== undefined)
+    row.current_value = item.currentValue !== null ? item.currentValue.toString() : null;
+  if (item.estimatedValue !== undefined)
+    row.estimated_value = item.estimatedValue !== null ? item.estimatedValue.toString() : null;
+  if (item.parallel !== undefined) row.parallel = item.parallel;
+  if (item.serialNumber !== undefined) row.serial_number = item.serialNumber;
+  if (item.isAutographed !== undefined) row.is_autographed = item.isAutographed;
+  if (item.hasMemorabilia !== undefined) row.has_memorabilia = item.hasMemorabilia;
+  if (item.memorabiliaType !== undefined) row.memorabilia_type = item.memorabiliaType;
+  if (item.status !== undefined) row.status = item.status;
+  if (item.location !== undefined) row.location = item.location;
+  if (item.storageType !== undefined) row.storage_type = item.storageType;
+  if (item.condition !== undefined) row.condition = item.condition;
+  if (item.notes !== undefined) row.notes = item.notes;
+  if (item.mainImage !== undefined) row.main_image = item.mainImage;
+  if (item.attachmentImages !== undefined) row.attachment_images = item.attachmentImages;
+  if (item.createdAt !== undefined) row.created_at = item.createdAt.toISOString();
+  if (item.updatedAt !== undefined) row.updated_at = item.updatedAt.toISOString();
+
+  return row;
+}
+
+/**
+ * Check if a value is a valid SportType
+ *
+ * Requirements: 5.6 - Type guards for validation
+ */
+export function isSportType(value: unknown): value is SportType {
+  return typeof value === 'string' && ['BASKETBALL', 'SOCCER', 'OTHER'].includes(value);
+}
+
+/**
+ * Check if a value is a valid GradingCompany
+ *
+ * Requirements: 5.6 - Type guards for validation
+ */
+export function isGradingCompany(value: unknown): value is GradingCompany {
+  return typeof value === 'string' && ['PSA', 'BGS', 'SGC', 'CGC', 'UNGRADED'].includes(value);
+}
+
+/**
+ * Check if a value is a valid CardStatus
+ *
+ * Requirements: 5.6 - Type guards for validation
+ */
+export function isCardStatus(value: unknown): value is CardStatus {
+  return (
+    typeof value === 'string' &&
+    ['COLLECTION', 'FOR_SALE', 'SOLD', 'GRADING', 'DISPLAY'].includes(value)
+  );
+}

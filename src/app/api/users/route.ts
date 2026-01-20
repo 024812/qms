@@ -36,11 +36,11 @@ export async function GET() {
       return createUnauthorizedResponse('需要管理员权限');
     }
 
-    // Fetch all users from actual database table "user" (not "users")
+    // Fetch all users from actual database table "users" (plural)
     console.log('[API /api/users] Executing query...');
     const result = await db.execute(sql`
       SELECT id, name, email, role, created_at as "createdAt"
-      FROM "user"
+      FROM "users"
       ORDER BY created_at
     `);
 
@@ -112,7 +112,7 @@ export async function POST(request: NextRequest) {
 
     // Check if email already exists
     const existingResult = await db.execute(sql`
-      SELECT id FROM "user" WHERE email = ${email} LIMIT 1
+      SELECT id FROM "users" WHERE email = ${email} LIMIT 1
     `);
 
     if (existingResult.rows.length > 0) {
@@ -127,7 +127,7 @@ export async function POST(request: NextRequest) {
 
     // Create user in actual database table
     const result = await db.execute(sql`
-      INSERT INTO "user" (id, name, email, password, role, created_at)
+      INSERT INTO "users" (id, name, email, password, role, created_at)
       VALUES (${userId}, ${name}, ${email}, ${hashedPassword}, ${role.toUpperCase()}, NOW())
       RETURNING id, name, email, role, created_at as "createdAt"
     `);

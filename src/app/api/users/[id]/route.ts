@@ -40,7 +40,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
 
     // Check if user exists
     const existingResult = await db.execute(sql`
-      SELECT id, name, email, role, password FROM "user" WHERE id = ${id} LIMIT 1
+      SELECT id, name, email, role, password FROM "users" WHERE id = ${id} LIMIT 1
     `);
 
     if (existingResult.rows.length === 0) {
@@ -70,7 +70,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
 
       // Check if email is already taken by another user
       const emailCheckResult = await db.execute(sql`
-        SELECT id FROM "user" WHERE email = ${email} AND id != ${id} LIMIT 1
+        SELECT id FROM "users" WHERE email = ${email} AND id != ${id} LIMIT 1
       `);
 
       if (emailCheckResult.rows.length > 0) {
@@ -88,7 +88,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
 
     // Execute update
     const result = await db.execute(sql`
-      UPDATE "user"
+      UPDATE "users"
       SET name = ${updatedName}, email = ${updatedEmail}, role = ${updatedRole}
       ${password !== undefined && password !== '' ? sql`, password = ${updatedPassword}` : sql``}
       WHERE id = ${id}
@@ -142,7 +142,7 @@ export async function DELETE(
 
     // Check if user exists
     const existingResult = await db.execute(sql`
-      SELECT id FROM "user" WHERE id = ${id} LIMIT 1
+      SELECT id FROM "users" WHERE id = ${id} LIMIT 1
     `);
 
     if (existingResult.rows.length === 0) {
@@ -151,7 +151,7 @@ export async function DELETE(
 
     // Delete user (cascade will delete related data)
     await db.execute(sql`
-      DELETE FROM "user" WHERE id = ${id}
+      DELETE FROM "users" WHERE id = ${id}
     `);
 
     return createSuccessResponse({

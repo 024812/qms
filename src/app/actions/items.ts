@@ -35,12 +35,12 @@
  */
 function moduleIdToDbType(moduleId: string): 'quilt' | 'card' | 'shoe' | 'racket' {
   const mapping: Record<string, 'quilt' | 'card' | 'shoe' | 'racket'> = {
-    'quilts': 'quilt',
-    'cards': 'card',
-    'shoes': 'shoe',
-    'rackets': 'racket',
+    quilts: 'quilt',
+    cards: 'card',
+    shoes: 'shoe',
+    rackets: 'racket',
   };
-  return mapping[moduleId] || moduleId as 'quilt' | 'card' | 'shoe' | 'racket';
+  return mapping[moduleId] || (moduleId as 'quilt' | 'card' | 'shoe' | 'racket');
 }
 
 import {
@@ -51,7 +51,7 @@ import {
 } from 'next/cache';
 
 import { db } from '@/db';
-import { items, usageLogs } from '@/db/schema';
+import { items, usageLogs, cards } from '@/db/schema';
 import { eq, and, desc, sql } from 'drizzle-orm';
 import { auth } from '@/auth';
 import { getModule } from '@/modules/registry';
@@ -263,14 +263,77 @@ export async function getItems(
   const { page = 1, pageSize = 20, status } = options || {};
   const offset = (page - 1) * pageSize;
 
+  // For cards module, use the cards table directly
+  if (type === 'cards') {
+    // Query cards table
+    const results = await db
+      .select()
+      .from(cards)
+      .where(eq(cards.userId, session.user.id))
+      .orderBy(desc(cards.createdAt))
+      .limit(pageSize)
+      .offset(offset);
+
+    // Count total cards
+    const [{ count }] = await db
+      .select({ count: sql<number>`cast(count(*) as integer)` })
+      .from(cards)
+      .where(eq(cards.userId, session.user.id));
+
+    // Transform cards to match items interface
+    const transformedResults = results.map(card => ({
+      id: card.id,
+      type: 'card' as const,
+      name: `${card.playerName} - ${card.year} ${card.brand}`,
+      status: 'storage' as const, // Default status
+      ownerId: card.userId,
+      attributes: {
+        playerName: card.playerName,
+        sport: card.sport,
+        team: card.team,
+        position: card.position,
+        year: card.year,
+        brand: card.brand,
+        series: card.series,
+        cardNumber: card.cardNumber,
+        gradingCompany: card.gradingCompany,
+        grade: card.grade,
+        certificationNumber: card.certificationNumber,
+        purchasePrice: card.purchasePrice,
+        purchaseDate: card.purchaseDate,
+        currentValue: card.currentValue,
+        estimatedValue: card.estimatedValue,
+        parallel: card.parallel,
+        serialNumber: card.serialNumber,
+        isAutographed: card.isAutographed,
+        hasMemorabilia: card.hasMemorabilia,
+        memorabiliaType: card.memorabiliaType,
+        status: card.status,
+        location: card.location,
+        storageType: card.storageType,
+        condition: card.condition,
+        notes: card.notes,
+      },
+      images: [card.mainImage, ...(card.attachmentImages || [])].filter(Boolean) as string[],
+      createdAt: card.createdAt,
+      updatedAt: card.updatedAt,
+    }));
+
+    return {
+      data: transformedResults as any,
+      total: count,
+      page,
+      pageSize,
+      totalPages: Math.ceil(count / pageSize),
+    };
+  }
+
+  // For other modules, use items table
   // Map module ID to database type
   const dbType = moduleIdToDbType(type);
 
   // Build query conditions
-  const conditions = [
-    eq(items.type, dbType),
-    eq(items.ownerId, session.user.id),
-  ];
+  const conditions = [eq(items.type, dbType), eq(items.ownerId, session.user.id)];
 
   if (status) {
     conditions.push(eq(items.status, status as 'in_use' | 'storage' | 'maintenance' | 'lost'));

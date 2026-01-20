@@ -3,6 +3,7 @@
 import * as React from 'react';
 import { useRouter } from 'next/navigation';
 import { useLanguage } from '@/lib/language-provider';
+import { useSession } from 'next-auth/react'; // Session Context
 import {
   CommandDialog,
   CommandEmpty,
@@ -22,7 +23,7 @@ import {
   Moon,
   Sun,
   Monitor,
-  CreditCard, // For Cards
+  CreditCard,
   Users,
 } from 'lucide-react';
 import { useTheme } from 'next-themes';
@@ -43,6 +44,18 @@ export function CommandPalette() {
   const { t } = useLanguage();
   const { setTheme } = useTheme();
 
+  // Get Access Control List from Session
+  const { data: session } = useSession();
+  const activeModules = session?.user?.activeModules || [];
+  const isAdmin = session?.user?.role === 'ADMIN';
+
+  // Permission Check Helpers
+  const canAccess = (moduleName: string) => {
+    // Admin has access to everything by default, or verify specific modules
+    if (isAdmin) return true;
+    return activeModules.includes(moduleName);
+  };
+
   // 监听 Ctrl+K 快捷键
   React.useEffect(() => {
     const down = (e: KeyboardEvent) => {
@@ -56,12 +69,15 @@ export function CommandPalette() {
     return () => document.removeEventListener('keydown', down);
   }, []);
 
-  // 搜索相关性 (Mock for now, or keep quilt search as a "feature")
-  // User wants "all subsystems", implying navigation is key.
-  // We will keep Quilt search as a "Smart Search" feature but ensure navigation is prominent.
-
+  // Smart Search (Quilts) - Only if authorized
   React.useEffect(() => {
     if (!open) return;
+
+    // Permission Barrier: Short circuit if user doesn't have 'quilts' access
+    if (!canAccess('quilts')) {
+      setQuilts([]);
+      return;
+    }
 
     // Only search quilts if typed query is long enough
     const searchQuilts = async () => {
@@ -86,19 +102,61 @@ export function CommandPalette() {
 
     const debounce = setTimeout(searchQuilts, 300);
     return () => clearTimeout(debounce);
-  }, [search, open]);
+  }, [search, open, activeModules, isAdmin]); // Add dependencies
 
-  // 导航项 - Comprehensive List
-  const navigationItems = [
-    { name: t('navigation.dashboard') || 'Dashboard', href: '/', icon: Home },
-    { name: t('navigation.quilts') || 'Quilts Management', href: '/quilts', icon: Package },
-    { name: t('navigation.cards') || 'Trading Cards', href: '/cards', icon: CreditCard },
-    { name: t('navigation.usage') || 'Usage History', href: '/usage', icon: Calendar },
-    { name: t('navigation.analytics') || 'Data Analytics', href: '/analytics', icon: BarChart3 },
-    { name: t('navigation.reports') || 'Reports & Export', href: '/reports', icon: Upload },
-    { name: t('navigation.users') || 'User Management', href: '/users', icon: Users },
-    { name: t('navigation.settings') || 'System Settings', href: '/settings', icon: Settings },
+  // Navigation Items - Filtered by Permissions
+  // Module keys should match what's in the DB/NextAuth session
+  const allNavigationItems = [
+    { name: t('navigation.dashboard') || 'Dashboard', href: '/', icon: Home, requiredModule: null }, // Public
+    {
+      name: t('navigation.quilts') || 'Quilts',
+      href: '/quilts',
+      icon: Package,
+      requiredModule: 'quilts',
+    },
+    {
+      name: t('navigation.cards') || 'Trading Cards',
+      href: '/cards',
+      icon: CreditCard,
+      requiredModule: 'cards',
+    },
+    {
+      name: t('navigation.usage') || 'Usage History',
+      href: '/usage',
+      icon: Calendar,
+      requiredModule: 'quilts',
+    }, // Usage bundled with Quilts usually
+    {
+      name: t('navigation.analytics') || 'Analytics',
+      href: '/analytics',
+      icon: BarChart3,
+      requiredModule: 'analytics',
+    },
+    {
+      name: t('navigation.reports') || 'Reports',
+      href: '/reports',
+      icon: Upload,
+      requiredModule: 'reports',
+    },
+    {
+      name: t('navigation.users') || 'User Management',
+      href: '/users',
+      icon: Users,
+      requiredModule: 'admin',
+    }, // Or check role === ADMIN
+    {
+      name: t('navigation.settings') || 'Settings',
+      href: '/settings',
+      icon: Settings,
+      requiredModule: null,
+    }, // Settings usually open, or subset restricted
   ];
+
+  const filteredNavigation = allNavigationItems.filter(item => {
+    if (!item.requiredModule) return true; // Public items
+    if (item.requiredModule === 'admin') return isAdmin;
+    return canAccess(item.requiredModule);
+  });
 
   const runCommand = React.useCallback((command: () => void) => {
     setOpen(false);
@@ -120,9 +178,9 @@ export function CommandPalette() {
       <CommandList>
         <CommandEmpty>{loading ? 'Searching...' : 'No results found.'}</CommandEmpty>
 
-        {/* 页面导航 - Always show or filter */}
+        {/* System Navigation - Dynamic based on permissions */}
         <CommandGroup heading="System Navigation">
-          {navigationItems.map(item => (
+          {filteredNavigation.map(item => (
             <CommandItem
               key={item.href}
               value={`nav-${item.name}`}
@@ -136,8 +194,8 @@ export function CommandPalette() {
 
         <CommandSeparator />
 
-        {/* 被子搜索结果 - Only show if results exist */}
-        {quilts.length > 0 && (
+        {/* Quilt Search Results - Only shown if authorized */}
+        {quilts.length > 0 && canAccess('quilts') && (
           <CommandGroup heading="Quilts">
             {quilts.map(quilt => (
               <CommandItem
@@ -157,7 +215,7 @@ export function CommandPalette() {
           </CommandGroup>
         )}
 
-        {/* 主题切换 */}
+        {/* Theme Toggles */}
         <CommandGroup heading="Theme">
           <CommandItem value="theme-light" onSelect={() => runCommand(() => setTheme('light'))}>
             <Sun className="mr-2 h-4 w-4" />

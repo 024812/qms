@@ -18,6 +18,8 @@ export default async function DebugUsersPage() {
   let rawResult: any = null;
   let tables: any[] = [];
   let tablesError: any = null;
+  let usersColumns: any[] = [];
+  let columnsError: any = null;
 
   // First, check what tables exist
   try {
@@ -32,12 +34,25 @@ export default async function DebugUsersPage() {
     tablesError = err;
   }
 
+  // Check columns in users table
+  try {
+    const columnsResult = await db.execute(sql`
+      SELECT column_name, data_type, is_nullable
+      FROM information_schema.columns
+      WHERE table_schema = 'public' AND table_name = 'users'
+      ORDER BY ordinal_position
+    `);
+    usersColumns = columnsResult.rows;
+  } catch (err) {
+    columnsError = err;
+  }
+
   // Try to query users from "users" table (plural)
   try {
     const result = await db.execute(sql`
-      SELECT id, name, email, role, created_at
+      SELECT *
       FROM "users"
-      ORDER BY created_at
+      LIMIT 10
     `);
 
     rawResult = result;
@@ -74,6 +89,40 @@ export default async function DebugUsersPage() {
                     • {table.table_name}
                   </div>
                 ))
+              )}
+            </div>
+          )}
+        </div>
+
+        <div className="border rounded p-4 bg-green-50">
+          <h2 className="font-semibold mb-2">users 表的列结构</h2>
+          {columnsError ? (
+            <pre className="text-xs text-red-600">
+              {JSON.stringify(columnsError, null, 2)}
+            </pre>
+          ) : (
+            <div className="space-y-1">
+              {usersColumns.length === 0 ? (
+                <p className="text-gray-500">没有找到列</p>
+              ) : (
+                <table className="text-xs w-full">
+                  <thead>
+                    <tr className="border-b">
+                      <th className="text-left p-1">列名</th>
+                      <th className="text-left p-1">数据类型</th>
+                      <th className="text-left p-1">可为空</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {usersColumns.map((col: any) => (
+                      <tr key={col.column_name} className="border-b">
+                        <td className="p-1 font-mono font-semibold">{col.column_name}</td>
+                        <td className="p-1">{col.data_type}</td>
+                        <td className="p-1">{col.is_nullable}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               )}
             </div>
           )}

@@ -48,7 +48,7 @@ export function AppHeader() {
       <div className="flex flex-1 items-center justify-end md:justify-center">
         <Button
           variant="outline"
-          className="relative h-9 w-full max-w-md justify-start text-sm text-muted-foreground"
+          className="relative h-9 w-full max-w-md justify-start text-sm text-muted-foreground bg-muted/30 hover:bg-muted/50 border-input/40"
           onClick={() => {
             // 触发 Ctrl+K 事件打开 Command Palette
             const event = new KeyboardEvent('keydown', {
@@ -60,8 +60,8 @@ export function AppHeader() {
           }}
         >
           <Search className="mr-2 h-4 w-4" />
-          <span className="hidden sm:inline">{t('quilts.actions.search')}...</span>
-          <span className="sm:hidden">搜索...</span>
+          <span className="hidden sm:inline">Search system...</span>
+          <span className="sm:hidden">Search...</span>
           <kbd className="pointer-events-none absolute right-2 hidden h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium opacity-100 sm:flex">
             <span className="text-xs">Ctrl</span>K
           </kbd>
@@ -90,9 +90,7 @@ export function AppHeader() {
           <AlertDialogContent>
             <AlertDialogHeader>
               <AlertDialogTitle>{t('auth.logout')}</AlertDialogTitle>
-              <AlertDialogDescription>
-                {t('auth.logoutConfirm')}
-              </AlertDialogDescription>
+              <AlertDialogDescription>{t('auth.logoutConfirm')}</AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
               <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>

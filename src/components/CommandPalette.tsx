@@ -19,10 +19,11 @@ import {
   Settings,
   Calendar,
   Upload,
-  Search,
   Moon,
   Sun,
   Monitor,
+  CreditCard, // For Cards
+  Users,
 } from 'lucide-react';
 import { useTheme } from 'next-themes';
 
@@ -55,12 +56,16 @@ export function CommandPalette() {
     return () => document.removeEventListener('keydown', down);
   }, []);
 
-  // 搜索被子
+  // 搜索相关性 (Mock for now, or keep quilt search as a "feature")
+  // User wants "all subsystems", implying navigation is key.
+  // We will keep Quilt search as a "Smart Search" feature but ensure navigation is prominent.
+
   React.useEffect(() => {
     if (!open) return;
 
+    // Only search quilts if typed query is long enough
     const searchQuilts = async () => {
-      if (search.length < 1) {
+      if (search.length < 2) {
         setQuilts([]);
         return;
       }
@@ -83,14 +88,16 @@ export function CommandPalette() {
     return () => clearTimeout(debounce);
   }, [search, open]);
 
-  // 导航项
+  // 导航项 - Comprehensive List
   const navigationItems = [
-    { name: t('navigation.dashboard'), href: '/', icon: Home },
-    { name: t('navigation.quilts'), href: '/quilts', icon: Package },
-    { name: t('navigation.usage'), href: '/usage', icon: Calendar },
-    { name: t('navigation.analytics'), href: '/analytics', icon: BarChart3 },
-    { name: t('navigation.reports'), href: '/reports', icon: Upload },
-    { name: t('navigation.settings'), href: '/settings', icon: Settings },
+    { name: t('navigation.dashboard') || 'Dashboard', href: '/', icon: Home },
+    { name: t('navigation.quilts') || 'Quilts Management', href: '/quilts', icon: Package },
+    { name: t('navigation.cards') || 'Trading Cards', href: '/cards', icon: CreditCard },
+    { name: t('navigation.usage') || 'Usage History', href: '/usage', icon: Calendar },
+    { name: t('navigation.analytics') || 'Data Analytics', href: '/analytics', icon: BarChart3 },
+    { name: t('navigation.reports') || 'Reports & Export', href: '/reports', icon: Upload },
+    { name: t('navigation.users') || 'User Management', href: '/users', icon: Users },
+    { name: t('navigation.settings') || 'System Settings', href: '/settings', icon: Settings },
   ];
 
   const runCommand = React.useCallback((command: () => void) => {
@@ -102,20 +109,36 @@ export function CommandPalette() {
     <CommandDialog
       open={open}
       onOpenChange={setOpen}
-      title="命令面板"
-      description="搜索被子或快速导航"
+      title="Command Palette"
+      description="Quick navigation and search"
     >
       <CommandInput
-        placeholder={t('quilts.actions.search') + '... (Ctrl+K)'}
+        placeholder="Type a command or search... (Ctrl+K)"
         value={search}
         onValueChange={setSearch}
       />
       <CommandList>
-        <CommandEmpty>{loading ? '搜索中...' : '没有找到结果'}</CommandEmpty>
+        <CommandEmpty>{loading ? 'Searching...' : 'No results found.'}</CommandEmpty>
 
-        {/* 被子搜索结果 */}
+        {/* 页面导航 - Always show or filter */}
+        <CommandGroup heading="System Navigation">
+          {navigationItems.map(item => (
+            <CommandItem
+              key={item.href}
+              value={`nav-${item.name}`}
+              onSelect={() => runCommand(() => router.push(item.href))}
+            >
+              <item.icon className="mr-2 h-4 w-4" />
+              <span>{item.name}</span>
+            </CommandItem>
+          ))}
+        </CommandGroup>
+
+        <CommandSeparator />
+
+        {/* 被子搜索结果 - Only show if results exist */}
         {quilts.length > 0 && (
-          <CommandGroup heading="被子">
+          <CommandGroup heading="Quilts">
             {quilts.map(quilt => (
               <CommandItem
                 key={quilt.id}
@@ -134,46 +157,19 @@ export function CommandPalette() {
           </CommandGroup>
         )}
 
-        {/* 页面导航 */}
-        <CommandGroup heading="页面导航">
-          {navigationItems.map(item => (
-            <CommandItem
-              key={item.href}
-              value={`nav-${item.name}`}
-              onSelect={() => runCommand(() => router.push(item.href))}
-            >
-              <item.icon className="mr-2 h-4 w-4" />
-              <span>{item.name}</span>
-            </CommandItem>
-          ))}
-        </CommandGroup>
-
-        <CommandSeparator />
-
         {/* 主题切换 */}
-        <CommandGroup heading="主题">
+        <CommandGroup heading="Theme">
           <CommandItem value="theme-light" onSelect={() => runCommand(() => setTheme('light'))}>
             <Sun className="mr-2 h-4 w-4" />
-            <span>浅色模式</span>
+            <span>Light Mode</span>
           </CommandItem>
           <CommandItem value="theme-dark" onSelect={() => runCommand(() => setTheme('dark'))}>
             <Moon className="mr-2 h-4 w-4" />
-            <span>深色模式</span>
+            <span>Dark Mode</span>
           </CommandItem>
           <CommandItem value="theme-system" onSelect={() => runCommand(() => setTheme('system'))}>
             <Monitor className="mr-2 h-4 w-4" />
-            <span>跟随系统</span>
-          </CommandItem>
-        </CommandGroup>
-
-        {/* 快速搜索 */}
-        <CommandGroup heading="快速操作">
-          <CommandItem
-            value="search-quilts"
-            onSelect={() => runCommand(() => router.push('/quilts'))}
-          >
-            <Search className="mr-2 h-4 w-4" />
-            <span>搜索所有被子</span>
+            <span>System</span>
           </CommandItem>
         </CommandGroup>
       </CommandList>

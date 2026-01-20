@@ -19,13 +19,16 @@ import Link from 'next/link';
 import { StatusBadge } from '@/modules/core/ui/StatusBadge';
 
 interface PageProps {
-  params: {
+  params: Promise<{
     category: string;
     id: string;
-  };
+  }>;
 }
 
-export default async function ItemDetailPage({ params }: PageProps) {
+export default async function ItemDetailPage(props: PageProps) {
+  // Await params (Next.js 15+ requirement)
+  const params = await props.params;
+  
   // Verify authentication
   const session = await auth();
   if (!session?.user) {

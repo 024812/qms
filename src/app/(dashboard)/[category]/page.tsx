@@ -17,16 +17,20 @@ import { Plus } from 'lucide-react';
 import Link from 'next/link';
 
 interface PageProps {
-  params: {
+  params: Promise<{
     category: string;
-  };
-  searchParams: {
+  }>;
+  searchParams: Promise<{
     page?: string;
     status?: string;
-  };
+  }>;
 }
 
-export default async function CategoryListPage({ params, searchParams }: PageProps) {
+export default async function CategoryListPage(props: PageProps) {
+  // Await params and searchParams (Next.js 15+ requirement)
+  const params = await props.params;
+  const searchParams = await props.searchParams;
+  
   // Verify authentication
   const session = await auth();
   if (!session?.user) {

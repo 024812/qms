@@ -24,12 +24,15 @@ import { ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 
 interface PageProps {
-  params: {
+  params: Promise<{
     category: string;
-  };
+  }>;
 }
 
-export default async function NewItemPage({ params }: PageProps) {
+export default async function NewItemPage(props: PageProps) {
+  // Await params (Next.js 15+ requirement)
+  const params = await props.params;
+  
   // Verify authentication
   const session = await auth();
   if (!session?.user) {

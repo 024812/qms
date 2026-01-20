@@ -52,7 +52,6 @@ const moduleNavigation: Record<string, Array<{ name: string; href: string; icon:
     { name: '被子列表', href: '/quilts', icon: Package },
     { name: '使用跟踪', href: '/usage', icon: Calendar },
     { name: '数据分析', href: '/analytics', icon: BarChart3 },
-    { name: '导入导出', href: '/reports', icon: Upload },
   ],
   cards: [
     { name: '卡片列表', href: '/cards', icon: CreditCard },
@@ -79,8 +78,7 @@ export function AppSidebar() {
     if (
       pathname.startsWith('/quilts') ||
       pathname.startsWith('/usage') ||
-      pathname.startsWith('/analytics') ||
-      pathname.startsWith('/reports')
+      pathname.startsWith('/analytics')
     ) {
       return 'quilts';
     }

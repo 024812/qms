@@ -97,8 +97,11 @@ export function AppSidebar() {
   const [openModules, setOpenModules] = useState<Record<string, boolean>>({});
   const [adminOpen, setAdminOpen] = useState(false);
 
-  // Initialize open states on mount and when pathname changes
+  // Initialize open states on mount and when pathname or session changes
   useEffect(() => {
+    // Wait for session to be loaded
+    if (status === 'loading') return;
+
     const newOpenStates: Record<string, boolean> = {};
 
     subscribedModules.forEach(module => {
@@ -116,7 +119,7 @@ export function AppSidebar() {
         isHomePage
     );
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pathname, currentModuleId, isHomePage]);
+  }, [pathname, currentModuleId, isHomePage, status]);
 
   // Loading state
   if (status === 'loading') {

@@ -96,15 +96,23 @@ export function UserManagementClient({ currentUserId }: UserManagementClientProp
   const fetchUsers = async () => {
     try {
       setLoading(true);
+      console.log('[UserManagement] Fetching users from /api/users');
       const response = await fetch('/api/users');
+      console.log('[UserManagement] Response status:', response.status);
+      console.log('[UserManagement] Response ok:', response.ok);
+      
+      const data = await response.json();
+      console.log('[UserManagement] Response data:', data);
+      
       if (response.ok) {
-        const data = await response.json();
         setUsers(data.users || []);
+        console.log('[UserManagement] Set users:', data.users?.length || 0);
       } else {
+        console.error('[UserManagement] Error response:', data);
         error('错误', '获取用户列表失败');
       }
     } catch (err) {
-      console.error('Failed to fetch users:', err);
+      console.error('[UserManagement] Failed to fetch users:', err);
       error('错误', '获取用户列表失败');
     } finally {
       setLoading(false);

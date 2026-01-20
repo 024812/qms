@@ -32,11 +32,11 @@ export default async function DebugUsersPage() {
     tablesError = err;
   }
 
-  // Try to query users from "user" table
+  // Try to query users from "users" table (plural)
   try {
     const result = await db.execute(sql`
       SELECT id, name, email, role, created_at
-      FROM "user"
+      FROM "users"
       ORDER BY created_at
     `);
 
@@ -81,7 +81,7 @@ export default async function DebugUsersPage() {
 
         {error && (
           <div className="border border-red-500 rounded p-4 bg-red-50">
-            <h2 className="font-semibold mb-2 text-red-700">查询 "user" 表时出错</h2>
+            <h2 className="font-semibold mb-2 text-red-700">查询 "users" 表时出错</h2>
             <pre className="text-xs text-red-600">
               {JSON.stringify(error, null, 2)}
             </pre>

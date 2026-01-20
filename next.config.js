@@ -85,28 +85,7 @@ const nextConfig = {
             key: 'Permissions-Policy',
             value: 'camera=(), microphone=(), geolocation=(), payment=(), usb=(), bluetooth=()',
           },
-          // Comprehensive Content Security Policy
-          {
-            key: 'Content-Security-Policy',
-            value: [
-              "default-src 'self'",
-              "script-src 'self' 'unsafe-eval' 'unsafe-inline' https://vercel.live", // Next.js requires unsafe-eval and unsafe-inline
-              "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com", // Tailwind requires unsafe-inline
-              "img-src 'self' data: blob: https: https://*.vercel.app",
-              "font-src 'self' data: https://fonts.gstatic.com",
-              "connect-src 'self' https://api.vercel.com https://*.neon.tech https://vitals.vercel-insights.com wss: ws:",
-              "media-src 'self'",
-              "object-src 'none'",
-              "base-uri 'self'",
-              "form-action 'self'",
-              "frame-ancestors 'none'",
-              "frame-src 'none'",
-              "worker-src 'self' blob:",
-              "manifest-src 'self'",
-              'upgrade-insecure-requests',
-              'block-all-mixed-content',
-            ].join('; '),
-          },
+          // Note: CSP is now handled in proxy.ts with nonce generation
           // Enable HSTS (HTTP Strict Transport Security)
           {
             key: 'Strict-Transport-Security',

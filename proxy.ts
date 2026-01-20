@@ -5,6 +5,7 @@
  * - Authentication checks for protected routes
  * - Redirect logic for authenticated/unauthenticated users
  * - Dashboard routing based on user's active modules
+ * - Content Security Policy with nonce generation
  *
  * Migration from middleware.ts to proxy.ts (Next.js 16 best practice)
  * Requirements: 1.1, 1.2, 1.3, 1.4 (Proxy API migration)
@@ -22,9 +23,31 @@ import type { NextRequest } from 'next/server';
  * - Use auth() to get authentication state
  * - Use NextResponse for redirects
  * - Implement module-based redirect logic
+ * - Generate CSP nonce for enhanced security
  */
 export async function proxy(req: NextRequest) {
   const { pathname } = req.nextUrl;
+
+  // Generate nonce for CSP
+  const nonce = Buffer.from(crypto.randomUUID()).toString('base64');
+  const isDev = process.env.NODE_ENV === 'development';
+
+  // Content Security Policy with nonce
+  const cspHeader = `
+    default-src 'self';
+    script-src 'self' 'nonce-${nonce}' 'strict-dynamic' ${isDev ? "'unsafe-eval'" : ''};
+    style-src 'self' ${isDev ? "'unsafe-inline'" : `'nonce-${nonce}'`};
+    img-src 'self' blob: data:;
+    font-src 'self';
+    connect-src 'self' ${isDev ? 'ws: wss:' : ''};
+    object-src 'none';
+    base-uri 'self';
+    form-action 'self';
+    frame-ancestors 'none';
+    upgrade-insecure-requests;
+  `
+    .replace(/\s{2,}/g, ' ')
+    .trim();
 
   // Static assets and API routes (handled separately)
   // Check BEFORE auth() call for better performance
@@ -65,7 +88,20 @@ export async function proxy(req: NextRequest) {
     // This will be handled by the page component
   }
 
-  return NextResponse.next();
+  // Set CSP header with nonce
+  const requestHeaders = new Headers(req.headers);
+  requestHeaders.set('x-nonce', nonce);
+  requestHeaders.set('Content-Security-Policy', cspHeader);
+
+  const response = NextResponse.next({
+    request: {
+      headers: requestHeaders,
+    },
+  });
+
+  response.headers.set('Content-Security-Policy', cspHeader);
+
+  return response;
 }
 
 /**

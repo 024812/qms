@@ -124,28 +124,6 @@ export function AppSidebar() {
       isHomePage
     );
   }, [pathname, currentModuleId, isHomePage, subscribedModules]);
-  
-  // State to control which collapsibles are open
-  const [openModules, setOpenModules] = useState<Record<string, boolean>>({});
-  const [adminOpen, setAdminOpen] = useState(false);
-  
-  // Initialize open state on mount and when pathname changes
-  useEffect(() => {
-    const newOpenState: Record<string, boolean> = {};
-    
-    subscribedModules.forEach(module => {
-      const isModuleActive = currentModuleId === module.id;
-      newOpenState[module.id] = isModuleActive || isHomePage;
-    });
-    
-    setOpenModules(newOpenState);
-    
-    // Admin section
-    const isAdminActive = pathname.startsWith('/users') || 
-                         pathname.startsWith('/admin') || 
-                         pathname === '/quilts/settings';
-    setAdminOpen(isAdminActive || isHomePage);
-  }, [pathname, subscribedModules.length, currentModuleId, isHomePage]);
 
   // Loading state
   if (status === 'loading') {

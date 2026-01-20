@@ -55,6 +55,9 @@ export default function CardsPage() {
     storageType: '',
     condition: '',
     notes: '',
+    mainImage: '', // 正面图片
+    frontImage: '', // 人物面
+    backImage: '', // 反面
   });
 
   // Fetch cards on mount
@@ -104,6 +107,9 @@ export default function CardsPage() {
       storageType: '',
       condition: '',
       notes: '',
+      mainImage: '',
+      frontImage: '',
+      backImage: '',
     });
     setDialogOpen(true);
   };
@@ -315,6 +321,90 @@ export default function CardsPage() {
                     value={formData.grade}
                     onChange={(e) => setFormData({ ...formData, grade: e.target.value })}
                   />
+                </div>
+              </div>
+            </div>
+
+            {/* Value Information */}
+            <div className="space-y-4">
+              <h3 className="font-semibold text-sm">价值信息</h3>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="purchasePrice">购买价格 ($)</Label>
+                  <Input
+                    id="purchasePrice"
+                    type="number"
+                    step="0.01"
+                    placeholder="例如：100.00"
+                    value={formData.purchasePrice}
+                    onChange={(e) => setFormData({ ...formData, purchasePrice: e.target.value })}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="purchaseDate">购买日期</Label>
+                  <Input
+                    id="purchaseDate"
+                    type="date"
+                    value={formData.purchaseDate}
+                    onChange={(e) => setFormData({ ...formData, purchaseDate: e.target.value })}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="currentValue">当前价值 ($)</Label>
+                  <Input
+                    id="currentValue"
+                    type="number"
+                    step="0.01"
+                    placeholder="例如：500.00"
+                    value={formData.currentValue}
+                    onChange={(e) => setFormData({ ...formData, currentValue: e.target.value })}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="estimatedValue">估计价值 ($)</Label>
+                  <Input
+                    id="estimatedValue"
+                    type="number"
+                    step="0.01"
+                    placeholder="例如：550.00"
+                    value={formData.estimatedValue}
+                    onChange={(e) => setFormData({ ...formData, estimatedValue: e.target.value })}
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Images */}
+            <div className="space-y-4">
+              <h3 className="font-semibold text-sm">卡片图片</h3>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="frontImage">正面图片（人物面）</Label>
+                  <Input
+                    id="frontImage"
+                    type="url"
+                    placeholder="图片URL"
+                    value={formData.frontImage}
+                    onChange={(e) => setFormData({ ...formData, frontImage: e.target.value })}
+                  />
+                  <p className="text-xs text-muted-foreground">球星卡正面（人物面）图片</p>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="backImage">反面图片</Label>
+                  <Input
+                    id="backImage"
+                    type="url"
+                    placeholder="图片URL"
+                    value={formData.backImage}
+                    onChange={(e) => setFormData({ ...formData, backImage: e.target.value })}
+                  />
+                  <p className="text-xs text-muted-foreground">球星卡反面图片</p>
                 </div>
               </div>
             </div>

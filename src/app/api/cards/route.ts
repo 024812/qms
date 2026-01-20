@@ -39,6 +39,10 @@ export async function POST(request: NextRequest) {
 
     const body = await request.json();
 
+    // Prepare images array: frontImage as mainImage, backImage in attachmentImages
+    const mainImage = body.frontImage || null;
+    const attachmentImages = body.backImage ? [body.backImage] : [];
+
     const newCard = await db
       .insert(cards)
       .values({
@@ -68,6 +72,8 @@ export async function POST(request: NextRequest) {
         storageType: body.storageType || null,
         condition: body.condition || null,
         notes: body.notes || null,
+        mainImage: mainImage,
+        attachmentImages: attachmentImages,
       })
       .returning();
 

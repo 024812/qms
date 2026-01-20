@@ -6,20 +6,19 @@ import { useSession } from 'next-auth/react';
 import { useLanguage } from '@/lib/language-provider';
 import { useState, useEffect } from 'react';
 import {
-  Home,
   Package,
   BarChart3,
   Settings,
   Calendar,
   Github,
   Upload,
-  Grid3x3,
   CreditCard,
   Bed,
-  User,
   Users,
   Loader2,
-  Wrench
+  Wrench,
+  ChevronRight,
+  LucideIcon,
 } from 'lucide-react';
 import packageJson from '../../../package.json';
 import { getAllModules } from '@/modules/registry';
@@ -30,7 +29,6 @@ import {
   SidebarFooter,
   SidebarGroup,
   SidebarGroupContent,
-
   SidebarHeader,
   SidebarMenu,
   SidebarMenuButton,
@@ -40,15 +38,7 @@ import {
   SidebarMenuSubItem,
   SidebarRail,
 } from '@/components/ui/sidebar';
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from '@/components/ui/collapsible';
-import { ChevronRight } from 'lucide-react';
-
-// Icon mapping for modules
-import { LucideIcon } from 'lucide-react';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 
 const moduleIcons: Record<string, LucideIcon> = {
   Bed,
@@ -86,8 +76,12 @@ export function AppSidebar() {
 
   // Determine which module is currently active based on pathname
   const getCurrentModuleId = () => {
-    if (pathname.startsWith('/quilts') || pathname.startsWith('/usage') ||
-      pathname.startsWith('/analytics') || pathname.startsWith('/reports')) {
+    if (
+      pathname.startsWith('/quilts') ||
+      pathname.startsWith('/usage') ||
+      pathname.startsWith('/analytics') ||
+      pathname.startsWith('/reports')
+    ) {
       return 'quilts';
     }
     if (pathname.startsWith('/cards')) {
@@ -97,7 +91,7 @@ export function AppSidebar() {
   };
 
   const currentModuleId = getCurrentModuleId();
-  
+
   // On homepage, expand all modules by default
   const isHomePage = pathname === '/' || pathname === '/modules';
 
@@ -108,22 +102,23 @@ export function AppSidebar() {
   // Initialize open states on mount and when pathname changes
   useEffect(() => {
     const newOpenStates: Record<string, boolean> = {};
-    
+
     subscribedModules.forEach(module => {
       // Open if it's the current module or if we're on homepage
       newOpenStates[module.id] = module.id === currentModuleId || isHomePage;
     });
-    
+
     setOpenModules(newOpenStates);
-    
+
     // Open admin section if on admin pages or homepage
     setAdminOpen(
-      pathname.startsWith('/users') || 
-      pathname.startsWith('/admin') || 
-      pathname === '/quilts/settings' ||
-      isHomePage
+      pathname.startsWith('/users') ||
+        pathname.startsWith('/admin') ||
+        pathname === '/quilts/settings' ||
+        isHomePage
     );
-  }, [pathname, currentModuleId, isHomePage, subscribedModules]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pathname, currentModuleId, isHomePage]);
 
   // Loading state
   if (status === 'loading') {
@@ -175,15 +170,14 @@ export function AppSidebar() {
                     <Collapsible
                       asChild
                       open={openModules[module.id] || false}
-                      onOpenChange={(open) => setOpenModules(prev => ({ ...prev, [module.id]: open }))}
+                      onOpenChange={open =>
+                        setOpenModules(prev => ({ ...prev, [module.id]: open }))
+                      }
                       className="group/collapsible"
                     >
                       <SidebarMenuItem>
                         <CollapsibleTrigger asChild>
-                          <SidebarMenuButton
-                            tooltip={module.name}
-                            isActive={isModuleActive}
-                          >
+                          <SidebarMenuButton tooltip={module.name} isActive={isModuleActive}>
                             <IconComponent className="h-4 w-4" />
                             <span>{module.name}</span>
                             <ChevronRight className="ml-auto h-4 w-4 transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
@@ -195,7 +189,9 @@ export function AppSidebar() {
                               <SidebarMenuSubItem key={item.href}>
                                 <SidebarMenuSubButton
                                   asChild
-                                  isActive={pathname === item.href || pathname.startsWith(item.href + '/')}
+                                  isActive={
+                                    pathname === item.href || pathname.startsWith(item.href + '/')
+                                  }
                                 >
                                   <Link href={item.href} prefetch={false}>
                                     <item.icon className="h-4 w-4" />
@@ -220,11 +216,7 @@ export function AppSidebar() {
               <SidebarGroupContent>
                 <SidebarMenu>
                   <SidebarMenuItem>
-                    <SidebarMenuButton
-                      asChild
-                      isActive={isModuleActive}
-                      tooltip={module.name}
-                    >
+                    <SidebarMenuButton asChild isActive={isModuleActive} tooltip={module.name}>
                       <Link href={`/${module.id}s`} prefetch={false}>
                         <IconComponent className="h-4 w-4" />
                         <span>{module.name}</span>
@@ -252,7 +244,11 @@ export function AppSidebar() {
                     <CollapsibleTrigger asChild>
                       <SidebarMenuButton
                         tooltip="系统管理"
-                        isActive={pathname.startsWith('/users') || pathname.startsWith('/admin') || pathname === '/quilts/settings'}
+                        isActive={
+                          pathname.startsWith('/users') ||
+                          pathname.startsWith('/admin') ||
+                          pathname === '/quilts/settings'
+                        }
                       >
                         <Wrench className="h-4 w-4" />
                         <span>系统管理</span>
@@ -262,10 +258,7 @@ export function AppSidebar() {
                     <CollapsibleContent>
                       <SidebarMenuSub>
                         <SidebarMenuSubItem>
-                          <SidebarMenuSubButton
-                            asChild
-                            isActive={pathname === '/users'}
-                          >
+                          <SidebarMenuSubButton asChild isActive={pathname === '/users'}>
                             <Link href="/users" prefetch={false}>
                               <Users className="h-4 w-4" />
                               <span>用户管理</span>
@@ -273,10 +266,7 @@ export function AppSidebar() {
                           </SidebarMenuSubButton>
                         </SidebarMenuSubItem>
                         <SidebarMenuSubItem>
-                          <SidebarMenuSubButton
-                            asChild
-                            isActive={pathname === '/admin/settings'}
-                          >
+                          <SidebarMenuSubButton asChild isActive={pathname === '/admin/settings'}>
                             <Link href="/admin/settings" prefetch={false}>
                               <Settings className="h-4 w-4" />
                               <span>系统配置</span>
@@ -284,10 +274,7 @@ export function AppSidebar() {
                           </SidebarMenuSubButton>
                         </SidebarMenuSubItem>
                         <SidebarMenuSubItem>
-                          <SidebarMenuSubButton
-                            asChild
-                            isActive={pathname === '/quilts/settings'}
-                          >
+                          <SidebarMenuSubButton asChild isActive={pathname === '/quilts/settings'}>
                             <Link href="/quilts/settings" prefetch={false}>
                               <Bed className="h-4 w-4" />
                               <span>被子管理设置</span>

@@ -35,16 +35,6 @@ export type QuiltSortField =
   | 'updatedAt';
 export type SortOrder = 'asc' | 'desc';
 
-// Mapping from camelCase field names to snake_case database column names
-const _SORT_FIELD_MAP: Record<QuiltSortField, string> = {
-  itemNumber: 'item_number',
-  name: 'name',
-  season: 'season',
-  weightGrams: 'weight_grams',
-  createdAt: 'created_at',
-  updatedAt: 'updated_at',
-};
-
 export interface QuiltFilters {
   season?: Season;
   status?: QuiltStatus;

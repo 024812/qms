@@ -28,35 +28,25 @@ export async function GET() {
   try {
     const session = await auth();
 
-    console.log('[API /api/users] Session:', session?.user);
-
     // Check authentication and admin role
     if (!session?.user || session.user.role !== 'admin') {
-      console.log('[API /api/users] Unauthorized access attempt');
       return createUnauthorizedResponse('需要管理员权限');
     }
 
     // Fetch all users from actual database table "users" (plural)
-    console.log('[API /api/users] Executing query...');
     const result = await db.execute(sql`
       SELECT id, name, email, preferences, created_at as "createdAt"
       FROM "users"
       ORDER BY created_at
     `);
 
-    console.log('[API /api/users] Query result:', result);
-    console.log('[API /api/users] Result rows:', result.rows);
-
     const allUsers = result.rows as Array<{
       id: string;
       name: string | null;
       email: string;
-      preferences: any;
+      preferences: Record<string, unknown>;
       createdAt: Date;
     }>;
-
-    console.log('[API /api/users] Found users:', allUsers.length);
-    console.log('[API /api/users] Users:', allUsers.map(u => ({ email: u.email, name: u.name })));
 
     // Transform users to match expected format
     const transformedUsers = allUsers.map(user => ({
@@ -74,7 +64,9 @@ export async function GET() {
       total: transformedUsers.length,
     });
   } catch (error) {
-    console.error('Failed to fetch users:', error);
+    if (process.env.NODE_ENV === 'development') {
+      console.error('Failed to fetch users:', error);
+    }
     return createInternalErrorResponse('获取用户列表失败', error);
   }
 }
@@ -93,8 +85,6 @@ export async function POST(request: NextRequest) {
 
     const body = await request.json();
     const { name, email, password, role = 'MEMBER', activeModules = [] } = body;
-
-    console.log('[API /api/users POST] Creating user:', { name, email, role, activeModules });
 
     // Validate required fields
     if (!name || !email || !password) {
@@ -136,8 +126,6 @@ export async function POST(request: NextRequest) {
       notificationsEnabled: true,
     };
 
-    console.log('[API /api/users POST] Preferences:', preferences);
-
     // Create user in actual database table
     const result = await db.execute(sql`
       INSERT INTO "users" (id, name, email, hashed_password, preferences, created_at, updated_at)
@@ -149,7 +137,7 @@ export async function POST(request: NextRequest) {
       id: string;
       name: string;
       email: string;
-      preferences: any;
+      preferences: Record<string, unknown>;
       createdAt: Date;
     };
 
@@ -168,7 +156,9 @@ export async function POST(request: NextRequest) {
       201
     );
   } catch (error) {
-    console.error('Failed to create user:', error);
+    if (process.env.NODE_ENV === 'development') {
+      console.error('Failed to create user:', error);
+    }
     return createInternalErrorResponse('创建用户失败', error);
   }
 }

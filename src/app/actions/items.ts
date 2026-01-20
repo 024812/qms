@@ -45,8 +45,8 @@ function moduleIdToDbType(moduleId: string): 'quilt' | 'card' | 'shoe' | 'racket
 
 import {
   revalidatePath,
-  unstable_cacheLife as cacheLife,
-  unstable_cacheTag as cacheTag,
+  cacheLife,
+  cacheTag,
   updateTag,
 } from 'next/cache';
 

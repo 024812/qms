@@ -254,7 +254,10 @@ async function endUsage(data: EndUsageInput): Promise<UsageRecord | null> {
   return result.usageRecord;
 }
 
-async function updateQuiltStatus(data: UpdateQuiltStatusInput): Promise<any> {
+async function updateQuiltStatus(data: UpdateQuiltStatusInput): Promise<{
+  quilt: { id: string; currentStatus: string };
+  usageRecord?: UsageRecord;
+}> {
   const response = await fetch(`/api/quilts/${data.quiltId}/status`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },

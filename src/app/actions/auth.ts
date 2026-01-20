@@ -127,7 +127,9 @@ export async function registerUser(formData: FormData): Promise<RegisterResult> 
       message: 'Registration successful',
     };
   } catch (error) {
-    console.error('Registration error:', error);
+    if (process.env.NODE_ENV === 'development') {
+      console.error('Registration error:', error);
+    }
     return {
       success: false,
       message: 'Registration failed',
@@ -166,27 +168,17 @@ type LoginResult = {
  */
 export async function loginUser(formData: FormData): Promise<LoginResult> {
   try {
-    console.log('[LOGIN] Starting login process');
-    console.log('[LOGIN] Environment check:', {
-      hasSecret: !!process.env.NEXTAUTH_SECRET,
-      hasDbUrl: !!process.env.DATABASE_URL,
-      nodeEnv: process.env.NODE_ENV,
-    });
-
     // Extract form data
     const rawData = {
       email: formData.get('email') as string,
       password: formData.get('password') as string,
     };
 
-    console.log('[LOGIN] Attempting login for:', rawData.email);
-
     // Validate input
     const validationResult = loginSchema.safeParse(rawData);
 
     if (!validationResult.success) {
       const errors = validationResult.error.issues.map((err) => err.message).join(', ');
-      console.error('[LOGIN] Validation failed:', errors);
       return {
         success: false,
         message: 'Validation failed',
@@ -199,7 +191,6 @@ export async function loginUser(formData: FormData): Promise<LoginResult> {
     // Attempt sign in - Auth.js v5 behavior:
     // - Returns undefined on success (when redirect: false)
     // - Throws CredentialsSignin error on failure
-    console.log('[LOGIN] Calling signIn with credentials');
     try {
       await signIn('credentials', {
         email,
@@ -208,13 +199,11 @@ export async function loginUser(formData: FormData): Promise<LoginResult> {
       });
 
       // If we reach here, login succeeded
-      console.log('[LOGIN] Login successful for:', email);
       return {
         success: true,
         message: '登录成功',
       };
-    } catch (signInError) {
-      console.error('[LOGIN] Sign in error:', signInError);
+    } catch {
       return {
         success: false,
         message: '登录失败',
@@ -222,12 +211,8 @@ export async function loginUser(formData: FormData): Promise<LoginResult> {
       };
     }
   } catch (error) {
-    console.error('[LOGIN] Login error:', error);
-    if (error instanceof Error) {
-      console.error('[LOGIN] Error details:', {
-        message: error.message,
-        stack: error.stack,
-      });
+    if (process.env.NODE_ENV === 'development') {
+      console.error('[LOGIN] Login error:', error);
     }
     return {
       success: false,

@@ -21,7 +21,7 @@
  */
 
 import { cache } from 'react';
-import { unstable_cacheLife as cacheLife, unstable_cacheTag as cacheTag } from 'next/cache';
+import { cacheLife, cacheTag } from 'next/cache';
 import { sql } from '@/lib/neon';
 
 // ============================================================================

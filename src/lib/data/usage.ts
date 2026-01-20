@@ -21,8 +21,8 @@
 
 import { cache } from 'react';
 import {
-  unstable_cacheLife as cacheLife,
-  unstable_cacheTag as cacheTag,
+  cacheLife,
+  cacheTag,
   updateTag,
 } from 'next/cache';
 
@@ -312,12 +312,12 @@ export async function getUsageStats(quiltId: string): Promise<UsageStats> {
       FROM usage_records
       WHERE quilt_id = ${quiltId}
     `) as [
-      {
-        total_usages: string;
-        total_days: string;
-        last_used: string | null;
-      },
-    ];
+        {
+          total_usages: string;
+          total_days: string;
+          last_used: string | null;
+        },
+      ];
 
     const totalUsages = parseInt(result[0]?.total_usages || '0', 10);
     const totalDays = parseFloat(result[0]?.total_days || '0');

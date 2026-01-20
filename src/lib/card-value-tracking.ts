@@ -182,7 +182,7 @@ export async function getCardValueStatistics(
   let highestValue: number | null = currentValue;
   let lowestValue: number | null = currentValue;
   let totalValue = 0;
-  let recordCount = history.length;
+  const recordCount = history.length;
 
   if (history.length > 0) {
     history.forEach((record) => {

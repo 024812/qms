@@ -96,25 +96,17 @@ export function UserManagementClient({ currentUserId }: UserManagementClientProp
   const fetchUsers = async () => {
     try {
       setLoading(true);
-      console.log('[UserManagement] Fetching users from /api/users');
       const response = await fetch('/api/users');
-      console.log('[UserManagement] Response status:', response.status);
-      console.log('[UserManagement] Response ok:', response.ok);
-      
       const data = await response.json();
-      console.log('[UserManagement] Response data:', data);
-      
+
       if (response.ok) {
         // API returns { success: true, data: { users: [...], total: ... } }
         const users = data.data?.users || data.users || [];
         setUsers(users);
-        console.log('[UserManagement] Set users:', users.length);
       } else {
-        console.error('[UserManagement] Error response:', data);
         error('错误', data.error?.message || '获取用户列表失败');
       }
-    } catch (err) {
-      console.error('[UserManagement] Failed to fetch users:', err);
+    } catch {
       error('错误', '获取用户列表失败');
     } finally {
       setLoading(false);
@@ -176,8 +168,7 @@ export function UserManagementClient({ currentUserId }: UserManagementClientProp
       } else {
         error('错误', data.message || '创建用户失败');
       }
-    } catch (err) {
-      console.error('Failed to create user:', err);
+    } catch {
       error('错误', '创建用户失败');
     } finally {
       setSaving(false);
@@ -205,8 +196,7 @@ export function UserManagementClient({ currentUserId }: UserManagementClientProp
       } else {
         error('错误', data.message || '更新用户失败');
       }
-    } catch (err) {
-      console.error('Failed to update user:', err);
+    } catch {
       error('错误', '更新用户失败');
     } finally {
       setSaving(false);
@@ -232,8 +222,7 @@ export function UserManagementClient({ currentUserId }: UserManagementClientProp
       } else {
         error('错误', data.message || '删除用户失败');
       }
-    } catch (err) {
-      console.error('Failed to delete user:', err);
+    } catch {
       error('错误', '删除用户失败');
     } finally {
       setSaving(false);

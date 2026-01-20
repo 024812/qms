@@ -21,8 +21,8 @@
 
 import { cache } from 'react';
 import {
-  unstable_cacheLife as cacheLife,
-  unstable_cacheTag as cacheTag,
+  cacheLife,
+  cacheTag,
   updateTag,
 } from 'next/cache';
 

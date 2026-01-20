@@ -37,11 +37,15 @@ export async function GET() {
     }
 
     // Fetch all users from actual database table "user" (not "users")
+    console.log('[API /api/users] Executing query...');
     const result = await db.execute(sql`
       SELECT id, name, email, role, created_at as "createdAt"
       FROM "user"
       ORDER BY created_at
     `);
+
+    console.log('[API /api/users] Query result:', result);
+    console.log('[API /api/users] Result rows:', result.rows);
 
     const allUsers = result.rows as Array<{
       id: string;

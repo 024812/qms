@@ -57,13 +57,13 @@ const moduleIcons: Record<string, LucideIcon> = {
 
 // Module-specific navigation items
 const moduleNavigation: Record<string, Array<{ name: string; href: string; icon: LucideIcon }>> = {
-  quilt: [
+  quilts: [
     { name: '被子列表', href: '/quilts', icon: Package },
     { name: '使用跟踪', href: '/usage', icon: Calendar },
     { name: '数据分析', href: '/analytics', icon: BarChart3 },
     { name: '导入导出', href: '/reports', icon: Upload },
   ],
-  card: [
+  cards: [
     { name: '卡片列表', href: '/cards', icon: CreditCard },
     // Add more card-specific navigation as needed
   ],

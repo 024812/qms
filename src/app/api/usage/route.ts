@@ -11,8 +11,10 @@
 
 import { NextRequest } from 'next/server';
 import { z } from 'zod';
-import { createUsageRecord as createUsageRecordData } from '@/lib/data/usage';
-import { usageRepository } from '@/lib/repositories/usage.repository';
+import {
+  createUsageRecord as createUsageRecordData,
+  getUsageRecordsWithQuilts,
+} from '@/lib/data/usage';
 import { sanitizeApiInput } from '@/lib/sanitization';
 import {
   createValidationErrorResponse,
@@ -56,7 +58,8 @@ export async function GET(request: NextRequest) {
     const offset = parseInt(searchParams.get('offset') || '0', 10);
 
     // Fetch usage records with quilt join (returns startedAt/endedAt format)
-    const records = await usageRepository.findAll({ quiltId, limit, offset });
+    // Uses 'use cache' for server-side caching
+    const records = await getUsageRecordsWithQuilts({ quiltId, limit, offset });
 
     const response = createSuccessResponse(
       { records },

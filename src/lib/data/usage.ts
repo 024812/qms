@@ -19,7 +19,7 @@
 import { cache } from 'react';
 import { cacheLife, cacheTag, updateTag } from 'next/cache';
 import { db } from '@/db';
-import { usageRecords } from '@/db/schema';
+import { usageRecords, quilts } from '@/db/schema';
 import { eq, desc, and, isNull, sql } from 'drizzle-orm';
 import { dbLogger } from '@/lib/logger';
 import { type UsageRecord } from '@/lib/database/types';
@@ -154,14 +154,105 @@ export async function getUsageRecords(): Promise<UsageRecord[]> {
   cacheTag('usage', 'usage-list');
 
   try {
-    const result = await db
-      .select()
-      .from(usageRecords)
-      .orderBy(desc(usageRecords.startDate));
+    const result = await db.select().from(usageRecords).orderBy(desc(usageRecords.startDate));
 
     return result as unknown as UsageRecord[];
   } catch (error) {
     dbLogger.error('Error fetching all usage records', { error });
+    throw error;
+  }
+}
+
+/**
+ * Usage record with joined quilt information
+ */
+export interface UsageRecordWithQuilt {
+  id: string;
+  quiltId: string;
+  quiltName: string | null;
+  itemNumber: number | null;
+  color: string | null;
+  season: string | null;
+  currentStatus: string | null;
+  startedAt: Date;
+  endedAt: Date | null;
+  usageType: string | null;
+  notes: string | null;
+  isActive: boolean;
+  duration: number | null;
+}
+
+/**
+ * Get ALL usage records with quilt information
+ *
+ * Cache: 2 minutes
+ * Tags: 'usage', 'usage-list'
+ */
+export async function getUsageRecordsWithQuilts(
+  filters: { quiltId?: string; limit?: number; offset?: number } = {}
+): Promise<UsageRecordWithQuilt[]> {
+  'use cache';
+  cacheLife('seconds'); // 2 minutes
+  cacheTag('usage', 'usage-list');
+
+  try {
+    const { quiltId, limit = 50, offset = 0 } = filters;
+
+    let query = db
+      .select({
+        id: usageRecords.id,
+        quiltId: usageRecords.quiltId,
+        startDate: usageRecords.startDate,
+        endDate: usageRecords.endDate,
+        usageType: usageRecords.usageType,
+        notes: usageRecords.notes,
+        quiltName: quilts.name,
+        itemNumber: quilts.itemNumber,
+        color: quilts.color,
+        season: quilts.season,
+        currentStatus: quilts.currentStatus,
+      })
+      .from(usageRecords)
+      .leftJoin(quilts, sql`${usageRecords.quiltId} = ${quilts.id}`)
+      .orderBy(desc(usageRecords.startDate))
+      .limit(limit)
+      .offset(offset);
+
+    if (quiltId) {
+      query = query.where(sql`${usageRecords.quiltId} = ${quiltId}`) as typeof query;
+    }
+
+    const rows = await query;
+
+    // Transform to expected format
+    return rows.map(row => {
+      const endDate = row.endDate ? new Date(row.endDate) : null;
+      const startDate = new Date(row.startDate);
+      let duration: number | null = null;
+
+      if (endDate) {
+        const diffTime = Math.abs(endDate.getTime() - startDate.getTime());
+        duration = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      }
+
+      return {
+        id: row.id,
+        quiltId: row.quiltId,
+        quiltName: row.quiltName,
+        itemNumber: row.itemNumber,
+        color: row.color,
+        season: row.season,
+        currentStatus: row.currentStatus,
+        startedAt: startDate,
+        endedAt: endDate,
+        usageType: row.usageType,
+        notes: row.notes,
+        isActive: !endDate,
+        duration: duration,
+      };
+    });
+  } catch (error) {
+    dbLogger.error('Error fetching usage records with quilts', { error });
     throw error;
   }
 }
@@ -172,22 +263,27 @@ export async function getUsageRecords(): Promise<UsageRecord[]> {
  * Cache: 2 minutes
  * Tags: 'usage', 'usage-quilt-{quiltId}'
  */
-export async function getUsageStats(quiltId: string): Promise<{ totalDays: number; usageCount: number }> {
+export async function getUsageStats(
+  quiltId: string
+): Promise<{ totalDays: number; usageCount: number }> {
   'use cache';
   cacheLife('seconds'); // 2 minutes
   cacheTag('usage', `usage-quilt-${quiltId}`);
 
   try {
-    const result = await db.select({
-      count: sql<number>`count(*)::int`,
-      days: sql<number>`COALESCE(SUM(
+    const result = await db
+      .select({
+        count: sql<number>`count(*)::int`,
+        days: sql<number>`COALESCE(SUM(
         CASE
           WHEN ${usageRecords.endDate} IS NOT NULL
           THEN EXTRACT(DAY FROM (${usageRecords.endDate} - ${usageRecords.startDate}))
           ELSE 0
         END
-      ), 0)::int`
-    }).from(usageRecords).where(eq(usageRecords.quiltId, quiltId));
+      ), 0)::int`,
+      })
+      .from(usageRecords)
+      .where(eq(usageRecords.quiltId, quiltId));
 
     return {
       usageCount: result[0]?.count || 0,
@@ -212,19 +308,22 @@ export async function createUsageRecord(data: CreateUsageRecordData): Promise<Us
   try {
     dbLogger.info('Creating usage record', { quiltId: data.quiltId });
 
-    const result = await db.insert(usageRecords).values({
-      quiltId: data.quiltId,
-      startDate: data.startDate,
-      endDate: data.endDate,
-      usageType: data.usageType,
-      notes: data.notes,
-    }).returning();
+    const result = await db
+      .insert(usageRecords)
+      .values({
+        quiltId: data.quiltId,
+        startDate: data.startDate,
+        endDate: data.endDate,
+        usageType: data.usageType,
+        notes: data.notes,
+      })
+      .returning();
 
     const record = result[0] as unknown as UsageRecord;
 
     updateTag('usage');
     updateTag(`usage-quilt-${data.quiltId}`);
-    
+
     // Also invalidate stats as they change
     updateTag('stats');
 
@@ -251,7 +350,8 @@ export async function updateUsageRecord(
 
     dbLogger.info('Updating usage record', { id });
 
-    const result = await db.update(usageRecords)
+    const result = await db
+      .update(usageRecords)
       .set({
         startDate: data.startDate,
         endDate: data.endDate,
@@ -281,21 +381,25 @@ export async function updateUsageRecord(
 /**
  * End an active usage record
  */
-export async function endUsageRecord(id: string, endDate: Date = new Date()): Promise<UsageRecord | null> {
+export async function endUsageRecord(
+  id: string,
+  endDate: Date = new Date()
+): Promise<UsageRecord | null> {
   try {
     const current = await getUsageRecordById(id);
     if (!current) return null;
 
     dbLogger.info('Ending usage record', { id });
 
-    const result = await db.update(usageRecords)
+    const result = await db
+      .update(usageRecords)
       .set({
         endDate: endDate,
         updatedAt: new Date(),
       })
       .where(eq(usageRecords.id, id))
       .returning();
-    
+
     if (result.length === 0) return null;
     const updated = result[0] as unknown as UsageRecord;
 

@@ -45,7 +45,12 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       return createNotFoundResponse('被子');
     }
 
-    return createSuccessResponse({ quilt });
+    const response = createSuccessResponse({ quilt });
+
+    // Prevent browser caching to ensure fresh data
+    response.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate');
+
+    return response;
   } catch (error) {
     return createInternalErrorResponse('获取被子详情失败', error);
   }

@@ -58,7 +58,7 @@ export async function GET(request: NextRequest) {
     // Fetch usage records with quilt join (returns startedAt/endedAt format)
     const records = await usageRepository.findAll({ quiltId, limit, offset });
 
-    return createSuccessResponse(
+    const response = createSuccessResponse(
       { records },
       {
         total: records.length,
@@ -66,6 +66,11 @@ export async function GET(request: NextRequest) {
         hasMore: records.length === limit,
       }
     );
+
+    // Prevent browser caching to ensure fresh data
+    response.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate');
+
+    return response;
   } catch (error) {
     return createInternalErrorResponse('获取使用记录列表失败', error);
   }

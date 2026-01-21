@@ -2,12 +2,13 @@
  * Database Schema Definition
  *
  * This file defines the database schema using Drizzle ORM.
- * It uses a single-table inheritance pattern with JSONB for module-specific attributes.
  *
  * Architecture:
  * - users: User accounts with role-based access control
- * - items: Universal items table (quilts, cards, shoes, etc.)
- * - usage_logs: Activity tracking for all items
+ * - quilts: Quilt management module (Independent Table)
+ * - cards: Sports card collection module (Independent Table)
+ * - usage_records: Activity tracking for quilts
+ * - audit_logs: System-wide audit logging
  *
  * Requirements: 2.1, 2.2, 8.1
  */
@@ -36,38 +37,12 @@ import { relations } from 'drizzle-orm';
 export const userRoleEnum = pgEnum('user_role', ['admin', 'member']);
 
 /**
- * Item status enumeration
- * - in_use: Currently being used
- * - storage: In storage
- * - maintenance: Under maintenance
- * - lost: Lost or missing
- */
-export const itemStatusEnum = pgEnum('item_status', ['in_use', 'storage', 'maintenance', 'lost']);
-
-/**
- * Item type enumeration
- * - quilt: Quilt/blanket management
- * - card: Sports card collection
- * - shoe: Shoe collection (future)
- * - racket: Racket collection (future)
- */
-export const itemTypeEnum = pgEnum('item_type', ['quilt', 'card', 'shoe', 'racket']);
-
-/**
  * Sport type enumeration for cards
- * - BASKETBALL: Basketball cards
- * - SOCCER: Soccer/Football cards
- * - OTHER: Other sports
  */
 export const sportTypeEnum = pgEnum('sport_type', ['BASKETBALL', 'SOCCER', 'OTHER']);
 
 /**
  * Grading company enumeration for cards
- * - PSA: Professional Sports Authenticator
- * - BGS: Beckett Grading Services
- * - SGC: Sportscard Guaranty
- * - CGC: Certified Guaranty Company
- * - UNGRADED: Not professionally graded
  */
 export const gradingCompanyEnum = pgEnum('grading_company_type', [
   'PSA',
@@ -79,11 +54,6 @@ export const gradingCompanyEnum = pgEnum('grading_company_type', [
 
 /**
  * Card status enumeration
- * - COLLECTION: In personal collection
- * - FOR_SALE: Listed for sale
- * - SOLD: Sold to buyer
- * - GRADING: Sent for grading
- * - DISPLAY: On display
  */
 export const cardStatusEnum = pgEnum('card_status_type', [
   'COLLECTION',
@@ -94,21 +64,47 @@ export const cardStatusEnum = pgEnum('card_status_type', [
 ]);
 
 /**
+ * Quilt specific enums
+ */
+export const seasonEnum = pgEnum('season', ['WINTER', 'SPRING_AUTUMN', 'SUMMER']);
+export const quiltStatusEnum = pgEnum('quilt_status', ['IN_USE', 'MAINTENANCE', 'STORAGE', 'LOST']);
+
+/**
+ * Audit event type enumeration
+ */
+export const auditEventTypeEnum = pgEnum('audit_event_type', [
+  'permission_check',
+  'access_granted',
+  'access_denied',
+  'role_changed',
+  'module_subscribed',
+  'module_unsubscribed',
+  'login_success',
+  'login_failed',
+  'logout',
+]);
+
+/**
+ * Usage type enumeration
+ */
+export const usageTypeEnum = pgEnum('usage_type', [
+  'REGULAR',
+  'GUEST',
+  'SPECIAL_OCCASION',
+  'SEASONAL_ROTATION',
+]);
+
+/**
  * Users table
  * Stores user accounts with authentication and module subscription information
- *
- * Requirements: 8.1 (Authentication and RBAC)
- *
- * Note: Production database uses TEXT for id (not UUID with default)
- * and stores role/activeModules in preferences JSONB field
  */
 export const users = pgTable(
   'users',
   {
-    id: text('id').primaryKey(), // Production uses TEXT, not UUID with default
+    id: text('id').primaryKey(),
     name: text('name').notNull(),
     email: text('email').notNull().unique(),
-    hashedPassword: text('hashed_password').notNull(), // Production uses hashed_password
+    hashedPassword: text('hashed_password').notNull(),
     preferences: jsonb('preferences')
       .$type<{
         role?: string;
@@ -116,7 +112,7 @@ export const users = pgTable(
         [key: string]: any;
       }>()
       .notNull()
-      .default({}), // Production stores role and activeModules here
+      .default({}),
     createdAt: timestamp('created_at').notNull().defaultNow(),
     updatedAt: timestamp('updated_at').notNull().defaultNow(),
   },
@@ -126,45 +122,115 @@ export const users = pgTable(
 );
 
 /**
- * Items table (Single Table Inheritance)
- * Universal table for all item types with JSONB for module-specific attributes
- *
- * Requirements: 2.1, 2.2, 2.5 (Flexible schema with JSONB)
+ * Quilts table (Independent Table Architecture)
+ * Stores quilt collection data with native columns
  */
-export const items = pgTable(
-  'items',
+export const quilts = pgTable(
+  'quilts',
   {
     id: uuid('id').defaultRandom().primaryKey(),
-    type: itemTypeEnum('type').notNull(),
+    itemNumber: serial('item_number').notNull().unique(),
+
+    // Core details
     name: text('name').notNull(),
-    status: itemStatusEnum('status').notNull().default('storage'),
-    ownerId: uuid('owner_id')
-      .notNull()
-      .references(() => users.id, { onDelete: 'cascade' }),
-    // JSONB field for module-specific attributes
-    attributes: jsonb('attributes').$type<Record<string, any>>().notNull().default({}),
-    // JSONB field for image URLs
-    images: jsonb('images').$type<string[]>().notNull().default([]),
+    season: seasonEnum('season').notNull(),
+
+    // Dimensions & Weight
+    lengthCm: integer('length_cm').notNull(),
+    widthCm: integer('width_cm').notNull(),
+    weightGrams: integer('weight_grams').notNull(),
+
+    // Material & Design
+    fillMaterial: text('fill_material').notNull(),
+    materialDetails: text('material_details'),
+    color: text('color').notNull(),
+    brand: text('brand'),
+    packagingInfo: text('packaging_info'),
+
+    // Purchase info
+    purchaseDate: timestamp('purchase_date'),
+    location: text('location').notNull(),
+
+    // Status & Notes
+    currentStatus: quiltStatusEnum('current_status').notNull().default('STORAGE'),
+    notes: text('notes'),
+
+    // Images
+    imageUrl: text('image_url'),
+    thumbnailUrl: text('thumbnail_url'),
+    mainImage: text('main_image'),
+    attachmentImages: jsonb('attachment_images').$type<string[]>().default([]),
+
+    // Timestamps
     createdAt: timestamp('created_at').notNull().defaultNow(),
     updatedAt: timestamp('updated_at').notNull().defaultNow(),
   },
   table => ({
-    typeIdx: index('items_type_idx').on(table.type),
-    ownerIdx: index('items_owner_idx').on(table.ownerId),
-    statusIdx: index('items_status_idx').on(table.status),
-    typeOwnerIdx: index('items_type_owner_idx').on(table.type, table.ownerId),
+    statusIdx: index('quilts_status_idx').on(table.currentStatus),
+    seasonIdx: index('quilts_season_idx').on(table.season),
+    itemNumberIdx: index('quilts_item_number_idx').on(table.itemNumber),
+  })
+);
+
+/**
+ * Usage records table
+ * Tracks usage history for quilts
+ */
+export const usageRecords = pgTable(
+  'usage_records',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    quiltId: uuid('quilt_id')
+      .notNull()
+      .references(() => quilts.id, { onDelete: 'cascade' }),
+
+    startDate: timestamp('start_date').notNull(),
+    endDate: timestamp('end_date'),
+
+    usageType: usageTypeEnum('usage_type').default('REGULAR'),
+    notes: text('notes'),
+
+    createdAt: timestamp('created_at').notNull().defaultNow(),
+    updatedAt: timestamp('updated_at').notNull().defaultNow(),
+  },
+  table => ({
+    quiltIdx: index('usage_records_quilt_idx').on(table.quiltId),
+    startDateIdx: index('usage_records_start_date_idx').on(table.startDate),
+    endDateIdx: index('usage_records_end_date_idx').on(table.endDate),
+  })
+);
+
+/**
+ * Maintenance records table
+ * Tracks maintenance history for quilts
+ */
+export const maintenanceRecords = pgTable(
+  'maintenance_records',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    quiltId: uuid('quilt_id')
+      .notNull()
+      .references(() => quilts.id, { onDelete: 'cascade' }),
+
+    maintenanceType: text('maintenance_type').notNull(),
+    description: text('description').notNull(),
+    performedAt: timestamp('performed_at').notNull(),
+    cost: numeric('cost', { precision: 10, scale: 2 }),
+    nextDueDate: timestamp('next_due_date'),
+
+    createdAt: timestamp('created_at').notNull().defaultNow(),
+    updatedAt: timestamp('updated_at').notNull().defaultNow(),
+  },
+  table => ({
+    quiltIdx: index('maintenance_records_quilt_idx').on(table.quiltId),
+    performedAtIdx: index('maintenance_records_performed_at_idx').on(table.performedAt),
+    nextDueDateIdx: index('maintenance_records_next_due_date_idx').on(table.nextDueDate),
   })
 );
 
 /**
  * Cards table (Independent Table Architecture)
- * Stores sports card collection data with native columns for optimal performance
- *
- * Requirements: 5.3, 5.4, 5.6 (Independent table with type-safe schema)
- *
- * Architecture Decision: Uses independent table with 30+ native columns instead of
- * JSONB for better type safety, query performance (2-10x faster), simpler indexing,
- * and database-level data integrity.
+ * Stores sports card collection data with native columns
  */
 export const cards = pgTable(
   'cards',
@@ -225,97 +291,32 @@ export const cards = pgTable(
       .$onUpdate(() => new Date()),
   },
   table => ({
-    // Performance indexes based on common query patterns
     userIdx: index('cards_user_idx').on(table.userId),
     sportIdx: index('cards_sport_idx').on(table.sport),
     gradeIdx: index('cards_grade_idx').on(table.grade),
     valueIdx: index('cards_value_idx').on(table.currentValue),
     statusIdx: index('cards_status_idx').on(table.status),
-    // Composite index for sport + grade queries
     sportGradeIdx: index('cards_sport_grade_idx').on(table.sport, table.grade),
-    // Item number is unique for user-friendly display
     itemNumberIdx: index('cards_item_number_idx').on(table.itemNumber),
   })
 );
 
 /**
- * Usage logs table
- * Tracks all item usage and status changes
- *
- * Requirements: 6.2, 8.5 (Usage tracking and audit logs)
- */
-export const usageLogs = pgTable(
-  'usage_logs',
-  {
-    id: uuid('id').defaultRandom().primaryKey(),
-    itemId: uuid('item_id')
-      .notNull()
-      .references(() => items.id, { onDelete: 'cascade' }),
-    userId: uuid('user_id')
-      .notNull()
-      .references(() => users.id, { onDelete: 'cascade' }),
-    action: text('action').notNull(), // 'created', 'updated', 'status_changed', 'deleted'
-    snapshot: jsonb('snapshot').$type<Record<string, any>>().notNull().default({}),
-    createdAt: timestamp('created_at').notNull().defaultNow(),
-  },
-  table => ({
-    itemIdx: index('usage_logs_item_idx').on(table.itemId),
-    userIdx: index('usage_logs_user_idx').on(table.userId),
-    createdAtIdx: index('usage_logs_created_at_idx').on(table.createdAt),
-  })
-);
-
-/**
- * Audit event type enumeration
- * - permission_check: Permission verification attempt
- * - access_granted: Successful access to resource
- * - access_denied: Failed access attempt
- * - role_changed: User role modification
- * - module_subscribed: Module subscription added
- * - module_unsubscribed: Module subscription removed
- * - login_success: Successful login
- * - login_failed: Failed login attempt
- * - logout: User logout
- */
-export const auditEventTypeEnum = pgEnum('audit_event_type', [
-  'permission_check',
-  'access_granted',
-  'access_denied',
-  'role_changed',
-  'module_subscribed',
-  'module_unsubscribed',
-  'login_success',
-  'login_failed',
-  'logout',
-]);
-
-/**
  * Audit logs table
  * Records all permission-related operations and access control events
- *
- * Requirements: 8.5 (Permission operation audit)
  */
 export const auditLogs = pgTable(
   'audit_logs',
   {
     id: uuid('id').defaultRandom().primaryKey(),
-    // User who performed the action (nullable for failed login attempts)
-    userId: uuid('user_id').references(() => users.id, { onDelete: 'set null' }),
-    // Event type
+    userId: text('user_id').references(() => users.id, { onDelete: 'set null' }),
     eventType: auditEventTypeEnum('event_type').notNull(),
-    // Resource being accessed (e.g., 'item:123', 'module:quilt')
     resource: text('resource'),
-    // Action attempted (e.g., 'read', 'write', 'delete')
     action: text('action'),
-    // Result of the operation (true for success, false for denial)
-    success: text('success').notNull(), // 'true' or 'false' as text for compatibility
-    // Reason for denial (if applicable)
+    success: text('success').notNull(),
     reason: text('reason'),
-    // Additional context data
     metadata: jsonb('metadata').$type<Record<string, any>>().notNull().default({}),
-    // IP address of the request
     ipAddress: text('ip_address'),
-    // User agent string
     userAgent: text('user_agent'),
     createdAt: timestamp('created_at').notNull().defaultNow(),
   },
@@ -328,63 +329,168 @@ export const auditLogs = pgTable(
   })
 );
 
+/**
+ * System settings table
+ * Key-value store for application configuration
+ */
+export const systemSettings = pgTable('system_settings', {
+  key: text('key').primaryKey(),
+  value: text('value').notNull(),
+  description: text('description'),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at').notNull().defaultNow(),
+});
+
+/**
+ * Notification priority enumeration
+ */
+export const notificationPriorityEnum = pgEnum('notification_priority', ['high', 'medium', 'low']);
+
+/**
+ * Notification type enumeration
+ */
+export const notificationTypeEnum = pgEnum('notification_type', [
+  'weather_change',
+  'maintenance_reminder',
+  'disposal_suggestion',
+]);
+
+/**
+ * Notifications table
+ * In-app notification system for users
+ */
+export const notifications = pgTable(
+  'notifications',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    type: text('type').notNull(), // varchar in DB, using text for compat
+    priority: text('priority').notNull().default('medium'),
+    title: text('title').notNull(),
+    message: text('message').notNull(),
+    quiltId: text('quilt_id'), // optional reference
+    isRead: boolean('is_read').notNull().default(false),
+    actionUrl: text('action_url'),
+    metadata: jsonb('metadata').$type<Record<string, unknown>>().default({}),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow(),
+  },
+  table => ({
+    typeIdx: index('idx_notifications_type').on(table.type),
+    priorityIdx: index('idx_notifications_priority').on(table.priority),
+    isReadIdx: index('idx_notifications_is_read').on(table.isRead),
+    quiltIdIdx: index('idx_notifications_quilt_id').on(table.quiltId),
+    createdAtIdx: index('idx_notifications_created_at').on(table.createdAt),
+  })
+);
+
+/**
+ * Seasonal recommendations table
+ * Configuration for quilt recommendations by season
+ */
+export const seasonalRecommendations = pgTable(
+  'seasonal_recommendations',
+  {
+    id: text('id').primaryKey(),
+    season: seasonEnum('season').notNull(),
+    minWeight: integer('min_weight').notNull(),
+    maxWeight: integer('max_weight').notNull(),
+    recommendedMaterials: text('recommended_materials').notNull(),
+    description: text('description').notNull(),
+    priority: integer('priority').notNull().default(0),
+    createdAt: timestamp('created_at').notNull().defaultNow(),
+    updatedAt: timestamp('updated_at').notNull().defaultNow(),
+  },
+  table => ({
+    seasonIdx: index('seasonal_recommendations_season_idx').on(table.season),
+  })
+);
+
+/**
+ * Usage periods table (Legacy)
+ * Historical usage tracking - retained for data compatibility
+ * @deprecated Use usage_records for new implementations
+ */
+export const usagePeriods = pgTable(
+  'usage_periods',
+  {
+    id: text('id').primaryKey(),
+    quiltId: text('quilt_id').notNull(),
+    startDate: timestamp('start_date').notNull(),
+    endDate: timestamp('end_date'),
+    seasonUsed: text('season_used'),
+    usageType: usageTypeEnum('usage_type').notNull().default('REGULAR'),
+    notes: text('notes'),
+    durationDays: integer('duration_days'),
+    createdAt: timestamp('created_at').notNull().defaultNow(),
+  },
+  table => ({
+    quiltIdIdx: index('usage_periods_quilt_id_idx').on(table.quiltId),
+    startDateIdx: index('usage_periods_start_date_idx').on(table.startDate),
+    endDateIdx: index('usage_periods_end_date_idx').on(table.endDate),
+  })
+);
+
 // Type exports for use in application code
 export type User = typeof users.$inferSelect;
 export type NewUser = typeof users.$inferInsert;
 
-export type Item = typeof items.$inferSelect;
-export type NewItem = typeof items.$inferInsert;
+export type Quilt = typeof quilts.$inferSelect;
+export type NewQuilt = typeof quilts.$inferInsert;
+
+export type UsageRecord = typeof usageRecords.$inferSelect;
+export type NewUsageRecord = typeof usageRecords.$inferInsert;
+
+export type MaintenanceRecord = typeof maintenanceRecords.$inferSelect;
+export type NewMaintenanceRecord = typeof maintenanceRecords.$inferInsert;
 
 export type Card = typeof cards.$inferSelect;
 export type NewCard = typeof cards.$inferInsert;
 
-export type UsageLog = typeof usageLogs.$inferSelect;
-export type NewUsageLog = typeof usageLogs.$inferInsert;
-
 export type AuditLog = typeof auditLogs.$inferSelect;
 export type NewAuditLog = typeof auditLogs.$inferInsert;
 
+export type Notification = typeof notifications.$inferSelect;
+export type NewNotification = typeof notifications.$inferInsert;
+
+export type SeasonalRecommendation = typeof seasonalRecommendations.$inferSelect;
+export type NewSeasonalRecommendation = typeof seasonalRecommendations.$inferInsert;
+
+/** @deprecated Use UsageRecord instead */
+export type UsagePeriod = typeof usagePeriods.$inferSelect;
+/** @deprecated Use NewUsageRecord instead */
+export type NewUsagePeriod = typeof usagePeriods.$inferInsert;
+
 // ============================================================================
 // Drizzle ORM Relations
-// Enables relational queries: db.query.users.findMany({ with: { items: true } })
 // ============================================================================
 
-/**
- * Users relations
- */
 export const usersRelations = relations(users, ({ many }) => ({
-  items: many(items),
   cards: many(cards),
-  usageLogs: many(usageLogs),
   auditLogs: many(auditLogs),
 }));
 
-/**
- * Items relations
- */
-export const itemsRelations = relations(items, ({ one, many }) => ({
-  owner: one(users, { fields: [items.ownerId], references: [users.id] }),
-  usageLogs: many(usageLogs),
+export const quiltsRelations = relations(quilts, ({ many }) => ({
+  usageRecords: many(usageRecords),
+  maintenanceRecords: many(maintenanceRecords),
+  notifications: many(notifications),
 }));
 
-/**
- * Cards relations
- */
+export const usageRecordsRelations = relations(usageRecords, ({ one }) => ({
+  quilt: one(quilts, { fields: [usageRecords.quiltId], references: [quilts.id] }),
+}));
+
+export const maintenanceRecordsRelations = relations(maintenanceRecords, ({ one }) => ({
+  quilt: one(quilts, { fields: [maintenanceRecords.quiltId], references: [quilts.id] }),
+}));
+
 export const cardsRelations = relations(cards, ({ one }) => ({
   user: one(users, { fields: [cards.userId], references: [users.id] }),
 }));
 
-/**
- * Usage logs relations
- */
-export const usageLogsRelations = relations(usageLogs, ({ one }) => ({
-  item: one(items, { fields: [usageLogs.itemId], references: [items.id] }),
-  user: one(users, { fields: [usageLogs.userId], references: [users.id] }),
-}));
-
-/**
- * Audit logs relations
- */
 export const auditLogsRelations = relations(auditLogs, ({ one }) => ({
   user: one(users, { fields: [auditLogs.userId], references: [users.id] }),
+}));
+
+export const notificationsRelations = relations(notifications, ({ one }) => ({
+  quilt: one(quilts, { fields: [notifications.quiltId], references: [quilts.id] }),
 }));

@@ -11,7 +11,8 @@
 
 import { NextRequest } from 'next/server';
 import { z } from 'zod';
-import { getUsageRecords, getUsageHistory, createUsageRecord } from '@/lib/data/usage';
+import { createUsageRecord as createUsageRecordData } from '@/lib/data/usage';
+import { usageRepository } from '@/lib/repositories/usage.repository';
 import { sanitizeApiInput } from '@/lib/sanitization';
 import {
   createValidationErrorResponse,
@@ -54,16 +55,8 @@ export async function GET(request: NextRequest) {
     const limit = Math.min(parseInt(searchParams.get('limit') || '50', 10), 100);
     const offset = parseInt(searchParams.get('offset') || '0', 10);
 
-    // Fetch usage records based on filters
-    let allRecords = [];
-    if (quiltId) {
-      allRecords = await getUsageHistory(quiltId);
-    } else {
-      allRecords = await getUsageRecords();
-    }
-
-    // Apply pagination in memory
-    const records = allRecords.slice(offset, offset + limit);
+    // Fetch usage records with quilt join (returns startedAt/endedAt format)
+    const records = await usageRepository.findAll({ quiltId, limit, offset });
 
     return createSuccessResponse(
       { records },
@@ -110,7 +103,7 @@ export async function POST(request: NextRequest) {
     const { quiltId, startDate, endDate, usageType, notes } = validationResult.data;
 
     // Create the usage record
-    const record = await createUsageRecord({
+    const record = await createUsageRecordData({
       quiltId,
       startDate,
       endDate,

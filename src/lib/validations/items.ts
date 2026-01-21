@@ -34,10 +34,7 @@ export const createItemSchema = z.object({
 
   attributes: z.record(z.string(), z.unknown()).default({}),
 
-  images: z
-    .array(z.string().url({ message: 'Invalid image URL' }))
-    .optional()
-    .default([]),
+  images: z.array(z.url('Invalid image URL')).optional().default([]),
 
   status: z.enum(['in_use', 'storage', 'maintenance', 'lost']).optional().default('storage'),
 });
@@ -62,7 +59,7 @@ export const updateItemSchema = z.object({
 
   attributes: z.record(z.string(), z.unknown()).optional(),
 
-  images: z.array(z.string().url({ message: 'Invalid image URL' })).optional(),
+  images: z.array(z.url('Invalid image URL')).optional(),
 });
 
 /**

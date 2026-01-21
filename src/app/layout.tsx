@@ -8,7 +8,6 @@ import { ThemeProvider } from '@/components/providers/ThemeProvider';
 import { LanguageProvider } from '@/lib/language-provider';
 import { ConditionalLayout } from '@/components/layout/ConditionalLayout';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
-import { Toaster } from '@/components/ui/toaster';
 import { Toaster as SonnerToaster } from 'sonner';
 import { GlobalErrorHandler } from '@/components/GlobalErrorHandler';
 // import { AccessibilityAudit } from '@/components/AccessibilityAudit';
@@ -48,7 +47,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                   <Suspense fallback={null}>
                     <ConditionalLayout>{children}</ConditionalLayout>
                   </Suspense>
-                  <Toaster />
                   <SonnerToaster position="top-right" richColors closeButton />
                   {/* {process.env.NODE_ENV === 'development' && <AccessibilityAudit />} */}
                 </QueryProvider>

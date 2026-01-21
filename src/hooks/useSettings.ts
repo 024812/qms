@@ -237,14 +237,33 @@ export function useAppSettings() {
 }
 
 /**
- * Hook to update application settings
+ * Hook to update application settings with optimistic updates
  */
 export function useUpdateAppSettings() {
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: updateAppSettings,
-    onSuccess: () => {
+    // Optimistic update
+    onMutate: async newSettings => {
+      await queryClient.cancelQueries({ queryKey: SETTINGS_KEY });
+
+      const previousSettings = queryClient.getQueryData<AppSettings>(SETTINGS_KEY);
+
+      // Optimistically update settings
+      queryClient.setQueryData<AppSettings>(SETTINGS_KEY, old => {
+        if (!old) return old;
+        return { ...old, ...newSettings };
+      });
+
+      return { previousSettings };
+    },
+    onError: (_err, _newSettings, context) => {
+      if (context?.previousSettings) {
+        queryClient.setQueryData(SETTINGS_KEY, context.previousSettings);
+      }
+    },
+    onSettled: () => {
       queryClient.invalidateQueries({ queryKey: SETTINGS_KEY });
     },
   });

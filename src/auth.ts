@@ -1,15 +1,15 @@
 /**
  * Auth.js v5 Configuration
- * 
+ *
  * This module configures authentication using Auth.js v5 (NextAuth.js v5).
  * It provides user authentication with credentials provider and session management.
- * 
+ *
  * Features:
  * - Credentials-based authentication (email/password)
  * - JWT session management
  * - Role-based access control
  * - Module subscription tracking
- * 
+ *
  * Requirements: 8.1, 8.3 (Authentication and authorization)
  */
 
@@ -25,13 +25,13 @@ import { z } from 'zod';
  * Credentials validation schema
  */
 const credentialsSchema = z.object({
-  email: z.string().email('Invalid email address'),
+  email: z.email('Invalid email address'),
   password: z.string().min(6, 'Password must be at least 6 characters'),
 });
 
 /**
  * Auth.js v5 configuration
- * 
+ *
  * Best practices:
  * - Use Credentials Provider for username/password authentication
  * - Validate credentials in authorize function
@@ -45,7 +45,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         email: { label: 'Email', type: 'email' },
         password: { label: 'Password', type: 'password' },
       },
-      authorize: async (credentials) => {
+      authorize: async credentials => {
         try {
           // Validate input
           const parsedCredentials = credentialsSchema.safeParse(credentials);
@@ -57,11 +57,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           const { email, password } = parsedCredentials.data;
 
           // Query user from database
-          const [user] = await db
-            .select()
-            .from(users)
-            .where(eq(users.email, email))
-            .limit(1);
+          const [user] = await db.select().from(users).where(eq(users.email, email)).limit(1);
 
           if (!user) {
             return null;
@@ -125,27 +121,14 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
     },
     /**
      * Session callback - extends session with user data from JWT
-     * Also refreshes activeModules from database to ensure latest data
+     * Uses token data to avoid database query on every session access.
+     * Call useSession().update() to trigger jwt callback and refresh from database.
      */
     async session({ session, token }) {
       if (token && session.user) {
         session.user.id = token.id as string;
-
-        // Always fetch latest user data from database for session
-        const [user] = await db
-          .select()
-          .from(users)
-          .where(eq(users.id, token.id as string))
-          .limit(1);
-
-        if (user) {
-          session.user.role = user.preferences?.role || 'member';
-          session.user.activeModules = user.preferences?.activeModules || [];
-        } else {
-          // Fallback to token data if user not found
-          session.user.role = token.role as string;
-          session.user.activeModules = token.activeModules as string[];
-        }
+        session.user.role = token.role as string;
+        session.user.activeModules = token.activeModules as string[];
       }
       return session;
     },
@@ -158,4 +141,3 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
   },
   secret: process.env.NEXTAUTH_SECRET,
 });
-

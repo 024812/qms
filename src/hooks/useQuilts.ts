@@ -321,42 +321,81 @@ export function useCreateQuilt() {
 }
 
 /**
- * Hook to update an existing quilt
+ * Hook to update an existing quilt with optimistic updates
  */
 export function useUpdateQuilt() {
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: updateQuilt,
-    onSuccess: () => {
-      // Invalidate quilt queries
+    // Optimistic update - immediately update UI before server response
+    onMutate: async newQuilt => {
+      // Cancel outgoing refetches to avoid overwriting optimistic update
+      await queryClient.cancelQueries({ queryKey: QUILTS_KEY });
+
+      // Snapshot current value for rollback
+      const previousData = queryClient.getQueryData<QuiltsResponse>(QUILTS_KEY);
+
+      // Optimistically update the cache
+      queryClient.setQueryData<QuiltsResponse>(QUILTS_KEY, old => {
+        if (!old) return old;
+        return {
+          ...old,
+          quilts: old.quilts.map(q => (q.id === newQuilt.id ? { ...q, ...newQuilt } : q)),
+        };
+      });
+
+      return { previousData };
+    },
+    // Rollback on error
+    onError: (_err, _newQuilt, context) => {
+      if (context?.previousData) {
+        queryClient.setQueryData(QUILTS_KEY, context.previousData);
+      }
+    },
+    // Refetch after mutation settles
+    onSettled: () => {
       queryClient.invalidateQueries({ queryKey: QUILTS_KEY });
-
-      // Invalidate usage queries (status changes affect usage records)
       queryClient.invalidateQueries({ queryKey: USAGE_KEY });
-
-      // Invalidate dashboard
       queryClient.invalidateQueries({ queryKey: DASHBOARD_KEY });
     },
   });
 }
 
 /**
- * Hook to delete a quilt
+ * Hook to delete a quilt with optimistic updates
  */
 export function useDeleteQuilt() {
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: deleteQuilt,
-    onSuccess: () => {
-      // Invalidate quilt queries
+    // Optimistic update - immediately remove from UI
+    onMutate: async deletedQuilt => {
+      await queryClient.cancelQueries({ queryKey: QUILTS_KEY });
+
+      const previousData = queryClient.getQueryData<QuiltsResponse>(QUILTS_KEY);
+
+      // Optimistically remove the quilt from cache
+      queryClient.setQueryData<QuiltsResponse>(QUILTS_KEY, old => {
+        if (!old) return old;
+        return {
+          ...old,
+          quilts: old.quilts.filter(q => q.id !== deletedQuilt.id),
+          total: old.total - 1,
+        };
+      });
+
+      return { previousData };
+    },
+    onError: (_err, _deletedQuilt, context) => {
+      if (context?.previousData) {
+        queryClient.setQueryData(QUILTS_KEY, context.previousData);
+      }
+    },
+    onSettled: () => {
       queryClient.invalidateQueries({ queryKey: QUILTS_KEY });
-
-      // Invalidate usage queries (deleting quilt affects related usage records)
       queryClient.invalidateQueries({ queryKey: USAGE_KEY });
-
-      // Invalidate dashboard
       queryClient.invalidateQueries({ queryKey: DASHBOARD_KEY });
     },
   });

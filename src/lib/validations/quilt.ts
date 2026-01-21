@@ -108,8 +108,8 @@ const baseQuiltSchemaObject = z.object({
     .optional()
     .default('STORAGE'),
   notes: z.string().max(1000, 'Notes too long (max 1000 characters)').optional(),
-  imageUrl: z.string().url('Invalid image URL').optional().or(z.literal('')),
-  thumbnailUrl: z.string().url('Invalid thumbnail URL').optional().or(z.literal('')),
+  imageUrl: z.union([z.url('Invalid image URL'), z.literal('')]).optional(),
+  thumbnailUrl: z.union([z.url('Invalid thumbnail URL'), z.literal('')]).optional(),
   mainImage: z.string().optional().nullable(),
   attachmentImages: z.array(z.string()).optional().nullable(),
 });
@@ -152,7 +152,7 @@ export const updateQuiltSchema = baseQuiltSchemaObject.partial().extend({
  * This is the single source of truth for the Quilt type.
  */
 export const QuiltSchema = z.object({
-  id: z.string().uuid(),
+  id: z.uuid(),
   itemNumber: z.number().int().positive(),
   groupId: z.number().int().positive().nullable(),
   name: z.string(),
@@ -186,8 +186,8 @@ export type Quilt = z.infer<typeof QuiltSchema>;
  * UsageRecord Schema representing a usage record from the database.
  */
 export const UsageRecordSchema = z.object({
-  id: z.string().uuid(),
-  quiltId: z.string().uuid(),
+  id: z.uuid(),
+  quiltId: z.uuid(),
   startDate: z.date(),
   endDate: z.date().nullable(),
   usageType: UsageTypeSchema,
@@ -205,8 +205,8 @@ export type UsageRecord = z.infer<typeof UsageRecordSchema>;
  * MaintenanceRecord Schema representing a maintenance record from the database.
  */
 export const MaintenanceRecordSchema = z.object({
-  id: z.string().uuid(),
-  quiltId: z.string().uuid(),
+  id: z.uuid(),
+  quiltId: z.uuid(),
   maintenanceType: z.string(),
   description: z.string(),
   performedAt: z.date(),

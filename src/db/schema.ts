@@ -26,6 +26,7 @@ import {
   date,
   serial,
 } from 'drizzle-orm/pg-core';
+import { relations } from 'drizzle-orm';
 
 /**
  * User role enumeration
@@ -339,3 +340,51 @@ export type NewCard = typeof cards.$inferInsert;
 
 export type UsageLog = typeof usageLogs.$inferSelect;
 export type NewUsageLog = typeof usageLogs.$inferInsert;
+
+export type AuditLog = typeof auditLogs.$inferSelect;
+export type NewAuditLog = typeof auditLogs.$inferInsert;
+
+// ============================================================================
+// Drizzle ORM Relations
+// Enables relational queries: db.query.users.findMany({ with: { items: true } })
+// ============================================================================
+
+/**
+ * Users relations
+ */
+export const usersRelations = relations(users, ({ many }) => ({
+  items: many(items),
+  cards: many(cards),
+  usageLogs: many(usageLogs),
+  auditLogs: many(auditLogs),
+}));
+
+/**
+ * Items relations
+ */
+export const itemsRelations = relations(items, ({ one, many }) => ({
+  owner: one(users, { fields: [items.ownerId], references: [users.id] }),
+  usageLogs: many(usageLogs),
+}));
+
+/**
+ * Cards relations
+ */
+export const cardsRelations = relations(cards, ({ one }) => ({
+  user: one(users, { fields: [cards.userId], references: [users.id] }),
+}));
+
+/**
+ * Usage logs relations
+ */
+export const usageLogsRelations = relations(usageLogs, ({ one }) => ({
+  item: one(items, { fields: [usageLogs.itemId], references: [items.id] }),
+  user: one(users, { fields: [usageLogs.userId], references: [users.id] }),
+}));
+
+/**
+ * Audit logs relations
+ */
+export const auditLogsRelations = relations(auditLogs, ({ one }) => ({
+  user: one(users, { fields: [auditLogs.userId], references: [users.id] }),
+}));

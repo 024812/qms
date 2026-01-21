@@ -7,7 +7,16 @@
  * Requirements: 4.1, 4.2
  */
 
-import { Item } from '@/db/schema';
+// Generic Item type for card display
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+interface Item {
+  id: string;
+  name: string;
+  createdAt: Date;
+  type?: string;
+  status?: string;
+  [key: string]: any; // Allow other properties for Quilt/Card types
+}
 import { getModule } from '@/modules/registry';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -16,7 +25,8 @@ import { Badge } from '@/components/ui/badge';
  * ItemCard Props
  */
 interface ItemCardProps {
-  item: Item;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  item: any;
   onClick?: () => void;
 }
 

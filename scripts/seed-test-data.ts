@@ -3,8 +3,10 @@
  * Adds sample quilts to the database for testing
  */
 
-import { sql } from '../src/lib/neon';
+import 'dotenv/config';
+import { db } from '../src/db';
 import { quiltRepository } from '../src/lib/repositories/quilt.repository';
+import { sql } from 'drizzle-orm';
 
 const testQuilts = [
   {
@@ -50,10 +52,7 @@ async function seedData() {
 
   try {
     // Test connection first
-    const result = await sql`SELECT 1 as test`;
-    if (!result || result[0]?.test !== 1) {
-      throw new Error('Database connection failed');
-    }
+    await db.execute(sql`SELECT 1`);
     console.log('✅ Database connected');
 
     // Check current quilt count

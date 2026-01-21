@@ -8,8 +8,10 @@
  * Requirements: 6.1, 6.2 - Repository pattern for all database operations
  */
 
-import { sql } from '@/lib/neon';
+import { db, Tx } from '@/db';
+import { quilts, usageRecords } from '@/db/schema';
 import { BaseRepositoryImpl } from './base.repository';
+import { eq, sql, desc, count, sum, avg, and, isNull } from 'drizzle-orm';
 
 // Types for dashboard statistics
 export interface StatusCounts {
@@ -180,21 +182,20 @@ export class StatsRepository extends BaseRepositoryImpl<never, never> {
   /**
    * Get status counts for quilts
    */
-  async getStatusCounts(): Promise<StatusCounts> {
+  async getStatusCounts(tx?: Tx): Promise<StatusCounts> {
     return this.executeQuery(async () => {
-      const result = (await sql`
-        SELECT 
-          current_status,
-          COUNT(*)::int as count
-        FROM quilts
-        GROUP BY current_status
-      `) as { current_status: string; count: number }[];
+      const d = tx || db;
+      const result = await d.select({
+          currentStatus: quilts.currentStatus,
+          count: count()
+      }).from(quilts)
+      .groupBy(quilts.currentStatus);
 
       const counts: StatusCounts = { inUse: 0, storage: 0, maintenance: 0, total: 0 };
       result.forEach(row => {
-        if (row.current_status === 'IN_USE') counts.inUse = row.count;
-        else if (row.current_status === 'STORAGE') counts.storage = row.count;
-        else if (row.current_status === 'MAINTENANCE') counts.maintenance = row.count;
+        if (row.currentStatus === 'IN_USE') counts.inUse = row.count;
+        else if (row.currentStatus === 'STORAGE') counts.storage = row.count;
+        else if (row.currentStatus === 'MAINTENANCE') counts.maintenance = row.count;
         counts.total += row.count;
       });
 
@@ -205,15 +206,14 @@ export class StatsRepository extends BaseRepositoryImpl<never, never> {
   /**
    * Get seasonal distribution counts
    */
-  async getSeasonalCounts(): Promise<SeasonalCounts> {
+  async getSeasonalCounts(tx?: Tx): Promise<SeasonalCounts> {
     return this.executeQuery(async () => {
-      const result = (await sql`
-        SELECT 
-          season,
-          COUNT(*)::int as count
-        FROM quilts
-        GROUP BY season
-      `) as { season: string; count: number }[];
+      const d = tx || db;
+      const result = await d.select({
+          season: quilts.season,
+          count: count()
+      }).from(quilts)
+      .groupBy(quilts.season);
 
       const counts: SeasonalCounts = { WINTER: 0, SPRING_AUTUMN: 0, SUMMER: 0 };
       result.forEach(row => {
@@ -229,23 +229,26 @@ export class StatsRepository extends BaseRepositoryImpl<never, never> {
   /**
    * Get quilts currently in use with their details
    */
-  async getInUseQuilts(): Promise<InUseQuilt[]> {
+  async getInUseQuilts(tx?: Tx): Promise<InUseQuilt[]> {
     return this.executeQuery(async () => {
-      const result = (await sql`
-        SELECT 
-          id, name, item_number, season, 
-          fill_material, weight_grams, location
-        FROM quilts
-        WHERE current_status = 'IN_USE'
-      `) as any[];
+        const d = tx || db;
+        const result = await d.select({
+          id: quilts.id,
+          name: quilts.name,
+          itemNumber: quilts.itemNumber,
+          season: quilts.season,
+          fillMaterial: quilts.fillMaterial,
+          weightGrams: quilts.weightGrams,
+          location: quilts.location
+        }).from(quilts).where(eq(quilts.currentStatus, 'IN_USE'));
 
       return result.map(q => ({
         id: q.id,
         name: q.name,
-        itemNumber: q.item_number,
+        itemNumber: q.itemNumber,
         season: q.season,
-        fillMaterial: q.fill_material,
-        weightGrams: q.weight_grams,
+        fillMaterial: q.fillMaterial,
+        weightGrams: q.weightGrams,
         location: q.location,
       }));
     }, 'getInUseQuilts');
@@ -254,40 +257,53 @@ export class StatsRepository extends BaseRepositoryImpl<never, never> {
   /**
    * Get historical usage data for this day in previous years
    */
-  async getHistoricalUsage(currentMonth: number, currentDay: number): Promise<HistoricalUsage[]> {
+  async getHistoricalUsage(currentMonth: number, currentDay: number, tx?: Tx): Promise<HistoricalUsage[]> {
     return this.executeQuery(
       async () => {
-        const result = (await sql`
-          SELECT 
-            up.id,
-            up.quilt_id,
-            up.start_date,
-            up.end_date,
-            q.name as quilt_name,
-            q.item_number,
-            q.season,
-            EXTRACT(YEAR FROM up.start_date) as year
-          FROM usage_records up
-          JOIN quilts q ON up.quilt_id = q.id
-          WHERE 
-            EXTRACT(YEAR FROM up.start_date) < EXTRACT(YEAR FROM CURRENT_DATE)
-            AND (
-              CASE 
-                WHEN (EXTRACT(MONTH FROM up.start_date) * 100 + EXTRACT(DAY FROM up.start_date)) <= (EXTRACT(MONTH FROM up.end_date) * 100 + EXTRACT(DAY FROM up.end_date)) THEN
-                  (${currentMonth} * 100 + ${currentDay}) >= (EXTRACT(MONTH FROM up.start_date) * 100 + EXTRACT(DAY FROM up.start_date))
-                  AND (${currentMonth} * 100 + ${currentDay}) <= (EXTRACT(MONTH FROM up.end_date) * 100 + EXTRACT(DAY FROM up.end_date))
-                WHEN (EXTRACT(MONTH FROM up.start_date) * 100 + EXTRACT(DAY FROM up.start_date)) > (EXTRACT(MONTH FROM up.end_date) * 100 + EXTRACT(DAY FROM up.end_date)) THEN
-                  (${currentMonth} * 100 + ${currentDay}) >= (EXTRACT(MONTH FROM up.start_date) * 100 + EXTRACT(DAY FROM up.start_date))
-                  OR (${currentMonth} * 100 + ${currentDay}) <= (EXTRACT(MONTH FROM up.end_date) * 100 + EXTRACT(DAY FROM up.end_date))
-                ELSE 
-                  (${currentMonth} * 100 + ${currentDay}) >= (EXTRACT(MONTH FROM up.start_date) * 100 + EXTRACT(DAY FROM up.start_date))
-              END
-            )
-          ORDER BY up.start_date DESC
-          LIMIT 20
-        `) as any[];
-
-        return result.map(row => ({
+        const d = tx || db;
+        // Complex SQL logic for historical date matching.
+        // It's cleaner to keep using raw SQL for complex date logic or replicate in Drizzle SQL operator.
+        // Let's use d.execute(sql`...`) but map result manually.
+        const query = sql`
+           SELECT 
+             ur.id,
+             ur.quilt_id,
+             ur.start_date,
+             ur.end_date,
+             q.name as quilt_name,
+             q.item_number,
+             q.season,
+             EXTRACT(YEAR FROM ur.start_date) as year
+           FROM usage_records ur
+           JOIN quilts q ON ur.quilt_id = q.id
+           WHERE 
+             EXTRACT(YEAR FROM ur.start_date) < EXTRACT(YEAR FROM CURRENT_DATE)
+             AND (
+               CASE 
+                 WHEN (EXTRACT(MONTH FROM ur.start_date) * 100 + EXTRACT(DAY FROM ur.start_date)) <= (EXTRACT(MONTH FROM ur.end_date) * 100 + EXTRACT(DAY FROM ur.end_date)) THEN
+                   (${currentMonth} * 100 + ${currentDay}) >= (EXTRACT(MONTH FROM ur.start_date) * 100 + EXTRACT(DAY FROM ur.start_date))
+                   AND (${currentMonth} * 100 + ${currentDay}) <= (EXTRACT(MONTH FROM ur.end_date) * 100 + EXTRACT(DAY FROM ur.end_date))
+                 WHEN (EXTRACT(MONTH FROM ur.start_date) * 100 + EXTRACT(DAY FROM ur.start_date)) > (EXTRACT(MONTH FROM ur.end_date) * 100 + EXTRACT(DAY FROM ur.end_date)) THEN
+                   (${currentMonth} * 100 + ${currentDay}) >= (EXTRACT(MONTH FROM ur.start_date) * 100 + EXTRACT(DAY FROM ur.start_date))
+                   OR (${currentMonth} * 100 + ${currentDay}) <= (EXTRACT(MONTH FROM ur.end_date) * 100 + EXTRACT(DAY FROM ur.end_date))
+                 ELSE 
+                   (${currentMonth} * 100 + ${currentDay}) >= (EXTRACT(MONTH FROM ur.start_date) * 100 + EXTRACT(DAY FROM ur.start_date))
+               END
+             )
+           ORDER BY ur.start_date DESC
+           LIMIT 20
+        `;
+        
+        const result = await d.execute(query);
+        // Neon/Drizzle result format: result.rows is array of objects
+        
+        // Note: Drizzle's `execute` returns `QueryResult`.
+        // If using Neon HTTP, it returns `QueryResultHKT`.
+        // Let's assume standard PG result structure or just rows.
+        // Actually, drizzle `execute` with template literal usually returns rows directly or standard object.
+        // But types might be loose.
+        
+        return (result.rows as any[]).map(row => ({
           id: row.id,
           quiltId: row.quilt_id,
           quiltName: row.quilt_name,
@@ -306,21 +322,21 @@ export class StatsRepository extends BaseRepositoryImpl<never, never> {
   /**
    * Get complete dashboard statistics
    */
-  async getDashboardStats(): Promise<DashboardStats> {
+  async getDashboardStats(tx?: Tx): Promise<DashboardStats> {
     return this.executeQuery(async () => {
       const today = new Date();
       const currentMonth = today.getMonth() + 1;
       const currentDay = today.getDate();
 
       const [statusCounts, seasonalCounts, inUseQuilts] = await Promise.all([
-        this.getStatusCounts(),
-        this.getSeasonalCounts(),
-        this.getInUseQuilts(),
+        this.getStatusCounts(tx),
+        this.getSeasonalCounts(tx),
+        this.getInUseQuilts(tx),
       ]);
 
       let historicalUsage: HistoricalUsage[] = [];
       try {
-        historicalUsage = await this.getHistoricalUsage(currentMonth, currentDay);
+        historicalUsage = await this.getHistoricalUsage(currentMonth, currentDay, tx);
       } catch {
         // Continue without historical data if query fails
       }
@@ -337,32 +353,36 @@ export class StatsRepository extends BaseRepositoryImpl<never, never> {
   /**
    * Get usage statistics (total periods, total days, average days)
    */
-  async getUsageStats(): Promise<UsageStats> {
+  async getUsageStats(tx?: Tx): Promise<UsageStats> {
     return this.executeQuery(async () => {
-      const result = (await sql`
-        SELECT 
-          COUNT(*)::int as total_periods,
-          COALESCE(SUM(
-            CASE
-              WHEN end_date IS NOT NULL
-              THEN EXTRACT(DAY FROM (end_date::timestamp - start_date::timestamp))
-              ELSE 0
-            END
-          ), 0)::int as total_days,
-          COALESCE(AVG(
-            CASE
-              WHEN end_date IS NOT NULL
-              THEN EXTRACT(DAY FROM (end_date::timestamp - start_date::timestamp))
-              ELSE NULL
-            END
-          ), 0)::int as avg_days
-        FROM usage_records
-      `) as [{ total_periods: number; total_days: number; avg_days: number }];
+      const d = tx || db;
+      
+      const result = await d.select({
+          totalPeriods: count(),
+          totalDays: sql<number>`
+            COALESCE(SUM(
+              CASE
+                WHEN ${usageRecords.endDate} IS NOT NULL
+                THEN EXTRACT(DAY FROM (${usageRecords.endDate}::timestamp - ${usageRecords.startDate}::timestamp))
+                ELSE 0
+              END
+            ), 0)::int
+          `,
+          avgDays: sql<number>`
+            COALESCE(AVG(
+              CASE
+                WHEN ${usageRecords.endDate} IS NOT NULL
+                THEN EXTRACT(DAY FROM (${usageRecords.endDate}::timestamp - ${usageRecords.startDate}::timestamp))
+                ELSE NULL
+              END
+            ), 0)::int
+          `
+      }).from(usageRecords);
 
       return {
-        totalPeriods: result[0]?.total_periods || 0,
-        totalDays: result[0]?.total_days || 0,
-        avgDays: result[0]?.avg_days || 0,
+        totalPeriods: result[0]?.totalPeriods || 0,
+        totalDays: result[0]?.totalDays || 0,
+        avgDays: result[0]?.avgDays || 0,
       };
     }, 'getUsageStats');
   }
@@ -370,20 +390,19 @@ export class StatsRepository extends BaseRepositoryImpl<never, never> {
   /**
    * Get usage counts by season
    */
-  async getUsageBySeason(): Promise<SeasonalCounts> {
+  async getUsageBySeason(tx?: Tx): Promise<SeasonalCounts> {
     return this.executeQuery(async () => {
-      const result = (await sql`
-        SELECT 
-          q.season,
-          COUNT(*)::int as count
-        FROM usage_records up
-        JOIN quilts q ON up.quilt_id = q.id
-        GROUP BY q.season
-      `) as { season: string; count: number }[];
+      const d = tx || db;
+      const result = await d.select({
+          season: quilts.season,
+          count: count()
+      }).from(usageRecords)
+        .leftJoin(quilts, eq(usageRecords.quiltId, quilts.id))
+        .groupBy(quilts.season);
 
       const counts: SeasonalCounts = { WINTER: 0, SPRING_AUTUMN: 0, SUMMER: 0 };
       result.forEach(row => {
-        if (row.season in counts) {
+        if (row.season && row.season in counts) {
           counts[row.season as keyof SeasonalCounts] = row.count;
         }
       });
@@ -395,34 +414,36 @@ export class StatsRepository extends BaseRepositoryImpl<never, never> {
   /**
    * Get most used quilts
    */
-  async getMostUsedQuilts(limit: number = 5): Promise<MostUsedQuilt[]> {
+  async getMostUsedQuilts(limit: number = 5, tx?: Tx): Promise<MostUsedQuilt[]> {
     return this.executeQuery(
       async () => {
-        const result = (await sql`
-          SELECT 
-            up.quilt_id,
-            q.name,
-            COUNT(*)::int as usage_count,
-            COALESCE(SUM(
-              CASE
-                WHEN up.end_date IS NOT NULL
-                THEN EXTRACT(DAY FROM (up.end_date::timestamp - up.start_date::timestamp))
-                ELSE 0
-              END
-            ), 0)::int as total_days
-          FROM usage_records up
-          JOIN quilts q ON up.quilt_id = q.id
-          GROUP BY up.quilt_id, q.name
-          ORDER BY usage_count DESC
-          LIMIT ${limit}
-        `) as any[];
+        const d = tx || db;
+        
+        const result = await d.select({
+            quiltId: usageRecords.quiltId,
+            name: quilts.name,
+            usageCount: count(),
+            totalDays: sql<number>`
+                COALESCE(SUM(
+                  CASE
+                    WHEN ${usageRecords.endDate} IS NOT NULL
+                    THEN EXTRACT(DAY FROM (${usageRecords.endDate}::timestamp - ${usageRecords.startDate}::timestamp))
+                    ELSE 0
+                  END
+                ), 0)::int
+            `
+        }).from(usageRecords)
+          .leftJoin(quilts, eq(usageRecords.quiltId, quilts.id))
+          .groupBy(usageRecords.quiltId, quilts.name)
+          .orderBy(desc(count()))
+          .limit(limit);
 
         return result.map(row => ({
-          quiltId: row.quilt_id,
-          name: row.name,
-          usageCount: row.usage_count,
-          totalDays: row.total_days,
-          averageDays: row.usage_count > 0 ? Math.round(row.total_days / row.usage_count) : 0,
+          quiltId: row.quiltId,
+          name: row.name || 'Unknown',
+          usageCount: row.usageCount,
+          totalDays: row.totalDays,
+          averageDays: row.usageCount > 0 ? Math.round(row.totalDays / row.usageCount) : 0,
         }));
       },
       'getMostUsedQuilts',
@@ -433,16 +454,15 @@ export class StatsRepository extends BaseRepositoryImpl<never, never> {
   /**
    * Get usage by year
    */
-  async getUsageByYear(): Promise<UsageByPeriod[]> {
+  async getUsageByYear(tx?: Tx): Promise<UsageByPeriod[]> {
     return this.executeQuery(async () => {
-      const result = (await sql`
-        SELECT 
-          EXTRACT(YEAR FROM start_date)::int as year,
-          COUNT(*)::int as count
-        FROM usage_records
-        GROUP BY EXTRACT(YEAR FROM start_date)
-        ORDER BY year
-      `) as { year: number; count: number }[];
+      const d = tx || db;
+      const result = await d.select({
+          year: sql<number>`EXTRACT(YEAR FROM ${usageRecords.startDate})::int`,
+          count: count()
+      }).from(usageRecords)
+      .groupBy(sql`EXTRACT(YEAR FROM ${usageRecords.startDate})`)
+      .orderBy(sql`EXTRACT(YEAR FROM ${usageRecords.startDate})`);
 
       return result.map(row => ({
         period: String(row.year),
@@ -454,17 +474,17 @@ export class StatsRepository extends BaseRepositoryImpl<never, never> {
   /**
    * Get usage by month (last 12 months)
    */
-  async getUsageByMonth(): Promise<UsageByPeriod[]> {
+  async getUsageByMonth(tx?: Tx): Promise<UsageByPeriod[]> {
     return this.executeQuery(async () => {
-      const result = (await sql`
-        SELECT 
-          TO_CHAR(start_date, 'YYYY-MM') as month,
-          COUNT(*)::int as count
-        FROM usage_records
-        WHERE start_date >= DATE_TRUNC('month', CURRENT_DATE - INTERVAL '11 months')
-        GROUP BY TO_CHAR(start_date, 'YYYY-MM')
-        ORDER BY month
-      `) as { month: string; count: number }[];
+      const d = tx || db;
+      
+      const result = await d.select({
+          month: sql<string>`TO_CHAR(${usageRecords.startDate}, 'YYYY-MM')`,
+          count: count()
+      }).from(usageRecords)
+      .where(sql`${usageRecords.startDate} >= DATE_TRUNC('month', CURRENT_DATE - INTERVAL '11 months')`)
+      .groupBy(sql`TO_CHAR(${usageRecords.startDate}, 'YYYY-MM')`)
+      .orderBy(sql`TO_CHAR(${usageRecords.startDate}, 'YYYY-MM')`);
 
       // Build complete 12-month map with zeros for missing months
       const usageByMonthMap: { [key: string]: number } = {};
@@ -490,13 +510,12 @@ export class StatsRepository extends BaseRepositoryImpl<never, never> {
   /**
    * Get current usage count (active usage records)
    */
-  async getCurrentUsageCount(): Promise<number> {
+  async getCurrentUsageCount(tx?: Tx): Promise<number> {
     return this.executeQuery(async () => {
-      const result = (await sql`
-        SELECT COUNT(*)::int as count 
-        FROM usage_records 
-        WHERE end_date IS NULL
-      `) as [{ count: number }];
+      const d = tx || db;
+      const result = await d.select({ count: count() })
+          .from(usageRecords)
+          .where(isNull(usageRecords.endDate));
 
       return result[0]?.count || 0;
     }, 'getCurrentUsageCount');
@@ -505,7 +524,7 @@ export class StatsRepository extends BaseRepositoryImpl<never, never> {
   /**
    * Get complete analytics data
    */
-  async getAnalyticsData(): Promise<AnalyticsData> {
+  async getAnalyticsData(tx?: Tx): Promise<AnalyticsData> {
     return this.executeQuery(async () => {
       const [
         statusCounts,
@@ -517,14 +536,14 @@ export class StatsRepository extends BaseRepositoryImpl<never, never> {
         usageByMonth,
         currentUsageCount,
       ] = await Promise.all([
-        this.getStatusCounts(),
-        this.getSeasonalCounts(),
-        this.getUsageStats(),
-        this.getUsageBySeason(),
-        this.getMostUsedQuilts(),
-        this.getUsageByYear(),
-        this.getUsageByMonth(),
-        this.getCurrentUsageCount(),
+        this.getStatusCounts(tx),
+        this.getSeasonalCounts(tx),
+        this.getUsageStats(tx),
+        this.getUsageBySeason(tx),
+        this.getMostUsedQuilts(5, tx),
+        this.getUsageByYear(tx),
+        this.getUsageByMonth(tx),
+        this.getCurrentUsageCount(tx),
       ]);
 
       return {
@@ -548,81 +567,50 @@ export class StatsRepository extends BaseRepositoryImpl<never, never> {
   /**
    * Get inventory report data
    */
-  async getInventoryReport(): Promise<InventoryReport> {
+  async getInventoryReport(tx?: Tx): Promise<InventoryReport> {
     return this.executeQuery(async () => {
-      const [quilts, statusCounts, seasonCounts] = await Promise.all([
-        sql`
-          SELECT 
-            q.id,
-            q.item_number,
-            q.name,
-            q.season,
-            q.length_cm,
-            q.width_cm,
-            q.weight_grams,
-            q.fill_material,
-            q.color,
-            q.brand,
-            q.location,
-            q.current_status,
-            q.notes,
-            q.created_at,
-            q.updated_at
-          FROM quilts q
-          ORDER BY q.item_number
-        `,
-        sql`
-          SELECT 
-            current_status,
-            COUNT(*)::int as count
-          FROM quilts
-          GROUP BY current_status
-        `,
-        sql`
-          SELECT 
-            season,
-            COUNT(*)::int as count
-          FROM quilts
-          GROUP BY season
-        `,
+      const d = tx || db;
+      
+      const [quiltsList, statusCounts, seasonCounts] = await Promise.all([
+        d.select().from(quilts).orderBy(quilts.itemNumber),
+        this.getStatusCounts(tx),
+        this.getSeasonalCounts(tx)
       ]);
 
       // Parse status counts
-      const byStatus = { inUse: 0, storage: 0, maintenance: 0 };
-      (statusCounts as any[]).forEach(row => {
-        if (row.current_status === 'IN_USE') byStatus.inUse = row.count;
-        else if (row.current_status === 'STORAGE') byStatus.storage = row.count;
-        else if (row.current_status === 'MAINTENANCE') byStatus.maintenance = row.count;
-      });
+      const byStatus = { 
+          inUse: statusCounts.inUse, 
+          storage: statusCounts.storage, 
+          maintenance: statusCounts.maintenance 
+      };
 
       // Parse season counts
-      const bySeason = { winter: 0, springAutumn: 0, summer: 0 };
-      (seasonCounts as any[]).forEach(row => {
-        if (row.season === 'WINTER') bySeason.winter = row.count;
-        else if (row.season === 'SPRING_AUTUMN') bySeason.springAutumn = row.count;
-        else if (row.season === 'SUMMER') bySeason.summer = row.count;
-      });
+      const bySeason = { 
+          winter: seasonCounts.WINTER, 
+          springAutumn: seasonCounts.SPRING_AUTUMN, 
+          summer: seasonCounts.SUMMER 
+      };
 
       return {
         summary: {
-          totalQuilts: (quilts as any[]).length,
+          totalQuilts: quiltsList.length,
           byStatus,
           bySeason,
         },
-        quilts: (quilts as any[]).map(q => ({
-          itemNumber: q.item_number,
+        quilts: quiltsList.map(q => ({
+          itemNumber: q.itemNumber,
           name: q.name,
           season: q.season,
-          dimensions: `${q.length_cm}×${q.width_cm}cm`,
-          weight: `${q.weight_grams}g`,
-          material: q.fill_material,
+          dimensions: `${q.lengthCm}×${q.widthCm}cm`,
+          weight: `${q.weightGrams}g`,
+          material: q.fillMaterial,
           color: q.color,
           brand: q.brand,
           location: q.location,
-          status: q.current_status,
+          status: q.currentStatus,
           notes: q.notes,
-          createdAt: new Date(q.created_at),
-          updatedAt: new Date(q.updated_at),
+          createdAt: new Date(q.createdAt),
+          updatedAt: new Date(q.updatedAt),
         })),
       };
     }, 'getInventoryReport');
@@ -631,83 +619,64 @@ export class StatsRepository extends BaseRepositoryImpl<never, never> {
   /**
    * Get usage report data
    */
-  async getUsageReport(): Promise<UsageReport> {
+  async getUsageReport(tx?: Tx): Promise<UsageReport> {
     return this.executeQuery(async () => {
-      const [usageRecords, usageStats] = await Promise.all([
-        sql`
-          SELECT 
-            ur.id,
-            ur.quilt_id,
-            ur.start_date,
-            ur.end_date,
-            ur.usage_type,
-            ur.notes,
-            q.name as quilt_name,
-            q.item_number,
-            q.season,
-            CASE
-              WHEN ur.end_date IS NOT NULL THEN 
-                EXTRACT(DAY FROM (ur.end_date::timestamp - ur.start_date::timestamp))
-              ELSE NULL
-            END as duration_days
-          FROM usage_records ur
-          JOIN quilts q ON ur.quilt_id = q.id
-          ORDER BY ur.start_date DESC
-        `,
-        sql`
-          SELECT 
-            COUNT(*)::int as total_periods,
-            COALESCE(SUM(
-              CASE
-                WHEN end_date IS NOT NULL
-                THEN EXTRACT(DAY FROM (end_date::timestamp - start_date::timestamp))
-                ELSE 0
-              END
-            ), 0)::int as total_days,
-            COALESCE(AVG(
-              CASE
-                WHEN end_date IS NOT NULL
-                THEN EXTRACT(DAY FROM (end_date::timestamp - start_date::timestamp))
-                ELSE NULL
-              END
-            ), 0)::int as avg_days
-          FROM usage_records
-        `,
+      const d = tx || db;
+      
+      const [records, usageStats] = await Promise.all([
+        d.select({
+            id: usageRecords.id,
+            usageType: usageRecords.usageType,
+            startDate: usageRecords.startDate,
+            endDate: usageRecords.endDate,
+            notes: usageRecords.notes,
+            quiltName: quilts.name,
+            itemNumber: quilts.itemNumber,
+            season: quilts.season,
+            durationDays: sql<number>`
+                CASE
+                  WHEN ${usageRecords.endDate} IS NOT NULL THEN 
+                    EXTRACT(DAY FROM (${usageRecords.endDate}::timestamp - ${usageRecords.startDate}::timestamp))
+                  ELSE NULL
+                END
+            `
+        }).from(usageRecords)
+        .leftJoin(quilts, eq(usageRecords.quiltId, quilts.id))
+        .orderBy(desc(usageRecords.startDate)),
+        
+        this.getUsageStats(tx)
       ]);
 
-      const stats = (usageStats as any[])[0] || { total_periods: 0, total_days: 0, avg_days: 0 };
-      const records = usageRecords as any[];
-
       // Separate active and completed records
-      const activeRecords = records.filter(r => !r.end_date);
-      const completedRecords = records.filter(r => r.end_date);
+      const activeRecords = records.filter(r => !r.endDate);
+      const completedRecords = records.filter(r => r.endDate);
 
       return {
         summary: {
-          totalUsagePeriods: stats.total_periods,
+          totalUsagePeriods: usageStats.totalPeriods,
           currentlyInUse: activeRecords.length,
-          totalUsageDays: stats.total_days,
-          averageUsageDays: stats.avg_days,
+          totalUsageDays: usageStats.totalDays,
+          averageUsageDays: usageStats.avgDays,
         },
         usagePeriods: completedRecords.map(p => ({
-          quiltName: p.quilt_name,
-          itemNumber: p.item_number,
-          season: p.season,
-          startDate: new Date(p.start_date),
-          endDate: p.end_date ? new Date(p.end_date) : null,
-          durationDays: p.duration_days ? Math.floor(p.duration_days) : null,
-          usageType: p.usage_type,
+          quiltName: p.quiltName || 'Unknown',
+          itemNumber: p.itemNumber || 0,
+          season: p.season || 'WINTER', // Default fallback
+          startDate: new Date(p.startDate),
+          endDate: p.endDate ? new Date(p.endDate) : null,
+          durationDays: p.durationDays ? Math.floor(p.durationDays) : null,
+          usageType: p.usageType || 'REGULAR',
           notes: p.notes,
         })),
         currentUsage: activeRecords.map(c => ({
-          quiltName: c.quilt_name,
-          itemNumber: c.item_number,
-          season: c.season,
-          startedAt: new Date(c.start_date),
-          usageType: c.usage_type,
+          quiltName: c.quiltName || 'Unknown',
+          itemNumber: c.itemNumber || 0,
+          season: c.season || 'WINTER',
+          startedAt: new Date(c.startDate),
+          usageType: c.usageType || 'REGULAR',
           notes: c.notes,
           daysInUse: Math.floor(
-            (new Date().getTime() - new Date(c.start_date).getTime()) / (1000 * 60 * 60 * 24)
+            (new Date().getTime() - new Date(c.startDate).getTime()) / (1000 * 60 * 60 * 24)
           ),
         })),
       };
@@ -717,7 +686,7 @@ export class StatsRepository extends BaseRepositoryImpl<never, never> {
   /**
    * Get analytics report data
    */
-  async getAnalyticsReport(): Promise<{
+  async getAnalyticsReport(tx?: Tx): Promise<{
     inventory: {
       total: number;
       statusDistribution: { inUse: number; storage: number; maintenance: number };
@@ -732,10 +701,10 @@ export class StatsRepository extends BaseRepositoryImpl<never, never> {
   }> {
     return this.executeQuery(async () => {
       const [statusCounts, seasonCounts, usageStats, usageBySeason] = await Promise.all([
-        this.getStatusCounts(),
-        this.getSeasonalCounts(),
-        this.getUsageStats(),
-        this.getUsageBySeason(),
+        this.getStatusCounts(tx),
+        this.getSeasonalCounts(tx),
+        this.getUsageStats(tx),
+        this.getUsageBySeason(tx),
       ]);
 
       return {
@@ -769,78 +738,48 @@ export class StatsRepository extends BaseRepositoryImpl<never, never> {
   /**
    * Get status report data
    */
-  async getStatusReport(): Promise<StatusReport> {
+  async getStatusReport(tx?: Tx): Promise<StatusReport> {
     return this.executeQuery(async () => {
-      const [quilts, statusCounts] = await Promise.all([
-        sql`
-          SELECT 
-            q.item_number,
-            q.name,
-            q.current_status,
-            q.season,
-            q.location,
-            q.updated_at,
-            ur.start_date as usage_started
-          FROM quilts q
-          LEFT JOIN usage_records ur ON q.id = ur.quilt_id AND ur.end_date IS NULL
-          ORDER BY q.current_status, q.item_number
-        `,
-        sql`
-          SELECT 
-            current_status,
-            COUNT(*)::int as count
-          FROM quilts
-          GROUP BY current_status
-        `,
+      const d = tx || db;
+      const [quiltsList, statusCounts] = await Promise.all([
+        d.select({
+            itemNumber: quilts.itemNumber,
+            name: quilts.name,
+            currentStatus: quilts.currentStatus,
+            season: quilts.season,
+            location: quilts.location,
+            updatedAt: quilts.updatedAt,
+            usageStarted: usageRecords.startDate
+        }).from(quilts)
+        .leftJoin(usageRecords, and(eq(quilts.id, usageRecords.quiltId), isNull(usageRecords.endDate)))
+        .orderBy(quilts.currentStatus, quilts.itemNumber),
+        
+        this.getStatusCounts(tx)
       ]);
 
       // Parse status counts
-      const summary = { inUse: 0, storage: 0, maintenance: 0 };
-      (statusCounts as any[]).forEach(row => {
-        if (row.current_status === 'IN_USE') summary.inUse = row.count;
-        else if (row.current_status === 'STORAGE') summary.storage = row.count;
-        else if (row.current_status === 'MAINTENANCE') summary.maintenance = row.count;
-      });
+      const summary = { 
+          inUse: statusCounts.inUse, 
+          storage: statusCounts.storage, 
+          maintenance: statusCounts.maintenance 
+      };
 
       return {
         summary,
-        quilts: (quilts as any[]).map(q => ({
-          itemNumber: q.item_number,
+        quilts: quiltsList.map(q => ({
+          itemNumber: q.itemNumber,
           name: q.name,
-          status: q.current_status,
+          status: q.currentStatus,
           season: q.season,
           location: q.location,
-          lastUpdated: new Date(q.updated_at),
-          usageStarted: q.usage_started ? new Date(q.usage_started) : null,
-          daysInCurrentStatus: q.usage_started
-            ? Math.floor(
-                (new Date().getTime() - new Date(q.usage_started).getTime()) / (1000 * 60 * 60 * 24)
-              )
+          lastUpdated: new Date(q.updatedAt),
+          usageStarted: q.usageStarted ? new Date(q.usageStarted) : null,
+          daysInCurrentStatus: q.usageStarted
+            ? Math.floor((new Date().getTime() - new Date(q.usageStarted).getTime()) / (1000 * 60 * 60 * 24))
             : null,
         })),
       };
     }, 'getStatusReport');
-  }
-
-  /**
-   * Get simple usage stats (total and active counts)
-   */
-  async getSimpleUsageStats(): Promise<{ total: number; active: number; completed: number }> {
-    return this.executeQuery(async () => {
-      const [totalResult, activeResult] = await Promise.all([
-        sql`SELECT COUNT(*)::int as count FROM usage_records`,
-        sql`SELECT COUNT(*)::int as count FROM usage_records WHERE end_date IS NULL`,
-      ]);
-
-      const total = (totalResult as any[])[0]?.count || 0;
-      const active = (activeResult as any[])[0]?.count || 0;
-
-      return {
-        total,
-        active,
-        completed: total - active,
-      };
-    }, 'getSimpleUsageStats');
   }
 }
 

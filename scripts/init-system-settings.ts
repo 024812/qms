@@ -5,7 +5,9 @@
  * Run this script once to set up the password storage in database.
  */
 
-import { sql } from '@/lib/neon';
+import 'dotenv/config';
+import { db } from '@/db';
+import { sql } from 'drizzle-orm';
 import { hashPassword } from '@/lib/auth/password';
 
 async function initSystemSettings() {
@@ -14,7 +16,7 @@ async function initSystemSettings() {
 
     // Create table
     console.log('Creating system_settings table...');
-    await sql`
+    await db.execute(sql`
       CREATE TABLE IF NOT EXISTS system_settings (
         id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
         key VARCHAR(100) UNIQUE NOT NULL,
@@ -23,19 +25,19 @@ async function initSystemSettings() {
         created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
       )
-    `;
+    `);
     console.log('✅ Table created\n');
 
     // Create index
     console.log('Creating index...');
-    await sql`
+    await db.execute(sql`
       CREATE INDEX IF NOT EXISTS idx_system_settings_key ON system_settings(key)
-    `;
+    `);
     console.log('✅ Index created\n');
 
     // Create trigger function
     console.log('Creating trigger function...');
-    await sql`
+    await db.execute(sql`
       CREATE OR REPLACE FUNCTION update_system_settings_updated_at()
       RETURNS TRIGGER AS $$
       BEGIN
@@ -43,20 +45,20 @@ async function initSystemSettings() {
         RETURN NEW;
       END;
       $$ LANGUAGE plpgsql
-    `;
+    `);
     console.log('✅ Trigger function created\n');
 
     // Create trigger
     console.log('Creating trigger...');
-    await sql`
+    await db.execute(sql`
       DROP TRIGGER IF EXISTS trigger_update_system_settings_updated_at ON system_settings
-    `;
-    await sql`
+    `);
+    await db.execute(sql`
       CREATE TRIGGER trigger_update_system_settings_updated_at
         BEFORE UPDATE ON system_settings
         FOR EACH ROW
         EXECUTE FUNCTION update_system_settings_updated_at()
-    `;
+    `);
     console.log('✅ Trigger created\n');
 
     // Initialize password hash
@@ -76,7 +78,7 @@ async function initSystemSettings() {
       console.log('⚠️  WARNING: Using default password "admin123". Please change it immediately!');
     }
 
-    await sql`
+    await db.execute(sql`
       INSERT INTO system_settings (key, value, description)
       VALUES (
         'password_hash',
@@ -84,12 +86,12 @@ async function initSystemSettings() {
         'Bcrypt hash of the admin password'
       )
       ON CONFLICT (key) DO UPDATE SET value = ${passwordHash}
-    `;
+    `);
     console.log('✅ Password hash initialized\n');
 
     // Initialize app name
     console.log('Initializing app name...');
-    await sql`
+    await db.execute(sql`
       INSERT INTO system_settings (key, value, description)
       VALUES (
         'app_name',
@@ -97,18 +99,26 @@ async function initSystemSettings() {
         'Application display name'
       )
       ON CONFLICT (key) DO NOTHING
-    `;
+    `);
     console.log('✅ App name initialized\n');
 
     // Verify settings
     console.log('Verifying settings...');
-    const settings = await sql`
+    const result = await db.execute(sql`
       SELECT key, description FROM system_settings
-    `;
+    `);
+    
+    // Result rows might be different depending on driver. 
+    // Drizzle execute returns { rows: [] } or array? 
+    // Neon HTTP returned array. Pool driver returns Result object.
+    const settings = result.rows || result;
+    
     console.log('Current settings:');
-    settings.forEach((setting: any) => {
-      console.log(`  - ${setting.key}: ${setting.description}`);
-    });
+    if (Array.isArray(settings)) {
+        settings.forEach((setting: any) => {
+        console.log(`  - ${setting.key}: ${setting.description}`);
+        });
+    }
 
     console.log('\n✅ System settings initialized successfully!');
     console.log('\n📝 Next steps:');

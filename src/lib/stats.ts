@@ -7,7 +7,16 @@
  * Requirements: 6.2 - Generic statistics analysis engine with custom metrics support
  */
 
-import { Item } from '@/db/schema';
+// Generic Item type for statistics (Item was removed from schema)
+interface Item {
+  id: string;
+  type: string;
+  name: string;
+  status: string;
+  attributes: Record<string, any>;
+  createdAt: Date;
+  updatedAt: Date;
+}
 
 /**
  * Metric definition interface

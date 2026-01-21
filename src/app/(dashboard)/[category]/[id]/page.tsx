@@ -14,7 +14,7 @@ import { getItemById, getUsageLogs } from '@/app/actions/items';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { ArrowLeft, Edit, Trash2 } from 'lucide-react';
+import { ArrowLeft, Edit } from 'lucide-react';
 import Link from 'next/link';
 import { StatusBadge } from '@/modules/core/ui/StatusBadge';
 
@@ -36,23 +36,31 @@ export default async function ItemDetailPage(props: PageProps) {
   }
 
   // Get module configuration
-  const module = getModule(params.category);
-  if (!module) {
+  const moduleConfig = getModule(params.category);
+  if (!moduleConfig) {
     return notFound();
   }
 
   // Fetch item
   let item;
   try {
-    item = await getItemById(params.id);
+    item = await getItemById(params.category, params.id);
   } catch (error) {
     return notFound();
   }
 
-  // Verify item type matches category
-  if (item.type !== params.category) {
+  // Verify item exists
+  if (!item) {
     return notFound();
   }
+
+  // Normalize item for view
+  const anyItem = item as any;
+  const itemName = anyItem.name || anyItem.playerName || 'Item';
+  const itemStatus = anyItem.status || anyItem.currentStatus || 'UNKNOWN';
+  const itemImages = anyItem.images || [anyItem.mainImage, ...(anyItem.attachmentImages || [])].filter(Boolean);
+  const itemCreatedAt = anyItem.createdAt ? new Date(anyItem.createdAt) : new Date();
+  const itemUpdatedAt = anyItem.updatedAt ? new Date(anyItem.updatedAt) : new Date();
 
   // Fetch usage logs
   const logs = await getUsageLogs(params.id);
@@ -69,10 +77,10 @@ export default async function ItemDetailPage(props: PageProps) {
             </Button>
           </Link>
           <div>
-            <h1 className="text-3xl font-bold">{item.name}</h1>
+            <h1 className="text-3xl font-bold">{itemName}</h1>
             <div className="flex items-center gap-2 mt-2">
-              <StatusBadge status={item.status} />
-              <Badge variant="outline">{module.name}</Badge>
+              <StatusBadge status={itemStatus} />
+              <Badge variant="outline">{moduleConfig.name}</Badge>
             </div>
           </div>
         </div>
@@ -87,8 +95,8 @@ export default async function ItemDetailPage(props: PageProps) {
       </div>
 
       {/* Detail View */}
-      {module.DetailComponent ? (
-        <module.DetailComponent item={item} />
+      {moduleConfig.DetailComponent ? (
+        <moduleConfig.DetailComponent item={item} />
       ) : (
         <Card>
           <CardHeader>
@@ -99,35 +107,35 @@ export default async function ItemDetailPage(props: PageProps) {
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <div className="text-sm text-muted-foreground">名称</div>
-                <div className="font-medium">{item.name}</div>
+                <div className="font-medium">{itemName}</div>
               </div>
               <div>
                 <div className="text-sm text-muted-foreground">状态</div>
                 <div className="font-medium">
-                  <StatusBadge status={item.status} />
+                  <StatusBadge status={itemStatus} />
                 </div>
               </div>
               <div>
                 <div className="text-sm text-muted-foreground">创建时间</div>
                 <div className="font-medium">
-                  {new Date(item.createdAt).toLocaleDateString('zh-CN')}
+                  {itemCreatedAt.toLocaleDateString('zh-CN')}
                 </div>
               </div>
               <div>
                 <div className="text-sm text-muted-foreground">更新时间</div>
                 <div className="font-medium">
-                  {new Date(item.updatedAt).toLocaleDateString('zh-CN')}
+                  {itemUpdatedAt.toLocaleDateString('zh-CN')}
                 </div>
               </div>
             </div>
 
             {/* Attributes */}
-            {item.attributes && Object.keys(item.attributes).length > 0 && (
+            {anyItem.attributes && Object.keys(anyItem.attributes).length > 0 && (
               <div>
                 <h3 className="font-semibold mb-2">属性</h3>
                 <div className="grid grid-cols-2 gap-4">
-                  {Object.entries(item.attributes).map(([key, value]) => {
-                    const field = module.formFields.find((f) => f.name === key);
+                  {Object.entries(anyItem.attributes).map(([key, value]) => {
+                    const field = moduleConfig.formFields.find((f: any) => f.name === key);
                     return (
                       <div key={key}>
                         <div className="text-sm text-muted-foreground">
@@ -135,7 +143,7 @@ export default async function ItemDetailPage(props: PageProps) {
                         </div>
                         <div className="font-medium">
                           {field?.type === 'select' && field.options
-                            ? field.options.find((opt) => opt.value === value)?.label || value
+                            ? field.options.find((opt: any) => opt.value === value)?.label || String(value)
                             : String(value)}
                         </div>
                       </div>
@@ -146,15 +154,15 @@ export default async function ItemDetailPage(props: PageProps) {
             )}
 
             {/* Images */}
-            {item.images && item.images.length > 0 && (
+            {itemImages.length > 0 && (
               <div>
                 <h3 className="font-semibold mb-2">图片</h3>
                 <div className="grid grid-cols-3 gap-4">
-                  {item.images.map((url, index) => (
+                  {itemImages.map((url: string, index: number) => (
                     <img
                       key={index}
                       src={url}
-                      alt={`${item.name} - ${index + 1}`}
+                      alt={`${itemName} - ${index + 1}`}
                       className="w-full h-32 object-cover rounded-lg border"
                     />
                   ))}
@@ -180,9 +188,9 @@ export default async function ItemDetailPage(props: PageProps) {
                 >
                   <div>
                     <div className="font-medium">{log.action}</div>
-                    {log.snapshot && (
+                    {log.metadata && (
                       <div className="text-sm text-muted-foreground">
-                        {JSON.stringify(log.snapshot)}
+                        {JSON.stringify(log.metadata)}
                       </div>
                     )}
                   </div>

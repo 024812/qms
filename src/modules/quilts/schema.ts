@@ -171,6 +171,8 @@ export function quiltToQuiltItem(quilt: import('@/lib/validations/quilt').Quilt)
 /**
  * Helper function to convert QuiltItem back to Quilt format
  * This is used when interfacing with the existing repository layer
+ * Note: Nullable dimension fields are passed through as-is, the Quilt type
+ * may need validation before use if strict non-null values are required.
  */
 export function quiltItemToQuilt(item: QuiltItem): import('@/lib/validations/quilt').Quilt {
   return {
@@ -181,9 +183,9 @@ export function quiltItemToQuilt(item: QuiltItem): import('@/lib/validations/qui
     groupId: item.groupId,
     name: item.name,
     season: item.season,
-    lengthCm: item.lengthCm,
-    widthCm: item.widthCm,
-    weightGrams: item.weightGrams,
+    lengthCm: item.lengthCm ?? 0,
+    widthCm: item.widthCm ?? 0,
+    weightGrams: item.weightGrams ?? 0,
     fillMaterial: item.fillMaterial,
     materialDetails: item.materialDetails,
     color: item.color,

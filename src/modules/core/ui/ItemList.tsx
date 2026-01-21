@@ -9,7 +9,16 @@
 
 'use client';
 
-import { Item } from '@/db/schema';
+// Generic Item type for list display
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+interface Item {
+  id: string;
+  name: string;
+  createdAt: Date;
+  type?: string;
+  status?: string;
+  [key: string]: any; // Allow other properties for Quilt/Card types
+}
 import { ItemCard } from './ItemCard';
 import { useRouter } from 'next/navigation';
 import { getModule } from '@/modules/registry';
@@ -18,7 +27,8 @@ import { getModule } from '@/modules/registry';
  * ItemList Props
  */
 interface ItemListProps {
-  items: Item[];
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  items: any[];
   moduleType: string;
 }
 

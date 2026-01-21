@@ -5,30 +5,24 @@
  * Replaces the class-based UsageRepository pattern.
  *
  * Architecture:
- * - Standalone async functions (not classes)
- * - 'use cache' directive for persistent caching
- * - React cache() for request-level deduplication
- * - Serializable data only (no class instances, no undefined)
+ * - Standalone async functions
+ * - 'use cache' for persistent caching
+ * - React cache() for request deduplication
  * - Cache invalidation with updateTag()
  *
  * Cache Strategy:
- * - Individual records: 2 minutes (120 seconds)
- * - Lists: 1 minute (60 seconds)
- * - Tags: 'usage-logs', 'usage-logs-{id}', 'usage-logs-quilt-{quiltId}', 'usage-logs-active'
- *
- * Requirements: 2.1-2.6, 3.1-3.6 from Next.js 16 Best Practices Migration spec
+ * - Individual records: 5 minutes
+ * - Lists/History: 2 minutes (120 seconds)
+ * - Tags: 'usage', 'usage-{id}', 'usage-quilt-{quiltId}'
  */
 
 import { cache } from 'react';
-import {
-  cacheLife,
-  cacheTag,
-  updateTag,
-} from 'next/cache';
-
-import { sql } from '@/lib/neon';
+import { cacheLife, cacheTag, updateTag } from 'next/cache';
+import { db } from '@/db';
+import { usageRecords } from '@/db/schema';
+import { eq, desc, and, isNull, sql } from 'drizzle-orm';
 import { dbLogger } from '@/lib/logger';
-import { type UsageRecord, type UsageRecordRow, rowToUsageRecord } from '@/lib/database/types';
+import { type UsageRecord } from '@/lib/database/types';
 import { UsageType } from '@/lib/validations/quilt';
 
 // ============================================================================
@@ -39,77 +33,35 @@ export interface CreateUsageRecordData {
   quiltId: string;
   startDate: Date;
   endDate?: Date | null;
-  usageType?: UsageType;
+  usageType: UsageType;
   notes?: string | null;
 }
 
 export interface UpdateUsageRecordData {
   startDate?: Date;
   endDate?: Date | null;
+  usageType?: UsageType;
   notes?: string | null;
 }
 
-export interface UsageRecordWithQuilt {
-  id: string;
-  quiltId: string;
-  quiltName: string;
-  itemNumber: number;
-  color: string;
-  season: string;
-  currentStatus: string;
-  startedAt: Date;
-  endedAt: Date | null;
-  usageType: UsageType;
-  notes: string | null;
-  isActive: boolean;
-  duration: number | null;
-}
-
-interface UsageRecordWithQuiltRow {
-  id: string;
-  quilt_id: string;
-  start_date: string;
-  end_date: string | null;
-  usage_type: UsageType;
-  notes: string | null;
-  quilt_name: string;
-  item_number: number;
-  color: string;
-  season: string;
-  current_status: string;
-  is_active: boolean;
-  duration: number | null;
-}
-
-export interface UsageStats {
-  totalUsages: number;
-  totalDays: number;
-  averageDays: number;
-  lastUsedDate: Date | null;
-}
-
 // ============================================================================
-// READ OPERATIONS (with caching)
+// READ OPERATIONS
 // ============================================================================
 
 /**
  * Get usage record by ID
  *
- * Cache: 2 minutes (120 seconds)
- * Tags: 'usage-logs', 'usage-logs-{id}'
+ * Cache: 5 minutes
+ * Tags: 'usage', 'usage-{id}'
  */
 export async function getUsageRecordById(id: string): Promise<UsageRecord | null> {
   'use cache';
-  cacheLife('seconds'); // 2 minutes (120 seconds)
-  cacheTag('usage-logs', `usage-logs-${id}`);
+  cacheLife('minutes'); // 5 minutes
+  cacheTag('usage', `usage-${id}`);
 
   try {
-    const rows = (await sql`
-      SELECT * FROM usage_records
-      WHERE id = ${id}
-    `) as UsageRecordRow[];
-
-    return rows[0] ? rowToUsageRecord(rows[0]) : null;
+    const result = await db.select().from(usageRecords).where(eq(usageRecords.id, id));
+    return result[0] ? (result[0] as unknown as UsageRecord) : null;
   } catch (error) {
     dbLogger.error('Error fetching usage record by ID', { id, error });
     throw error;
@@ -117,144 +69,48 @@ export async function getUsageRecordById(id: string): Promise<UsageRecord | null
 }
 
 /**
- * Get all usage records with optional filtering
- * Returns usage records with joined quilt information
+ * Get usage history for a quilt
  *
- * Cache: 1 minute (60 seconds)
- * Tags: 'usage-logs', 'usage-logs-list', plus dynamic tags based on filters
+ * Cache: 2 minutes
+ * Tags: 'usage', 'usage-quilt-{quiltId}'
  */
-export async function getUsageRecords(
-  filters: { quiltId?: string; limit?: number; offset?: number } = {}
-): Promise<UsageRecordWithQuilt[]> {
+export async function getUsageHistory(quiltId: string): Promise<UsageRecord[]> {
   'use cache';
-  cacheLife('seconds'); // 1 minute (60 seconds)
-
-  const tags = ['usage-logs', 'usage-logs-list'];
-  if (filters.quiltId) {
-    tags.push(`usage-logs-quilt-${filters.quiltId}`);
-  }
-  cacheTag(...tags);
+  cacheLife('seconds'); // 2 minutes
+  cacheTag('usage', `usage-quilt-${quiltId}`);
 
   try {
-    const { quiltId, limit = 50, offset = 0 } = filters;
+    const result = await db
+      .select()
+      .from(usageRecords)
+      .where(eq(usageRecords.quiltId, quiltId))
+      .orderBy(desc(usageRecords.startDate));
 
-    let rows: UsageRecordWithQuiltRow[];
-
-    if (!quiltId) {
-      rows = (await sql`
-        SELECT 
-          ur.*,
-          q.name as quilt_name,
-          q.item_number,
-          q.color,
-          q.season,
-          q.current_status,
-          CASE 
-            WHEN ur.end_date IS NULL THEN true
-            ELSE false
-          END as is_active,
-          CASE
-            WHEN ur.end_date IS NOT NULL THEN 
-              EXTRACT(DAY FROM (ur.end_date::timestamp - ur.start_date::timestamp))
-            ELSE NULL
-          END as duration
-        FROM usage_records ur
-        JOIN quilts q ON ur.quilt_id = q.id
-        ORDER BY ur.start_date DESC
-        LIMIT ${limit} OFFSET ${offset}
-      `) as UsageRecordWithQuiltRow[];
-    } else {
-      rows = (await sql`
-        SELECT 
-          ur.*,
-          q.name as quilt_name,
-          q.item_number,
-          q.color,
-          q.season,
-          q.current_status,
-          CASE 
-            WHEN ur.end_date IS NULL THEN true
-            ELSE false
-          END as is_active,
-          CASE
-            WHEN ur.end_date IS NOT NULL THEN 
-              EXTRACT(DAY FROM (ur.end_date::timestamp - ur.start_date::timestamp))
-            ELSE NULL
-          END as duration
-        FROM usage_records ur
-        JOIN quilts q ON ur.quilt_id = q.id
-        WHERE ur.quilt_id = ${quiltId}
-        ORDER BY ur.start_date DESC
-        LIMIT ${limit} OFFSET ${offset}
-      `) as UsageRecordWithQuiltRow[];
-    }
-
-    return rows.map(row => ({
-      id: row.id,
-      quiltId: row.quilt_id,
-      quiltName: row.quilt_name,
-      itemNumber: row.item_number,
-      color: row.color,
-      season: row.season,
-      currentStatus: row.current_status,
-      startedAt: new Date(row.start_date),
-      endedAt: row.end_date ? new Date(row.end_date) : null,
-      usageType: row.usage_type,
-      notes: row.notes,
-      isActive: row.is_active,
-      duration: row.duration ? Math.floor(row.duration) : null,
-    }));
+    return result as unknown as UsageRecord[];
   } catch (error) {
-    dbLogger.error('Error fetching usage records', { filters, error });
+    dbLogger.error('Error fetching usage history for quilt', { quiltId, error });
     throw error;
   }
 }
 
 /**
- * Get usage records by quilt ID
+ * Get currently active usage record for a quilt
  *
- * Cache: 2 minutes (120 seconds)
- * Tags: 'usage-logs', 'usage-logs-quilt-{quiltId}'
- */
-export async function getUsageRecordsByQuiltId(quiltId: string): Promise<UsageRecord[]> {
-  'use cache';
-  cacheLife('seconds'); // 2 minutes (120 seconds)
-  cacheTag('usage-logs', `usage-logs-quilt-${quiltId}`);
-
-  try {
-    const rows = (await sql`
-      SELECT * FROM usage_records
-      WHERE quilt_id = ${quiltId}
-      ORDER BY start_date DESC
-    `) as UsageRecordRow[];
-
-    return rows.map(row => rowToUsageRecord(row));
-  } catch (error) {
-    dbLogger.error('Error fetching usage records by quilt ID', { quiltId, error });
-    throw error;
-  }
-}
-
-/**
- * Get the active usage record for a quilt (end_date is NULL)
- *
- * Cache: 1 minute (60 seconds)
- * Tags: 'usage-logs', 'usage-logs-active', 'usage-logs-quilt-{quiltId}'
+ * Cache: 2 minutes
+ * Tags: 'usage', 'usage-quilt-{quiltId}'
  */
 export async function getActiveUsageRecord(quiltId: string): Promise<UsageRecord | null> {
   'use cache';
-  cacheLife('seconds'); // 1 minute (60 seconds)
-  cacheTag('usage-logs', 'usage-logs-active', `usage-logs-quilt-${quiltId}`);
+  cacheLife('seconds'); // 2 minutes
+  cacheTag('usage', `usage-quilt-${quiltId}`);
 
   try {
-    const rows = (await sql`
-      SELECT * FROM usage_records
-      WHERE quilt_id = ${quiltId}
-        AND end_date IS NULL
-      LIMIT 1
-    `) as UsageRecordRow[];
+    const result = await db
+      .select()
+      .from(usageRecords)
+      .where(and(eq(usageRecords.quiltId, quiltId), isNull(usageRecords.endDate)));
 
-    return rows[0] ? rowToUsageRecord(rows[0]) : null;
+    return result[0] ? (result[0] as unknown as UsageRecord) : null;
   } catch (error) {
     dbLogger.error('Error fetching active usage record', { quiltId, error });
     throw error;
@@ -262,24 +118,24 @@ export async function getActiveUsageRecord(quiltId: string): Promise<UsageRecord
 }
 
 /**
- * Get all active usage records (end_date is NULL)
+ * Get ALL active usage records
  *
- * Cache: 1 minute (60 seconds)
- * Tags: 'usage-logs', 'usage-logs-active'
+ * Cache: 2 minutes
+ * Tags: 'usage', 'usage-active'
  */
 export async function getAllActiveUsageRecords(): Promise<UsageRecord[]> {
   'use cache';
-  cacheLife('seconds'); // 1 minute (60 seconds)
-  cacheTag('usage-logs', 'usage-logs-active');
+  cacheLife('seconds'); // 2 minutes
+  cacheTag('usage', 'usage-active');
 
   try {
-    const rows = (await sql`
-      SELECT * FROM usage_records
-      WHERE end_date IS NULL
-      ORDER BY start_date DESC
-    `) as UsageRecordRow[];
+    const result = await db
+      .select()
+      .from(usageRecords)
+      .where(isNull(usageRecords.endDate))
+      .orderBy(desc(usageRecords.startDate));
 
-    return rows.map(row => rowToUsageRecord(row));
+    return result as unknown as UsageRecord[];
   } catch (error) {
     dbLogger.error('Error fetching all active usage records', { error });
     throw error;
@@ -287,95 +143,92 @@ export async function getAllActiveUsageRecords(): Promise<UsageRecord[]> {
 }
 
 /**
- * Get usage statistics for a quilt
+ * Get ALL usage records
  *
- * Cache: 2 minutes (120 seconds)
- * Tags: 'usage-logs', 'usage-logs-quilt-{quiltId}'
+ * Cache: 2 minutes
+ * Tags: 'usage', 'usage-list'
  */
-export async function getUsageStats(quiltId: string): Promise<UsageStats> {
+export async function getUsageRecords(): Promise<UsageRecord[]> {
   'use cache';
-  cacheLife('seconds'); // 2 minutes (120 seconds)
-  cacheTag('usage-logs', `usage-logs-quilt-${quiltId}`);
+  cacheLife('seconds'); // 2 minutes
+  cacheTag('usage', 'usage-list');
 
   try {
-    const result = (await sql`
-      SELECT
-        COUNT(*) as total_usages,
-        COALESCE(SUM(
-          CASE
-            WHEN end_date IS NOT NULL
-            THEN EXTRACT(DAY FROM (end_date::timestamp - start_date::timestamp))
-            ELSE 0
-          END
-        ), 0) as total_days,
-        MAX(start_date) as last_used
-      FROM usage_records
-      WHERE quilt_id = ${quiltId}
-    `) as [
-        {
-          total_usages: string;
-          total_days: string;
-          last_used: string | null;
-        },
-      ];
+    const result = await db
+      .select()
+      .from(usageRecords)
+      .orderBy(desc(usageRecords.startDate));
 
-    const totalUsages = parseInt(result[0]?.total_usages || '0', 10);
-    const totalDays = parseFloat(result[0]?.total_days || '0');
-    const averageDays = totalUsages > 0 ? totalDays / totalUsages : 0;
-    const lastUsedDate = result[0]?.last_used ? new Date(result[0].last_used) : null;
+    return result as unknown as UsageRecord[];
+  } catch (error) {
+    dbLogger.error('Error fetching all usage records', { error });
+    throw error;
+  }
+}
+
+/**
+ * Get usage stats for a specific quilt
+ *
+ * Cache: 2 minutes
+ * Tags: 'usage', 'usage-quilt-{quiltId}'
+ */
+export async function getUsageStats(quiltId: string): Promise<{ totalDays: number; usageCount: number }> {
+  'use cache';
+  cacheLife('seconds'); // 2 minutes
+  cacheTag('usage', `usage-quilt-${quiltId}`);
+
+  try {
+    const result = await db.select({
+      count: sql<number>`count(*)::int`,
+      days: sql<number>`COALESCE(SUM(
+        CASE
+          WHEN ${usageRecords.endDate} IS NOT NULL
+          THEN EXTRACT(DAY FROM (${usageRecords.endDate} - ${usageRecords.startDate}))
+          ELSE 0
+        END
+      ), 0)::int`
+    }).from(usageRecords).where(eq(usageRecords.quiltId, quiltId));
 
     return {
-      totalUsages,
-      totalDays,
-      averageDays,
-      lastUsedDate,
+      usageCount: result[0]?.count || 0,
+      totalDays: result[0]?.days || 0,
     };
   } catch (error) {
-    dbLogger.error('Error fetching usage stats', { quiltId, error });
+    dbLogger.error('Error fetching usage stats for quilt', { quiltId, error });
     throw error;
   }
 }
 
 // ============================================================================
-// WRITE OPERATIONS (with cache invalidation)
+// WRITE OPERATIONS
 // ============================================================================
 
 /**
- * Create a new usage record (when quilt status changes to IN_USE)
+ * Create a new usage record
  *
- * Invalidates: 'usage-logs', 'usage-logs-list', 'usage-logs-active', quilt-specific tags
+ * Invalidates: 'usage', 'usage-quilt-{quiltId}'
  */
 export async function createUsageRecord(data: CreateUsageRecordData): Promise<UsageRecord> {
   try {
-    const id = crypto.randomUUID();
-    const now = new Date().toISOString();
-
     dbLogger.info('Creating usage record', { quiltId: data.quiltId });
 
-    const rows = (await sql`
-      INSERT INTO usage_records (
-        id, quilt_id, start_date, end_date, usage_type, notes, created_at, updated_at
-      ) VALUES (
-        ${id},
-        ${data.quiltId},
-        ${data.startDate.toISOString()},
-        ${data.endDate ? data.endDate.toISOString() : null},
-        ${data.usageType || 'REGULAR'},
-        ${data.notes || null},
-        ${now},
-        ${now}
-      ) RETURNING *
-    `) as UsageRecordRow[];
+    const result = await db.insert(usageRecords).values({
+      quiltId: data.quiltId,
+      startDate: data.startDate,
+      endDate: data.endDate,
+      usageType: data.usageType,
+      notes: data.notes,
+    }).returning();
 
-    const record = rowToUsageRecord(rows[0]);
+    const record = result[0] as unknown as UsageRecord;
 
-    // Invalidate cache tags
-    updateTag('usage-logs');
-    updateTag('usage-logs-list');
-    updateTag('usage-logs-active');
-    updateTag(`usage-logs-quilt-${data.quiltId}`);
+    updateTag('usage');
+    updateTag(`usage-quilt-${data.quiltId}`);
+    
+    // Also invalidate stats as they change
+    updateTag('stats');
 
-    dbLogger.info('Usage record created successfully', { id, quiltId: data.quiltId });
+    dbLogger.info('Usage record created', { id: record.id });
     return record;
   } catch (error) {
     dbLogger.error('Error creating usage record', { data, error });
@@ -386,53 +239,38 @@ export async function createUsageRecord(data: CreateUsageRecordData): Promise<Us
 /**
  * Update a usage record
  *
- * Invalidates: specific record, list, and related tags
+ * Invalidates: 'usage', 'usage-{id}', 'usage-quilt-{quiltId}'
  */
 export async function updateUsageRecord(
   id: string,
   data: UpdateUsageRecordData
 ): Promise<UsageRecord | null> {
   try {
-    // Get current record for cache invalidation
     const current = await getUsageRecordById(id);
-    if (!current) {
-      dbLogger.warn('Usage record not found for update', { id });
-      return null;
-    }
-
-    const now = new Date().toISOString();
+    if (!current) return null;
 
     dbLogger.info('Updating usage record', { id });
 
-    const rows = (await sql`
-      UPDATE usage_records
-      SET
-        start_date = ${data.startDate ? data.startDate.toISOString() : sql`start_date`},
-        end_date = ${data.endDate !== undefined ? (data.endDate ? data.endDate.toISOString() : null) : sql`end_date`},
-        notes = ${data.notes !== undefined ? data.notes : sql`notes`},
-        updated_at = ${now}
-      WHERE id = ${id}
-      RETURNING *
-    `) as UsageRecordRow[];
+    const result = await db.update(usageRecords)
+      .set({
+        startDate: data.startDate,
+        endDate: data.endDate,
+        usageType: data.usageType,
+        notes: data.notes,
+        updatedAt: new Date(),
+      })
+      .where(eq(usageRecords.id, id))
+      .returning();
 
-    if (rows.length === 0) {
-      return null;
-    }
+    if (result.length === 0) return null;
+    const updated = result[0] as unknown as UsageRecord;
 
-    const updated = rowToUsageRecord(rows[0]);
+    updateTag('usage');
+    updateTag(`usage-${id}`);
+    updateTag(`usage-quilt-${current.quiltId}`);
+    updateTag('stats');
 
-    // Invalidate cache tags
-    updateTag('usage-logs');
-    updateTag('usage-logs-list');
-    updateTag(`usage-logs-${id}`);
-    updateTag(`usage-logs-quilt-${updated.quiltId}`);
-
-    // If end_date changed, invalidate active tags
-    if (current.endDate !== updated.endDate) {
-      updateTag('usage-logs-active');
-    }
-
-    dbLogger.info('Usage record updated successfully', { id });
+    dbLogger.info('Usage record updated', { id });
     return updated;
   } catch (error) {
     dbLogger.error('Error updating usage record', { id, data, error });
@@ -441,85 +279,57 @@ export async function updateUsageRecord(
 }
 
 /**
- * End the active usage record (when quilt status changes from IN_USE)
- *
- * Invalidates: 'usage-logs', 'usage-logs-active', quilt-specific tags
+ * End an active usage record
  */
-export async function endUsageRecord(
-  quiltId: string,
-  endDate: Date,
-  notes?: string
-): Promise<UsageRecord | null> {
+export async function endUsageRecord(id: string, endDate: Date = new Date()): Promise<UsageRecord | null> {
   try {
-    const now = new Date().toISOString();
+    const current = await getUsageRecordById(id);
+    if (!current) return null;
 
-    dbLogger.info('Ending usage record', { quiltId, endDate });
+    dbLogger.info('Ending usage record', { id });
 
-    const rows = (await sql`
-      UPDATE usage_records
-      SET
-        end_date = ${endDate.toISOString()},
-        notes = COALESCE(${notes || null}, notes),
-        updated_at = ${now}
-      WHERE quilt_id = ${quiltId}
-        AND end_date IS NULL
-      RETURNING *
-    `) as UsageRecordRow[];
+    const result = await db.update(usageRecords)
+      .set({
+        endDate: endDate,
+        updatedAt: new Date(),
+      })
+      .where(eq(usageRecords.id, id))
+      .returning();
+    
+    if (result.length === 0) return null;
+    const updated = result[0] as unknown as UsageRecord;
 
-    if (rows.length === 0) {
-      dbLogger.warn('No active usage record found to end', { quiltId });
-      return null;
-    }
+    updateTag('usage');
+    updateTag(`usage-${id}`);
+    updateTag(`usage-quilt-${current.quiltId}`);
+    updateTag('stats');
 
-    const record = rowToUsageRecord(rows[0]);
-
-    // Invalidate cache tags
-    updateTag('usage-logs');
-    updateTag('usage-logs-list');
-    updateTag('usage-logs-active');
-    updateTag(`usage-logs-${record.id}`);
-    updateTag(`usage-logs-quilt-${quiltId}`);
-
-    dbLogger.info('Usage record ended successfully', { id: record.id, quiltId });
-    return record;
+    dbLogger.info('Usage record ended', { id });
+    return updated;
   } catch (error) {
-    dbLogger.error('Error ending usage record', { quiltId, endDate, error });
+    dbLogger.error('Error ending usage record', { id, error });
     throw error;
   }
 }
 
 /**
  * Delete a usage record
- *
- * Invalidates: all usage-related caches
  */
 export async function deleteUsageRecord(id: string): Promise<boolean> {
   try {
-    // Get record info for cache invalidation before deletion
-    const record = await getUsageRecordById(id);
+    const current = await getUsageRecordById(id);
+    if (!current) return false; // Or throw
 
-    const result = await sql`
-      DELETE FROM usage_records
-      WHERE id = ${id}
-      RETURNING id
-    `;
+    dbLogger.info('Deleting usage record', { id });
 
-    const success = result.length > 0;
-    if (success) {
-      // Invalidate cache tags
-      updateTag('usage-logs');
-      updateTag('usage-logs-list');
-      updateTag(`usage-logs-${id}`);
-      if (record) {
-        updateTag(`usage-logs-quilt-${record.quiltId}`);
-        if (!record.endDate) {
-          updateTag('usage-logs-active');
-        }
-      }
+    await db.delete(usageRecords).where(eq(usageRecords.id, id));
 
-      dbLogger.info('Usage record deleted successfully', { id });
-    }
-    return success;
+    updateTag('usage');
+    updateTag(`usage-${id}`);
+    updateTag(`usage-quilt-${current.quiltId}`);
+    updateTag('stats');
+
+    return true;
   } catch (error) {
     dbLogger.error('Error deleting usage record', { id, error });
     throw error;
@@ -527,18 +337,12 @@ export async function deleteUsageRecord(id: string): Promise<boolean> {
 }
 
 // ============================================================================
-// REQUEST DEDUPLICATION (React cache wrappers)
+// REQUEST DEDUPLICATION
 // ============================================================================
 
-/**
- * React cache() wrappers for request-level deduplication
- *
- * Use these in components/pages for additional request-level caching
- * within a single render. These wrap the 'use cache' functions above.
- */
 export const getUsageRecordByIdCached = cache(getUsageRecordById);
-export const getUsageRecordsCached = cache(getUsageRecords);
-export const getUsageRecordsByQuiltIdCached = cache(getUsageRecordsByQuiltId);
+export const getUsageHistoryCached = cache(getUsageHistory);
 export const getActiveUsageRecordCached = cache(getActiveUsageRecord);
 export const getAllActiveUsageRecordsCached = cache(getAllActiveUsageRecords);
+export const getUsageRecordsCached = cache(getUsageRecords);
 export const getUsageStatsCached = cache(getUsageStats);

@@ -31,9 +31,9 @@ export interface QuiltRow {
   group_id: number | null;
   name: string;
   season: string;
-  length_cm: number | null;
-  width_cm: number | null;
-  weight_grams: number | null;
+  length_cm: number;
+  width_cm: number;
+  weight_grams: number;
   fill_material: string;
   material_details: string | null;
   color: string;

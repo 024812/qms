@@ -7,10 +7,15 @@
  * Usage: npm run create-user
  */
 
-import { sql } from '../src/lib/neon';
+import 'dotenv/config';
+import { db } from '../src/db';
+import { users } from '../src/db/schema';
+import { eq } from 'drizzle-orm';
 import bcrypt from 'bcryptjs';
 import { randomUUID } from 'crypto';
 import * as readline from 'readline';
+
+// ... imports ...
 
 const rl = readline.createInterface({
   input: process.stdin,
@@ -22,6 +27,8 @@ function question(prompt: string): Promise<string> {
     rl.question(prompt, resolve);
   });
 }
+
+// ... existing code ...
 
 async function createUser() {
   console.log('\n👤 Create New User\n');
@@ -43,9 +50,10 @@ async function createUser() {
     }
 
     // Check if user already exists
-    const existing = await sql`
-      SELECT id FROM users WHERE email = ${email}
-    `;
+    const existing = await db
+        .select()
+        .from(users)
+        .where(eq(users.email, email));
 
     if (existing.length > 0) {
       console.log(`❌ User with email ${email} already exists`);
@@ -61,13 +69,16 @@ async function createUser() {
 
     // Create user
     console.log('⏳ Creating user...');
-    const result = await sql`
-      INSERT INTO users (id, name, email, hashed_password, preferences, created_at, updated_at)
-      VALUES (${userId}, ${name}, ${email}, ${hashedPassword}, '{"role": "admin", "activeModules": ["quilts"]}'::jsonb, NOW(), NOW())
-      RETURNING id, name, email, preferences
-    `;
+    
+    const [user] = await db.insert(users).values({
+        id: userId,
+        name,
+        email,
+        hashedPassword,
+        preferences: { role: "admin", activeModules: ["quilts"] },
+    }).returning();
 
-    const user = result[0];
+    // const user = result[0]; // Not needed with destructuring above
 
     console.log('\n✅ User created successfully!\n');
     console.log('User Details:');

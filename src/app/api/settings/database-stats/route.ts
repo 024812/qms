@@ -7,8 +7,8 @@
  * Requirements: 5.3 - Consistent API response format
  */
 
-import { getQuilts } from '@/lib/data/quilts';
-import { getUsageRecords, getAllActiveUsageRecords } from '@/lib/data/usage';
+import { countQuilts } from '@/lib/data/quilts';
+import { getSimpleUsageStats } from '@/lib/data/stats';
 import { createSuccessResponse, createInternalErrorResponse } from '@/lib/api/response';
 
 /**
@@ -22,16 +22,17 @@ import { createSuccessResponse, createInternalErrorResponse } from '@/lib/api/re
  */
 export async function GET() {
   try {
-    const quilts = await getQuilts();
-    const usageRecords = await getUsageRecords();
-    const activeUsage = await getAllActiveUsageRecords();
+    const [quiltCount, usageStats] = await Promise.all([
+      countQuilts(),
+      getSimpleUsageStats(),
+    ]);
 
     return createSuccessResponse({
       stats: {
-        totalQuilts: quilts.length,
-        totalUsageRecords: usageRecords.length,
-        activeUsage: activeUsage.length,
-        provider: 'Neon Serverless PostgreSQL',
+        totalQuilts: quiltCount,
+        totalUsageRecords: usageStats.total,
+        activeUsage: usageStats.active,
+        provider: 'Neon Serverless PostgreSQL (via Drizzle)',
         connected: true,
       },
     });

@@ -8,7 +8,7 @@
  */
 
 import { NextRequest } from 'next/server';
-import { getUsageRecordsByQuiltId, getActiveUsageRecord, getUsageStats } from '@/lib/data/usage';
+import { getUsageHistory, getActiveUsageRecord, getUsageStats } from '@/lib/data/usage';
 import { createSuccessResponse, createInternalErrorResponse } from '@/lib/api/response';
 
 interface RouteParams {
@@ -30,7 +30,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     const includeStats = searchParams.get('includeStats') === 'true';
 
     // Fetch usage records for the quilt
-    const records = await getUsageRecordsByQuiltId(quiltId);
+    const records = await getUsageHistory(quiltId);
 
     // Optionally include statistics
     let stats = null;

@@ -1,15 +1,14 @@
 /**
- * Setup REST API - Database Initialization
+ * Setup REST API - Database Seeding
  *
  * GET /api/setup - Check database status
- * POST /api/setup - Initialize database schema and sample data
+ * POST /api/setup - Seed database with sample data (Schema creation handled by Drizzle)
  *
  * Requirements: 5.3 - Consistent API response format
  * Requirements: 11.5 - Rate limiting
  */
 
 import { NextRequest } from 'next/server';
-import { sql } from '@/lib/neon';
 import { countQuilts, createQuilt } from '@/lib/data/quilts';
 import { withRateLimit, rateLimiters } from '@/lib/rate-limit';
 import { createSuccessResponse, createInternalErrorResponse } from '@/lib/api/response';
@@ -17,79 +16,15 @@ import { createSuccessResponse, createInternalErrorResponse } from '@/lib/api/re
 export async function POST(request: NextRequest) {
   return withRateLimit(request, rateLimiters.database, async () => {
     try {
-      // First, create the database schema if it doesn't exist
-
-      // Create quilts table
-      await sql`
-        CREATE TABLE IF NOT EXISTS quilts (
-          id TEXT PRIMARY KEY,
-          item_number INTEGER,
-          group_id INTEGER,
-          name TEXT NOT NULL,
-          season TEXT CHECK (season IN ('WINTER', 'SPRING_AUTUMN', 'SUMMER')),
-          length_cm INTEGER,
-          width_cm INTEGER,
-          weight_grams INTEGER,
-          fill_material TEXT,
-          material_details TEXT,
-          color TEXT,
-          brand TEXT,
-          purchase_date TIMESTAMP,
-          location TEXT,
-          packaging_info TEXT,
-          current_status TEXT CHECK (current_status IN ('IN_USE', 'MAINTENANCE', 'STORAGE')) DEFAULT 'STORAGE',
-          notes TEXT,
-          image_url TEXT,
-          thumbnail_url TEXT,
-          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-          updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )
-      `;
-
-      // Create unified usage_records table
-      await sql`
-        CREATE TABLE IF NOT EXISTS usage_records (
-          id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
-          quilt_id TEXT NOT NULL REFERENCES quilts(id) ON DELETE CASCADE,
-          start_date TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-          end_date TIMESTAMP,
-          usage_type TEXT CHECK (usage_type IN ('REGULAR', 'GUEST', 'SPECIAL_OCCASION', 'SEASONAL_ROTATION')) DEFAULT 'REGULAR',
-          notes TEXT,
-          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-          updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )
-      `;
-
-      // Create indexes for usage_records
-      await sql`
-        CREATE INDEX IF NOT EXISTS idx_usage_records_quilt_id 
-        ON usage_records(quilt_id)
-      `;
-
-      await sql`
-        CREATE INDEX IF NOT EXISTS idx_usage_records_dates 
-        ON usage_records(start_date, end_date)
-      `;
-
-      await sql`
-        CREATE INDEX IF NOT EXISTS idx_usage_records_active 
-        ON usage_records(quilt_id) 
-        WHERE end_date IS NULL
-      `;
-
-      // Create unique constraint: one active record per quilt
-      await sql`
-        CREATE UNIQUE INDEX IF NOT EXISTS idx_one_active_per_quilt
-        ON usage_records(quilt_id)
-        WHERE end_date IS NULL
-      `;
+      // Schema is managed by Drizzle Kit (npm run db:push), so we skip table creation here.
+      // We only handle seeding if the database is empty.
 
       // Check if database is already set up
       const quiltCount = await countQuilts();
 
       if (quiltCount > 0) {
         return createSuccessResponse({
-          message: '数据库架构已创建，已有数据',
+          message: '数据库已包含数据，无需初始化',
           quilts: quiltCount,
         });
       }
@@ -147,9 +82,9 @@ export async function POST(request: NextRequest) {
       ]);
 
       return createSuccessResponse({
-        message: '数据库初始化成功！',
+        message: '数据库初始化数据成功！',
         quilts: quilts.length,
-        driver: 'Neon Serverless Driver',
+        driver: 'Neon Serverless Driver (via Drizzle)',
       });
     } catch (error) {
       return createInternalErrorResponse('数据库初始化失败', error);
@@ -167,7 +102,7 @@ export async function GET(request: NextRequest) {
         status: '数据库已连接',
         quilts: quiltCount,
         initialized: quiltCount > 0,
-        driver: 'Neon Serverless Driver',
+        driver: 'Neon Serverless Driver (via Drizzle)',
       });
     } catch (error) {
       return createInternalErrorResponse('数据库连接失败', error);

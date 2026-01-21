@@ -22,7 +22,9 @@
 
 import { cache } from 'react';
 import { cacheLife, cacheTag } from 'next/cache';
-import { sql } from '@/lib/neon';
+import { db } from '@/db';
+import { quilts, usageRecords } from '@/db/schema';
+import { sql, eq, desc, and, isNull } from 'drizzle-orm';
 
 // ============================================================================
 // Types
@@ -119,19 +121,18 @@ export async function getStatusCounts(): Promise<StatusCounts> {
   cacheLife('seconds'); // 1 minute (60 seconds)
   cacheTag('stats', 'stats-dashboard');
 
-  const result = (await sql`
-    SELECT 
-      current_status,
-      COUNT(*)::int as count
-    FROM quilts
-    GROUP BY current_status
-  `) as { current_status: string; count: number }[];
+  const result = await db.select({
+    status: quilts.currentStatus,
+    count: sql<number>`count(*)::int`
+  })
+  .from(quilts)
+  .groupBy(quilts.currentStatus);
 
   const counts: StatusCounts = { inUse: 0, storage: 0, maintenance: 0, total: 0 };
   result.forEach(row => {
-    if (row.current_status === 'IN_USE') counts.inUse = row.count;
-    else if (row.current_status === 'STORAGE') counts.storage = row.count;
-    else if (row.current_status === 'MAINTENANCE') counts.maintenance = row.count;
+    if (row.status === 'IN_USE') counts.inUse = row.count;
+    else if (row.status === 'STORAGE') counts.storage = row.count;
+    else if (row.status === 'MAINTENANCE') counts.maintenance = row.count;
     counts.total += row.count;
   });
 
@@ -149,13 +150,12 @@ export async function getSeasonalCounts(): Promise<SeasonalCounts> {
   cacheLife('seconds'); // 1 minute (60 seconds)
   cacheTag('stats', 'stats-dashboard');
 
-  const result = (await sql`
-    SELECT 
-      season,
-      COUNT(*)::int as count
-    FROM quilts
-    GROUP BY season
-  `) as { season: string; count: number }[];
+  const result = await db.select({
+    season: quilts.season,
+    count: sql<number>`count(*)::int`
+  })
+  .from(quilts)
+  .groupBy(quilts.season);
 
   const counts: SeasonalCounts = { WINTER: 0, SPRING_AUTUMN: 0, SUMMER: 0 };
   result.forEach(row => {
@@ -178,29 +178,25 @@ export async function getInUseQuilts(): Promise<InUseQuilt[]> {
   cacheLife('seconds'); // 1 minute (60 seconds)
   cacheTag('stats', 'stats-dashboard');
 
-  const result = (await sql`
-    SELECT 
-      id, name, item_number, season, 
-      fill_material, weight_grams, location
-    FROM quilts
-    WHERE current_status = 'IN_USE'
-  `) as Array<{
-    id: string;
-    name: string;
-    item_number: number;
-    season: string;
-    fill_material: string;
-    weight_grams: number;
-    location: string;
-  }>;
+  const result = await db.select({
+    id: quilts.id,
+    name: quilts.name,
+    itemNumber: quilts.itemNumber,
+    season: quilts.season,
+    fillMaterial: quilts.fillMaterial,
+    weightGrams: quilts.weightGrams,
+    location: quilts.location
+  })
+  .from(quilts)
+  .where(eq(quilts.currentStatus, 'IN_USE'));
 
   return result.map(q => ({
     id: q.id,
     name: q.name,
-    itemNumber: q.item_number,
+    itemNumber: q.itemNumber,
     season: q.season,
-    fillMaterial: q.fill_material,
-    weightGrams: q.weight_grams,
+    fillMaterial: q.fillMaterial,
+    weightGrams: q.weightGrams,
     location: q.location,
   }));
 }
@@ -219,7 +215,8 @@ export async function getHistoricalUsage(
   cacheLife('seconds'); // 1 minute (60 seconds)
   cacheTag('stats', 'stats-dashboard');
 
-  const result = (await sql`
+  // Complex date logic is best kept as raw SQL for now, using Drizzle's sql template
+  const result = await db.execute(sql`
     SELECT 
       up.id,
       up.quilt_id,
@@ -247,18 +244,9 @@ export async function getHistoricalUsage(
       )
     ORDER BY up.start_date DESC
     LIMIT 20
-  `) as Array<{
-    id: string;
-    quilt_id: string;
-    start_date: string;
-    end_date: string | null;
-    quilt_name: string;
-    item_number: number;
-    season: string;
-    year: string;
-  }>;
+  `);
 
-  return result.map(row => ({
+  return result.rows.map((row: any) => ({
     id: row.id,
     quiltId: row.quilt_id,
     quiltName: row.quilt_name,
@@ -317,30 +305,28 @@ export async function getUsageStats(): Promise<UsageStats> {
   cacheLife('seconds'); // 2 minutes (120 seconds)
   cacheTag('stats', 'stats-analytics');
 
-  const result = (await sql`
-    SELECT 
-      COUNT(*)::int as total_periods,
-      COALESCE(SUM(
+  const result = await db.select({
+    totalPeriods: sql<number>`COUNT(*)::int`,
+    totalDays: sql<number>`COALESCE(SUM(
         CASE
-          WHEN end_date IS NOT NULL
-          THEN EXTRACT(DAY FROM (end_date::timestamp - start_date::timestamp))
+          WHEN ${usageRecords.endDate} IS NOT NULL
+          THEN EXTRACT(DAY FROM (${usageRecords.endDate} - ${usageRecords.startDate}))
           ELSE 0
         END
-      ), 0)::int as total_days,
-      COALESCE(AVG(
+      ), 0)::int`,
+    avgDays: sql<number>`COALESCE(AVG(
         CASE
-          WHEN end_date IS NOT NULL
-          THEN EXTRACT(DAY FROM (end_date::timestamp - start_date::timestamp))
+          WHEN ${usageRecords.endDate} IS NOT NULL
+          THEN EXTRACT(DAY FROM (${usageRecords.endDate} - ${usageRecords.startDate}))
           ELSE NULL
         END
-      ), 0)::int as avg_days
-    FROM usage_records
-  `) as [{ total_periods: number; total_days: number; avg_days: number }];
+      ), 0)::int`
+  }).from(usageRecords);
 
   return {
-    totalPeriods: result[0]?.total_periods || 0,
-    totalDays: result[0]?.total_days || 0,
-    avgDays: result[0]?.avg_days || 0,
+    totalPeriods: result[0]?.totalPeriods || 0,
+    totalDays: result[0]?.totalDays || 0,
+    avgDays: result[0]?.avgDays || 0,
   };
 }
 
@@ -355,18 +341,17 @@ export async function getUsageBySeason(): Promise<SeasonalCounts> {
   cacheLife('seconds'); // 2 minutes (120 seconds)
   cacheTag('stats', 'stats-analytics');
 
-  const result = (await sql`
-    SELECT 
-      q.season,
-      COUNT(*)::int as count
-    FROM usage_records up
-    JOIN quilts q ON up.quilt_id = q.id
-    GROUP BY q.season
-  `) as { season: string; count: number }[];
+  const result = await db.select({
+    season: quilts.season,
+    count: sql<number>`COUNT(*)::int`
+  })
+  .from(usageRecords)
+  .leftJoin(quilts, eq(usageRecords.quiltId, quilts.id))
+  .groupBy(quilts.season);
 
   const counts: SeasonalCounts = { WINTER: 0, SPRING_AUTUMN: 0, SUMMER: 0 };
   result.forEach(row => {
-    if (row.season in counts) {
+    if (row.season && row.season in counts) {
       counts[row.season as keyof SeasonalCounts] = row.count;
     }
   });
@@ -385,36 +370,30 @@ export async function getMostUsedQuilts(limit: number = 5): Promise<MostUsedQuil
   cacheLife('seconds'); // 2 minutes (120 seconds)
   cacheTag('stats', 'stats-analytics');
 
-  const result = (await sql`
-    SELECT 
-      up.quilt_id,
-      q.name,
-      COUNT(*)::int as usage_count,
-      COALESCE(SUM(
+  const result = await db.select({
+    quiltId: usageRecords.quiltId,
+    name: quilts.name,
+    usageCount: sql<number>`COUNT(*)::int`,
+    totalDays: sql<number>`COALESCE(SUM(
         CASE
-          WHEN up.end_date IS NOT NULL
-          THEN EXTRACT(DAY FROM (up.end_date::timestamp - up.start_date::timestamp))
+          WHEN ${usageRecords.endDate} IS NOT NULL
+          THEN EXTRACT(DAY FROM (${usageRecords.endDate} - ${usageRecords.startDate}))
           ELSE 0
         END
-      ), 0)::int as total_days
-    FROM usage_records up
-    JOIN quilts q ON up.quilt_id = q.id
-    GROUP BY up.quilt_id, q.name
-    ORDER BY usage_count DESC
-    LIMIT ${limit}
-  `) as Array<{
-    quilt_id: string;
-    name: string;
-    usage_count: number;
-    total_days: number;
-  }>;
+      ), 0)::int`
+  })
+  .from(usageRecords)
+  .leftJoin(quilts, eq(usageRecords.quiltId, quilts.id))
+  .groupBy(usageRecords.quiltId, quilts.name)
+  .orderBy(desc(sql`count(*)`))
+  .limit(limit);
 
   return result.map(row => ({
-    quiltId: row.quilt_id,
-    name: row.name,
-    usageCount: row.usage_count,
-    totalDays: row.total_days,
-    averageDays: row.usage_count > 0 ? Math.round(row.total_days / row.usage_count) : 0,
+    quiltId: row.quiltId,
+    name: row.name || 'Unknown',
+    usageCount: row.usageCount,
+    totalDays: row.totalDays,
+    averageDays: row.usageCount > 0 ? Math.round(row.totalDays / row.usageCount) : 0,
   }));
 }
 
@@ -429,16 +408,16 @@ export async function getUsageByYear(): Promise<UsageByPeriod[]> {
   cacheLife('seconds'); // 2 minutes (120 seconds)
   cacheTag('stats', 'stats-analytics');
 
-  const result = (await sql`
+  const result = await db.execute(sql`
     SELECT 
       EXTRACT(YEAR FROM start_date)::int as year,
       COUNT(*)::int as count
     FROM usage_records
     GROUP BY EXTRACT(YEAR FROM start_date)
     ORDER BY year
-  `) as { year: number; count: number }[];
+  `);
 
-  return result.map(row => ({
+  return result.rows.map((row: any) => ({
     period: String(row.year),
     count: row.count,
   }));
@@ -455,7 +434,7 @@ export async function getUsageByMonth(): Promise<UsageByPeriod[]> {
   cacheLife('seconds'); // 2 minutes (120 seconds)
   cacheTag('stats', 'stats-analytics');
 
-  const result = (await sql`
+  const result = await db.execute(sql`
     SELECT 
       TO_CHAR(start_date, 'YYYY-MM') as month,
       COUNT(*)::int as count
@@ -463,9 +442,8 @@ export async function getUsageByMonth(): Promise<UsageByPeriod[]> {
     WHERE start_date >= DATE_TRUNC('month', CURRENT_DATE - INTERVAL '11 months')
     GROUP BY TO_CHAR(start_date, 'YYYY-MM')
     ORDER BY month
-  `) as { month: string; count: number }[];
+  `);
 
-  // Build complete 12-month map with zeros for missing months
   const usageByMonthMap: { [key: string]: number } = {};
   const now = new Date();
   for (let i = 11; i >= 0; i--) {
@@ -473,7 +451,8 @@ export async function getUsageByMonth(): Promise<UsageByPeriod[]> {
     const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
     usageByMonthMap[key] = 0;
   }
-  result.forEach(row => {
+  
+  result.rows.forEach((row: any) => {
     if (row.month in usageByMonthMap) {
       usageByMonthMap[row.month] = row.count;
     }
@@ -496,11 +475,9 @@ export async function getCurrentUsageCount(): Promise<number> {
   cacheLife('seconds'); // 1 minute (60 seconds)
   cacheTag('stats', 'stats-analytics');
 
-  const result = (await sql`
-    SELECT COUNT(*)::int as count 
-    FROM usage_records 
-    WHERE end_date IS NULL
-  `) as [{ count: number }];
+  const result = await db.select({ count: sql<number>`count(*)::int` })
+    .from(usageRecords)
+    .where(isNull(usageRecords.endDate));
 
   return result[0]?.count || 0;
 }
@@ -569,12 +546,12 @@ export async function getSimpleUsageStats(): Promise<{
   cacheTag('stats', 'stats-analytics');
 
   const [totalResult, activeResult] = await Promise.all([
-    sql`SELECT COUNT(*)::int as count FROM usage_records`,
-    sql`SELECT COUNT(*)::int as count FROM usage_records WHERE end_date IS NULL`,
+    db.select({ count: sql<number>`count(*)::int` }).from(usageRecords),
+    db.select({ count: sql<number>`count(*)::int` }).from(usageRecords).where(isNull(usageRecords.endDate)),
   ]);
 
-  const total = (totalResult as Array<{ count: number }>)[0]?.count || 0;
-  const active = (activeResult as Array<{ count: number }>)[0]?.count || 0;
+  const total = totalResult[0]?.count || 0;
+  const active = activeResult[0]?.count || 0;
 
   return {
     total,
@@ -587,12 +564,6 @@ export async function getSimpleUsageStats(): Promise<{
 // REQUEST DEDUPLICATION (React cache wrappers)
 // ============================================================================
 
-/**
- * React cache() wrappers for request-level deduplication
- *
- * Use these in components/pages for additional request-level caching
- * within a single render. These wrap the 'use cache' functions above.
- */
 export const getStatusCountsCached = cache(getStatusCounts);
 export const getSeasonalCountsCached = cache(getSeasonalCounts);
 export const getInUseQuiltsCached = cache(getInUseQuilts);

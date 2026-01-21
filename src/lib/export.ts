@@ -7,7 +7,7 @@
  * Requirements: 6.3 - Data export service supporting CSV and Excel formats
  */
 
-import { Item } from '@/db/schema';
+// Item import removed
 
 /**
  * Export field configuration

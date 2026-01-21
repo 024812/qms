@@ -10,7 +10,7 @@
 
 import { NextRequest } from 'next/server';
 import { z } from 'zod';
-import { endUsageRecord } from '@/lib/data/usage';
+import { getActiveUsageRecord, updateUsageRecord } from '@/lib/data/usage';
 import { sanitizeApiInput } from '@/lib/sanitization';
 import {
   createSuccessResponse,
@@ -55,11 +55,21 @@ export async function POST(request: NextRequest) {
 
     const { quiltId, endDate, notes } = validationResult.data;
 
-    // End the active usage record
-    const record = await endUsageRecord(quiltId, endDate, notes || undefined);
+    // Get active usage record
+    const activeRecord = await getActiveUsageRecord(quiltId);
+
+    if (!activeRecord) {
+      return createNotFoundResponse('该被子的活跃使用记录');
+    }
+
+    // End the usage record
+    const record = await updateUsageRecord(activeRecord.id, {
+      endDate,
+      notes: notes || undefined, // Only update notes if provided
+    });
 
     if (!record) {
-      return createNotFoundResponse('该被子的活跃使用记录');
+      return createInternalErrorResponse('更新使用记录失败');
     }
 
     return createSuccessResponse({ record });

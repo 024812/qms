@@ -49,15 +49,18 @@ export default async function EditItemPage(props: PageProps) {
   // Fetch item
   let item;
   try {
-    item = await getItemById(params.id);
+    item = await getItemById(params.category, params.id);
   } catch {
     return notFound();
   }
 
-  // Verify item type matches category
-  if (item.type !== params.category) {
+  // Verify item exists
+  if (!item) {
     return notFound();
   }
+
+  // Get display name (handle generic types)
+  const itemName = (item as any).name || (item as any).playerName || 'Item';
 
   return (
     <div className="container mx-auto py-8 max-w-2xl">
@@ -70,14 +73,14 @@ export default async function EditItemPage(props: PageProps) {
           </Button>
         </Link>
         <h1 className="text-3xl font-bold">编辑{moduleConfig.name}</h1>
-        <p className="text-muted-foreground mt-1">修改 {item.name} 的信息</p>
+        <p className="text-muted-foreground mt-1">修改 {itemName} 的信息</p>
       </div>
 
       {/* Form - Pass Server Action directly (Next.js 16 best practice) */}
       <div className="bg-card border rounded-lg p-6">
         <ItemForm
           moduleType={params.category}
-          initialData={item}
+          initialData={item as any}
           action={updateItem}
           redirectPath={`/${params.category}/${params.id}`}
         />

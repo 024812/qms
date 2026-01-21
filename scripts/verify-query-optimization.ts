@@ -9,7 +9,9 @@
  * Requirements: 9.1 - Database optimization verification
  */
 
-import { sql } from '@/lib/neon';
+import 'dotenv/config';
+import { db } from '@/db';
+import { sql } from 'drizzle-orm';
 
 interface IndexInfo {
   schemaname: string;
@@ -34,13 +36,14 @@ async function verifyIndexes() {
   try {
     // Check if quilts table exists
     console.log('\n📊 Checking quilts table...');
-    const tableCheck = await sql`
+    const tableCheckResult = await db.execute(sql`
       SELECT EXISTS (
         SELECT FROM information_schema.tables 
         WHERE table_schema = 'public' 
         AND table_name = 'quilts'
       ) as exists;
-    `;
+    `);
+    const tableCheck = tableCheckResult.rows;
     
     if (!tableCheck[0].exists) {
       console.log('❌ Quilts table not found!');
@@ -53,7 +56,7 @@ async function verifyIndexes() {
     
     // Get all indexes on quilts table
     console.log('\n📋 Checking indexes on quilts table...');
-    const indexes = await sql`
+    const indexesResult = await db.execute(sql`
       SELECT 
         schemaname,
         tablename,
@@ -62,7 +65,8 @@ async function verifyIndexes() {
       FROM pg_indexes
       WHERE tablename = 'quilts'
       ORDER BY indexname;
-    ` as IndexInfo[];
+    `);
+    const indexes = indexesResult.rows as unknown as IndexInfo[];
     
     console.log(`\nFound ${indexes.length} indexes:\n`);
     
@@ -108,7 +112,7 @@ async function verifyIndexes() {
     console.log('\n📈 Index Usage Statistics:');
     console.log('-'.repeat(80));
     
-    const stats = await sql`
+    const statsResult = await db.execute(sql`
       SELECT 
         schemaname,
         tablename,
@@ -119,7 +123,8 @@ async function verifyIndexes() {
       FROM pg_stat_user_indexes
       WHERE tablename = 'quilts'
       ORDER BY idx_scan DESC;
-    ` as IndexStats[];
+    `);
+    const stats = statsResult.rows as unknown as IndexStats[];
     
     if (stats.length === 0) {
       console.log('ℹ️  No usage statistics available yet (table may be new or unused)');
@@ -149,7 +154,7 @@ async function verifyIndexes() {
     console.log('\n📊 Table Statistics:');
     console.log('-'.repeat(80));
     
-    const tableStats = await sql`
+    const tableStatsResult = await db.execute(sql`
       SELECT 
         schemaname,
         tablename,
@@ -164,7 +169,8 @@ async function verifyIndexes() {
         last_autoanalyze
       FROM pg_stat_user_tables
       WHERE tablename = 'quilts';
-    `;
+    `);
+    const tableStats = tableStatsResult.rows;
     
     if (tableStats.length > 0) {
       const stats = tableStats[0];
@@ -186,38 +192,38 @@ async function verifyIndexes() {
     // Test 1: Simple status filter
     console.log('\nTest 1: Status filter query');
     const test1Start = Date.now();
-    await sql`
+    await db.execute(sql`
       EXPLAIN ANALYZE
       SELECT * FROM quilts
       WHERE current_status = 'IN_USE'
       ORDER BY created_at DESC
       LIMIT 20;
-    `;
+    `);
     const test1Time = Date.now() - test1Start;
     console.log(`✅ Completed in ${test1Time}ms`);
     
     // Test 2: Composite filter
     console.log('\nTest 2: Status + Season filter query');
     const test2Start = Date.now();
-    await sql`
+    await db.execute(sql`
       EXPLAIN ANALYZE
       SELECT * FROM quilts
       WHERE current_status = 'IN_USE' AND season = 'WINTER'
       ORDER BY created_at DESC
       LIMIT 20;
-    `;
+    `);
     const test2Time = Date.now() - test2Start;
     console.log(`✅ Completed in ${test2Time}ms`);
     
     // Test 3: Text search
     console.log('\nTest 3: Location search query');
     const test3Start = Date.now();
-    await sql`
+    await db.execute(sql`
       EXPLAIN ANALYZE
       SELECT * FROM quilts
       WHERE LOWER(location) LIKE '%bedroom%'
       LIMIT 20;
-    `;
+    `);
     const test3Time = Date.now() - test3Start;
     console.log(`✅ Completed in ${test3Time}ms`);
     

@@ -1,27 +1,21 @@
-/**
- * Base Repository
- *
- * Provides common database operations that can be extended by specific repositories.
- *
- * Requirements: 10.1 - Specific error messages for database operations
- */
-
+import { db, Tx } from '@/db';
+import { sql } from 'drizzle-orm';
 import { dbLogger } from '@/lib/logger';
 import { createError, ErrorCodes } from '@/lib/error-handler';
 
 export interface BaseRepository<T> {
-  findAll(filters?: Record<string, unknown>): Promise<T[]>;
-  findById(id: string): Promise<T | null>;
-  create(data: Partial<T>): Promise<T>;
-  update(id: string, data: Partial<T>): Promise<T | null>;
-  delete(id: string): Promise<boolean>;
-  count(filters?: Record<string, unknown>): Promise<number>;
+  findAll(filters?: Record<string, unknown>, tx?: Tx): Promise<T[]>;
+  findById(id: string, tx?: Tx): Promise<T | null>;
+  create(data: Partial<T>, tx?: Tx): Promise<T>;
+  update(id: string, data: Partial<T>, tx?: Tx): Promise<T | null>;
+  delete(id: string, tx?: Tx): Promise<boolean>;
+  count(filters?: Record<string, unknown>, tx?: Tx): Promise<number>;
 }
 
 /**
  * Base repository class with common database operations
  */
-export abstract class BaseRepositoryImpl<TRow, TModel> {
+export abstract class BaseRepositoryImpl<TRow, TModel> implements BaseRepository<TModel> {
   protected abstract tableName: string;
   protected abstract rowToModel(row: TRow): TModel;
   protected abstract modelToRow(model: Partial<TModel>): Partial<TRow>;
@@ -98,35 +92,32 @@ export abstract class BaseRepositoryImpl<TRow, TModel> {
     return tableNameMap[this.tableName] || this.tableName;
   }
 
-  /**
-   * Find a record by ID
-   * Note: This method should be overridden in child classes for proper table name handling
-   */
-  async findById(_id: string): Promise<TModel | null> {
+  // Abstract methods signatures updated to include tx
+  async findById(_id: string, _tx?: Tx): Promise<TModel | null> {
     throw new Error('findById must be implemented in child class');
   }
 
-  /**
-   * Count records with optional filters
-   * Note: This method should be overridden in child classes for proper table name handling
-   */
-  async count(_filters?: Record<string, unknown>): Promise<number> {
+  async count(_filters?: Record<string, unknown>, _tx?: Tx): Promise<number> {
     throw new Error('count must be implemented in child class');
   }
 
-  /**
-   * Delete a record by ID
-   * Note: This method should be overridden in child classes for proper table name handling
-   */
-  async delete(_id: string): Promise<boolean> {
+  async delete(_id: string, _tx?: Tx): Promise<boolean> {
     throw new Error('delete must be implemented in child class');
   }
+  
+  async findAll(_filters?: Record<string, unknown>, _tx?: Tx): Promise<TModel[]> {
+      throw new Error('findAll must be implemented in child class');
+  }
 
-  /**
-   * Check if a record exists
-   * Note: This method should be overridden in child classes for proper table name handling
-   */
-  async exists(_id: string): Promise<boolean> {
+  async create(_data: Partial<TModel>, _tx?: Tx): Promise<TModel> {
+      throw new Error('create must be implemented in child class');
+  }
+
+  async update(_id: string, _data: Partial<TModel>, _tx?: Tx): Promise<TModel | null> {
+      throw new Error('update must be implemented in child class');
+  }
+
+  async exists(_id: string, _tx?: Tx): Promise<boolean> {
     throw new Error('exists must be implemented in child class');
   }
 
@@ -136,8 +127,7 @@ export abstract class BaseRepositoryImpl<TRow, TModel> {
    */
   static async checkHealth(): Promise<boolean> {
     try {
-      const { sql } = await import('@/lib/neon');
-      await sql`SELECT 1 as test`;
+      await db.execute(sql`SELECT 1 as test`);
       return true;
     } catch {
       return false;

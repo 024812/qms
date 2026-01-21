@@ -11,7 +11,7 @@
 
 import { NextRequest } from 'next/server';
 import { z } from 'zod';
-import { getUsageRecords, createUsageRecord } from '@/lib/data/usage';
+import { getUsageRecords, getUsageHistory, createUsageRecord } from '@/lib/data/usage';
 import { sanitizeApiInput } from '@/lib/sanitization';
 import {
   createValidationErrorResponse,
@@ -54,15 +54,16 @@ export async function GET(request: NextRequest) {
     const limit = Math.min(parseInt(searchParams.get('limit') || '50', 10), 100);
     const offset = parseInt(searchParams.get('offset') || '0', 10);
 
-    // Build filters object
-    const filters = {
-      quiltId,
-      limit,
-      offset,
-    };
+    // Fetch usage records based on filters
+    let allRecords = [];
+    if (quiltId) {
+      allRecords = await getUsageHistory(quiltId);
+    } else {
+      allRecords = await getUsageRecords();
+    }
 
-    // Fetch usage records
-    const records = await getUsageRecords(filters);
+    // Apply pagination in memory
+    const records = allRecords.slice(offset, offset + limit);
 
     return createSuccessResponse(
       { records },

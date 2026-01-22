@@ -23,12 +23,14 @@ import {
 } from 'lucide-react';
 import { formatTemperature, getTemperatureDescription } from '@/lib/weather-service';
 import type { CurrentWeather } from '@/types/weather';
+import { useTranslations } from 'next-intl';
 
 interface WeatherWidgetProps {
   className?: string;
 }
 
 export function WeatherWidget({ className }: WeatherWidgetProps) {
+  const t = useTranslations('weather');
   const [weather, setWeather] = useState<CurrentWeather | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -54,7 +56,7 @@ export function WeatherWidget({ className }: WeatherWidgetProps) {
         setWeather(result.current);
       }
     } catch {
-      setError('获取天气数据失败');
+      setError(t('fetchError'));
     } finally {
       setIsLoading(false);
     }
@@ -80,7 +82,7 @@ export function WeatherWidget({ className }: WeatherWidgetProps) {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Cloud className="w-5 h-5" />
-            天气信息
+            {t('title')}
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -112,7 +114,7 @@ export function WeatherWidget({ className }: WeatherWidgetProps) {
             <p className="text-red-600 mb-4">{error}</p>
             <Button onClick={fetchWeatherData} variant="outline" size="sm">
               <RefreshCw className="w-4 h-4 mr-2" />
-              重试
+              {t('retry')}
             </Button>
           </div>
         </CardContent>
@@ -128,7 +130,7 @@ export function WeatherWidget({ className }: WeatherWidgetProps) {
         <CardTitle className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <MapPin className="w-5 h-5" />
-            <span>上海天气</span>
+            <span>{t('location')}</span>
           </div>
           <Button onClick={fetchWeatherData} variant="ghost" size="sm" className="h-8 w-8 p-0">
             <RefreshCw className="w-4 h-4" />
@@ -147,12 +149,12 @@ export function WeatherWidget({ className }: WeatherWidgetProps) {
             <div>
               <div className="text-2xl font-bold">{formatTemperature(weather.temperature)}</div>
               <div className="text-sm text-muted-foreground">
-                体感 {formatTemperature(weather.feelsLike)}
+                {t('feelsLike')} {formatTemperature(weather.feelsLike)}
               </div>
             </div>
           </div>
           <div className="text-right">
-            <div className="text-sm font-medium">{weather.description || '未知'}</div>
+            <div className="text-sm font-medium">{weather.description || t('unknown')}</div>
             <div className="text-xs text-muted-foreground">
               {getTemperatureDescription(weather.temperature)}
             </div>
@@ -164,28 +166,28 @@ export function WeatherWidget({ className }: WeatherWidgetProps) {
           <div className="flex items-center gap-2">
             <Droplets className="w-4 h-4 text-blue-500" />
             <div>
-              <div className="text-xs text-muted-foreground">湿度</div>
+              <div className="text-xs text-muted-foreground">{t('humidity')}</div>
               <div className="font-medium">{weather.humidity}%</div>
             </div>
           </div>
           <div className="flex items-center gap-2">
             <Wind className="w-4 h-4 text-muted-foreground" />
             <div>
-              <div className="text-xs text-muted-foreground">风速</div>
+              <div className="text-xs text-muted-foreground">{t('windSpeed')}</div>
               <div className="font-medium">{weather.windSpeed} m/s</div>
             </div>
           </div>
           <div className="flex items-center gap-2">
             <Thermometer className="w-4 h-4 text-red-500" />
             <div>
-              <div className="text-xs text-muted-foreground">气压</div>
+              <div className="text-xs text-muted-foreground">{t('pressure')}</div>
               <div className="font-medium">{weather.pressure} hPa</div>
             </div>
           </div>
         </div>
 
         {/* Last Updated */}
-        <div className="text-xs text-muted-foreground text-center">数据来源：Open-Meteo</div>
+        <div className="text-xs text-muted-foreground text-center">{t('source')}</div>
       </CardContent>
     </Card>
   );

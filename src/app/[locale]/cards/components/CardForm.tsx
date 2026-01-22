@@ -27,6 +27,7 @@ import { CardImageUpload } from '@/components/cards/CardImageUpload';
 import { saveCard } from '@/app/actions/card-actions';
 import { useToast } from '@/hooks/useToast';
 import { useRouter } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 
 // Schema based on src/modules/cards/schema.ts
 // Adapted for form usage (strings for numbers during input)
@@ -88,6 +89,7 @@ interface CardFormProps {
 }
 
 export function CardForm({ initialData, onSuccess }: CardFormProps) {
+  const t = useTranslations('cards.form');
   const { success, error } = useToast();
   const router = useRouter();
   const [loading, setLoading] = React.useState(false);
@@ -128,14 +130,14 @@ export function CardForm({ initialData, onSuccess }: CardFormProps) {
 
       await saveCard(payload);
 
-      success('Success', 'Card saved successfully');
+      success(t('success'), t('cardSaved'));
 
       form.reset();
       router.refresh();
       if (onSuccess) onSuccess();
     } catch (err) {
       console.error(err);
-      error('Error', 'Failed to save card');
+      error(t('error'), t('failedToSave'));
     } finally {
       setLoading(false);
     }
@@ -144,10 +146,9 @@ export function CardForm({ initialData, onSuccess }: CardFormProps) {
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-        {/* Player Info Group */}
         <div className="space-y-4">
           <h3 className="text-sm font-medium text-muted-foreground border-b pb-2">
-            Player Information
+            {t('playerInfo')}
           </h3>
           <div className="grid grid-cols-2 gap-4">
             <FormField
@@ -155,9 +156,9 @@ export function CardForm({ initialData, onSuccess }: CardFormProps) {
               name="playerName"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Player Name *</FormLabel>
+                  <FormLabel>{t('playerName')} *</FormLabel>
                   <FormControl>
-                    <Input placeholder="Michael Jordan" {...field} />
+                    <Input placeholder={t('playerNamePlaceholder')} {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -168,17 +169,17 @@ export function CardForm({ initialData, onSuccess }: CardFormProps) {
               name="sport"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Sport *</FormLabel>
+                  <FormLabel>{t('sport')} *</FormLabel>
                   <Select onValueChange={field.onChange} defaultValue={field.value}>
                     <FormControl>
                       <SelectTrigger>
-                        <SelectValue placeholder="Select sport" />
+                        <SelectValue placeholder={t('selectSport')} />
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      <SelectItem value="BASKETBALL">Basketball</SelectItem>
-                      <SelectItem value="SOCCER">Soccer</SelectItem>
-                      <SelectItem value="OTHER">Other</SelectItem>
+                      <SelectItem value="BASKETBALL">{t('basketball')}</SelectItem>
+                      <SelectItem value="SOCCER">{t('soccer')}</SelectItem>
+                      <SelectItem value="OTHER">{t('other')}</SelectItem>
                     </SelectContent>
                   </Select>
                   <FormMessage />
@@ -190,9 +191,9 @@ export function CardForm({ initialData, onSuccess }: CardFormProps) {
               name="team"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Team</FormLabel>
+                  <FormLabel>{t('team')}</FormLabel>
                   <FormControl>
-                    <Input placeholder="Chicago Bulls" {...field} />
+                    <Input placeholder={t('teamPlaceholder')} {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -203,9 +204,9 @@ export function CardForm({ initialData, onSuccess }: CardFormProps) {
               name="position"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Position</FormLabel>
+                  <FormLabel>{t('position')}</FormLabel>
                   <FormControl>
-                    <Input placeholder="SG" {...field} />
+                    <Input placeholder={t('positionPlaceholder')} {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -216,14 +217,14 @@ export function CardForm({ initialData, onSuccess }: CardFormProps) {
 
         {/* Card Details Group */}
         <div className="space-y-4">
-          <h3 className="text-sm font-medium text-muted-foreground border-b pb-2">Card Details</h3>
+          <h3 className="text-sm font-medium text-muted-foreground border-b pb-2">{t('cardDetails')}</h3>
           <div className="grid grid-cols-2 gap-4">
             <FormField
               control={form.control}
               name="year"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Year *</FormLabel>
+                  <FormLabel>{t('year')} *</FormLabel>
                   <FormControl>
                     <Input type="number" {...field} />
                   </FormControl>
@@ -236,9 +237,9 @@ export function CardForm({ initialData, onSuccess }: CardFormProps) {
               name="brand"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Brand *</FormLabel>
+                  <FormLabel>{t('brand')} *</FormLabel>
                   <FormControl>
-                    <Input placeholder="Fleer, Topps" {...field} />
+                    <Input placeholder={t('brandPlaceholder')} {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -249,9 +250,9 @@ export function CardForm({ initialData, onSuccess }: CardFormProps) {
               name="series"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Series</FormLabel>
+                  <FormLabel>{t('series')}</FormLabel>
                   <FormControl>
-                    <Input placeholder="Base, Chrome" {...field} />
+                    <Input placeholder={t('seriesPlaceholder')} {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -262,9 +263,9 @@ export function CardForm({ initialData, onSuccess }: CardFormProps) {
               name="cardNumber"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Card #</FormLabel>
+                  <FormLabel>{t('cardNumber')}</FormLabel>
                   <FormControl>
-                    <Input placeholder="57" {...field} />
+                    <Input placeholder={t('cardNumberPlaceholder')} {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -275,22 +276,22 @@ export function CardForm({ initialData, onSuccess }: CardFormProps) {
 
         {/* Grading Group */}
         <div className="space-y-4">
-          <h3 className="text-sm font-medium text-muted-foreground border-b pb-2">Grading</h3>
+          <h3 className="text-sm font-medium text-muted-foreground border-b pb-2">{t('grading')}</h3>
           <div className="grid grid-cols-2 gap-4">
             <FormField
               control={form.control}
               name="gradingCompany"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Company</FormLabel>
+                  <FormLabel>{t('gradingCompany')}</FormLabel>
                   <Select onValueChange={field.onChange} defaultValue={field.value}>
                     <FormControl>
                       <SelectTrigger>
-                        <SelectValue placeholder="Select company" />
+                        <SelectValue placeholder={t('selectCompany')} />
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      <SelectItem value="UNGRADED">Ungraded</SelectItem>
+                      <SelectItem value="UNGRADED">{t('ungraded')}</SelectItem>
                       <SelectItem value="PSA">PSA</SelectItem>
                       <SelectItem value="BGS">BGS</SelectItem>
                       <SelectItem value="SGC">SGC</SelectItem>
@@ -306,7 +307,7 @@ export function CardForm({ initialData, onSuccess }: CardFormProps) {
               name="grade"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Grade</FormLabel>
+                  <FormLabel>{t('grade')}</FormLabel>
                   <FormControl>
                     <Input
                       type="number"
@@ -325,9 +326,9 @@ export function CardForm({ initialData, onSuccess }: CardFormProps) {
               name="certificationNumber"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Cert Number</FormLabel>
+                  <FormLabel>{t('certNumber')}</FormLabel>
                   <FormControl>
-                    <Input placeholder="12345678" {...field} />
+                    <Input placeholder={t('certNumberPlaceholder')} {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -339,7 +340,7 @@ export function CardForm({ initialData, onSuccess }: CardFormProps) {
         {/* Value Group */}
         <div className="space-y-4">
           <h3 className="text-sm font-medium text-muted-foreground border-b pb-2">
-            Value & Status
+            {t('valueStatus')}
           </h3>
           <div className="grid grid-cols-2 gap-4">
             <FormField
@@ -347,7 +348,7 @@ export function CardForm({ initialData, onSuccess }: CardFormProps) {
               name="status"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Status</FormLabel>
+                  <FormLabel>{t('status')}</FormLabel>
                   <Select onValueChange={field.onChange} defaultValue={field.value}>
                     <FormControl>
                       <SelectTrigger>
@@ -355,11 +356,11 @@ export function CardForm({ initialData, onSuccess }: CardFormProps) {
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      <SelectItem value="COLLECTION">Collection</SelectItem>
-                      <SelectItem value="FOR_SALE">For Sale</SelectItem>
-                      <SelectItem value="SOLD">Sold</SelectItem>
-                      <SelectItem value="GRADING">Grading</SelectItem>
-                      <SelectItem value="DISPLAY">Display</SelectItem>
+                      <SelectItem value="COLLECTION">{t('collection')}</SelectItem>
+                      <SelectItem value="FOR_SALE">{t('forSale')}</SelectItem>
+                      <SelectItem value="SOLD">{t('sold')}</SelectItem>
+                      <SelectItem value="GRADING">{t('gradingStatus')}</SelectItem>
+                      <SelectItem value="DISPLAY">{t('display')}</SelectItem>
                     </SelectContent>
                   </Select>
                   <FormMessage />
@@ -371,7 +372,7 @@ export function CardForm({ initialData, onSuccess }: CardFormProps) {
               name="currentValue"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Current Value ($)</FormLabel>
+                  <FormLabel>{t('currentValue')}</FormLabel>
                   <FormControl>
                     <Input type="number" step="0.01" {...field} value={field.value || ''} />
                   </FormControl>
@@ -384,7 +385,7 @@ export function CardForm({ initialData, onSuccess }: CardFormProps) {
               name="purchasePrice"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Purchase Price ($)</FormLabel>
+                  <FormLabel>{t('purchasePrice')}</FormLabel>
                   <FormControl>
                     <Input type="number" step="0.01" {...field} value={field.value || ''} />
                   </FormControl>
@@ -397,7 +398,7 @@ export function CardForm({ initialData, onSuccess }: CardFormProps) {
               name="purchaseDate"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Purchase Date</FormLabel>
+                  <FormLabel>{t('purchaseDate')}</FormLabel>
                   <FormControl>
                     <Input type="date" {...field} />
                   </FormControl>
@@ -410,7 +411,7 @@ export function CardForm({ initialData, onSuccess }: CardFormProps) {
 
         {/* Attributes */}
         <div className="space-y-4">
-          <h3 className="text-sm font-medium text-muted-foreground border-b pb-2">Attributes</h3>
+          <h3 className="text-sm font-medium text-muted-foreground border-b pb-2">{t('attributes')}</h3>
           <div className="flex gap-6">
             <FormField
               control={form.control}
@@ -418,7 +419,7 @@ export function CardForm({ initialData, onSuccess }: CardFormProps) {
               render={({ field }) => (
                 <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4 space-y-0">
                   <div className="space-y-0.5 mr-4">
-                    <FormLabel className="text-base">Autographed</FormLabel>
+                    <FormLabel className="text-base">{t('autographed')}</FormLabel>
                   </div>
                   <FormControl>
                     <Switch checked={field.value} onCheckedChange={field.onChange} />
@@ -432,7 +433,7 @@ export function CardForm({ initialData, onSuccess }: CardFormProps) {
               render={({ field }) => (
                 <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4 space-y-0">
                   <div className="space-y-0.5 mr-4">
-                    <FormLabel className="text-base">Memorabilia</FormLabel>
+                    <FormLabel className="text-base">{t('memorabilia')}</FormLabel>
                   </div>
                   <FormControl>
                     <Switch checked={field.value} onCheckedChange={field.onChange} />
@@ -448,9 +449,9 @@ export function CardForm({ initialData, onSuccess }: CardFormProps) {
                 name="memorabiliaType"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Mem Type</FormLabel>
+                    <FormLabel>{t('memorabiliaType')}</FormLabel>
                     <FormControl>
-                      <Input placeholder="Jersey" {...field} />
+                      <Input placeholder={t('memorabiliaPlaceholder')} {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -462,9 +463,9 @@ export function CardForm({ initialData, onSuccess }: CardFormProps) {
               name="serialNumber"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Serial #</FormLabel>
+                  <FormLabel>{t('serialNumber')}</FormLabel>
                   <FormControl>
-                    <Input placeholder="xx/99" {...field} />
+                    <Input placeholder={t('serialNumberPlaceholder')} {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -484,11 +485,11 @@ export function CardForm({ initialData, onSuccess }: CardFormProps) {
         {/* Actions */}
         <div className="flex justify-end gap-2 pt-4">
           <Button type="button" variant="outline" onClick={() => onSuccess && onSuccess()}>
-            Cancel
+            {t('cancel')}
           </Button>
           <Button type="submit" disabled={loading}>
             {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            Save Card
+            {t('save')}
           </Button>
         </div>
       </form>

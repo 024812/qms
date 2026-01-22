@@ -5,7 +5,8 @@
 
 import { format as dateFnsFormat, formatDistanceToNow } from 'date-fns';
 import { zhCN, enUS } from 'date-fns/locale';
-import type { Language } from './i18n';
+// Basic language type compatible with next-intl locale strings
+export type Language = string;
 
 /**
  * Get the date-fns locale object for the given language

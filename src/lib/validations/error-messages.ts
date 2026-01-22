@@ -4,7 +4,8 @@
  */
 
 import { z } from 'zod';
-import type { Language } from '../i18n';
+// Basic language type compatible with next-intl locale strings
+export type Language = string;
 
 /**
  * Helper function to translate Zod type names to Chinese

@@ -25,13 +25,13 @@ import {
 import { Textarea } from '@/components/ui/textarea';
 import { Loader2 } from 'lucide-react';
 
-import { Quilt } from '@/types/quilt';
+import { Quilt, QuiltFormData } from '@/types/quilt';
 
 interface QuiltDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   quilt?: Quilt | null;
-  onSave: (data: Partial<Quilt>) => Promise<void>;
+  onSave: (data: QuiltFormData) => Promise<void>;
 }
 
 export function QuiltDialog({ open, onOpenChange, quilt, onSave }: QuiltDialogProps) {
@@ -152,14 +152,14 @@ export function QuiltDialog({ open, onOpenChange, quilt, onSave }: QuiltDialogPr
     setLoading(true);
 
     try {
-      const data: Partial<Quilt> = {
+      const data: QuiltFormData = {
         ...formData,
         season: formData.season as Quilt['season'],
         currentStatus: formData.currentStatus as Quilt['currentStatus'],
         lengthCm: parseFloat(formData.lengthCm) || 0,
         widthCm: parseFloat(formData.widthCm) || 0,
         weightGrams: parseFloat(formData.weightGrams) || 0,
-        purchaseDate: formData.purchaseDate ? new Date(formData.purchaseDate) : null,
+        purchaseDate: formData.purchaseDate ? new Date(formData.purchaseDate) : undefined,
       };
 
       // Always include image fields to handle deletion
@@ -173,15 +173,10 @@ export function QuiltDialog({ open, onOpenChange, quilt, onSave }: QuiltDialogPr
       }
 
       if (quilt) {
-        // Edit mode - include ID (name and itemNumber are read-only in edit mode)
-        await onSave({
-          ...data,
-          id: quilt.id,
-          name: quilt.name,
-          itemNumber: quilt.itemNumber,
-        });
+        // Edit mode
+        await onSave(data);
       } else {
-        // Add mode - backend will generate name and itemNumber
+        // Add mode
         await onSave(data);
       }
 
@@ -194,7 +189,7 @@ export function QuiltDialog({ open, onOpenChange, quilt, onSave }: QuiltDialogPr
       if (error instanceof Error) {
         errorDescription = error.message;
       }
-      
+
       // Check for nested data with more details safely
       const err = error as { data?: { zodError?: { fieldErrors: Record<string, string[]> } } };
       if (err?.data?.zodError) {
@@ -406,9 +401,7 @@ export function QuiltDialog({ open, onOpenChange, quilt, onSave }: QuiltDialogPr
               <Label className="text-base font-semibold">
                 {t('quilts.dialogs.imageUpload.label')}
               </Label>
-              <p className="text-xs text-gray-500 mt-0.5">
-                {t('quilts.dialogs.imageUpload.hint')}
-              </p>
+              <p className="text-xs text-gray-500 mt-0.5">{t('quilts.dialogs.imageUpload.hint')}</p>
             </div>
             <ImageUpload images={images} onImagesChange={setImages} maxImages={5} />
           </div>

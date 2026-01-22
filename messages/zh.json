@@ -47,7 +47,8 @@
     "analytics": "数据分析",
     "maintenance": "维护",
     "reports": "导入导出",
-    "settings": "系统设置"
+    "settings": "系统设置",
+    "cards": "球星卡"
   },
   "dashboard": {
     "title": "仪表面板",

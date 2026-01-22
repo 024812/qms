@@ -38,7 +38,8 @@
     "analytics": "Data Analytics",
     "maintenance": "Maintenance",
     "reports": "Import/Export",
-    "settings": "System Settings"
+    "settings": "System Settings",
+    "cards": "Trading Cards"
   },
   "dashboard": {
     "title": "Dashboard",
@@ -951,6 +952,7 @@
   },
   "common": {
     "appName": "QMS",
+    "appDescription": "Household Item Management System",
     "loading": "Loading...",
     "create": "Create",
     "error": "Error",

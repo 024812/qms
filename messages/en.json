@@ -422,6 +422,16 @@
   "settings": {
     "title": "System Settings",
     "subtitle": "Manage your application preferences",
+    "currentLanguage": "Current language: {locale}",
+    "languageHint": "Changing the language will take effect immediately and refresh the page",
+    "modules": {
+      "title": "Module Management",
+      "description": "Choose which modules you want to use",
+      "subscribe": "Subscribe",
+      "subscribed": "Subscribed",
+      "subscribedToYourList": "Module has been added to your feature list",
+      "removedFromYourList": "Module has been removed from your feature list"
+    },
     "password": {
       "mismatchError": "Passwords do not match",
       "mismatchDesc": "New password and confirm password must match",
@@ -445,7 +455,9 @@
         "title": "Application Settings",
         "description": "Configure general application preferences",
         "applicationName": "Application Name",
-        "language": "Language"
+        "language": "Language",
+        "interface": "Set application interface language",
+        "version": "Version"
       },
       "database": {
         "title": "Database",
@@ -453,13 +465,20 @@
         "provider": "Database Provider",
         "connectionStatus": "Connection Status",
         "connected": "Connected",
-        "totalRecords": "Total Records"
+        "totalRecords": "Total Records",
+        "deployment": "Deployment Platform",
+        "status": "Connection Status",
+        "environment": "Environment"
       },
       "modules": {
         "title": "Module Subscription",
         "description": "Choose which modules to use",
         "subscribe": "Subscribe",
         "subscribed": "Subscribed"
+      },
+      "security": {
+        "title": "Security Settings",
+        "description": "Manage your account security and password"
       },
       "notifications": {
         "title": "Notifications",

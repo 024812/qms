@@ -5,6 +5,41 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2026.01.21] - 2026-01-21
+
+### 🧹 Project Clean & Archival
+
+- **Project Organization**
+  - Archived all completed specs to `.kiro/specs/completed/`
+  - Moved incomplete specs to `.kiro/specs/archived/`
+  - Cleaned up project directory structure
+  - Updated documentation
+- **Version Management**
+  - Bumped version to 2026.01.21
+  - Updated README files (English & Chinese)
+  - Consolidated release notes
+
+## [2026.01.20] - 2026-01-20
+
+### 👤 User Management & UI Enhancements
+
+- **User Management System**
+  - Complete CRUD operations for users (admin only)
+  - Role-based access control (admin/member)
+  - Module subscription management per user
+  - Password management in users table
+  - User creation with module assignments
+- **UI/UX Improvements**
+  - Beautiful welcome homepage with feature showcase
+  - Sidebar auto-refresh after login
+  - Module navigation improvements
+  - Removed "Import/Export" from quilt module menu (moved to admin settings)
+- **Sports Card Module**
+  - Market data integration (eBay, PSA, Beckett, 130Point)
+  - Value estimation algorithm
+  - Card grading support
+  - Image upload for cards
+
 ## [1.3.0] - 2026-01-13
 
 ### 🎨 UI Modernization

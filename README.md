@@ -30,6 +30,14 @@ A modern Next.js application with Neon PostgreSQL that provides a modular, exten
 - **Data Analytics**: Usage statistics, seasonal analysis, and trend visualization
 - **Settings Management**: Centralized configuration with database storage
 
+### 🃏 Sports Card Management
+
+- **Card Tracking**: Detailed attributes including player, team, year, brand, and series
+- **Grading Support**: Track professional grading (PSA, BGS, SGC, CGC) with certification numbers
+- **Value Estimation**: Built-in algorithm to estimate card value based on grade, age, and features
+- **Market Connect**: Direct integration with eBay, 130Point, PSA CardFacts, and Beckett for market data
+- **Collection Stats**: Comprehensive statistics on total value, ROI, and brand distribution
+
 ### 🎨 Modern UI/UX
 
 - **Responsive Design**: Optimized for desktop, tablet, and mobile devices using Tailwind CSS
@@ -480,6 +488,6 @@ For questions or issues, please open an issue on GitHub.
 
 **Version**: 2026.01.21  
 **Status**: ✅ Production Ready  
-**Last Updated**: 2026-01-21
+**Last Updated**: 2026-01-22
 
 Made with ❤️ for better home organization

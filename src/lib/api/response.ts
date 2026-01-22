@@ -160,14 +160,18 @@ export function createRateLimitResponse(
 
 /**
  * Create an internal error response with logging
+ * Note: Skips logging during build phase to reduce noise
  */
 export function createInternalErrorResponse(
   message: string,
   error?: unknown,
   context?: Record<string, unknown>
 ): NextResponse<ApiResponse<never>> {
-  // Log the error for debugging
-  if (error) {
+  // Skip logging during build phase (when NEXT_PHASE is set to "phase-production-build")
+  const isBuildPhase = process.env.NEXT_PHASE === 'phase-production-build';
+
+  // Log the error for debugging (only in runtime, not during build)
+  if (error && !isBuildPhase) {
     dbLogger.error(message, { error, ...context });
   }
 

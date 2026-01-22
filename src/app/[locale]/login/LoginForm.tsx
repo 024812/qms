@@ -21,11 +21,13 @@ import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { useTranslations } from 'next-intl';
 
 /**
  * Login form component
  */
 export function LoginForm() {
+  const t = useTranslations('auth');
   const searchParams = useSearchParams();
   const callbackUrl = searchParams.get('callbackUrl') || '/';
 
@@ -34,7 +36,7 @@ export function LoginForm() {
   return (
     <Card className="shadow-lg">
       <CardHeader>
-        <CardTitle className="text-2xl text-center">欢迎回来</CardTitle>
+        <CardTitle className="text-2xl text-center">{t('loginSubtitle')}</CardTitle>
       </CardHeader>
       <CardContent>
         <form action={formAction} className="space-y-6">
@@ -42,14 +44,14 @@ export function LoginForm() {
 
           {/* Email field */}
           <div className="space-y-2">
-            <Label htmlFor="email">邮箱</Label>
+            <Label htmlFor="email">{t('email')}</Label>
             <Input
               id="email"
               name="email"
               type="email"
               autoComplete="email"
               required
-              placeholder="请输入您的邮箱"
+              placeholder={t('emailPlaceholder')}
               disabled={isPending}
               className="w-full"
             />
@@ -57,7 +59,7 @@ export function LoginForm() {
 
           {/* Password field */}
           <div className="space-y-2">
-            <Label htmlFor="password">密码</Label>
+            <Label htmlFor="password">{t('password')}</Label>
             <Input
               id="password"
               name="password"
@@ -65,7 +67,7 @@ export function LoginForm() {
               autoComplete="current-password"
               required
               minLength={6}
-              placeholder="请输入您的密码"
+              placeholder={t('passwordPlaceholder')}
               disabled={isPending}
               className="w-full"
             />
@@ -91,7 +93,7 @@ export function LoginForm() {
             disabled={isPending}
             className="w-full"
           >
-            {isPending ? '登录中...' : '登录'}
+            {isPending ? t('loggingIn') : t('loginButton')}
           </Button>
         </form>
       </CardContent>

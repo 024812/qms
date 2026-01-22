@@ -36,6 +36,10 @@
     "quiltsList": "被子列表",
     "cardsList": "卡片列表"
   },
+  "modules": {
+    "title": "模块管理",
+    "subtitle": "选择您想要使用的功能模块。您可以随时订阅或取消订阅模块。"
+  },
   "navigation": {
     "dashboard": "仪表面板",
     "quilts": "被子管理",
@@ -79,6 +83,31 @@
   "quilts": {
     "title": "被子收藏",
     "subtitle": "管理您的被子并跟踪使用情况",
+    "filters": {
+      "searchPlaceholder": "搜索被子名称、材质、颜色或备注...",
+      "season": "季节",
+      "status": "状态",
+      "advanced": "高级",
+      "advancedFilters": "高级筛选",
+      "advancedDescription": "使用详细条件精确筛选",
+      "location": "位置",
+      "selectLocation": "选择位置",
+      "allLocations": "所有位置",
+      "brand": "品牌",
+      "selectBrand": "选择品牌",
+      "allBrands": "所有品牌",
+      "weightRange": "重量范围（克）",
+      "minWeight": "最小重量",
+      "maxWeight": "最大重量",
+      "light": "轻薄 (0-800g)",
+      "medium": "中等 (800-1500g)",
+      "heavy": "厚重 (1500g+)",
+      "clearAll": "清除全部",
+      "applyFilters": "应用筛选",
+      "clear": "清除",
+      "showingFiltered": "显示 {filtered} 条，共 {total} 条被子",
+      "showingTotal": "共 {total} 条被子"
+    },
     "actions": {
       "add": "添加被子",
       "addFirst": "添加您的第一床被子",

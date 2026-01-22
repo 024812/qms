@@ -14,7 +14,22 @@
     "sessionExpired": "Session expired. Please login again",
     "loginSuccess": "Login successful",
     "logoutSuccess": "Logged out successfully",
-    "logoutConfirm": "Are you sure you want to logout?"
+    "logoutConfirm": "Are you sure you want to logout?",
+    "registerTitle": "Register New Account",
+    "name": "Name",
+    "namePlaceholder": "Enter your name",
+    "email": "Email",
+    "emailPlaceholder": "Enter your email",
+    "confirmPassword": "Confirm Password",
+    "confirmPasswordPlaceholder": "Enter password again",
+    "passwordMinLength": "Minimum 6 characters",
+    "registerButton": "Register",
+    "registering": "Registering...",
+    "registerSuccess": "Registered successfully! Redirecting..."
+  },
+  "modules": {
+    "title": "Module Management",
+    "subtitle": "Select the feature modules you want to use. You can subscribe or unsubscribe at any time."
   },
   "navigation": {
     "dashboard": "Dashboard",
@@ -59,6 +74,31 @@
   "quilts": {
     "title": "Quilt Collection",
     "subtitle": "Manage your quilts and track their usage",
+    "filters": {
+      "searchPlaceholder": "Search quilts by name, material, color, or notes...",
+      "season": "Season",
+      "status": "Status",
+      "advanced": "Advanced",
+      "advancedFilters": "Advanced Filters",
+      "advancedDescription": "Refine your search with detailed criteria",
+      "location": "Location",
+      "selectLocation": "Select location",
+      "allLocations": "All locations",
+      "brand": "Brand",
+      "selectBrand": "Select brand",
+      "allBrands": "All brands",
+      "weightRange": "Weight Range (grams)",
+      "minWeight": "Min Weight",
+      "maxWeight": "Max Weight",
+      "light": "Light (0-800g)",
+      "medium": "Medium (800-1500g)",
+      "heavy": "Heavy (1500g+)",
+      "clearAll": "Clear All",
+      "applyFilters": "Apply Filters",
+      "clear": "Clear",
+      "showingFiltered": "Showing {filtered} of {total} quilts",
+      "showingTotal": "Showing {total} quilts"
+    },
     "actions": {
       "add": "Add Quilt",
       "addFirst": "Add Your First Quilt",

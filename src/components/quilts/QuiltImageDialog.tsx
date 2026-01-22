@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
-import { useLanguage } from '@/lib/language-provider';
+import { useTranslations, useLocale } from 'next-intl';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { ChevronLeft, ChevronRight, ImageIcon } from 'lucide-react';
@@ -15,7 +15,8 @@ interface QuiltImageDialogProps {
 }
 
 export function QuiltImageDialog({ open, onOpenChange, quilt }: QuiltImageDialogProps) {
-  const { language } = useLanguage();
+  const t = useTranslations();
+  const locale = useLocale();
   const [currentIndex, setCurrentIndex] = useState(0);
 
   // Collect all images (main image + attachment images)
@@ -60,12 +61,12 @@ export function QuiltImageDialog({ open, onOpenChange, quilt }: QuiltImageDialog
         <DialogContent className="max-w-4xl">
           <DialogHeader>
             <DialogTitle>
-              {quilt.name} - {language === 'zh' ? '图片' : 'Images'}
+              {quilt.name} - {t('quilts.dialogs.images.title')}
             </DialogTitle>
           </DialogHeader>
           <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
             <ImageIcon className="w-16 h-16 mb-4 opacity-50" />
-            <p>{language === 'zh' ? '暂无图片' : 'No images available'}</p>
+            <p>{t('quilts.dialogs.images.noImages')}</p>
           </div>
         </DialogContent>
       </Dialog>
@@ -109,7 +110,7 @@ export function QuiltImageDialog({ open, onOpenChange, quilt }: QuiltImageDialog
           >
             <Image
               src={currentImage}
-              alt={`${quilt.name} - ${language === 'zh' ? '图片' : 'Image'} ${currentIndex + 1}`}
+              alt={`${quilt.name} - ${t('quilts.dialogs.images.title')} ${currentIndex + 1}`}
               fill
               className="object-contain"
               sizes="(max-width: 1280px) 100vw, 1280px"
@@ -142,12 +143,8 @@ export function QuiltImageDialog({ open, onOpenChange, quilt }: QuiltImageDialog
           {/* Image Type Badge */}
           <div className="absolute top-4 left-4 bg-black/60 text-white px-3 py-1 rounded-full text-xs">
             {currentIndex === 0 && quilt.mainImage
-              ? language === 'zh'
-                ? '主图'
-                : 'Main Image'
-              : language === 'zh'
-                ? `附加图片 ${currentIndex}`
-                : `Attachment ${currentIndex}`}
+              ? t('quilts.dialogs.images.main')
+              : t('quilts.dialogs.images.attachment', { index: currentIndex })}
           </div>
         </div>
 
@@ -157,7 +154,7 @@ export function QuiltImageDialog({ open, onOpenChange, quilt }: QuiltImageDialog
             <div className="flex gap-2 overflow-x-auto py-2">
               {allImages.map((image, index) => (
                 <button
-                  key={`thumbnail-${image}-${index}`}
+                  key={`thumbnail-${image}`}
                   onClick={() => setCurrentIndex(index)}
                   className={`relative flex-shrink-0 w-20 h-20 rounded-md overflow-hidden border-2 transition-all ${
                     index === currentIndex
@@ -175,7 +172,7 @@ export function QuiltImageDialog({ open, onOpenChange, quilt }: QuiltImageDialog
                   />
                   {index === 0 && quilt.mainImage && (
                     <div className="absolute bottom-0 left-0 right-0 bg-black/60 text-white text-[10px] text-center py-0.5">
-                      {language === 'zh' ? '主图' : 'Main'}
+                      {locale === 'zh' ? '主图' : 'Main'}
                     </div>
                   )}
                 </button>
@@ -187,9 +184,7 @@ export function QuiltImageDialog({ open, onOpenChange, quilt }: QuiltImageDialog
         {/* Keyboard Navigation Hint */}
         {hasMultipleImages && (
           <div className="px-6 pb-4 text-xs text-muted-foreground text-center">
-            {language === 'zh'
-              ? '使用左右箭头键或点击按钮切换图片'
-              : 'Use arrow keys or click buttons to navigate'}
+            {t('quilts.dialogs.images.navigationHint')}
           </div>
         )}
       </DialogContent>

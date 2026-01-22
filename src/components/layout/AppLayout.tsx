@@ -6,7 +6,7 @@ import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
-import { useLanguage } from '@/lib/language-provider';
+import { useTranslations } from 'next-intl';
 import {
   Home,
   Package,
@@ -80,7 +80,7 @@ export function AppLayout({ children }: AppLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(getInitialCollapsedState);
   const pathname = usePathname();
-  const { t } = useLanguage();
+  const t = useTranslations();
 
   const navigation = getNavigation(t);
 
@@ -108,9 +108,9 @@ export function AppLayout({ children }: AppLayoutProps) {
                 <Link href="/" className="flex items-center space-x-2">
                   <Package className="h-6 w-6 text-blue-600" />
                   <span className="text-sm font-semibold leading-tight">
-                    QMS
+                    {t('common.appName')}
                     <br />
-                    家庭被子管理系统
+                    {t('common.appDesc')}
                   </span>
                 </Link>
               </div>
@@ -145,7 +145,7 @@ export function AppLayout({ children }: AppLayoutProps) {
               <div className="flex-shrink-0 border-t border-gray-200 p-4">
                 <div className="text-center space-y-2">
                   <p className="text-xs text-gray-400">
-                    {t('common.version')} {packageJson.version}
+                    {t('settings.sections.system.version')} {packageJson.version}
                   </p>
                   <div className="flex items-center justify-center gap-3">
                     <a
@@ -214,9 +214,9 @@ export function AppLayout({ children }: AppLayoutProps) {
                 {!sidebarCollapsed && (
                   <div>
                     <h1 className="text-base font-bold text-gray-900 leading-tight">
-                      QMS
+                      {t('common.appName')}
                       <br />
-                      家庭被子管理系统
+                      {t('common.appDesc')}
                     </h1>
                   </div>
                 )}
@@ -263,7 +263,7 @@ export function AppLayout({ children }: AppLayoutProps) {
               <div className="text-center space-y-2">
                 {!sidebarCollapsed && (
                   <p className="text-xs text-gray-400">
-                    {t('common.version')} {packageJson.version}
+                    {t('settings.sections.system.version')} {packageJson.version}
                   </p>
                 )}
                 <div className="flex items-center justify-center gap-3">

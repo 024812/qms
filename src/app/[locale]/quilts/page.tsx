@@ -197,10 +197,8 @@ export default function QuiltsPage() {
       const errorMessage =
         error instanceof Error
           ? error.message
-          : locale === 'zh'
-            ? '请重试'
-            : 'Please try again';
-      toast.error(locale === 'zh' ? '删除失败' : 'Failed to delete', errorMessage);
+          : t('quilts.dialogs.unknownError');
+      toast.error(t('quilts.dialogs.deleteFailed'), errorMessage);
     }
   };
 
@@ -208,9 +206,7 @@ export default function QuiltsPage() {
     if (selectedIds.size === 0) return;
     if (
       !window.confirm(
-        locale === 'zh'
-          ? `确定要删除选中的 ${selectedIds.size} 个被子吗？`
-          : `Delete ${selectedIds.size} selected quilts?`
+        t('quilts.dialogs.confirmBatchDelete', { count: selectedIds.size })
       )
     )
       return;
@@ -224,10 +220,8 @@ export default function QuiltsPage() {
       const errorMessage =
         error instanceof Error
           ? error.message
-          : locale === 'zh'
-            ? '请重试'
-            : 'Please try again';
-      toast.error(locale === 'zh' ? '删除失败' : 'Failed to delete', errorMessage);
+          : t('quilts.dialogs.unknownError');
+      toast.error(t('quilts.dialogs.deleteFailed'), errorMessage);
     }
   };
 
@@ -293,10 +287,8 @@ export default function QuiltsPage() {
       const errorMessage =
         error instanceof Error
           ? error.message
-          : locale === 'zh'
-            ? '未知错误'
-            : 'Unknown error';
-      toast.error(locale === 'zh' ? '保存失败' : 'Failed to save', errorMessage);
+          : t('quilts.dialogs.unknownError');
+      toast.error(t('quilts.dialogs.saveConfig.error'), errorMessage);
     }
   };
 
@@ -322,11 +314,9 @@ export default function QuiltsPage() {
       const errorMessage =
         error instanceof Error
           ? error.message
-          : locale === 'zh'
-            ? '请重试'
-            : 'Please try again';
+          : t('quilts.dialogs.unknownError');
       toast.error(
-        locale === 'zh' ? '状态更新失败' : 'Failed to update status',
+        t('quilts.dialogs.statusUpdateFailed'),
         errorMessage
       );
     }

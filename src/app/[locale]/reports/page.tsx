@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { useLocale, useTranslations } from 'next-intl';
+import { useTranslations } from 'next-intl';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
@@ -10,16 +10,29 @@ import { ImportUpload } from '@/components/import/ImportUpload';
 import { toast } from '@/lib/toast';
 import dynamic from 'next/dynamic';
 
+// Helper components for dynamic loading states to access translations
+function PreviewLoading() {
+  const t = useTranslations('reports.loading');
+  return <div className="text-center py-8">{t('preview')}</div>;
+}
+
+function ResultsLoading() {
+  const t = useTranslations('reports.loading');
+  return <div className="text-center py-8">{t('results')}</div>;
+}
+
 // 动态导入组件
 const ImportPreview = dynamic(
   () => import('@/components/import/ImportPreview').then(mod => ({ default: mod.ImportPreview })),
-  { loading: () => <div className="text-center py-8">加载预览中...</div> }
+  { loading: () => <PreviewLoading /> }
 );
 
 const ImportResults = dynamic(
   () => import('@/components/import/ImportResults').then(mod => ({ default: mod.ImportResults })),
-  { loading: () => <div className="text-center py-8">加载结果中...</div> }
+  { loading: () => <ResultsLoading /> }
 );
+
+// ... (Types remain same)
 
 type ImportStep = 'upload' | 'preview' | 'results';
 
@@ -50,7 +63,6 @@ interface ImportData {
 
 export default function ImportExportPage() {
   const t = useTranslations();
-  const locale = useLocale();
   const [activeTab, setActiveTab] = useState<'import' | 'export'>('export');
   const [loading, setLoading] = useState<string | null>(null);
 
@@ -197,12 +209,10 @@ export default function ImportExportPage() {
                 )}
                 <div className="text-left flex-1">
                   <div className="font-semibold">
-                    {locale === 'zh' ? '导出为 CSV' : 'Export as CSV'}
+                    {t('reports.export.csv.label')}
                   </div>
                   <div className="text-xs text-muted-foreground">
-                    {locale === 'zh'
-                      ? '适用于Excel和其他表格软件'
-                      : 'For Excel and spreadsheet software'}
+                    {t('reports.export.csv.description')}
                   </div>
                 </div>
               </Button>
@@ -220,12 +230,10 @@ export default function ImportExportPage() {
                 )}
                 <div className="text-left flex-1">
                   <div className="font-semibold">
-                    {locale === 'zh' ? '导出为 JSON' : 'Export as JSON'}
+                    {t('reports.export.json.label')}
                   </div>
                   <div className="text-xs text-muted-foreground">
-                    {locale === 'zh'
-                      ? '适用于数据备份和程序处理'
-                      : 'For data backup and processing'}
+                    {t('reports.export.json.description')}
                   </div>
                 </div>
               </Button>

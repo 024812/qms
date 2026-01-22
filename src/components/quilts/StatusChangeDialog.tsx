@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useLanguage } from '@/lib/language-provider';
+import { useTranslations, useLocale } from 'next-intl';
 import { toast } from 'sonner';
 import {
   Dialog,
@@ -25,10 +25,12 @@ import { Textarea } from '@/components/ui/textarea';
 import { Loader2, Calendar, Info } from 'lucide-react';
 import { useActiveUsageRecord } from '@/hooks/useUsage';
 
+import { Quilt } from '@/types/quilt';
+
 interface StatusChangeDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  quilt?: any;
+  quilt?: Quilt | null;
   onStatusChange: (
     quiltId: string,
     newStatus: string,
@@ -42,7 +44,8 @@ export function StatusChangeDialog({
   quilt,
   onStatusChange,
 }: StatusChangeDialogProps) {
-  const { t, language } = useLanguage();
+  const t = useTranslations();
+  const locale = useLocale();
   const [loading, setLoading] = useState(false);
   const [newStatus, setNewStatus] = useState(quilt?.currentStatus || 'STORAGE');
   const [startDate, setStartDate] = useState(new Date().toISOString().split('T')[0]);
@@ -51,7 +54,7 @@ export function StatusChangeDialog({
 
   // Get active usage record if quilt is currently in use
   const { data: activeUsageData } = useActiveUsageRecord(quilt?.id || '');
-  const activeUsage = (activeUsageData as any)?.json || activeUsageData;
+  const activeUsage = (activeUsageData as { json?: { startDate?: string } })?.json || activeUsageData; // Safer typing
 
   // Reset form when dialog opens or quilt changes
   useEffect(() => {
@@ -86,7 +89,9 @@ export function StatusChangeDialog({
       await onStatusChange(quilt.id, newStatus, options);
       onOpenChange(false);
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : '状态更新失败');
+      toast.error(
+        error instanceof Error ? error.message : t('quilts.dialogs.statusUpdateFailed')
+      );
     } finally {
       setLoading(false);
     }
@@ -98,7 +103,7 @@ export function StatusChangeDialog({
   const isCurrentlyInUse = quilt?.currentStatus === 'IN_USE';
   const showDateFields = isChangingToInUse || isChangingFromInUse;
 
-  const getStatusColor = (status: string) => {
+  const getStatusColor = (status: string | undefined) => {
     switch (status) {
       case 'IN_USE':
         return 'text-green-600';
@@ -117,9 +122,7 @@ export function StatusChangeDialog({
         <DialogHeader>
           <DialogTitle>{t('quilts.dialogs.changeStatus')}</DialogTitle>
           <DialogDescription>
-            {language === 'zh'
-              ? `更改被子 "${quilt?.name}" 的状态`
-              : `Change status for quilt "${quilt?.name}"`}
+            {t('quilts.dialogs.changeStatusDesc', { name: quilt ? quilt.name : '' })}
           </DialogDescription>
         </DialogHeader>
 
@@ -127,7 +130,7 @@ export function StatusChangeDialog({
           <div className="space-y-2">
             <Label>{t('quilts.dialogs.currentStatus')}</Label>
             <div className={`text-sm font-medium ${getStatusColor(quilt?.currentStatus)}`}>
-              {t(`status.${quilt?.currentStatus}`)}
+              {quilt?.currentStatus ? t(`status.${quilt.currentStatus}`) : ''}
             </div>
           </div>
 
@@ -141,14 +144,11 @@ export function StatusChangeDialog({
               <div className="space-y-1">
                 <Label className="text-xs text-gray-600">{t('usage.labels.started')}</Label>
                 <div className="text-sm font-medium text-gray-900 bg-white px-3 py-2 rounded border border-gray-200">
-                  {new Date(activeUsage.startDate).toLocaleDateString(
-                    language === 'zh' ? 'zh-CN' : 'en-US',
-                    {
-                      year: 'numeric',
-                      month: 'long',
-                      day: 'numeric',
-                    }
-                  )}
+                  {new Date(activeUsage.startDate).toLocaleDateString(locale, {
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric',
+                  })}
                 </div>
               </div>
             </div>
@@ -156,7 +156,7 @@ export function StatusChangeDialog({
 
           <div className="space-y-2">
             <Label htmlFor="newStatus">{t('quilts.dialogs.newStatus')}</Label>
-            <Select value={newStatus} onValueChange={setNewStatus}>
+            <Select value={newStatus} onValueChange={(value) => setNewStatus(value as Quilt['currentStatus'])}>
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>

@@ -332,7 +332,7 @@ export function AppSidebar() {
               target="_blank"
               rel="noopener noreferrer"
               className="text-muted-foreground hover:text-foreground transition-colors"
-              title="GitHub"
+              title={t('common.github')}
             >
               <Github className="h-4 w-4" />
             </a>
@@ -341,7 +341,7 @@ export function AppSidebar() {
               target="_blank"
               rel="noopener noreferrer"
               className="text-muted-foreground hover:text-foreground transition-colors group-data-[collapsible=icon]:hidden"
-              title="Deployed on Vercel"
+              title={t('common.deployedOnVercel')}
             >
               <svg className="h-4 w-4" viewBox="0 0 76 65" fill="currentColor">
                 <path d="M37.5274 0L75.0548 65H0L37.5274 0Z" />

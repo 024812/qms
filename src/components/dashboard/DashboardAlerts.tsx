@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { AlertTriangle, Info, CheckCircle, X, Bell, Clock, Zap } from 'lucide-react';
-import { useLanguage } from '@/lib/language-provider';
+import { useTranslations, useLocale } from 'next-intl';
 
 interface Alert {
   type: 'info' | 'warning' | 'success' | 'error';
@@ -24,8 +24,8 @@ interface DashboardAlertsProps {
 }
 
 export function DashboardAlerts({ alerts, isLoading = false, onDismissAll }: DashboardAlertsProps) {
-  const { language } = useLanguage();
-  const locale = language === 'zh' ? 'zh-CN' : 'en-US';
+  const t = useTranslations('dashboard.alerts');
+  const locale = useLocale();
 
   if (isLoading) {
     return (
@@ -51,17 +51,15 @@ export function DashboardAlerts({ alerts, isLoading = false, onDismissAll }: Das
         <CardHeader>
           <CardTitle className="flex items-center">
             <CheckCircle className="mr-2 h-5 w-5 text-green-600" />
-            System Status
+            {t('noAlertsTitle')}
           </CardTitle>
-          <CardDescription>All systems are running smoothly</CardDescription>
+          <CardDescription>{t('noAlertsDesc')}</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="text-center py-4">
             <CheckCircle className="h-12 w-12 text-green-500 mx-auto mb-2" />
-            <p className="text-sm text-muted-foreground">No alerts or notifications</p>
-            <p className="text-xs text-muted-foreground mt-1">
-              Your quilt management system is operating normally
-            </p>
+            <p className="text-sm text-muted-foreground">{t('noAlertsContent')}</p>
+            <p className="text-xs text-muted-foreground mt-1">{t('noAlertsSub')}</p>
           </div>
         </CardContent>
       </Card>
@@ -99,37 +97,33 @@ export function DashboardAlerts({ alerts, isLoading = false, onDismissAll }: Das
       case 'high':
         return (
           <Badge variant="destructive" className="text-xs">
-            High
+            {t('priority.high')}
           </Badge>
         );
       case 'medium':
         return (
           <Badge variant="default" className="text-xs">
-            Medium
+            {t('priority.medium')}
           </Badge>
         );
       default:
         return (
           <Badge variant="secondary" className="text-xs">
-            Low
+            {t('priority.low')}
           </Badge>
         );
     }
   };
 
   const formatTimestamp = (timestamp?: Date) => {
-    if (!timestamp) return language === 'zh' ? '刚刚' : 'Just now';
+    if (!timestamp) return t('justNow');
 
     const now = new Date();
     const diffInMinutes = Math.floor((now.getTime() - timestamp.getTime()) / (1000 * 60));
 
-    if (diffInMinutes < 1) return language === 'zh' ? '刚刚' : 'Just now';
-    if (diffInMinutes < 60)
-      return language === 'zh' ? `${diffInMinutes}分钟前` : `${diffInMinutes}m ago`;
-    if (diffInMinutes < 1440)
-      return language === 'zh'
-        ? `${Math.floor(diffInMinutes / 60)}小时前`
-        : `${Math.floor(diffInMinutes / 60)}h ago`;
+    if (diffInMinutes < 1) return t('justNow');
+    if (diffInMinutes < 60) return t('agoMinutes', { minutes: diffInMinutes });
+    if (diffInMinutes < 1440) return t('agoHours', { hours: Math.floor(diffInMinutes / 60) });
     return timestamp.toLocaleDateString(locale, {
       year: 'numeric',
       month: 'short',
@@ -155,7 +149,7 @@ export function DashboardAlerts({ alerts, isLoading = false, onDismissAll }: Das
         <CardTitle className="flex items-center justify-between">
           <div className="flex items-center">
             <Bell className="mr-2 h-5 w-5" />
-            Alerts & Notifications
+            {t('title')}
             {alerts.length > 0 && (
               <Badge variant="outline" className="ml-2">
                 {alerts.length}
@@ -165,11 +159,11 @@ export function DashboardAlerts({ alerts, isLoading = false, onDismissAll }: Das
           {alerts.length > 1 && (
             <Button variant="ghost" size="sm" onClick={onDismissAll}>
               <X className="h-4 w-4 mr-1" />
-              Dismiss All
+              {t('dismissAll')}
             </Button>
           )}
         </CardTitle>
-        <CardDescription>Important notifications and system alerts</CardDescription>
+        <CardDescription>{t('noAlertsDesc')}</CardDescription>
       </CardHeader>
       <CardContent>
         <div className="space-y-3">
@@ -225,7 +219,7 @@ export function DashboardAlerts({ alerts, isLoading = false, onDismissAll }: Das
           {alerts.length > 5 && (
             <div className="text-center pt-2 border-t border-border">
               <Button variant="ghost" size="sm" className="text-xs">
-                View All {alerts.length} Alerts
+                {t('viewAll', { count: alerts.length })}
                 <Zap className="ml-2 h-3 w-3" />
               </Button>
             </div>

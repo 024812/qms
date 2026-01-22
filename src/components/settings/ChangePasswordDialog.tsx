@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { useLanguage } from '@/lib/language-provider';
+import { useTranslations } from 'next-intl';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -23,7 +23,7 @@ export function ChangePasswordDialog() {
   const [showCurrent, setShowCurrent] = useState(false);
   const [showNew, setShowNew] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
-  const { t } = useLanguage();
+  const t = useTranslations('settings.password');
 
   const [formData, setFormData] = useState({
     currentPassword: '',
@@ -38,21 +38,13 @@ export function ChangePasswordDialog() {
 
     // Validate passwords match
     if (formData.newPassword !== formData.confirmPassword) {
-      toast.error(
-        t('language') === 'zh' ? '密码不匹配' : 'Passwords do not match',
-        t('language') === 'zh'
-          ? '新密码和确认密码必须相同'
-          : 'New password and confirm password must match'
-      );
+      toast.error(t('mismatchError'), t('mismatchDesc'));
       return;
     }
 
     // Validate password strength
     if (formData.newPassword.length < 8) {
-      toast.error(
-        t('language') === 'zh' ? '密码太短' : 'Password too short',
-        t('language') === 'zh' ? '密码至少需要8个字符' : 'Password must be at least 8 characters'
-      );
+      toast.error(t('tooShortError'), t('tooShortDesc'));
       return;
     }
 
@@ -63,22 +55,13 @@ export function ChangePasswordDialog() {
       });
 
       if (result.success) {
-        toast.success(
-          t('language') === 'zh' ? '密码已更改' : 'Password changed',
-          t('language') === 'zh'
-            ? '密码已成功更新，下次登录时生效'
-            : 'Password updated successfully, will take effect on next login'
-        );
+        toast.success(t('success'), t('successDesc'));
         handleClose();
       }
     } catch (error) {
       toast.error(
-        t('language') === 'zh' ? '修改失败' : 'Change failed',
-        error instanceof Error
-          ? error.message
-          : t('language') === 'zh'
-            ? '请重试'
-            : 'Please try again'
+        t('changeFailed'),
+        error instanceof Error ? error.message : t('common.tryAgain')
       );
     }
   };
@@ -93,27 +76,19 @@ export function ChangePasswordDialog() {
       <DialogTrigger asChild>
         <Button variant="outline" className="w-full">
           <Key className="w-4 h-4 mr-2" />
-          {t('language') === 'zh' ? '修改密码' : 'Change Password'}
+          {t('triggerButton')}
         </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
-          <DialogTitle>
-            {t('language') === 'zh' ? '修改登录密码' : 'Change Login Password'}
-          </DialogTitle>
-          <DialogDescription>
-            {t('language') === 'zh'
-              ? '输入当前密码和新密码。新密码至少需要8个字符。'
-              : 'Enter your current password and new password. New password must be at least 8 characters.'}
-          </DialogDescription>
+          <DialogTitle>{t('dialogTitle')}</DialogTitle>
+          <DialogDescription>{t('dialogDesc')}</DialogDescription>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           {/* Current Password */}
           <div className="space-y-2">
-            <Label htmlFor="currentPassword">
-              {t('language') === 'zh' ? '当前密码' : 'Current Password'} *
-            </Label>
+            <Label htmlFor="currentPassword">{t('current')} *</Label>
             <div className="relative">
               <Input
                 id="currentPassword"
@@ -135,9 +110,7 @@ export function ChangePasswordDialog() {
 
           {/* New Password */}
           <div className="space-y-2">
-            <Label htmlFor="newPassword">
-              {t('language') === 'zh' ? '新密码' : 'New Password'} *
-            </Label>
+            <Label htmlFor="newPassword">{t('new')} *</Label>
             <div className="relative">
               <Input
                 id="newPassword"
@@ -160,9 +133,7 @@ export function ChangePasswordDialog() {
 
           {/* Confirm Password */}
           <div className="space-y-2">
-            <Label htmlFor="confirmPassword">
-              {t('language') === 'zh' ? '确认新密码' : 'Confirm New Password'} *
-            </Label>
+            <Label htmlFor="confirmPassword">{t('confirm')} *</Label>
             <div className="relative">
               <Input
                 id="confirmPassword"
@@ -185,16 +156,10 @@ export function ChangePasswordDialog() {
 
           <DialogFooter>
             <Button type="button" variant="outline" onClick={handleClose}>
-              {t('language') === 'zh' ? '取消' : 'Cancel'}
+              {t('cancel')}
             </Button>
             <Button type="submit" disabled={changePasswordMutation.isPending}>
-              {changePasswordMutation.isPending
-                ? t('language') === 'zh'
-                  ? '修改中...'
-                  : 'Changing...'
-                : t('language') === 'zh'
-                  ? '修改密码'
-                  : 'Change Password'}
+              {changePasswordMutation.isPending ? t('submitting') : t('submit')}
             </Button>
           </DialogFooter>
         </form>

@@ -1,7 +1,7 @@
 'use client';
 
 import { useHistoricalWeather } from '@/hooks/useHistoricalWeather';
-import { useLanguage } from '@/lib/language-provider';
+import { useTranslations } from 'next-intl';
 import { Thermometer, Loader2 } from 'lucide-react';
 
 interface TemperatureDisplayProps {
@@ -10,7 +10,7 @@ interface TemperatureDisplayProps {
 }
 
 export function TemperatureDisplay({ date, compact = false }: TemperatureDisplayProps) {
-  const { language } = useLanguage();
+  const t = useTranslations('usage.temperature');
 
   // Convert date to YYYY-MM-DD format
   const dateString = date ? new Date(date).toISOString().split('T')[0] : null;
@@ -47,13 +47,13 @@ export function TemperatureDisplay({ date, compact = false }: TemperatureDisplay
       <Thermometer className="w-3.5 h-3.5 text-orange-500" />
       <div className="flex flex-col">
         <span className="text-foreground">
-          {language === 'zh' ? '最高' : 'High'}:{' '}
+          {t('high')}:{' '}
           <span className="font-medium text-orange-600 dark:text-orange-400">
             {data.temperature.max}°C
           </span>
         </span>
         <span className="text-foreground">
-          {language === 'zh' ? '最低' : 'Low'}:{' '}
+          {t('low')}:{' '}
           <span className="font-medium text-blue-600 dark:text-blue-400">
             {data.temperature.min}°C
           </span>

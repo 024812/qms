@@ -30,7 +30,8 @@ import {
   TrendingUp,
 } from 'lucide-react';
 import Image from 'next/image';
-import type { CardItem, SportType, GradingCompany, CardStatus } from '../schema';
+import { useTranslations, useLocale } from 'next-intl';
+import type { CardItem } from '../schema';
 import {
   generateCardSearchQuery,
   getEbaySearchUrl,
@@ -45,82 +46,7 @@ interface CardDetailProps {
 }
 
 /**
- * Get localized sport label
- */
-function getSportLabel(sport: SportType): string {
-  const sportMap: Record<SportType, string> = {
-    BASKETBALL: '篮球',
-    SOCCER: '足球',
-    OTHER: '其他',
-  };
-  return sportMap[sport] || sport;
-}
-
-/**
- * Get localized grading company label
- */
-function getGradingCompanyLabel(company: GradingCompany): string {
-  const companyMap: Record<GradingCompany, string> = {
-    PSA: 'PSA',
-    BGS: 'BGS (Beckett)',
-    SGC: 'SGC',
-    CGC: 'CGC',
-    UNGRADED: '未评级',
-  };
-  return companyMap[company] || company;
-}
-
-/**
- * Get localized status label
- */
-function getStatusLabel(status: CardStatus): string {
-  const statusMap: Record<CardStatus, string> = {
-    COLLECTION: '收藏中',
-    FOR_SALE: '待售',
-    SOLD: '已售出',
-    GRADING: '评级中',
-    DISPLAY: '展示中',
-  };
-  return statusMap[status] || status;
-}
-
-/**
- * Format date to localized string
- */
-function formatDate(date: Date | null | undefined): string {
-  if (!date) return '-';
-  return new Date(date).toLocaleDateString('zh-CN', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-  });
-}
-
-/**
- * Format currency value
- */
-function formatCurrency(value: number | null | undefined): string {
-  if (value === null || value === undefined) return '-';
-  return `$${value.toLocaleString('en-US', {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  })}`;
-}
-
-/**
- * Calculate investment ROI
- */
-function calculateROI(currentValue: number | null, purchasePrice: number | null): string {
-  if (!currentValue || !purchasePrice || purchasePrice === 0) {
-    return '无数据';
-  }
-  const roi = ((currentValue - purchasePrice) / purchasePrice) * 100;
-  return `${roi > 0 ? '+' : ''}${roi.toFixed(2)}%`;
-}
-
-/**
  * Detail field component for consistent styling
- * Requirements: 9.4 - Icon labels for accessibility
  */
 function DetailField({
   icon: Icon,
@@ -166,6 +92,27 @@ function DetailField({
  * Requirements: 3.1-3.15, 9.1-9.5 (Accessibility)
  */
 export function CardDetail({ item }: CardDetailProps) {
+  const t = useTranslations('cards');
+  const locale = useLocale();
+
+  const formatDate = (date: Date | null | undefined): string => {
+    if (!date) return '-';
+    // Use the locale from next-intl, defaulting to zh-CN/en-US based on locale string
+    return new Date(date).toLocaleDateString(locale === 'zh' ? 'zh-CN' : 'en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+    });
+  };
+
+  const formatCurrency = (value: number | null | undefined): string => {
+    if (value === null || value === undefined) return '-';
+    return `$${value.toLocaleString('en-US', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    })}`;
+  };
+
   // Collect all images (main + attachments)
   const allImages: string[] = [];
   if (item.mainImage) {
@@ -194,19 +141,27 @@ export function CardDetail({ item }: CardDetailProps) {
     hasMemorabilia: item.hasMemorabilia,
   });
 
+  const getROILabel = (currentValue: number | null, purchasePrice: number | null) => {
+    if (!currentValue || !purchasePrice || purchasePrice === 0) {
+      return t('values.noData');
+    }
+    const roi = ((currentValue - purchasePrice) / purchasePrice) * 100;
+    return `${roi > 0 ? '+' : ''}${roi.toFixed(2)}%`;
+  };
+
   return (
     <article className="space-y-6">
-      {/* Image Gallery - Requirements: 9.1, 9.2 (Semantic HTML, descriptive alt text) */}
+      {/* Image Gallery */}
       {allImages.length > 0 && (
         <Card>
           <CardHeader>
-            <CardTitle>图片</CardTitle>
+            <CardTitle>{t('detail.images')}</CardTitle>
           </CardHeader>
           <CardContent>
             <div
               className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"
               role="list"
-              aria-label="球星卡图片画廊"
+              aria-label={t('upload.title')}
             >
               {allImages.map(imageUrl => (
                 <div
@@ -216,7 +171,7 @@ export function CardDetail({ item }: CardDetailProps) {
                 >
                   <Image
                     src={imageUrl}
-                    alt={`${item.playerName} - ${item.year} ${item.brand} ${item.series || ''} 球星卡${imageUrl === item.mainImage ? '主图' : '附加图片'}${item.gradingCompany !== 'UNGRADED' ? ` - ${getGradingCompanyLabel(item.gradingCompany)} ${item.grade}` : ''}`}
+                    alt={`${item.playerName} - ${item.year} ${item.brand} ${item.series || ''} ${t('detail.images')}${imageUrl === item.mainImage ? t('detail.mainImage') : t('upload.backLabel')}${item.gradingCompany !== 'UNGRADED' ? ` - ${t(`enums.grading.${item.gradingCompany as 'PSA' | 'BGS' | 'SGC' | 'CGC' | 'UNGRADED'}`)} ${item.grade}` : ''}`}
                     fill
                     className="object-cover"
                     sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw"
@@ -226,7 +181,7 @@ export function CardDetail({ item }: CardDetailProps) {
                   {imageUrl === item.mainImage && (
                     <div className="absolute top-2 left-2">
                       <Badge variant="secondary" className="text-xs">
-                        主图
+                        {t('detail.mainImage')}
                       </Badge>
                     </div>
                   )}
@@ -237,86 +192,86 @@ export function CardDetail({ item }: CardDetailProps) {
         </Card>
       )}
 
-      {/* Player Information - Requirements: 9.2 (Semantic HTML) */}
+      {/* Player Information */}
       <Card>
         <CardHeader>
-          <CardTitle>球员信息</CardTitle>
+          <CardTitle>{t('detail.playerInfo')}</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <DetailField icon={User} label="球员姓名" value={item.playerName} />
-            <DetailField label="运动类型" value={getSportLabel(item.sport)} />
-            <DetailField label="球队" value={item.team || '-'} />
-            <DetailField label="位置" value={item.position || '-'} />
+            <DetailField icon={User} label={t('fields.playerName')} value={item.playerName} />
+            <DetailField label={t('fields.sport')} value={t(`enums.sport.${item.sport}`)} />
+            <DetailField label={t('fields.team')} value={item.team || '-'} />
+            <DetailField label={t('fields.position')} value={item.position || '-'} />
           </div>
         </CardContent>
       </Card>
 
-      {/* Card Details - Requirements: 9.2 (Semantic HTML) */}
+      {/* Card Details */}
       <Card>
         <CardHeader>
-          <CardTitle>卡片详情</CardTitle>
+          <CardTitle>{t('detail.cardDetails')}</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <DetailField icon={CreditCard} label="年份" value={item.year} />
-            <DetailField label="品牌" value={item.brand} />
-            <DetailField label="系列" value={item.series || '-'} />
-            <DetailField label="卡号" value={item.cardNumber || '-'} />
+            <DetailField icon={CreditCard} label={t('fields.year')} value={item.year} />
+            <DetailField label={t('fields.brand')} value={item.brand} />
+            <DetailField label={t('fields.series')} value={item.series || '-'} />
+            <DetailField label={t('fields.cardNumber')} value={item.cardNumber || '-'} />
           </div>
         </CardContent>
       </Card>
 
-      {/* Grading Information - Requirements: 9.2 (Semantic HTML) */}
+      {/* Grading Information */}
       <Card>
         <CardHeader>
-          <CardTitle>评级信息</CardTitle>
+          <CardTitle>{t('detail.gradingInfo')}</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <DetailField
               icon={Award}
-              label="评级公司"
-              value={getGradingCompanyLabel(item.gradingCompany)}
+              label={t('fields.gradingCompany')}
+              value={t(`enums.grading.${item.gradingCompany as 'PSA' | 'BGS' | 'SGC' | 'CGC' | 'UNGRADED'}`)}
             />
             <DetailField
-              label="评级分数"
+              label={t('fields.grade')}
               value={item.grade !== null ? item.grade.toString() : '-'}
             />
-            <DetailField label="认证编号" value={item.certificationNumber || '-'} fullWidth />
+            <DetailField label={t('fields.certNumber')} value={item.certificationNumber || '-'} fullWidth />
           </div>
         </CardContent>
       </Card>
 
-      {/* Value Information - Requirements: 9.2 (Semantic HTML) */}
+      {/* Value Information */}
       <Card>
         <CardHeader>
-          <CardTitle>价值信息</CardTitle>
+          <CardTitle>{t('detail.valueInfo')}</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <DetailField
               icon={DollarSign}
-              label="购买价格"
+              label={t('fields.purchasePrice')}
               value={formatCurrency(item.purchasePrice)}
             />
-            <DetailField icon={Calendar} label="购买日期" value={formatDate(item.purchaseDate)} />
-            <DetailField label="当前价值" value={formatCurrency(item.currentValue)} />
-            <DetailField label="估计价值" value={formatCurrency(item.estimatedValue)} />
+            <DetailField icon={Calendar} label={t('fields.purchaseDate')} value={formatDate(item.purchaseDate)} />
+            <DetailField label={t('fields.currentValue')} value={formatCurrency(item.currentValue)} />
+            <DetailField label={t('fields.estimatedValue')} value={formatCurrency(item.estimatedValue)} />
             <DetailField
-              label="投资回报率"
+              label={t('fields.roi')}
               value={
                 <span
                   className={
-                    calculateROI(item.currentValue, item.purchasePrice).startsWith('+')
+                    getROILabel(item.currentValue, item.purchasePrice).startsWith('+')
                       ? 'text-green-600 dark:text-green-400'
-                      : calculateROI(item.currentValue, item.purchasePrice).startsWith('-')
+                      : getROILabel(item.currentValue, item.purchasePrice).startsWith('-')
                         ? 'text-red-600 dark:text-red-400'
                         : ''
                   }
-                  aria-label={`投资回报率 ${calculateROI(item.currentValue, item.purchasePrice)}`}
+                  aria-label={`${t('fields.roi')} ${getROILabel(item.currentValue, item.purchasePrice)}`}
                 >
-                  {calculateROI(item.currentValue, item.purchasePrice)}
+                  {getROILabel(item.currentValue, item.purchasePrice)}
                 </span>
               }
               fullWidth
@@ -330,31 +285,31 @@ export function CardDetail({ item }: CardDetailProps) {
         <CardHeader>
           <div className="flex items-center gap-2">
             <TrendingUp className="w-5 h-5" aria-hidden="true" />
-            <CardTitle>市场数据</CardTitle>
+            <CardTitle>{t('detail.marketData')}</CardTitle>
           </div>
         </CardHeader>
         <CardContent className="space-y-4">
           {/* Estimated Value Range */}
           {estimatedRange && (
             <div className="p-4 bg-muted rounded-lg">
-              <div className="text-sm text-muted-foreground mb-2">估计价值区间</div>
+              <div className="text-sm text-muted-foreground mb-2">{t('detail.estimatedRange')}</div>
               <div className="flex items-baseline gap-2">
                 <span className="text-2xl font-bold text-foreground">
                   ${estimatedRange.low} - ${estimatedRange.high}
                 </span>
                 <span className="text-sm text-muted-foreground">
-                  (预估: ${estimatedRange.estimated})
+                  ({t('detail.estimated')} ${estimatedRange.estimated})
                 </span>
               </div>
               <p className="text-xs text-muted-foreground mt-2">
-                * 基于卡片属性的估算，实际价格可能有所不同
+                {t('detail.estimateDisclaimer')}
               </p>
             </div>
           )}
 
           {/* External Market Links */}
           <div>
-            <div className="text-sm font-medium mb-3">查看市场价格</div>
+            <div className="text-sm font-medium mb-3">{t('detail.checkMarketPrice')}</div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               <Button variant="outline" className="justify-start" asChild>
                 <a
@@ -364,7 +319,7 @@ export function CardDetail({ item }: CardDetailProps) {
                   className="flex items-center gap-2"
                 >
                   <ExternalLink className="w-4 h-4" aria-hidden="true" />
-                  <span>eBay 已售记录</span>
+                  <span>{t('detail.ebaySold')}</span>
                 </a>
               </Button>
 
@@ -380,7 +335,7 @@ export function CardDetail({ item }: CardDetailProps) {
                   className="flex items-center gap-2"
                 >
                   <ExternalLink className="w-4 h-4" aria-hidden="true" />
-                  <span>PSA CardFacts</span>
+                  <span>{t('detail.psaFacts')}</span>
                 </a>
               </Button>
 
@@ -392,7 +347,7 @@ export function CardDetail({ item }: CardDetailProps) {
                   className="flex items-center gap-2"
                 >
                   <ExternalLink className="w-4 h-4" aria-hidden="true" />
-                  <span>Beckett 价格指南</span>
+                  <span>{t('detail.beckettPrice')}</span>
                 </a>
               </Button>
 
@@ -408,7 +363,7 @@ export function CardDetail({ item }: CardDetailProps) {
                   className="flex items-center gap-2"
                 >
                   <ExternalLink className="w-4 h-4" aria-hidden="true" />
-                  <span>130Point 销售数据</span>
+                  <span>{t('detail.point130')}</span>
                 </a>
               </Button>
             </div>
@@ -416,87 +371,87 @@ export function CardDetail({ item }: CardDetailProps) {
 
           {/* Search Query Info */}
           <div className="text-xs text-muted-foreground pt-2 border-t">
-            <span className="font-medium">搜索关键词: </span>
+            <span className="font-medium">{t('detail.searchKeywords')} </span>
             <span className="font-mono">{searchQuery}</span>
           </div>
         </CardContent>
       </Card>
 
-      {/* Physical Characteristics - Requirements: 9.2 (Semantic HTML) */}
+      {/* Physical Characteristics */}
       <Card>
         <CardHeader>
-          <CardTitle>物理特征</CardTitle>
+          <CardTitle>{t('detail.physical')}</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <DetailField icon={Package} label="平行版本" value={item.parallel || '-'} />
-            <DetailField label="序列号" value={item.serialNumber || '-'} />
+            <DetailField icon={Package} label={t('fields.parallel')} value={item.parallel || '-'} />
+            <DetailField label={t('fields.serialNumber')} value={item.serialNumber || '-'} />
             <DetailField
-              label="签名"
+              label={t('fields.autograph')}
               value={
                 item.isAutographed ? (
                   <Badge
                     className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
-                    aria-label="已签名"
+                    aria-label={t('values.autographed')}
                   >
-                    是
+                    {t('values.yes')}
                   </Badge>
                 ) : (
-                  <Badge variant="outline" aria-label="未签名">
-                    否
+                  <Badge variant="outline" aria-label={t('values.no')}>
+                    {t('values.no')}
                   </Badge>
                 )
               }
             />
             <DetailField
-              label="实物"
+              label={t('fields.memorabilia')}
               value={
                 item.hasMemorabilia ? (
                   <Badge
                     className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
-                    aria-label="含实物"
+                    aria-label={t('values.memorabilia')}
                   >
-                    是
+                    {t('values.yes')}
                   </Badge>
                 ) : (
-                  <Badge variant="outline" aria-label="不含实物">
-                    否
+                  <Badge variant="outline" aria-label={t('values.no')}>
+                    {t('values.no')}
                   </Badge>
                 )
               }
             />
             {item.memorabiliaType && (
-              <DetailField label="实物类型" value={item.memorabiliaType} fullWidth />
+              <DetailField label={t('fields.memorabiliaType')} value={item.memorabiliaType} fullWidth />
             )}
           </div>
         </CardContent>
       </Card>
 
-      {/* Storage Information - Requirements: 9.2 (Semantic HTML) */}
+      {/* Storage Information */}
       <Card>
         <CardHeader>
-          <CardTitle>存储信息</CardTitle>
+          <CardTitle>{t('detail.storage')}</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <DetailField label="状态" value={getStatusLabel(item.status)} />
-            <DetailField icon={MapPin} label="位置" value={item.location || '-'} />
-            <DetailField label="存储方式" value={item.storageType || '-'} />
-            <DetailField label="品相描述" value={item.condition || '-'} fullWidth />
+            <DetailField label={t('fields.status')} value={t(`enums.status.${item.status}`)} />
+            <DetailField icon={MapPin} label={t('fields.location')} value={item.location || '-'} />
+            <DetailField label={t('fields.storageType')} value={item.storageType || '-'} />
+            <DetailField label={t('fields.condition')} value={item.condition || '-'} fullWidth />
           </div>
         </CardContent>
       </Card>
 
-      {/* Notes (conditional) - Requirements: 9.2 (Semantic HTML) */}
+      {/* Notes (conditional) */}
       {item.notes && (
         <Card>
           <CardHeader>
-            <CardTitle>备注信息</CardTitle>
+            <CardTitle>{t('detail.notes')}</CardTitle>
           </CardHeader>
           <CardContent>
             <DetailField
               icon={FileText}
-              label="备注"
+              label={t('fields.notes')}
               value={<p className="whitespace-pre-wrap">{item.notes}</p>}
               fullWidth
             />
@@ -504,15 +459,15 @@ export function CardDetail({ item }: CardDetailProps) {
         </Card>
       )}
 
-      {/* Timestamps - Requirements: 9.2 (Semantic HTML) */}
+      {/* Timestamps */}
       <Card>
         <CardHeader>
-          <CardTitle>记录信息</CardTitle>
+          <CardTitle>{t('detail.records')}</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <DetailField icon={Calendar} label="创建时间" value={formatDate(item.createdAt)} />
-            <DetailField icon={Calendar} label="更新时间" value={formatDate(item.updatedAt)} />
+            <DetailField icon={Calendar} label={t('fields.createdAt')} value={formatDate(item.createdAt)} />
+            <DetailField icon={Calendar} label={t('fields.updatedAt')} value={formatDate(item.updatedAt)} />
           </div>
         </CardContent>
       </Card>

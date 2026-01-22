@@ -1,7 +1,5 @@
-'use client';
-
 import { useState, useEffect } from 'react';
-import { useLanguage } from '@/lib/language-provider';
+import { useTranslations } from 'next-intl';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
@@ -43,7 +41,7 @@ export function AdvancedFilters({
   availableColors,
   availableMaterials,
 }: AdvancedFiltersProps) {
-  const { t, language } = useLanguage();
+  const t = useTranslations();
   const [open, setOpen] = useState(false);
   const [filters, setFilters] = useState<FilterCriteria>({
     seasons: [],
@@ -138,7 +136,7 @@ export function AdvancedFilters({
       <SheetTrigger asChild>
         <Button variant="outline" size="sm" className="relative">
           <Filter className="w-4 h-4 mr-2" />
-          {language === 'zh' ? '高级筛选' : 'Advanced Filters'}
+          {t('quilts.filters.advancedFilters')}
           {activeCount > 0 && (
             <span className="ml-2 px-1.5 py-0.5 bg-blue-600 text-white text-xs rounded-full">
               {activeCount}
@@ -148,11 +146,9 @@ export function AdvancedFilters({
       </SheetTrigger>
       <SheetContent className="w-full sm:max-w-md overflow-y-auto">
         <SheetHeader>
-          <SheetTitle>{language === 'zh' ? '高级筛选' : 'Advanced Filters'}</SheetTitle>
+          <SheetTitle>{t('quilts.filters.advancedFilters')}</SheetTitle>
           <SheetDescription>
-            {language === 'zh'
-              ? '设置多个筛选条件来精确查找被子'
-              : 'Set multiple filter criteria to find quilts precisely'}
+            {t('quilts.filters.advancedDescription')}
           </SheetDescription>
         </SheetHeader>
 
@@ -160,7 +156,7 @@ export function AdvancedFilters({
           {/* Season Filter */}
           <div className="space-y-3">
             <Label className="text-base font-semibold">
-              {language === 'zh' ? '季节' : 'Season'}
+              {t('quilts.filters.season')}
             </Label>
             <div className="space-y-2">
               {['WINTER', 'SPRING_AUTUMN', 'SUMMER'].map(season => (
@@ -184,7 +180,7 @@ export function AdvancedFilters({
           {/* Status Filter */}
           <div className="space-y-3">
             <Label className="text-base font-semibold">
-              {language === 'zh' ? '状态' : 'Status'}
+              {t('quilts.filters.status')}
             </Label>
             <div className="space-y-2">
               {['IN_USE', 'STORAGE', 'MAINTENANCE'].map(status => (
@@ -208,12 +204,12 @@ export function AdvancedFilters({
           {/* Weight Range */}
           <div className="space-y-3">
             <Label className="text-base font-semibold">
-              {language === 'zh' ? '重量范围 (克)' : 'Weight Range (g)'}
+              {t('quilts.filters.weightRange')}
             </Label>
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <Label htmlFor="minWeight" className="text-xs text-gray-500">
-                  {language === 'zh' ? '最小' : 'Min'}
+                  {t('quilts.filters.min')}
                 </Label>
                 <Input
                   id="minWeight"
@@ -230,7 +226,7 @@ export function AdvancedFilters({
               </div>
               <div>
                 <Label htmlFor="maxWeight" className="text-xs text-gray-500">
-                  {language === 'zh' ? '最大' : 'Max'}
+                  {t('quilts.filters.max')}
                 </Label>
                 <Input
                   id="maxWeight"
@@ -251,12 +247,12 @@ export function AdvancedFilters({
           {/* Size Range - Length */}
           <div className="space-y-3">
             <Label className="text-base font-semibold">
-              {language === 'zh' ? '长度范围 (cm)' : 'Length Range (cm)'}
+              {t('quilts.filters.lengthRange')}
             </Label>
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <Label htmlFor="minLength" className="text-xs text-gray-500">
-                  {language === 'zh' ? '最小' : 'Min'}
+                  {t('quilts.filters.min')}
                 </Label>
                 <Input
                   id="minLength"
@@ -273,7 +269,7 @@ export function AdvancedFilters({
               </div>
               <div>
                 <Label htmlFor="maxLength" className="text-xs text-gray-500">
-                  {language === 'zh' ? '最大' : 'Max'}
+                  {t('quilts.filters.max')}
                 </Label>
                 <Input
                   id="maxLength"
@@ -294,12 +290,12 @@ export function AdvancedFilters({
           {/* Size Range - Width */}
           <div className="space-y-3">
             <Label className="text-base font-semibold">
-              {language === 'zh' ? '宽度范围 (cm)' : 'Width Range (cm)'}
+              {t('quilts.filters.widthRange')}
             </Label>
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <Label htmlFor="minWidth" className="text-xs text-gray-500">
-                  {language === 'zh' ? '最小' : 'Min'}
+                  {t('quilts.filters.min')}
                 </Label>
                 <Input
                   id="minWidth"
@@ -316,7 +312,7 @@ export function AdvancedFilters({
               </div>
               <div>
                 <Label htmlFor="maxWidth" className="text-xs text-gray-500">
-                  {language === 'zh' ? '最大' : 'Max'}
+                  {t('quilts.filters.max')}
                 </Label>
                 <Input
                   id="maxWidth"
@@ -338,7 +334,7 @@ export function AdvancedFilters({
           {availableColors.length > 0 && (
             <div className="space-y-3">
               <Label className="text-base font-semibold">
-                {language === 'zh' ? '颜色' : 'Color'}
+                {t('quilts.filters.color')}
               </Label>
               <div className="space-y-2 max-h-40 overflow-y-auto">
                 {availableColors.map(color => (
@@ -364,7 +360,7 @@ export function AdvancedFilters({
           {availableMaterials.length > 0 && (
             <div className="space-y-3">
               <Label className="text-base font-semibold">
-                {language === 'zh' ? '填充材料' : 'Fill Material'}
+                {t('quilts.filters.fillMaterial')}
               </Label>
               <div className="space-y-2 max-h-40 overflow-y-auto">
                 {availableMaterials.map(material => (
@@ -390,10 +386,10 @@ export function AdvancedFilters({
         <SheetFooter className="flex-row gap-2">
           <Button variant="outline" onClick={handleClearAll} className="flex-1">
             <X className="w-4 h-4 mr-2" />
-            {language === 'zh' ? '清除全部' : 'Clear All'}
+            {t('quilts.filters.clearAll')}
           </Button>
           <Button onClick={() => setOpen(false)} className="flex-1">
-            {language === 'zh' ? '应用筛选' : 'Apply Filters'}
+            {t('quilts.filters.applyFilters')}
           </Button>
         </SheetFooter>
       </SheetContent>

@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useDashboardStats } from '@/hooks/useDashboard';
-import { useLanguage } from '@/lib/language-provider';
+import { useTranslations, useLocale } from 'next-intl';
 import { DashboardStatsSkeleton, CardSkeleton } from '@/components/ui/skeleton-layouts';
 import { ErrorAlert } from '@/components/ui/error-alert';
 import { Package, Activity, Archive, History, PackageOpen } from 'lucide-react';
@@ -14,10 +14,32 @@ import { WeatherForecastWidget } from '@/components/weather/WeatherForecast';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent } from '@/components/ui/card';
 
+interface DashboardQuilt {
+  id: string;
+  name: string;
+  itemNumber: string;
+  season: string;
+  fillMaterial: string;
+  weightGrams: number;
+  location: string;
+}
+
+interface HistoricalUsageRecord {
+  id: string;
+  year: number;
+  quiltName: string;
+  itemNumber: string;
+  season: string;
+  startDate: string;
+  endDate: string | null;
+  quiltId: string;
+}
+
 export function DashboardContent() {
   const router = useRouter();
   const { data: stats, isLoading, error } = useDashboardStats();
-  const { t } = useLanguage();
+  const t = useTranslations();
+  const locale = useLocale();
 
   if (isLoading) {
     return (
@@ -50,7 +72,6 @@ export function DashboardContent() {
 
   const inUseQuilts = stats?.inUseQuilts || [];
   const historicalUsage = stats?.historicalUsage || [];
-  const lang = t('language') === 'zh' ? 'zh' : 'en';
 
   return (
     <PageTransition>
@@ -74,7 +95,7 @@ export function DashboardContent() {
                     </div>
                     <p className="text-3xl font-bold text-blue-600 mt-2">{overview.totalQuilts}</p>
                     <p className="text-xs text-muted-foreground mt-1">
-                      {lang === 'zh' ? '总收藏' : 'Total Collection'}
+                      {t('dashboard.stats.totalQuiltsLabel')}
                     </p>
                   </div>
                   <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center">
@@ -99,7 +120,7 @@ export function DashboardContent() {
                     </div>
                     <p className="text-3xl font-bold text-green-600 mt-2">{overview.inUseCount}</p>
                     <p className="text-xs text-muted-foreground mt-1">
-                      {lang === 'zh' ? '使用中' : 'Currently Active'}
+                      {t('dashboard.stats.inUseLabel')}
                     </p>
                   </div>
                   <div className="w-12 h-12 rounded-full bg-green-100 flex items-center justify-center">
@@ -126,7 +147,7 @@ export function DashboardContent() {
                       {overview.storageCount}
                     </p>
                     <p className="text-xs text-muted-foreground mt-1">
-                      {lang === 'zh' ? '已存储' : 'In Storage'}
+                      {t('dashboard.stats.storageLabel')}
                     </p>
                   </div>
                   <div className="w-12 h-12 rounded-full bg-orange-100 flex items-center justify-center">
@@ -169,13 +190,11 @@ export function DashboardContent() {
                     <EmptyState
                       icon={PackageOpen}
                       title={t('pages.noQuiltsInUse')}
-                      description={
-                        lang === 'zh' ? '当前没有正在使用的被子' : 'No quilts are currently in use'
-                      }
+                      description={t('pages.noQuiltsDescription')}
                     />
                   </div>
                 ) : (
-                  inUseQuilts.map((quilt: any) => (
+                  inUseQuilts.map((quilt: DashboardQuilt) => (
                     <div
                       key={quilt.id}
                       className="px-6 py-3 table-row-hover cursor-pointer"
@@ -188,7 +207,7 @@ export function DashboardContent() {
                           router.push(`/quilts?search=${quilt.name}`);
                         }
                       }}
-                      aria-label={`${quilt.name}, ${t(`season.${quilt.season}`)}, ${quilt.fillMaterial}, ${quilt.weightGrams}g, ${quilt.location}. ${lang === 'zh' ? '按回车键查看详情' : 'Press Enter to view details'}`}
+                      aria-label={`${quilt.name}, ${t(`season.${quilt.season}`)}, ${quilt.fillMaterial}, ${quilt.weightGrams}g, ${quilt.location}. ${t('quilts.card.actions.doubleClick')}`}
                     >
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3 flex-1">
@@ -232,15 +251,11 @@ export function DashboardContent() {
                     <EmptyState
                       icon={History}
                       title={t('pages.noHistoricalRecords')}
-                      description={
-                        lang === 'zh'
-                          ? '这一天在往年没有使用记录'
-                          : 'No historical records for this date'
-                      }
+                      description={t('pages.historicalUsage')}
                     />
                   </div>
                 ) : (
-                  historicalUsage.map((record: any) => (
+                  historicalUsage.map((record: HistoricalUsageRecord) => (
                     <div
                       key={record.id}
                       className="px-6 py-3 table-row-hover cursor-pointer"
@@ -253,7 +268,7 @@ export function DashboardContent() {
                           router.push(`/quilts?search=${record.quiltName}`);
                         }
                       }}
-                      aria-label={`${record.year}, ${record.quiltName}, ${t(`season.${record.season}`)}. ${lang === 'zh' ? '按回车键查看详情' : 'Press Enter to view details'}`}
+                      aria-label={`${record.year}, ${record.quiltName}, ${t(`season.${record.season}`)}. ${t('quilts.card.actions.doubleClick')}`}
                     >
                       <div className="flex items-center gap-3">
                         <span className="font-semibold text-accent-foreground w-12 text-center">
@@ -273,17 +288,17 @@ export function DashboardContent() {
                           {t(`season.${record.season}`)}
                         </span>
                         <span className="text-sm text-muted-foreground">
-                          {new Date(record.startDate).toLocaleDateString(
-                            lang === 'zh' ? 'zh-CN' : 'en-US',
-                            { month: 'short', day: 'numeric' }
-                          )}
+                          {new Date(record.startDate).toLocaleDateString(locale, {
+                            month: 'short',
+                            day: 'numeric',
+                          })}
                           {record.endDate && (
                             <>
                               {' → '}
-                              {new Date(record.endDate).toLocaleDateString(
-                                lang === 'zh' ? 'zh-CN' : 'en-US',
-                                { month: 'short', day: 'numeric' }
-                              )}
+                              {new Date(record.endDate).toLocaleDateString(locale, {
+                                month: 'short',
+                                day: 'numeric',
+                              })}
                             </>
                           )}
                         </span>

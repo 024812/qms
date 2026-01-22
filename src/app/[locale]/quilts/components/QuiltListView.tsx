@@ -1,7 +1,7 @@
 import { ArrowUp, ArrowDown, ArrowUpDown } from 'lucide-react';
 import { QuiltTableRow } from './QuiltTableRow';
 import type { Quilt, SortField, SortDirection } from '@/types/quilt';
-import { useLanguage } from '@/lib/language-provider';
+import { useTranslations } from 'next-intl';
 import {
   Table,
   TableBody,
@@ -46,7 +46,7 @@ export function QuiltListView({
   onViewImages,
   onDoubleClick,
 }: QuiltListViewProps) {
-  const { t } = useLanguage();
+  const t = useTranslations();
 
   const renderSortIcon = (field: SortField) => {
     if (sortField !== field) {
@@ -64,7 +64,7 @@ export function QuiltListView({
       key={field}
       className="text-center cursor-pointer hover:bg-muted/50 transition-colors select-none whitespace-nowrap"
       onClick={() => onSort(field)}
-      title={t('language') === 'zh' ? '点击排序' : 'Click to sort'}
+      title={t('quilts.list.tooltips.sort')}
     >
       <div className="flex items-center justify-center gap-1">
         {label}

@@ -15,7 +15,7 @@ import {
   TrendingUp,
   Activity,
 } from 'lucide-react';
-import { useLanguage } from '@/lib/language-provider';
+import { useTranslations, useLocale } from 'next-intl';
 
 interface RecentUsageItem {
   id: string;
@@ -47,8 +47,8 @@ export function RecentUsageList({
   onEndUsage,
   onViewDetails,
 }: RecentUsageListProps) {
-  const { language } = useLanguage();
-  const locale = language === 'zh' ? 'zh-CN' : 'en-US';
+  const t = useTranslations();
+  const locale = useLocale();
 
   if (isLoading) {
     return (
@@ -60,6 +60,7 @@ export function RecentUsageList({
         <CardContent>
           <div className="space-y-4">
             {Array.from({ length: 5 }).map((_, i) => (
+              // eslint-disable-next-line react/no-array-index-key
               <div key={i} className="flex items-center space-x-4">
                 <div className="w-10 h-10 bg-muted rounded-full"></div>
                 <div className="flex-1 space-y-2">
@@ -104,9 +105,9 @@ export function RecentUsageList({
     const now = new Date();
     const diffInHours = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60));
 
-    if (diffInHours < 1) return language === 'zh' ? '刚刚' : 'Just now';
-    if (diffInHours < 24) return language === 'zh' ? `${diffInHours}小时前` : `${diffInHours}h ago`;
-    if (diffInHours < 48) return language === 'zh' ? '昨天' : 'Yesterday';
+    if (diffInHours < 1) return t('usage.recent.justNow');
+    if (diffInHours < 24) return t('usage.recent.hoursAgo', { hours: diffInHours });
+    if (diffInHours < 48) return t('usage.recent.yesterday');
     return date.toLocaleDateString(locale);
   };
 
@@ -125,13 +126,13 @@ export function RecentUsageList({
         <CardTitle className="flex items-center justify-between">
           <div className="flex items-center">
             <Activity className="mr-2 h-5 w-5" />
-            Recent Usage Activity
+            {t('usage.recent.title')}
           </div>
           <Button variant="ghost" size="sm">
             <MoreHorizontal className="h-4 w-4" />
           </Button>
         </CardTitle>
-        <CardDescription>Latest quilt usage changes and activity</CardDescription>
+        <CardDescription>{t('usage.recent.description')}</CardDescription>
       </CardHeader>
       <CardContent>
         {quilts && quilts.length > 0 ? (
@@ -165,8 +166,10 @@ export function RecentUsageList({
                     <div className="flex items-center space-x-2 mt-1">
                       {getActivityIcon(item.type, item.isCurrentlyInUse)}
                       <span className="text-xs text-muted-foreground">
-                        {item.type === 'usage_started' ? 'Started using' : 'Finished using'}
-                        {item.duration && ` • ${item.duration} days`}
+                        {item.type === 'usage_started'
+                          ? t('usage.recent.startedUsing')
+                          : t('usage.recent.finishedUsing')}
+                        {item.duration && ` • ${item.duration} ${t('usage.statistics.days')}`}
                       </span>
                       <span className="text-xs text-muted-foreground">•</span>
                       <span className="text-xs text-muted-foreground">{formatDate(item.date)}</span>
@@ -180,7 +183,9 @@ export function RecentUsageList({
                     variant={item.isCurrentlyInUse ? 'default' : 'secondary'}
                     className="text-xs"
                   >
-                    {item.isCurrentlyInUse ? 'In Use' : 'Storage'}
+                    {item.isCurrentlyInUse
+                      ? t('usage.recent.inUse')
+                      : t('usage.recent.storage')}
                   </Badge>
 
                   <div className="flex space-x-1">
@@ -220,7 +225,7 @@ export function RecentUsageList({
             {quilts.length > 8 && (
               <div className="text-center pt-4 border-t border-border">
                 <Button variant="ghost" size="sm">
-                  View All Activity
+                  {t('usage.recent.viewAll')}
                   <TrendingUp className="ml-2 h-4 w-4" />
                 </Button>
               </div>
@@ -229,13 +234,13 @@ export function RecentUsageList({
         ) : (
           <div className="text-center py-8">
             <Clock className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-            <p className="text-sm text-muted-foreground mb-2">No recent activity</p>
+            <p className="text-sm text-muted-foreground mb-2">{t('usage.recent.noRecent')}</p>
             <p className="text-xs text-muted-foreground mb-4">
-              Start using a quilt to see activity here
+              {t('usage.recent.startUsingToSee')}
             </p>
             <Button variant="outline" size="sm">
               <Calendar className="h-4 w-4 mr-2" />
-              Browse Quilts
+              {t('usage.recent.browseQuilts')}
             </Button>
           </div>
         )}

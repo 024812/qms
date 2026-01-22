@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Edit, Trash2, History, Eye, Image as ImageIcon } from 'lucide-react';
 import { HighlightText } from '@/components/ui/highlight-text';
 import type { Quilt } from '@/types/quilt';
-import { useLanguage } from '@/lib/language-provider';
+import { useTranslations } from 'next-intl';
 import { TableRow, TableCell } from '@/components/ui/table';
 
 interface QuiltTableRowProps {
@@ -33,7 +33,7 @@ export function QuiltTableRow({
   onViewImages,
   onDoubleClick,
 }: QuiltTableRowProps) {
-  const { t, language } = useLanguage();
+  const t = useTranslations();
 
   const getSeasonVariant = (
     season: string
@@ -85,13 +85,7 @@ export function QuiltTableRow({
     <TableRow
       className="cursor-pointer"
       onDoubleClick={onDoubleClick}
-      title={
-        onDoubleClick
-          ? language === 'zh'
-            ? '双击执行操作'
-            : 'Double-click to perform action'
-          : undefined
-      }
+      title={onDoubleClick ? t('quilts.card.actions.doubleClick') : undefined}
     >
       {isSelectMode && (
         <TableCell className="w-12 text-center">
@@ -154,7 +148,7 @@ export function QuiltTableRow({
                 e.stopPropagation();
                 onViewImages();
               }}
-              title={language === 'zh' ? '查看图片' : 'View Images'}
+              title={t('quilts.card.viewImages')}
             >
               <ImageIcon className="w-4 h-4" />
             </Button>

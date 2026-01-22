@@ -3,8 +3,7 @@ import { Input } from '@/components/ui/input';
 import { Search, Plus, RotateCcw, Grid3x3, List, Trash2 } from 'lucide-react';
 import { AdvancedFilters, type FilterCriteria } from '@/components/quilts/AdvancedFilters';
 import type { ViewMode } from '@/types/quilt';
-
-import { useLanguage } from '@/lib/language-provider';
+import { useTranslations } from 'next-intl';
 
 interface QuiltToolbarProps {
   searchTerm: string;
@@ -39,7 +38,7 @@ export function QuiltToolbar({
   availableColors,
   availableMaterials,
 }: QuiltToolbarProps) {
-  const { t } = useLanguage();
+  const t = useTranslations();
 
   return (
     <div className="space-y-4">
@@ -73,7 +72,7 @@ export function QuiltToolbar({
             variant={viewMode === 'list' ? 'secondary' : 'ghost'}
             size="sm"
             onClick={() => onViewModeChange('list')}
-            title={t('language') === 'zh' ? '列表视图' : 'List View'}
+            title={t('quilts.toolbar.tooltips.listView')}
             className="h-8 w-8 p-0"
           >
             <List className="w-4 h-4" />
@@ -82,7 +81,7 @@ export function QuiltToolbar({
             variant={viewMode === 'grid' ? 'secondary' : 'ghost'}
             size="sm"
             onClick={() => onViewModeChange('grid')}
-            title={t('language') === 'zh' ? '网格视图' : 'Grid View'}
+            title={t('quilts.toolbar.tooltips.gridView')}
             className="h-8 w-8 p-0"
           >
             <Grid3x3 className="w-4 h-4" />
@@ -108,7 +107,7 @@ export function QuiltToolbar({
         <div className="flex items-center justify-between p-3 bg-accent/30 border border-accent rounded-lg animate-in fade-in slide-in-from-top-2">
           <div className="flex items-center gap-4">
             <span className="text-sm font-medium text-primary">
-              {t('language') === 'zh' ? `已选择 ${selectedCount} 项` : `${selectedCount} selected`}
+              {t('quilts.toolbar.selected', { count: selectedCount })}
             </span>
             <Button
               variant="destructive"

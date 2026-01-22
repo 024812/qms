@@ -27,6 +27,14 @@
     "registering": "Registering...",
     "registerSuccess": "Registered successfully! Redirecting..."
   },
+  "sidebar": {
+    "system": "System Management",
+    "configuration": "Configuration",
+    "quiltSettings": "Quilt Settings",
+    "userSettings": "User Settings",
+    "quiltsList": "Quilts List",
+    "cardsList": "Cards List"
+  },
   "modules": {
     "title": "Module Management",
     "subtitle": "Select the feature modules you want to use. You can subscribe or unsubscribe at any time."
@@ -70,6 +78,23 @@
     "success": {
       "title": "Success!",
       "message": "QMS application is running and dashboard data loaded successfully."
+    },
+    "alerts": {
+      "title": "Alerts & Notifications",
+      "dismissAll": "Dismiss All",
+      "viewAll": "View All {count} Alerts",
+      "noAlertsTitle": "System Status",
+      "noAlertsDesc": "All systems are running smoothly",
+      "noAlertsContent": "No alerts or notifications",
+      "noAlertsSub": "Your quilt management system is operating normally",
+      "justNow": "Just now",
+      "agoMinutes": "{minutes}m ago",
+      "agoHours": "{hours}h ago",
+      "priority": {
+        "high": "High",
+        "medium": "Medium",
+        "low": "Low"
+      }
     }
   },
   "quilts": {
@@ -98,19 +123,44 @@
       "applyFilters": "Apply Filters",
       "clear": "Clear",
       "showingFiltered": "Showing {filtered} of {total} quilts",
-      "showingTotal": "Showing {total} quilts"
+      "showingTotal": "Showing {total} quilts",
+      "lengthRange": "Length Range (cm)",
+      "widthRange": "Width Range (cm)",
+      "fillMaterial": "Fill Material",
+      "color": "Color",
+      "min": "Min",
+      "max": "Max"
     },
     "actions": {
       "add": "Add Quilt",
       "addFirst": "Add Your First Quilt",
       "search": "Search quilts...",
-      "edit": "Edit"
+      "edit": "Edit",
+      "batchDelete": "Delete"
+    },
+    "toolbar": {
+      "tooltips": {
+        "listView": "List View",
+        "gridView": "Grid View"
+      },
+      "selected": "{count} selected"
+    },
+    "list": {
+      "tooltips": {
+        "sort": "Click to sort"
+      }
     },
     "views": {
       "card": "Cards",
       "list": "List",
       "name": "Name",
       "actions": "Actions"
+    },
+    "card": {
+      "viewImages": "View Images",
+      "actions": {
+        "doubleClick": "Double-click to perform action"
+      }
     },
     "table": {
       "itemNumber": "Item #",
@@ -157,9 +207,43 @@
       "changeStatus": "Change Status",
       "changeStatusDesc": "Change status for quilt \"{name}\"",
       "currentStatus": "Current Status",
-      "newStatus": "New Status"
+      "newStatus": "New Status",
+      "previewName": "Preview Name (Auto-generated)",
+      "previewNameLabel": "Auto-generated Name",
+      "imageUpload": {
+        "loading": "Loading image upload component...",
+        "label": "Quilt Images",
+        "hint": "Upload photos of your quilt. The first image will be used as the main cover. Drag to reorder.",
+        "maxImagesError": "You can upload up to {max} images",
+        "validationError": "File validation failed",
+        "addedSuccess": "Added {count} images, click save to complete upload",
+        "uploadError": "Image upload failed",
+        "deleteSuccess": "Image deleted, click save to complete deletion",
+        "dragHint": "Drag to reorder",
+        "uploading": "Uploading...",
+        "clickToUpload": "Click to upload",
+        "helpText": "Supports JPEG, PNG, WebP. Max 5MB per file. First image will be main cover.",
+        "imageLoadFailed": "Image Load Failed",
+        "deleteImage": "Delete Image"
+      },
+      "saveConfig": {
+        "error": "Failed to save",
+        "checkInput": "Please check your input and try again"
+      },
+      "images": {
+        "title": "Images",
+        "noImages": "No images available",
+        "main": "Main Image",
+        "attachment": "Attachment {index}",
+        "navigationHint": "Use arrow keys or click buttons to navigate"
+      },
+      "confirmBatchDelete": "Are you sure you want to delete {count} selected quilts?",
+      "deleteFailed": "Failed to delete",
+      "statusUpdateFailed": "Failed to update status",
+      "unknownError": "Unknown error"
     }
   },
+
   "usage": {
     "title": "Usage Tracking",
     "subtitle": "Monitor and track quilt usage",
@@ -260,12 +344,102 @@
       "humidityDescription": "Room humidity (optional)",
       "durationDescription": "How long do you expect to use this quilt? (optional)",
       "startNotesDescription": "Optional notes about starting to use this quilt",
-      "endDescription": "When did you stop using this quilt?"
-    }
+      "endDescription": "When did you stop using this quilt?",
+      "noActiveUsage": "No Active Usage",
+      "noActiveUsageDescription": "No quilts are currently in use. Start using a quilt to track its usage."
+    },
+    "history": {
+      "started": "Started",
+      "startTemp": "Start Temp",
+      "ended": "Ended",
+      "endTemp": "End Temp",
+      "duration": "Duration",
+      "lessThanOneDay": "<1 day",
+      "completed": "Completed"
+    },
+    "calendar": {
+      "title": "Usage Calendar",
+      "description": "Visual timeline of usage periods for {quiltName}",
+      "month": "Month",
+      "year": "Year",
+      "usageTypes": "Usage Types",
+      "noHistory": "No usage history yet",
+      "startTracking": "Start tracking usage to see patterns"
+    },
+    "timeline": {
+      "title": "Usage History",
+      "description": "Usage patterns and history for {quiltName}",
+      "period": "{count} period",
+      "periods": "{count} periods",
+      "showAll": "Show All ({count} periods)",
+      "showLess": "Show Less",
+      "start": "Start",
+      "end": "End",
+      "season": "Season",
+      "notes": "Notes",
+      "duration": "{days} day | {days} days",
+      "ongoing": "Ongoing"
+    },
+    "statistics": {
+      "title": "Usage Statistics",
+      "description": "Detailed analytics and insights for {quiltName}",
+      "overview": "Usage Overview",
+      "noData": "No usage data available",
+      "startTracking": "Start tracking usage to see detailed statistics",
+      "totalUses": "Total Uses",
+      "totalDays": "Total Days",
+      "avgDuration": "Avg Duration",
+      "usageFrequency": "Uses/Month",
+      "usageTypes": "Usage Types",
+      "mostCommon": "Most Common: {type} ({count} times)",
+      "locations": "Usage Locations",
+      "mostUsedLocation": "Most Used Location: {location} ({count} times)",
+      "performance": "Performance",
+      "avgSatisfaction": "Average Satisfaction",
+      "poor": "Poor",
+      "excellent": "Excellent",
+      "postUseCondition": "Post-Use Condition",
+      "environmental": "Environmental Conditions",
+      "avgTemp": "Average Temperature",
+      "avgHumidity": "Average Humidity",
+      "durationAnalysis": "Duration Analysis",
+      "shortestUse": "Shortest Use",
+      "longestUse": "Longest Use",
+      "avgUse": "Average Use",
+      "completed": "Completed",
+      "seasonalUsage": "Seasonal Usage",
+      "peakSeason": "Peak Season: {season} ({count} times)",
+      "periods": "periods",
+      "days": "days",
+      "times": "{count} times"
+    },
+    "temperature": {
+      "high": "High",
+      "low": "Low"
+    },
+    "noActiveUsage": "No Active Usage"
   },
   "settings": {
     "title": "System Settings",
     "subtitle": "Manage your application preferences",
+    "password": {
+      "mismatchError": "Passwords do not match",
+      "mismatchDesc": "New password and confirm password must match",
+      "tooShortError": "Password too short",
+      "tooShortDesc": "Password must be at least 8 characters",
+      "success": "Password changed",
+      "successDesc": "Password updated successfully, will take effect on next login",
+      "changeFailed": "Change failed",
+      "triggerButton": "Change Password",
+      "dialogTitle": "Change Login Password",
+      "dialogDesc": "Enter your current password and new password. New password must be at least 8 characters.",
+      "current": "Current Password",
+      "new": "New Password",
+      "confirm": "Confirm New Password",
+      "cancel": "Cancel",
+      "submit": "Change Password",
+      "submitting": "Changing..."
+    },
     "sections": {
       "app": {
         "title": "Application Settings",
@@ -343,35 +517,41 @@
     "description": "This page will help you track quilt care and maintenance history."
   },
   "reports": {
-    "title": "Import/Export",
-    "subtitle": "Batch import and export quilt data",
-    "comingSoon": "Coming Soon",
-    "description": "This page will provide various reporting and data export features.",
-    "exportOptions": "Export Options",
-    "selectFormatAndDownload": "Select report format and download data",
-    "exportButton": "Export",
-    "dataBackup": "Data Backup",
-    "fullBackup": "Full Backup",
-    "inventoryReport": "Inventory Report",
-    "quiltCollectionStatus": "Quilt collection and status report",
-    "fullInventoryList": "Full Inventory List",
-    "byStatus": "By Status",
-    "usageReport": "Usage Report",
-    "usageAnalysis": "Usage and trend analysis",
-    "usageHistory": "Usage History Report",
-    "analyticsReport": "Analytics Report",
+    "loading": {
+      "preview": "Loading preview...",
+      "results": "Loading results..."
+    },
     "tabs": {
-      "export": "Export",
-      "import": "Import"
+      "import": "Import Data",
+      "export": "Export Data"
     },
     "export": {
-      "title": "Export Options",
-      "description": "Choose export format",
-      "downloadFailed": "Download failed"
+      "title": "Export Data",
+      "description": "Download your quilt inventory data in CSV or JSON format.",
+      "downloadFailed": "Download failed. Please try again.",
+      "csv": {
+        "label": "Export as CSV",
+        "description": "Best for spreadsheets (Excel, Numbers, Google Sheets)"
+      },
+      "json": {
+        "label": "Export as JSON",
+        "description": "Best for backups and developers"
+      }
     },
     "import": {
       "title": "Import Data",
       "description": "Import quilt data from Excel file",
+      "toast": {
+        "successTitle": "File uploaded",
+        "successDesc": "{name} has been uploaded successfully",
+        "failedTitle": "Upload failed",
+        "failedProcess": "Failed to process the uploaded file",
+        "failedRead": "Failed to read the uploaded file",
+        "invalidTypeTitle": "Invalid file type",
+        "invalidTypeDesc": "Please select an Excel file (.xlsx or .xls)",
+        "tooLargeTitle": "File too large",
+        "tooLargeDesc": "Please select a file smaller than 10MB"
+      },
       "uploadTitle": "Upload Excel File",
       "uploadDescription": "Select or drag and drop your Excel file containing quilt data",
       "dropFile": "Drop your Excel file here",
@@ -435,19 +615,19 @@
     "minutes": "Minutes"
   },
   "commandPalette": {
-    "title": "Command Palette",
-    "description": "Quick navigation and search",
-    "placeholder": "Type a command or search... (Ctrl+K)",
-    "noResults": "No results found",
+    "title": "Command Menu",
+    "description": "Search for commands...",
+    "placeholder": "Type a command or search...",
+    "noResults": "No results found.",
     "headers": {
       "navigation": "Navigation",
-      "quilts": "Quilt Search Results",
+      "quilts": "Quilts",
       "theme": "Theme"
     },
     "theme": {
-      "light": "Light Mode",
-      "dark": "Dark Mode",
-      "system": "System Default"
+      "light": "Light",
+      "dark": "Dark",
+      "system": "System"
     }
   },
   "notifications": {
@@ -789,6 +969,104 @@
       "attachment": "Attachment",
       "ariaLabel": "Card Image Gallery"
     },
+    "upload": {
+      "title": "Card Images",
+      "frontLabel": "Front Image (Player Side)*",
+      "backLabel": "Back Image*",
+      "frontAlt": "Card Front",
+      "backAlt": "Card Back",
+      "uploading": "Uploading...",
+      "clickToUpload": "Photo or Upload",
+      "frontHint": "Card Front (Player Side)",
+      "backHint": "Card Back",
+      "mobileHint": "📱 Tap button on mobile to take a photo or select from gallery",
+      "desktopHint": "💻 Upload image files (JPEG, PNG, WebP, max 5MB)",
+      "validationError": "File validation failed",
+      "success": "Image added",
+      "error": "Image upload failed"
+    },
+    "detail": {
+      "images": "Images",
+      "playerInfo": "Player Information",
+      "cardDetails": "Card Details",
+      "gradingInfo": "Grading Information",
+      "valueInfo": "Value Information",
+      "marketData": "Market Data",
+      "physical": "Physical Characteristics",
+      "storage": "Storage Information",
+      "notes": "Notes",
+      "records": "Record Information",
+      "mainImage": "Main Image",
+      "estimatedRange": "Estimated Value Range",
+      "estimated": "Est:",
+      "estimateDisclaimer": "* Estimate based on card attributes, actual price may vary",
+      "checkMarketPrice": "Check Market Prices",
+      "ebaySold": "eBay Sold",
+      "psaFacts": "PSA CardFacts",
+      "beckettPrice": "Beckett Price Guide",
+      "point130": "13Sales",
+      "searchKeywords": "Search Keywords:",
+      "roi": "ROI"
+    },
+    "fields": {
+      "playerName": "Player Name",
+      "sport": "Sport",
+      "team": "Team",
+      "position": "Position",
+      "year": "Year",
+      "brand": "Brand",
+      "series": "Series",
+      "cardNumber": "Card #",
+      "gradingCompany": "Grading Company",
+      "grade": "Grade",
+      "certNumber": "Certification #",
+      "purchasePrice": "Purchase Price",
+      "purchaseDate": "Purchase Date",
+      "currentValue": "Current Value",
+      "estimatedValue": "Est. Value",
+      "roi": "ROI",
+      "parallel": "Parallel",
+      "serialNumber": "Serial #",
+      "autograph": "Autograph",
+      "memorabilia": "Memorabilia",
+      "memorabiliaType": "Memorabilia Type",
+      "status": "Status",
+      "location": "Location",
+      "storageType": "Storage Type",
+      "condition": "Condition",
+      "notes": "Notes",
+      "createdAt": "Created At",
+      "updatedAt": "Updated At"
+    },
+    "values": {
+      "yes": "Yes",
+      "no": "No",
+      "ungraded": "Ungraded",
+      "autographed": "✓Auto",
+      "memorabilia": "✓Mem",
+      "noData": "No Data"
+    },
+    "enums": {
+      "sport": {
+        "BASKETBALL": "Basketball",
+        "SOCCER": "Soccer",
+        "OTHER": "Other"
+      },
+      "status": {
+        "COLLECTION": "Collection",
+        "FOR_SALE": "For Sale",
+        "SOLD": "Sold",
+        "GRADING": "Grading",
+        "DISPLAY": "Display"
+      },
+      "grading": {
+        "PSA": "PSA",
+        "BGS": "BGS (Beckett)",
+        "SGC": "SGC",
+        "CGC": "CGC",
+        "UNGRADED": "Ungraded"
+      }
+    },
     "player": {
       "title": "Player Info",
       "name": "Player Name",
@@ -988,8 +1266,10 @@
   "common": {
     "appName": "QMS",
     "appDescription": "Household Item Management System",
+    "locale": "English",
     "loading": "Loading...",
     "create": "Create",
+    "success": "Success",
     "error": "Error",
     "save": "Save",
     "cancel": "Cancel",
@@ -1027,6 +1307,13 @@
     "viewNotifications": "View notifications",
     "quiltManagement": "Quilt Management",
     "version": "Version",
-    "failedToLogout": "Failed to logout. Please try again."
+    "failedToLogout": "Failed to logout. Please try again.",
+    "toggleTheme": "Toggle theme",
+    "toggleSidebar": "Toggle Sidebar",
+    "theme": {
+      "light": "Light",
+      "dark": "Dark",
+      "system": "System"
+    }
   }
 }

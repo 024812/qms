@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useTranslations, useLocale } from 'next-intl';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -17,7 +18,6 @@ import {
   ChevronDown,
   ChevronUp,
 } from 'lucide-react';
-import { useLanguage } from '@/lib/language-provider';
 
 interface UsagePeriod {
   id: string;
@@ -56,8 +56,8 @@ const CONDITION_COLORS = {
 };
 
 export function UsageTimeline({ usagePeriods, quiltName, showStats = true }: UsageTimelineProps) {
-  const { language } = useLanguage();
-  const locale = language === 'zh' ? 'zh-CN' : 'en-US';
+  const t = useTranslations();
+  const locale = useLocale();
   const [expandedPeriods, setExpandedPeriods] = useState<Set<string>>(new Set());
   const [showAllPeriods, setShowAllPeriods] = useState(false);
 
@@ -90,10 +90,12 @@ export function UsageTimeline({ usagePeriods, quiltName, showStats = true }: Usa
   };
 
   const getDurationText = (period: UsagePeriod) => {
+    // Check if durationDays is defined and not null
     if (period.durationDays !== null && period.durationDays !== undefined) {
-      return language === 'zh'
-        ? `${period.durationDays} 天`
-        : `${period.durationDays} day${period.durationDays !== 1 ? 's' : ''}`;
+      if (locale === 'zh') {
+        return `${period.durationDays} 天`;
+      }
+      return `${period.durationDays} day${period.durationDays !== 1 ? 's' : ''}`;
     }
 
     if (period.endDate) {
@@ -101,10 +103,13 @@ export function UsageTimeline({ usagePeriods, quiltName, showStats = true }: Usa
       const end = new Date(period.endDate);
       const diffMs = end.getTime() - start.getTime();
       const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
-      return language === 'zh' ? `${diffDays} 天` : `${diffDays} day${diffDays !== 1 ? 's' : ''}`;
+      if (locale === 'zh') {
+        return `${diffDays} 天`;
+      }
+      return `${diffDays} day${diffDays !== 1 ? 's' : ''}`;
     }
 
-    return 'Ongoing';
+    return t('usage.timeline.ongoing');
   };
 
   const getUsageStats = () => {
@@ -157,15 +162,15 @@ export function UsageTimeline({ usagePeriods, quiltName, showStats = true }: Usa
         <CardHeader>
           <CardTitle className="flex items-center space-x-2">
             <Calendar className="w-5 h-5" />
-            <span>Usage History</span>
+            <span>{t('usage.timeline.title')}</span>
           </CardTitle>
-          <CardDescription>Track the usage history and patterns for {quiltName}</CardDescription>
+          <CardDescription>{t('usage.timeline.description', { quiltName })}</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="text-center py-8 text-gray-500">
             <Calendar className="w-12 h-12 mx-auto mb-2 text-gray-300" />
-            <p>No usage history yet</p>
-            <p className="text-sm">Start tracking usage to see patterns and statistics</p>
+            <p>{t('usage.calendar.noHistory')}</p>
+            <p className="text-sm">{t('usage.calendar.startTracking')}</p>
           </div>
         </CardContent>
       </Card>
@@ -178,13 +183,13 @@ export function UsageTimeline({ usagePeriods, quiltName, showStats = true }: Usa
         <CardTitle className="flex items-center justify-between">
           <div className="flex items-center space-x-2">
             <Calendar className="w-5 h-5" />
-            <span>Usage History</span>
+            <span>{t('usage.timeline.title')}</span>
           </div>
           <Badge variant="outline">
-            {usagePeriods.length} period{usagePeriods.length !== 1 ? 's' : ''}
+            {usagePeriods.length} {usagePeriods.length === 1 ? t('usage.timeline.period').replace('{count}', '1').split(' ')[1] : t('usage.timeline.periods').replace('{count}', '').trim()}
           </Badge>
         </CardTitle>
-        <CardDescription>Usage patterns and history for {quiltName}</CardDescription>
+        <CardDescription>{t('usage.timeline.description', { quiltName })}</CardDescription>
       </CardHeader>
 
       <CardContent className="space-y-6">
@@ -193,20 +198,20 @@ export function UsageTimeline({ usagePeriods, quiltName, showStats = true }: Usa
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div className="text-center p-3 bg-blue-50 rounded-lg">
               <div className="text-2xl font-bold text-blue-600">{stats.totalDays}</div>
-              <div className="text-xs text-blue-600">Total Days</div>
+              <div className="text-xs text-blue-600">{t('usage.statistics.totalDays')}</div>
             </div>
             <div className="text-center p-3 bg-green-50 rounded-lg">
               <div className="text-2xl font-bold text-green-600">{stats.avgDuration}</div>
-              <div className="text-xs text-green-600">Avg Duration</div>
+              <div className="text-xs text-green-600">{t('usage.statistics.avgDuration')}</div>
             </div>
             <div className="text-center p-3 bg-purple-50 rounded-lg">
               <div className="text-2xl font-bold text-purple-600">{stats.totalPeriods}</div>
-              <div className="text-xs text-purple-600">Usage Periods</div>
+              <div className="text-xs text-purple-600">{t('usage.statistics.periods')}</div>
             </div>
             {stats.avgSatisfaction > 0 && (
               <div className="text-center p-3 bg-yellow-50 rounded-lg">
                 <div className="text-2xl font-bold text-yellow-600">{stats.avgSatisfaction}</div>
-                <div className="text-xs text-yellow-600">Avg Rating</div>
+                <div className="text-xs text-yellow-600">{t('usage.statistics.avgSatisfaction')}</div>
               </div>
             )}
           </div>
@@ -315,14 +320,14 @@ export function UsageTimeline({ usagePeriods, quiltName, showStats = true }: Usa
                       <div className="mt-4 p-4 bg-gray-50 rounded-lg space-y-3">
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
                           <div>
-                            <span className="font-medium text-gray-700">Start:</span>
+                            <span className="font-medium text-gray-700">{t('usage.timeline.start')}:</span>
                             <span className="ml-2 text-gray-600">
                               {formatDateTime(period.startDate)}
                             </span>
                           </div>
                           {period.endDate && (
                             <div>
-                              <span className="font-medium text-gray-700">End:</span>
+                              <span className="font-medium text-gray-700">{t('usage.timeline.end')}:</span>
                               <span className="ml-2 text-gray-600">
                                 {formatDateTime(period.endDate)}
                               </span>
@@ -342,7 +347,7 @@ export function UsageTimeline({ usagePeriods, quiltName, showStats = true }: Usa
                           )}
                           {period.seasonUsed && (
                             <div>
-                              <span className="font-medium text-gray-700">Season:</span>
+                              <span className="font-medium text-gray-700">{t('usage.timeline.season')}:</span>
                               <span className="ml-2 text-gray-600">{period.seasonUsed}</span>
                             </div>
                           )}
@@ -352,7 +357,7 @@ export function UsageTimeline({ usagePeriods, quiltName, showStats = true }: Usa
                           <div>
                             <div className="flex items-center space-x-2 mb-2">
                               <FileText className="w-4 h-4 text-gray-500" />
-                              <span className="font-medium text-gray-700">Notes:</span>
+                              <span className="font-medium text-gray-700">{t('usage.timeline.notes')}:</span>
                             </div>
                             <p className="text-gray-600 text-sm pl-6">{period.notes}</p>
                           </div>
@@ -373,12 +378,12 @@ export function UsageTimeline({ usagePeriods, quiltName, showStats = true }: Usa
               {showAllPeriods ? (
                 <>
                   <ChevronUp className="w-4 h-4 mr-2" />
-                  Show Less
+                  {t('usage.timeline.showLess')}
                 </>
               ) : (
                 <>
                   <ChevronDown className="w-4 h-4 mr-2" />
-                  Show All ({usagePeriods.length} periods)
+                  {t('usage.timeline.showAll').replace('{count}', usagePeriods.length.toString())}
                 </>
               )}
             </Button>

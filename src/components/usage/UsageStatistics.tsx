@@ -1,6 +1,7 @@
 'use client';
 
 import { useMemo } from 'react';
+import { useTranslations } from 'next-intl';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
@@ -40,6 +41,7 @@ interface UsageStatisticsProps {
 }
 
 export function UsageStatistics({ usagePeriods, quiltName }: UsageStatisticsProps) {
+  const t = useTranslations('usage.statistics');
   const stats = useMemo(() => {
     if (usagePeriods.length === 0) return null;
 
@@ -165,20 +167,23 @@ export function UsageStatistics({ usagePeriods, quiltName }: UsageStatisticsProp
         <CardHeader>
           <CardTitle className="flex items-center space-x-2">
             <BarChart3 className="w-5 h-5" />
-            <span>Usage Statistics</span>
+            <span>{t('title')}</span>
           </CardTitle>
-          <CardDescription>Detailed analytics and insights for {quiltName}</CardDescription>
+          <CardDescription>{t('description', { quiltName })}</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="text-center py-8 text-gray-500">
             <BarChart3 className="w-12 h-12 mx-auto mb-2 text-gray-300" />
-            <p>No usage data available</p>
-            <p className="text-sm">Start tracking usage to see detailed statistics</p>
+            <p>{t('noData')}</p>
+            <p className="text-sm">{t('startTracking')}</p>
           </div>
         </CardContent>
       </Card>
     );
   }
+
+  // Helper to remove unused variables warning if needed, but here we just use what we have.
+  // Using direct translation strings for specific stats keys that were added.
 
   const mostUsedType = Object.entries(stats.usageTypeCount).sort(([, a], [, b]) => b - a)[0];
 
@@ -193,27 +198,27 @@ export function UsageStatistics({ usagePeriods, quiltName }: UsageStatisticsProp
         <CardHeader>
           <CardTitle className="flex items-center space-x-2">
             <BarChart3 className="w-5 h-5" />
-            <span>Usage Overview</span>
+            <span>{t('overview')}</span>
           </CardTitle>
-          <CardDescription>Key statistics and metrics for {quiltName}</CardDescription>
+          <CardDescription>{t('description', { quiltName })}</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div className="text-center p-4 bg-blue-50 rounded-lg">
               <div className="text-3xl font-bold text-blue-600">{stats.totalPeriods}</div>
-              <div className="text-sm text-blue-600">Total Uses</div>
+              <div className="text-sm text-blue-600">{t('totalUses')}</div>
             </div>
             <div className="text-center p-4 bg-green-50 rounded-lg">
               <div className="text-3xl font-bold text-green-600">{stats.totalDays}</div>
-              <div className="text-sm text-green-600">Total Days</div>
+              <div className="text-sm text-green-600">{t('totalDays')}</div>
             </div>
             <div className="text-center p-4 bg-purple-50 rounded-lg">
               <div className="text-3xl font-bold text-purple-600">{stats.avgDuration}</div>
-              <div className="text-sm text-purple-600">Avg Duration</div>
+              <div className="text-sm text-purple-600">{t('avgDuration')}</div>
             </div>
             <div className="text-center p-4 bg-orange-50 rounded-lg">
               <div className="text-3xl font-bold text-orange-600">{stats.usageFrequency}</div>
-              <div className="text-sm text-orange-600">Uses/Month</div>
+              <div className="text-sm text-orange-600">{t('usageFrequency')}</div>
             </div>
           </div>
         </CardContent>
@@ -226,7 +231,7 @@ export function UsageStatistics({ usagePeriods, quiltName }: UsageStatisticsProp
           <CardHeader>
             <CardTitle className="flex items-center space-x-2">
               <User className="w-5 h-5" />
-              <span>Usage Types</span>
+              <span>{t('usageTypes')}</span>
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -237,7 +242,7 @@ export function UsageStatistics({ usagePeriods, quiltName }: UsageStatisticsProp
                   <div className="flex justify-between items-center">
                     <span className="text-sm font-medium">{type.replace('_', ' ')}</span>
                     <div className="flex items-center space-x-2">
-                      <span className="text-sm text-gray-600">{count} times</span>
+                      <span className="text-sm text-gray-600">{count}</span>
                       <Badge variant="outline">{Math.round(percentage)}%</Badge>
                     </div>
                   </div>
@@ -250,7 +255,7 @@ export function UsageStatistics({ usagePeriods, quiltName }: UsageStatisticsProp
                 <div className="flex items-center space-x-2">
                   <Award className="w-4 h-4 text-blue-600" />
                   <span className="text-sm font-medium text-blue-900">
-                    Most Common: {mostUsedType[0].replace('_', ' ')} ({mostUsedType[1]} times)
+                    {t('mostCommon', { type: mostUsedType[0].replace('_', ' '), count: mostUsedType[1] })}
                   </span>
                 </div>
               </div>
@@ -264,7 +269,7 @@ export function UsageStatistics({ usagePeriods, quiltName }: UsageStatisticsProp
             <CardHeader>
               <CardTitle className="flex items-center space-x-2">
                 <MapPin className="w-5 h-5" />
-                <span>Usage Locations</span>
+                <span>{t('locations')}</span>
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -275,7 +280,7 @@ export function UsageStatistics({ usagePeriods, quiltName }: UsageStatisticsProp
                     <div className="flex justify-between items-center">
                       <span className="text-sm font-medium">{location}</span>
                       <div className="flex items-center space-x-2">
-                        <span className="text-sm text-gray-600">{count} times</span>
+                        <span className="text-sm text-gray-600">{count}</span>
                         <Badge variant="outline">{Math.round(percentage)}%</Badge>
                       </div>
                     </div>
@@ -288,7 +293,7 @@ export function UsageStatistics({ usagePeriods, quiltName }: UsageStatisticsProp
                   <div className="flex items-center space-x-2">
                     <Target className="w-4 h-4 text-green-600" />
                     <span className="text-sm font-medium text-green-900">
-                      Most Used Location: {mostUsedLocation[0]} ({mostUsedLocation[1]} times)
+                      {t('mostUsedLocation', { location: mostUsedLocation[0], count: mostUsedLocation[1] })}
                     </span>
                   </div>
                 </div>
@@ -306,22 +311,22 @@ export function UsageStatistics({ usagePeriods, quiltName }: UsageStatisticsProp
             <CardHeader>
               <CardTitle className="flex items-center space-x-2">
                 <Star className="w-5 h-5" />
-                <span>Performance</span>
+                <span>{t('performance')}</span>
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               {stats.avgSatisfaction > 0 && (
                 <div>
                   <div className="flex justify-between items-center mb-2">
-                    <span className="text-sm font-medium">Average Satisfaction</span>
+                    <span className="text-sm font-medium">{t('avgSatisfaction')}</span>
                     <Badge className="bg-yellow-100 text-yellow-800">
                       {stats.avgSatisfaction}/5
                     </Badge>
                   </div>
                   <Progress value={(stats.avgSatisfaction / 5) * 100} className="h-2" />
                   <div className="flex justify-between text-xs text-gray-500 mt-1">
-                    <span>Poor</span>
-                    <span>Excellent</span>
+                    <span>{t('poor')}</span>
+                    <span>{t('excellent')}</span>
                   </div>
                 </div>
               )}
@@ -329,7 +334,7 @@ export function UsageStatistics({ usagePeriods, quiltName }: UsageStatisticsProp
               {Object.keys(stats.conditionCount).length > 0 && (
                 <div>
                   <Separator className="my-4" />
-                  <h4 className="text-sm font-medium mb-3">Post-Use Condition</h4>
+                  <h4 className="text-sm font-medium mb-3">{t('postUseCondition')}</h4>
                   {Object.entries(stats.conditionCount).map(([condition, count]) => {
                     const percentage = (count / stats.completedPeriods) * 100;
                     return (
@@ -356,7 +361,7 @@ export function UsageStatistics({ usagePeriods, quiltName }: UsageStatisticsProp
             <CardHeader>
               <CardTitle className="flex items-center space-x-2">
                 <Thermometer className="w-5 h-5" />
-                <span>Environmental Conditions</span>
+                <span>{t('environmental')}</span>
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -364,7 +369,7 @@ export function UsageStatistics({ usagePeriods, quiltName }: UsageStatisticsProp
                 <div className="flex items-center justify-between p-3 bg-red-50 rounded-lg">
                   <div className="flex items-center space-x-2">
                     <Thermometer className="w-4 h-4 text-red-600" />
-                    <span className="text-sm font-medium">Average Temperature</span>
+                    <span className="text-sm font-medium">{t('avgTemp')}</span>
                   </div>
                   <Badge className="bg-red-100 text-red-800">{stats.avgTemperature}°C</Badge>
                 </div>
@@ -374,7 +379,7 @@ export function UsageStatistics({ usagePeriods, quiltName }: UsageStatisticsProp
                 <div className="flex items-center justify-between p-3 bg-blue-50 rounded-lg">
                   <div className="flex items-center space-x-2">
                     <Droplets className="w-4 h-4 text-blue-600" />
-                    <span className="text-sm font-medium">Average Humidity</span>
+                    <span className="text-sm font-medium">{t('avgHumidity')}</span>
                   </div>
                   <Badge className="bg-blue-100 text-blue-800">{stats.avgHumidity}%</Badge>
                 </div>
@@ -389,30 +394,30 @@ export function UsageStatistics({ usagePeriods, quiltName }: UsageStatisticsProp
         <CardHeader>
           <CardTitle className="flex items-center space-x-2">
             <Clock className="w-5 h-5" />
-            <span>Duration Analysis</span>
+            <span>{t('durationAnalysis')}</span>
           </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div className="text-center p-3 border rounded-lg">
               <div className="text-2xl font-bold text-gray-900">{stats.minDuration}</div>
-              <div className="text-xs text-gray-600">Shortest Use</div>
-              <div className="text-xs text-gray-500">days</div>
+              <div className="text-xs text-gray-600">{t('shortestUse')}</div>
+              <div className="text-xs text-gray-500">{t('days')}</div>
             </div>
             <div className="text-center p-3 border rounded-lg">
               <div className="text-2xl font-bold text-gray-900">{stats.maxDuration}</div>
-              <div className="text-xs text-gray-600">Longest Use</div>
-              <div className="text-xs text-gray-500">days</div>
+              <div className="text-xs text-gray-600">{t('longestUse')}</div>
+              <div className="text-xs text-gray-500">{t('days')}</div>
             </div>
             <div className="text-center p-3 border rounded-lg">
               <div className="text-2xl font-bold text-gray-900">{stats.avgDuration}</div>
-              <div className="text-xs text-gray-600">Average Use</div>
-              <div className="text-xs text-gray-500">days</div>
+              <div className="text-xs text-gray-600">{t('avgUse')}</div>
+              <div className="text-xs text-gray-500">{t('days')}</div>
             </div>
             <div className="text-center p-3 border rounded-lg">
               <div className="text-2xl font-bold text-gray-900">{stats.completedPeriods}</div>
-              <div className="text-xs text-gray-600">Completed</div>
-              <div className="text-xs text-gray-500">periods</div>
+              <div className="text-xs text-gray-600">{t('completedPeriods')}</div>
+              <div className="text-xs text-gray-500">{t('periods')}</div>
             </div>
           </div>
         </CardContent>
@@ -424,7 +429,7 @@ export function UsageStatistics({ usagePeriods, quiltName }: UsageStatisticsProp
           <CardHeader>
             <CardTitle className="flex items-center space-x-2">
               <Calendar className="w-5 h-5" />
-              <span>Seasonal Usage</span>
+              <span>{t('seasonal')}</span>
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -435,7 +440,7 @@ export function UsageStatistics({ usagePeriods, quiltName }: UsageStatisticsProp
                   <div className="flex justify-between items-center">
                     <span className="text-sm font-medium">{season}</span>
                     <div className="flex items-center space-x-2">
-                      <span className="text-sm text-gray-600">{count} times</span>
+                      <span className="text-sm text-gray-600">{count}</span>
                       <Badge variant="outline">{Math.round(percentage)}%</Badge>
                     </div>
                   </div>
@@ -448,7 +453,7 @@ export function UsageStatistics({ usagePeriods, quiltName }: UsageStatisticsProp
                 <div className="flex items-center space-x-2">
                   <TrendingUp className="w-4 h-4 text-orange-600" />
                   <span className="text-sm font-medium text-orange-900">
-                    Peak Season: {mostUsedSeason[0]} ({mostUsedSeason[1]} times)
+                    {t('peakSeason', { season: mostUsedSeason[0], count: mostUsedSeason[1] })}
                   </span>
                 </div>
               </div>

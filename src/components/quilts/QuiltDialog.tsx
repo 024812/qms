@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import dynamic from 'next/dynamic';
-import { useLanguage } from '@/lib/language-provider';
+import { useTranslations, useLocale } from 'next-intl';
 import { toast } from 'sonner';
 import {
   Dialog,
@@ -25,24 +25,18 @@ import {
 import { Textarea } from '@/components/ui/textarea';
 import { Loader2 } from 'lucide-react';
 
-// Dynamically import ImageUpload to avoid SSR issues
-const ImageUpload = dynamic(
-  () => import('./ImageUpload').then(mod => ({ default: mod.ImageUpload })),
-  {
-    ssr: false,
-    loading: () => <div className="text-sm text-gray-500">加载图片上传组件...</div>,
-  }
-);
+import { Quilt } from '@/types/quilt';
 
 interface QuiltDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  quilt?: any;
-  onSave: (data: any) => Promise<void>;
+  quilt?: Quilt | null;
+  onSave: (data: Partial<Quilt>) => Promise<void>;
 }
 
 export function QuiltDialog({ open, onOpenChange, quilt, onSave }: QuiltDialogProps) {
-  const { t } = useLanguage();
+  const t = useTranslations();
+  const locale = useLocale();
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     season: 'WINTER',
@@ -61,20 +55,35 @@ export function QuiltDialog({ open, onOpenChange, quilt, onSave }: QuiltDialogPr
   });
   const [images, setImages] = useState<string[]>([]);
 
+  // Dynamically import ImageUpload to avoid SSR issues
+  const ImageUpload = dynamic(
+    () => import('./ImageUpload').then(mod => ({ default: mod.ImageUpload })),
+    {
+      ssr: false,
+      loading: () => (
+        <div className="text-sm text-gray-500">{t('quilts.dialogs.imageUpload.loading')}</div>
+      ),
+    }
+  );
+
   // Generate preview name based on form data
   const generatePreviewName = () => {
-    const brand = formData.brand || '无';
-    const color = formData.color || '白';
+    const brand = formData.brand || (locale === 'zh' ? '无' : 'No Brand');
+    const color = formData.color || (locale === 'zh' ? '白' : 'White');
     const weight = formData.weightGrams || '2000';
 
     const seasonMap: Record<string, string> = {
-      WINTER: '冬',
-      SPRING_AUTUMN: '春秋',
-      SUMMER: '夏',
+      WINTER: locale === 'zh' ? '冬' : 'Winter',
+      SPRING_AUTUMN: locale === 'zh' ? '春秋' : 'Spring/Autumn',
+      SUMMER: locale === 'zh' ? '夏' : 'Summer',
     };
-    const season = seasonMap[formData.season] || '通用';
+    const season = seasonMap[formData.season] || (locale === 'zh' ? '通用' : 'General');
+    const suffix = locale === 'zh' ? '被' : ' Quilt';
 
-    return `${brand}${color}${weight}克${season}被`;
+    if (locale === 'zh') {
+      return `${brand}${color}${weight}克${season}${suffix}`;
+    }
+    return `${brand} ${color} ${weight}g ${season}${suffix}`;
   };
 
   // Reset form when dialog opens/closes or quilt changes
@@ -143,8 +152,10 @@ export function QuiltDialog({ open, onOpenChange, quilt, onSave }: QuiltDialogPr
     setLoading(true);
 
     try {
-      const data: any = {
+      const data: Partial<Quilt> = {
         ...formData,
+        season: formData.season as Quilt['season'],
+        currentStatus: formData.currentStatus as Quilt['currentStatus'],
         lengthCm: parseFloat(formData.lengthCm) || 0,
         widthCm: parseFloat(formData.widthCm) || 0,
         weightGrams: parseFloat(formData.weightGrams) || 0,
@@ -175,31 +186,28 @@ export function QuiltDialog({ open, onOpenChange, quilt, onSave }: QuiltDialogPr
       }
 
       onOpenChange(false);
-    } catch (error: any) {
+    } catch (error) {
       // Extract detailed error message from API error
-      const errorMessage = t('language') === 'zh' ? '保存失败' : 'Failed to save';
+      const errorMessage = t('quilts.dialogs.saveConfig.error');
       let errorDescription = '';
 
-      if (error) {
-        // API errors have message property
-        if (error.message) {
-          errorDescription = error.message;
-        }
-        // Check for nested data with more details
-        if (error.data?.zodError) {
-          const zodErrors = error.data.zodError.fieldErrors;
-          const firstField = Object.keys(zodErrors)[0];
-          if (firstField && zodErrors[firstField]?.[0]) {
-            errorDescription = `${firstField}: ${zodErrors[firstField][0]}`;
-          }
+      if (error instanceof Error) {
+        errorDescription = error.message;
+      }
+      
+      // Check for nested data with more details safely
+      const err = error as { data?: { zodError?: { fieldErrors: Record<string, string[]> } } };
+      if (err?.data?.zodError) {
+        const zodErrors = err.data.zodError.fieldErrors;
+        const firstField = Object.keys(zodErrors)[0];
+        if (firstField && zodErrors[firstField]?.[0]) {
+          errorDescription = `${firstField}: ${zodErrors[firstField][0]}`;
         }
       }
 
       // Show error with details
       toast.error(errorMessage, {
-        description:
-          errorDescription ||
-          (t('language') === 'zh' ? '请检查输入后重试' : 'Please check your input and try again'),
+        description: errorDescription || t('quilts.dialogs.saveConfig.checkInput'),
         duration: 5000,
       });
     } finally {
@@ -235,7 +243,7 @@ export function QuiltDialog({ open, onOpenChange, quilt, onSave }: QuiltDialogPr
               )}
               <div className={quilt ? '' : 'col-span-2'}>
                 <Label className="text-xs text-blue-600">
-                  {quilt ? t('quilts.form.name') : '预览名称（自动生成）'}
+                  {quilt ? t('quilts.form.name') : t('quilts.dialogs.previewName')}
                 </Label>
                 <p className="text-sm font-medium text-gray-900">
                   {quilt ? quilt.name : generatePreviewName()}
@@ -395,9 +403,11 @@ export function QuiltDialog({ open, onOpenChange, quilt, onSave }: QuiltDialogPr
           {/* Image Upload */}
           <div className="border-t pt-3 mt-3">
             <div className="mb-3">
-              <Label className="text-base font-semibold">被子图片</Label>
+              <Label className="text-base font-semibold">
+                {t('quilts.dialogs.imageUpload.label')}
+              </Label>
               <p className="text-xs text-gray-500 mt-0.5">
-                上传被子的照片，第一张将作为主图显示。拖动图片可以调整顺序。
+                {t('quilts.dialogs.imageUpload.hint')}
               </p>
             </div>
             <ImageUpload images={images} onImagesChange={setImages} maxImages={5} />

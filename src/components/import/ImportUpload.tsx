@@ -4,7 +4,7 @@ import React, { useCallback, useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/useToast';
-import { useLanguage } from '@/lib/language-provider';
+import { useTranslations } from 'next-intl';
 import { Upload, FileSpreadsheet, AlertCircle, Info } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -16,7 +16,7 @@ export function ImportUpload({ onFileUpload }: ImportUploadProps) {
   const [isDragOver, setIsDragOver] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const { success, error } = useToast();
-  const { t } = useLanguage();
+  const t = useTranslations('reports.import');
 
   const handleFileRead = useCallback(
     (file: File) => {
@@ -31,22 +31,31 @@ export function ImportUpload({ onFileUpload }: ImportUploadProps) {
           );
 
           onFileUpload(file.name, base64);
-          success('File uploaded', `${file.name} has been uploaded successfully`);
+          success(
+            t('toast.successTitle'),
+            t('toast.successDesc', { name: file.name })
+          );
         } catch {
-          error('Upload failed', 'Failed to process the uploaded file');
+          error(
+            t('toast.failedTitle'),
+            t('toast.failedProcess')
+          );
         } finally {
           setIsUploading(false);
         }
       };
 
       reader.onerror = () => {
-        error('Upload failed', 'Failed to read the uploaded file');
+        error(
+          t('toast.failedTitle'),
+          t('toast.failedRead')
+        );
         setIsUploading(false);
       };
 
       reader.readAsArrayBuffer(file);
     },
-    [onFileUpload, success, error]
+    [onFileUpload, success, error, t]
   );
 
   const handleFileSelect = useCallback(
@@ -57,19 +66,25 @@ export function ImportUpload({ onFileUpload }: ImportUploadProps) {
 
       // Validate file type
       if (!file.name.toLowerCase().endsWith('.xlsx') && !file.name.toLowerCase().endsWith('.xls')) {
-        error('Invalid file type', 'Please select an Excel file (.xlsx or .xls)');
+        error(
+          t('toast.invalidTypeTitle'),
+          t('toast.invalidTypeDesc')
+        );
         return;
       }
 
       // Validate file size (10MB limit)
       if (file.size > 10 * 1024 * 1024) {
-        error('File too large', 'Please select a file smaller than 10MB');
+        error(
+          t('toast.tooLargeTitle'),
+          t('toast.tooLargeDesc')
+        );
         return;
       }
 
       handleFileRead(file);
     },
-    [handleFileRead, error]
+    [handleFileRead, error, t]
   );
 
   const handleDrop = useCallback(
@@ -105,9 +120,9 @@ export function ImportUpload({ onFileUpload }: ImportUploadProps) {
         <CardHeader>
           <CardTitle className="flex items-center">
             <Upload className="mr-2 h-5 w-5" />
-            {t('reports.import.uploadTitle')}
+            {t('uploadTitle')}
           </CardTitle>
-          <CardDescription>{t('reports.import.uploadDescription')}</CardDescription>
+          <CardDescription>{t('uploadDescription')}</CardDescription>
         </CardHeader>
         <CardContent>
           {/* eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions */}
@@ -121,7 +136,7 @@ export function ImportUpload({ onFileUpload }: ImportUploadProps) {
             onDragOver={handleDragOver}
             onDragLeave={handleDragLeave}
             role="region"
-            aria-label={t('reports.import.uploadTitle')}
+            aria-label={t('uploadTitle')}
           >
             <div className="space-y-4">
               <div className="mx-auto w-16 h-16 bg-muted rounded-full flex items-center justify-center">
@@ -130,10 +145,10 @@ export function ImportUpload({ onFileUpload }: ImportUploadProps) {
 
               <div>
                 <p className="text-lg font-medium text-foreground">
-                  {isUploading ? t('reports.import.processingFile') : t('reports.import.dropFile')}
+                  {isUploading ? t('processingFile') : t('dropFile')}
                 </p>
                 <p className="text-sm text-muted-foreground mt-1">
-                  {t('reports.import.orClickToBrowse')}
+                  {t('orClickToBrowse')}
                 </p>
               </div>
 
@@ -144,7 +159,7 @@ export function ImportUpload({ onFileUpload }: ImportUploadProps) {
                   onClick={() => document.getElementById('file-input')?.click()}
                 >
                   <Upload className="mr-2 h-4 w-4" />
-                  {isUploading ? t('reports.import.uploading') : t('reports.import.selectFile')}
+                  {isUploading ? t('uploading') : t('selectFile')}
                 </Button>
               </div>
 
@@ -165,7 +180,7 @@ export function ImportUpload({ onFileUpload }: ImportUploadProps) {
         <CardHeader>
           <CardTitle className="flex items-center">
             <Info className="mr-2 h-5 w-5" />
-            {t('reports.import.fileRequirements')}
+            {t('fileRequirements')}
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -173,25 +188,25 @@ export function ImportUpload({ onFileUpload }: ImportUploadProps) {
             <div className="flex items-start space-x-3">
               <div className="w-2 h-2 bg-blue-500 rounded-full mt-2"></div>
               <div>
-                <p className="font-medium">{t('reports.import.supportedFormats')}</p>
-                <p className="text-sm text-muted-foreground">{t('reports.import.excelFiles')}</p>
+                <p className="font-medium">{t('supportedFormats')}</p>
+                <p className="text-sm text-muted-foreground">{t('excelFiles')}</p>
               </div>
             </div>
 
             <div className="flex items-start space-x-3">
               <div className="w-2 h-2 bg-blue-500 rounded-full mt-2"></div>
               <div>
-                <p className="font-medium">{t('reports.import.maximumFileSize')}</p>
-                <p className="text-sm text-muted-foreground">{t('reports.import.perFile')}</p>
+                <p className="font-medium">{t('maximumFileSize')}</p>
+                <p className="text-sm text-muted-foreground">{t('perFile')}</p>
               </div>
             </div>
 
             <div className="flex items-start space-x-3">
               <div className="w-2 h-2 bg-blue-500 rounded-full mt-2"></div>
               <div>
-                <p className="font-medium">{t('reports.import.expectedColumns')}</p>
+                <p className="font-medium">{t('expectedColumns')}</p>
                 <p className="text-sm text-muted-foreground">
-                  {t('reports.import.columnDescription')}
+                  {t('columnDescription')}
                 </p>
               </div>
             </div>
@@ -204,13 +219,13 @@ export function ImportUpload({ onFileUpload }: ImportUploadProps) {
         <CardHeader>
           <CardTitle className="flex items-center">
             <AlertCircle className="mr-2 h-5 w-5 text-amber-600" />
-            {t('reports.import.importTips')}
+            {t('importTips')}
           </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="space-y-2 text-sm text-muted-foreground">
-            <p>• {t('reports.import.tip1')}</p>
-            <p>• {t('reports.import.tip2')}</p>
+            <p>• {t('tip1')}</p>
+            <p>• {t('tip2')}</p>
           </div>
         </CardContent>
       </Card>

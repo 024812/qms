@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useLanguage } from '@/lib/language-provider';
+import { useTranslations } from 'next-intl';
 import { Edit, Trash2 } from 'lucide-react';
 import { format } from 'date-fns';
 import {
@@ -54,7 +54,7 @@ export function EditUsageRecordDialog({
 }: EditUsageRecordDialogProps) {
   const [open, setOpen] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-  const { t } = useLanguage();
+  const t = useTranslations();
 
   // Use React Query mutations
   const updateMutation = useUpdateUsageRecord();
@@ -100,22 +100,22 @@ export function EditUsageRecordDialog({
         notes: formData.notes || undefined,
       });
 
-      toast.success('Usage record updated successfully');
+      toast.success('usage.edit.updated');
       setOpen(false);
       onUpdate?.();
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Failed to update usage record');
+      toast.error(error instanceof Error ? error.message : 'usage.edit.updateFailed');
     }
   };
 
   const handleDelete = async () => {
     try {
       await deleteMutation.mutateAsync({ id: record.id });
-      toast.success('Usage record deleted successfully');
+      toast.success('usage.edit.deleted');
       setOpen(false);
       onDelete?.();
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Failed to delete usage record');
+      toast.error(error instanceof Error ? error.message : 'usage.edit.deleteFailed');
     } finally {
       setShowDeleteConfirm(false);
     }

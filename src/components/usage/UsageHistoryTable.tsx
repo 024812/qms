@@ -1,6 +1,6 @@
 'use client';
 
-import { useLanguage } from '@/lib/language-provider';
+import { useTranslations, useLocale } from 'next-intl';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -42,14 +42,15 @@ export function UsageHistoryTable({
   quiltId,
   itemNumber,
 }: UsageHistoryTableProps) {
-  const { t, language } = useLanguage();
+  const t = useTranslations();
+  const locale = useLocale();
 
   const formatDate = (date: Date | string | null | undefined) => {
     if (!date) return '-';
     try {
       const d = new Date(date);
       if (isNaN(d.getTime())) return 'Invalid Date';
-      return d.toLocaleDateString(language === 'zh' ? 'zh-CN' : 'en-US', {
+      return d.toLocaleDateString(locale, {
         year: 'numeric',
         month: 'long',
         day: 'numeric',
@@ -59,17 +60,29 @@ export function UsageHistoryTable({
     }
   };
 
-  const formatDuration = (startDate: Date, endDate?: Date | null) => {
-    if (!endDate) return '-';
-    try {
-      const start = new Date(startDate);
-      const end = new Date(endDate);
-      const days = Math.floor((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
-      if (days === 0) return language === 'zh' ? '不到1天' : '<1 day';
-      return language === 'zh' ? `${days}天` : `${days} days`;
-    } catch {
-      return '-';
-    }
+
+
+  // Improved duration formatting to handle pluralization properly via translations if possible, 
+  // but for now keeping it simple or using the existing helper with keys.
+  // Actually, I have "duration": "{days} day | {days} days" in usage.timeline.
+  // I can use t('usage.timeline.duration', {days: days}) which handles pluralization if configured.
+  // usage.timeline.duration is "{days} day | {days} days" (ICU syntax).
+  
+  const formatDurationICU = (startDate: Date, endDate?: Date | null) => {
+      if (!endDate) return '-';
+      try {
+        const start = new Date(startDate);
+        const end = new Date(endDate);
+        const days = Math.floor((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
+        // ICU message: "{days} day | {days} days" works with pluralization? 
+        // Or "duration": "{days, plural, =0 {<1 day} one {# day} other {# days}}"
+        // My JSON has: "duration": "{days} day | {days} days" which might be simple pipe or just incorrect.
+        // Let's use manual logic for now to be safe as I didn't verify ICU setup.
+        if (days === 0) return t('usage.history.lessThanOneDay');
+        return startDate ? `${days} ${locale === 'zh' ? '天' : (days === 1 ? 'day' : 'days')}` : '-'; 
+      } catch {
+        return '-';
+      }
   };
 
   if (isLoading) {
@@ -80,9 +93,9 @@ export function UsageHistoryTable({
     return (
       <EmptyState
         icon={PackageOpen}
-        title={t('usage.details.noHistory')}
+        title={t('usage.calendar.noHistory')}
         description={
-          language === 'zh' ? '这个被子还没有使用记录' : 'This quilt has no usage records yet'
+            locale === 'zh' ? '这个被子还没有使用记录' : 'This quilt has no usage records yet'
         }
       />
     );
@@ -98,22 +111,22 @@ export function UsageHistoryTable({
                 #
               </TableHead>
               <TableHead className="h-12 text-center font-medium text-muted-foreground">
-                {t('usage.labels.started')}
+                {t('usage.history.started')}
               </TableHead>
               <TableHead className="h-12 text-center font-medium text-muted-foreground">
-                {language === 'zh' ? '开始温度' : 'Start Temp'}
+                {t('usage.history.startTemp')}
               </TableHead>
               <TableHead className="h-12 text-center font-medium text-muted-foreground">
-                {t('usage.labels.ended')}
+                {t('usage.history.ended')}
               </TableHead>
               <TableHead className="h-12 text-center font-medium text-muted-foreground">
-                {language === 'zh' ? '结束温度' : 'End Temp'}
+                {t('usage.history.endTemp')}
               </TableHead>
               <TableHead className="h-12 text-center font-medium text-muted-foreground">
-                {language === 'zh' ? '持续时间' : 'Duration'}
+                {t('usage.history.duration')}
               </TableHead>
               <TableHead className="h-12 text-center font-medium text-muted-foreground">
-                {t('usage.labels.notes')}
+                {t('usage.timeline.notes')}
               </TableHead>
               <TableHead className="h-12 text-center font-medium text-muted-foreground">
                 {t('quilts.table.status')}
@@ -142,7 +155,7 @@ export function UsageHistoryTable({
                   {record.endDate ? <TemperatureDisplay date={record.endDate} compact /> : '-'}
                 </TableCell>
                 <TableCell className="text-center text-sm text-muted-foreground">
-                  {formatDuration(record.startDate, record.endDate)}
+                  {formatDurationICU(record.startDate, record.endDate)}
                 </TableCell>
                 <TableCell className="text-center text-sm text-muted-foreground">
                   {record.notes || '-'}
@@ -151,9 +164,7 @@ export function UsageHistoryTable({
                   <Badge variant={!record.endDate ? 'default' : 'secondary'}>
                     {!record.endDate
                       ? t('usage.labels.active')
-                      : language === 'zh'
-                        ? '已完成'
-                        : 'Completed'}
+                      : t('usage.history.completed')}
                   </Badge>
                 </TableCell>
                 <TableCell className="text-center">

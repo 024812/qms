@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Edit, Trash2, Package, Image as ImageIcon } from 'lucide-react';
 import { HighlightText } from '@/components/ui/highlight-text';
 import type { Quilt } from '@/types/quilt';
-import { useLanguage } from '@/lib/language-provider';
+import { useTranslations } from 'next-intl';
 import Image from 'next/image';
 
 interface QuiltCardProps {
@@ -32,7 +32,7 @@ export function QuiltCard({
   onViewImages,
   onDoubleClick,
 }: QuiltCardProps) {
-  const { t, language } = useLanguage();
+  const t = useTranslations();
 
   const getSeasonColor = (season: string) => {
     switch (season) {
@@ -64,13 +64,7 @@ export function QuiltCard({
     <Card
       className={`hover:shadow-md transition-shadow cursor-pointer ${isSelected ? 'ring-2 ring-primary' : ''}`}
       onDoubleClick={onDoubleClick}
-      title={
-        onDoubleClick
-          ? language === 'zh'
-            ? '双击执行操作'
-            : 'Double-click to perform action'
-          : undefined
-      }
+      title={onDoubleClick ? t('quilts.card.actions.doubleClick') : undefined}
     >
       <CardContent className="p-4">
         {isSelectMode && (
@@ -147,7 +141,7 @@ export function QuiltCard({
             {onViewImages && (
               <Button variant="secondary" size="sm" onClick={onViewImages} className="w-full">
                 <ImageIcon className="w-3 h-3 mr-1" />
-                {language === 'zh' ? '查看图片' : 'View Images'}
+                {t('quilts.card.viewImages')}
               </Button>
             )}
           </div>

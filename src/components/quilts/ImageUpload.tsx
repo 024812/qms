@@ -9,6 +9,7 @@
 import { useState, useRef, DragEvent } from 'react';
 import { X, Upload } from 'lucide-react';
 import { toast } from 'sonner';
+import { useTranslations } from 'next-intl';
 import { compressAndEncodeImage, validateImageFile } from '@/lib/image-utils';
 
 export interface ImageUploadProps {
@@ -23,9 +24,10 @@ export function ImageUpload({
   images,
   onImagesChange,
   maxImages = 5,
-  label = '上传图片',
+  label,
   showMainImage = true,
 }: ImageUploadProps) {
+  const t = useTranslations();
   const [isUploading, setIsUploading] = useState(false);
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -35,7 +37,7 @@ export function ImageUpload({
 
     const remainingSlots = maxImages - images.length;
     if (remainingSlots <= 0) {
-      toast.error(`最多只能上传 ${maxImages} 张图片`);
+      toast.error(t('quilts.dialogs.imageUpload.maxImagesError', { max: maxImages }));
       return;
     }
 
@@ -50,7 +52,7 @@ export function ImageUpload({
         // Validate file
         const validation = validateImageFile(file);
         if (!validation.valid) {
-          toast.error(validation.error || '文件验证失败');
+          toast.error(validation.error || t('quilts.dialogs.imageUpload.validationError'));
           continue;
         }
 
@@ -61,10 +63,12 @@ export function ImageUpload({
 
       if (newImages.length > 0) {
         onImagesChange([...images, ...newImages]);
-        toast.success(`已添加 ${newImages.length} 张图片，点击保存按钮完成上传`);
+        toast.success(
+          t('quilts.dialogs.imageUpload.addedSuccess', { count: newImages.length })
+        );
       }
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : '图片上传失败');
+      toast.error(error instanceof Error ? error.message : t('quilts.dialogs.imageUpload.uploadError'));
     } finally {
       setIsUploading(false);
       if (fileInputRef.current) {
@@ -76,7 +80,7 @@ export function ImageUpload({
   const handleDelete = (index: number) => {
     const newImages = images.filter((_, i) => i !== index);
     onImagesChange(newImages);
-    toast.success('图片已删除，点击保存按钮完成删除');
+    toast.success(t('quilts.dialogs.imageUpload.deleteSuccess'));
   };
 
   const handleDragStart = (index: number) => {
@@ -110,7 +114,7 @@ export function ImageUpload({
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <label className="text-sm font-medium">{label}</label>
+        <label className="text-sm font-medium">{label || t('quilts.dialogs.imageUpload.label')}</label>
         <span className="text-xs text-gray-500">
           {images.length} / {maxImages}
         </span>
@@ -120,7 +124,7 @@ export function ImageUpload({
       <div
         className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4"
         role="list"
-        aria-label="Uploaded images"
+        aria-label={t('quilts.dialogs.imageUpload.label')}
       >
         {images.map((image, imageIndex) => (
           // eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions
@@ -132,7 +136,9 @@ export function ImageUpload({
             onDrop={e => handleDrop(e, imageIndex)}
             onDragEnd={handleDragEnd}
             role="listitem"
-            aria-label={`Image ${imageIndex + 1}${showMainImage && imageIndex === 0 ? ', main image' : ''}. Drag to reorder.`}
+            aria-label={`${t('quilts.dialogs.images.attachment', { index: imageIndex + 1 })} ${
+              showMainImage && imageIndex === 0 ? t('quilts.dialogs.images.main') : ''
+            }. ${t('quilts.dialogs.imageUpload.dragHint')}`}
             className={`
               relative aspect-square rounded-lg overflow-hidden border-2 
               ${draggedIndex === imageIndex ? 'opacity-50 border-blue-500' : 'border-gray-200'}
@@ -142,7 +148,9 @@ export function ImageUpload({
             {/* Main Image Badge */}
             {showMainImage && imageIndex === 0 && (
               <div className="absolute top-2 left-2 z-10">
-                <span className="bg-blue-500 text-white text-xs px-2 py-1 rounded">主图</span>
+                <span className="bg-blue-500 text-white text-xs px-2 py-1 rounded">
+                  {t('quilts.dialogs.images.main')}
+                </span>
               </div>
             )}
 
@@ -150,12 +158,12 @@ export function ImageUpload({
             {/* eslint-disable-next-line @next/next/no-img-element, jsx-a11y/no-noninteractive-element-interactions */}
             <img
               src={image}
-              alt={`图片 ${imageIndex + 1}`}
+              alt={t('quilts.dialogs.images.attachment', { index: imageIndex + 1 })}
               className="absolute inset-0 w-full h-full object-cover"
               style={{ zIndex: 1 }}
               onError={e => {
                 e.currentTarget.src =
-                  'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="200" height="200"%3E%3Crect fill="%23f3f4f6" width="200" height="200"/%3E%3Ctext x="50%25" y="50%25" font-family="system-ui" font-size="14" fill="%239ca3af" text-anchor="middle" dy=".3em"%3E图片加载失败%3C/text%3E%3C/svg%3E';
+                  'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="200" height="200"%3E%3Crect fill="%23f3f4f6" width="200" height="200"/%3E%3Ctext x="50%25" y="50%25" font-family="system-ui" font-size="14" fill="%239ca3af" text-anchor="middle" dy=".3em"%3EError%3C/text%3E%3C/svg%3E';
               }}
             />
 
@@ -173,7 +181,7 @@ export function ImageUpload({
                 opacity-0 group-hover:opacity-100 transition-opacity
                 hover:bg-red-600
               "
-              aria-label="删除图片"
+              aria-label={t('quilts.dialogs.imageUpload.deleteImage')}
             >
               <X className="w-4 h-4" />
             </button>
@@ -187,7 +195,7 @@ export function ImageUpload({
               }}
             >
               <span className="text-white opacity-0 group-hover:opacity-100 text-xs bg-black bg-opacity-50 px-2 py-1 rounded">
-                拖动排序
+                {t('quilts.dialogs.imageUpload.dragHint')}
               </span>
             </div>
           </div>
@@ -214,12 +222,12 @@ export function ImageUpload({
             {isUploading ? (
               <>
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500" />
-                <span className="text-xs mt-2">上传中...</span>
+                <span className="text-xs mt-2">{t('quilts.dialogs.imageUpload.uploading')}</span>
               </>
             ) : (
               <>
                 <Upload className="w-8 h-8 mb-2" />
-                <span className="text-xs">点击上传</span>
+                <span className="text-xs">{t('quilts.dialogs.imageUpload.clickToUpload')}</span>
               </>
             )}
           </button>
@@ -238,7 +246,7 @@ export function ImageUpload({
 
       {/* Help Text */}
       <p className="text-xs text-gray-500">
-        支持 JPEG、PNG、WebP 格式，单个文件最大 5MB。第一张图片将作为主图显示。
+        {t('quilts.dialogs.imageUpload.helpText')}
       </p>
     </div>
   );

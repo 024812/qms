@@ -7,12 +7,12 @@
  * Supports camera capture on mobile devices
  */
 
-import { useState, useRef } from 'react';
-import { X, Upload, Camera } from 'lucide-react';
+import { useRef, useState } from 'react';
+import { Camera, X } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import { toast } from 'sonner';
 import { compressAndEncodeImage, validateImageFile } from '@/lib/image-utils';
 import { Label } from '@/components/ui/label';
-import { Button } from '@/components/ui/button';
 
 export interface CardImageUploadProps {
   frontImage: string;
@@ -27,6 +27,7 @@ export function CardImageUpload({
   onFrontImageChange,
   onBackImageChange,
 }: CardImageUploadProps) {
+  const t = useTranslations('cards.upload');
   const [isUploadingFront, setIsUploadingFront] = useState(false);
   const [isUploadingBack, setIsUploadingBack] = useState(false);
   const frontInputRef = useRef<HTMLInputElement>(null);
@@ -43,16 +44,16 @@ export function CardImageUpload({
       // Validate file
       const validation = validateImageFile(file);
       if (!validation.valid) {
-        toast.error(validation.error || '文件验证失败');
+        toast.error(validation.error || t('validationError'));
         return;
       }
 
       // Compress and encode
       const base64 = await compressAndEncodeImage(file);
       setImage(base64);
-      toast.success('图片已添加');
+      toast.success(t('success'));
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : '图片上传失败');
+      toast.error(error instanceof Error ? error.message : t('error'));
     } finally {
       setUploading(false);
     }
@@ -70,19 +71,19 @@ export function CardImageUpload({
 
   return (
     <div className="space-y-4">
-      <h3 className="font-semibold text-sm">卡片图片</h3>
+      <h3 className="font-semibold text-sm">{t('title')}</h3>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {/* Front Image */}
         <div className="space-y-2">
-          <Label>正面图片（人物面）*</Label>
+          <Label>{t('frontLabel')}</Label>
           
           {frontImage ? (
             <div className="relative aspect-[3/4] rounded-lg overflow-hidden border-2 border-gray-200 group">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={frontImage}
-                alt="卡片正面"
+                alt={t('frontAlt')}
                 className="w-full h-full object-cover"
               />
               <button
@@ -104,13 +105,13 @@ export function CardImageUpload({
                 {isUploadingFront ? (
                   <>
                     <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500" />
-                    <span className="text-xs mt-2">上传中...</span>
+                    <span className="text-xs mt-2">{t('uploading')}</span>
                   </>
                 ) : (
                   <>
                     <Camera className="w-12 h-12 mb-2" />
-                    <span className="text-sm font-medium">拍照或上传</span>
-                    <span className="text-xs mt-1">球星卡正面（人物面）</span>
+                    <span className="text-sm font-medium">{t('clickToUpload')}</span>
+                    <span className="text-xs mt-1">{t('frontHint')}</span>
                   </>
                 )}
               </button>
@@ -130,14 +131,14 @@ export function CardImageUpload({
 
         {/* Back Image */}
         <div className="space-y-2">
-          <Label>反面图片*</Label>
+          <Label>{t('backLabel')}</Label>
           
           {backImage ? (
             <div className="relative aspect-[3/4] rounded-lg overflow-hidden border-2 border-gray-200 group">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={backImage}
-                alt="卡片反面"
+                alt={t('backAlt')}
                 className="w-full h-full object-cover"
               />
               <button
@@ -159,13 +160,13 @@ export function CardImageUpload({
                 {isUploadingBack ? (
                   <>
                     <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500" />
-                    <span className="text-xs mt-2">上传中...</span>
+                    <span className="text-xs mt-2">{t('uploading')}</span>
                   </>
                 ) : (
                   <>
                     <Camera className="w-12 h-12 mb-2" />
-                    <span className="text-sm font-medium">拍照或上传</span>
-                    <span className="text-xs mt-1">球星卡反面</span>
+                    <span className="text-sm font-medium">{t('clickToUpload')}</span>
+                    <span className="text-xs mt-1">{t('backHint')}</span>
                   </>
                 )}
               </button>
@@ -185,10 +186,10 @@ export function CardImageUpload({
       </div>
 
       <p className="text-xs text-muted-foreground">
-        📱 手机上点击按钮可直接调用相机拍照，或从相册选择图片
+        {t('mobileHint')}
       </p>
       <p className="text-xs text-muted-foreground">
-        💻 电脑上可以上传图片文件（支持 JPEG、PNG、WebP，最大 5MB）
+        {t('desktopHint')}
       </p>
     </div>
   );

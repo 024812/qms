@@ -407,6 +407,22 @@
     "cached": "缓存",
     "minutes": "分钟"
   },
+  "commandPalette": {
+    "title": "命令面板",
+    "description": "快速导航和搜索",
+    "placeholder": "输入命令或搜索... (Ctrl+K)",
+    "noResults": "未找到结果",
+    "headers": {
+      "navigation": "导航",
+      "quilts": "被子搜索结果",
+      "theme": "主题"
+    },
+    "theme": {
+      "light": "浅色模式",
+      "dark": "深色模式",
+      "system": "跟随系统"
+    }
+  },
   "notifications": {
     "title": "通知历史",
     "markAllAsRead": "全部标记为已读",
@@ -941,23 +957,6 @@
     "cards": {
       "title": "球星卡管理",
       "desc": "浏览、评价和跟踪您的球星卡收藏。"
-    }
-  },
-  "commandPalette": {
-    "title": "命令面板",
-    "desc": "快速导航和搜索",
-    "placeholder": "输入命令或搜索... (Ctrl+K)",
-    "searching": "搜索中...",
-    "noResults": "未找到结果",
-    "headers": {
-      "navigation": "系统导航",
-      "quilts": "被子",
-      "theme": "主题"
-    },
-    "theme": {
-      "light": "亮色模式",
-      "dark": "暗色模式",
-      "system": "跟随系统"
     }
   },
   "common": {

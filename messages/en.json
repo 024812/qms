@@ -398,6 +398,22 @@
     "cached": "Cached",
     "minutes": "Minutes"
   },
+  "commandPalette": {
+    "title": "Command Palette",
+    "description": "Quick navigation and search",
+    "placeholder": "Type a command or search... (Ctrl+K)",
+    "noResults": "No results found",
+    "headers": {
+      "navigation": "Navigation",
+      "quilts": "Quilt Search Results",
+      "theme": "Theme"
+    },
+    "theme": {
+      "light": "Light Mode",
+      "dark": "Dark Mode",
+      "system": "System Default"
+    }
+  },
   "notifications": {
     "title": "Notification History",
     "markAllAsRead": "Mark All as Read",
@@ -931,23 +947,6 @@
     "cards": {
       "title": "Trading Cards",
       "desc": "View, value, and track your card collection."
-    }
-  },
-  "commandPalette": {
-    "title": "Command Palette",
-    "desc": "Quick navigation and search",
-    "placeholder": "Type a command or search... (Ctrl+K)",
-    "searching": "Searching...",
-    "noResults": "No results found",
-    "headers": {
-      "navigation": "System Navigation",
-      "quilts": "Quilts",
-      "theme": "Theme"
-    },
-    "theme": {
-      "light": "Light Mode",
-      "dark": "Dark Mode",
-      "system": "System"
     }
   },
   "common": {

@@ -167,11 +167,11 @@ export function CommandPalette() {
     <CommandDialog
       open={open}
       onOpenChange={setOpen}
-      title="Command Palette"
-      description="Quick navigation and search"
+      title={t('commandPalette.title')}
+      description={t('commandPalette.description')}
     >
       <CommandInput
-        placeholder="Type a command or search... (Ctrl+K)"
+        placeholder={t('commandPalette.placeholder')}
         value={search}
         onValueChange={setSearch}
       />

@@ -1,0 +1,894 @@
+{
+  "auth": {
+    "login": "Login",
+    "logout": "Logout",
+    "password": "Password",
+    "passwordPlaceholder": "Enter your password",
+    "rememberMe": "Remember me (30 days)",
+    "loginTitle": "QMS Quilt Management System",
+    "loginSubtitle": "Please login to continue",
+    "loginButton": "Login",
+    "loggingIn": "Logging in...",
+    "invalidPassword": "Invalid password",
+    "tooManyAttempts": "Too many attempts. Please try again in 15 minutes",
+    "sessionExpired": "Session expired. Please login again",
+    "loginSuccess": "Login successful",
+    "logoutSuccess": "Logged out successfully",
+    "logoutConfirm": "Are you sure you want to logout?"
+  },
+  "navigation": {
+    "dashboard": "Dashboard",
+    "quilts": "Quilts",
+    "usage": "Usage Tracking",
+    "analytics": "Data Analytics",
+    "maintenance": "Maintenance",
+    "reports": "Import/Export",
+    "settings": "System Settings"
+  },
+  "dashboard": {
+    "title": "Dashboard",
+    "subtitle": "",
+    "stats": {
+      "totalQuilts": "Total Quilts",
+      "inUse": "In Use",
+      "storage": "In Storage",
+      "maintenance": "In Maintenance"
+    },
+    "tabs": {
+      "currentUse": "Current Use",
+      "historicalUse": "Historical Use"
+    },
+    "charts": {
+      "title": "Seasonal Distribution",
+      "winter": "Winter",
+      "springAutumn": "Spring/Autumn",
+      "summer": "Summer"
+    },
+    "actions": {
+      "title": "Quick Actions",
+      "viewQuilts": "View Quilts",
+      "usageTracking": "Usage Tracking",
+      "importData": "Import Data",
+      "exportData": "Export Data"
+    },
+    "success": {
+      "title": "Success!",
+      "message": "QMS application is running and dashboard data loaded successfully."
+    }
+  },
+  "quilts": {
+    "title": "Quilt Collection",
+    "subtitle": "Manage your quilts and track their usage",
+    "actions": {
+      "add": "Add Quilt",
+      "addFirst": "Add Your First Quilt",
+      "search": "Search quilts...",
+      "edit": "Edit"
+    },
+    "views": {
+      "card": "Cards",
+      "list": "List",
+      "name": "Name",
+      "actions": "Actions"
+    },
+    "table": {
+      "itemNumber": "Item #",
+      "season": "Season",
+      "size": "Size",
+      "weight": "Weight",
+      "material": "Material",
+      "fillMaterial": "Fill Material",
+      "color": "Color",
+      "location": "Location",
+      "packagingInfo": "Packaging",
+      "status": "Status"
+    },
+    "form": {
+      "name": "Name",
+      "length": "Length (cm)",
+      "width": "Width (cm)",
+      "color": "Color",
+      "brand": "Brand",
+      "materialDetails": "Material Details",
+      "notes": "Notes",
+      "purchaseDate": "Purchase Date",
+      "packagingInfo": "Packaging Info",
+      "namePlaceholder": "e.g., Winter Down Comforter",
+      "colorPlaceholder": "White",
+      "materialPlaceholder": "Down",
+      "brandPlaceholder": "Brand Name",
+      "locationPlaceholder": "Master bedroom closet",
+      "packagingInfoPlaceholder": "e.g., Vacuum bag, Storage box",
+      "materialDetailsPlaceholder": "Detailed material information...",
+      "notesPlaceholder": "Additional notes..."
+    },
+    "messages": {
+      "noQuiltsFound": "No quilts found",
+      "showing": "Showing",
+      "of": "of",
+      "quilts": "quilts"
+    },
+    "dialogs": {
+      "addTitle": "Add Quilt",
+      "editTitle": "Edit Quilt",
+      "addDesc": "Add a new quilt to your collection",
+      "editDesc": "Edit quilt information",
+      "changeStatus": "Change Status",
+      "changeStatusDesc": "Change status for quilt \"{name}\"",
+      "currentStatus": "Current Status",
+      "newStatus": "New Status"
+    }
+  },
+  "usage": {
+    "title": "Usage Tracking",
+    "subtitle": "Monitor and track quilt usage",
+    "selection": {
+      "title": "Select Quilt to Track",
+      "description": "Choose a quilt to view and manage its usage",
+      "prompt": "Select a quilt from the list above to view and track its usage"
+    },
+    "details": {
+      "title": "Usage Details",
+      "actions": "Usage Actions",
+      "history": "Usage History",
+      "noHistory": "No usage history recorded yet"
+    },
+    "actions": {
+      "startUsing": "Start Using",
+      "endUsage": "End Usage",
+      "notAvailable": "Not Available"
+    },
+    "labels": {
+      "usagePeriod": "Usage Period",
+      "started": "Start Date",
+      "ended": "End Date",
+      "duration": "Duration",
+      "active": "Active",
+      "notes": "Notes",
+      "currentUsageInfo": "Current Usage Info",
+      "startingUsageTracking": "Starting usage tracking",
+      "endingUsageTracking": "Ending usage tracking",
+      "notesOptional": "Notes (Optional)",
+      "notesPlaceholder": "Add notes..."
+    },
+    "status": {
+      "active": "Active",
+      "completed": "Completed"
+    },
+    "stats": {
+      "totalRecords": "Total Records"
+    },
+    "empty": {
+      "title": "No usage records",
+      "description": "Usage records will appear here once you start tracking"
+    },
+    "edit": {
+      "title": "Edit Usage Record",
+      "startDate": "Start Date",
+      "endDate": "End Date",
+      "usageType": "Usage Type",
+      "notes": "Notes",
+      "pickDate": "Pick a date",
+      "pickDateOptional": "Pick a date (optional)",
+      "leaveEmptyIfActive": "Leave empty if still in use",
+      "selectUsageType": "Select usage type",
+      "addNotes": "Add notes about this usage period...",
+      "saveChanges": "Save Changes",
+      "saving": "Saving...",
+      "confirmDelete": "Confirm Delete",
+      "updated": "Usage record updated successfully",
+      "deleted": "Usage record deleted successfully",
+      "updateFailed": "Failed to update usage record",
+      "deleteFailed": "Failed to delete usage record",
+      "dateError": "Start date cannot be after end date",
+      "regularUse": "Regular Use",
+      "guestUse": "Guest Use",
+      "specialOccasion": "Special Occasion",
+      "seasonalRotation": "Seasonal Rotation"
+    }
+  },
+  "settings": {
+    "title": "System Settings",
+    "subtitle": "Manage your application preferences",
+    "sections": {
+      "app": {
+        "title": "Application Settings",
+        "description": "Configure general application preferences",
+        "applicationName": "Application Name",
+        "language": "Language"
+      },
+      "database": {
+        "title": "Database",
+        "description": "Database connection and configuration",
+        "provider": "Database Provider",
+        "connectionStatus": "Connection Status",
+        "connected": "Connected",
+        "totalRecords": "Total Records"
+      },
+      "modules": {
+        "title": "Module Subscription",
+        "description": "Choose which modules to use",
+        "subscribe": "Subscribe",
+        "subscribed": "Subscribed"
+      },
+      "notifications": {
+        "title": "Notifications",
+        "description": "Manage notification preferences",
+        "usageReminders": "Usage Reminders",
+        "usageRemindersDesc": "Get notified about quilt usage patterns",
+        "maintenanceAlerts": "Maintenance Alerts",
+        "maintenanceAlertsDesc": "Receive maintenance reminders"
+      },
+      "system": {
+        "title": "System Information",
+        "version": "Version",
+        "framework": "Framework",
+        "deployment": "Deployment"
+      }
+    },
+    "actions": {
+      "save": "Save Settings",
+      "saved": "Settings Saved!",
+      "saveSuccess": "Settings saved successfully!"
+    }
+  },
+  "status": {
+    "IN_USE": "In Use",
+    "STORAGE": "Storage",
+    "MAINTENANCE": "Maintenance"
+  },
+  "season": {
+    "WINTER": "Winter",
+    "SPRING_AUTUMN": "Spring/Autumn",
+    "SUMMER": "Summer"
+  },
+  "analytics": {
+    "title": "Data Analytics",
+    "subtitle": "Quilt usage analytics and trends",
+    "comingSoon": "Coming Soon",
+    "description": "This page will display detailed usage analytics and trend charts.",
+    "totalQuilts": "Total Quilts",
+    "usageRecords": "Usage Records",
+    "totalUsageDays": "Total Usage Days",
+    "avgUsageDays": "Avg Usage Days",
+    "statusDistribution": "Status Distribution",
+    "seasonDistribution": "Season Distribution",
+    "mostUsedQuilts": "Most Used Quilts",
+    "topByUsageCount": "Top 5 by usage count",
+    "usageTrendByYear": "Usage Trend by Year",
+    "avg": "Avg",
+    "days": "days",
+    "uses": "uses"
+  },
+  "maintenance": {
+    "title": "Maintenance",
+    "subtitle": "Quilt care and maintenance records",
+    "comingSoon": "Coming Soon",
+    "description": "This page will help you track quilt care and maintenance history."
+  },
+  "reports": {
+    "title": "Import/Export",
+    "subtitle": "Batch import and export quilt data",
+    "comingSoon": "Coming Soon",
+    "description": "This page will provide various reporting and data export features.",
+    "exportOptions": "Export Options",
+    "selectFormatAndDownload": "Select report format and download data",
+    "exportButton": "Export",
+    "dataBackup": "Data Backup",
+    "fullBackup": "Full Backup",
+    "inventoryReport": "Inventory Report",
+    "quiltCollectionStatus": "Quilt collection and status report",
+    "fullInventoryList": "Full Inventory List",
+    "byStatus": "By Status",
+    "usageReport": "Usage Report",
+    "usageAnalysis": "Usage and trend analysis",
+    "usageHistory": "Usage History Report",
+    "analyticsReport": "Analytics Report",
+    "tabs": {
+      "export": "Export",
+      "import": "Import"
+    },
+    "export": {
+      "title": "Export Options",
+      "description": "Choose export format",
+      "downloadFailed": "Download failed"
+    },
+    "import": {
+      "title": "Import Data",
+      "description": "Import quilt data from Excel file",
+      "uploadTitle": "Upload Excel File",
+      "uploadDescription": "Select or drag and drop your Excel file containing quilt data",
+      "dropFile": "Drop your Excel file here",
+      "orClickToBrowse": "or click to browse and select a file",
+      "selectFile": "Select File",
+      "uploading": "Uploading...",
+      "processingFile": "Processing file...",
+      "fileRequirements": "File Requirements",
+      "supportedFormats": "Supported formats",
+      "excelFiles": "Excel files (.xlsx, .xls)",
+      "maximumFileSize": "Maximum file size",
+      "perFile": "10MB per file",
+      "expectedColumns": "Expected columns",
+      "columnDescription": "The system will automatically detect and map columns from your Excel file. Common columns include: Item Number, Name, Season, Color, Brand, Location, etc.",
+      "importTips": "Import Tips",
+      "tip1": "Make sure your Excel file has a header row with column names",
+      "tip2": "Item numbers should be unique for each quilt"
+    },
+    "quickActions": "Quick Actions",
+    "oneClickDownload": "One-click download common reports",
+    "inventory": "Inventory",
+    "usage": "Usage",
+    "analysis": "Analysis",
+    "status": "Status"
+  },
+  "weather": {
+    "clear": "Clear",
+    "mostlyClear": "Mostly Clear",
+    "partlyCloudy": "Partly Cloudy",
+    "overcast": "Overcast",
+    "foggy": "Foggy",
+    "rime": "Rime",
+    "lightDrizzle": "Light Drizzle",
+    "moderateDrizzle": "Moderate Drizzle",
+    "heavyDrizzle": "Heavy Drizzle",
+    "lightRain": "Light Rain",
+    "moderateRain": "Moderate Rain",
+    "heavyRain": "Heavy Rain",
+    "lightSnow": "Light Snow",
+    "moderateSnow": "Moderate Snow",
+    "heavySnow": "Heavy Snow",
+    "lightShowers": "Light Showers",
+    "moderateShowers": "Moderate Showers",
+    "heavyShowers": "Heavy Showers",
+    "thunderstorm": "Thunderstorm",
+    "thunderstormWithHail": "Thunderstorm with Hail",
+    "severeThunderstorm": "Severe Thunderstorm with Hail",
+    "unknown": "Unknown",
+    "unavailable": "Unavailable",
+    "failedToFetch": "Failed to Fetch Weather Data",
+    "cached": "Cached",
+    "minutes": "Minutes"
+  },
+  "notifications": {
+    "title": "Notification History",
+    "markAllAsRead": "Mark All as Read",
+    "clearAll": "Clear All",
+    "noNotifications": "No Notifications",
+    "stillOffline": "Still Offline"
+  },
+  "errorBoundary": {
+    "title": "Something Went Wrong",
+    "message": "The application encountered an unexpected error",
+    "suggestion": "Please try refreshing the page or returning to the home page",
+    "retry": "Retry",
+    "refreshPage": "Refresh Page",
+    "backToHome": "Back to Home",
+    "unexpectedError": "An Unexpected Error Occurred"
+  },
+  "pages": {
+    "currentlyInUse": "Currently in Use",
+    "noQuiltsInUse": "No Quilts Currently in Use",
+    "noQuilts": "No Quilts Yet",
+    "noQuiltsDescription": "Click \"Add Quilt\" button to add your first quilt record",
+    "historicalUsage": "Historical Usage on This Day",
+    "fillMaterial": "Fill Material",
+    "weight": "Weight",
+    "location": "Location",
+    "viewDetails": "View Details",
+    "noHistoricalRecords": "No Historical Usage Records"
+  },
+  "ui": {
+    "sortBy": "Sort By",
+    "selectSeason": "Select Season",
+    "selectStatus": "Select Status",
+    "selectLocation": "Select Location",
+    "selectBrand": "Select Brand",
+    "selectCondition": "Select Condition",
+    "selectUsageType": "Select Usage Type",
+    "pickDate": "Pick a Date",
+    "toggleSidebar": "Toggle Sidebar",
+    "pullToRefresh": "Pull to Refresh",
+    "releaseToRefresh": "Release to Refresh",
+    "backToTop": "Back to Top",
+    "allSeasons": "All Seasons",
+    "allStatuses": "All Statuses",
+    "filterByLocation": "Filter by Location"
+  },
+  "forms": {
+    "essentialDetails": "Essential Quilt Details",
+    "specifications": "Specifications",
+    "notesAndImages": "Notes and Images",
+    "additionalNotes": "Any additional notes about this quilt...",
+    "initialObservations": "Any initial observations or reasons for using this quilt...",
+    "heavyQuiltsForCold": "Heavy Quilts for Cold Weather",
+    "mediumWeightTransitional": "Medium Weight for Transitional Seasons",
+    "lightQuiltsForWarm": "Light Quilts for Warm Weather",
+    "readyForUse": "Ready for Use",
+    "currentlyBeingUsed": "Currently Being Used",
+    "storedAway": "Stored Away",
+    "needsCareOrRepair": "Needs Care or Repair"
+  },
+  "usageTracking": {
+    "usedByGuests": "Used by Guests or Visitors",
+    "specialEvents": "Special Events or Occasions",
+    "seasonalRotation": "Seasonal Rotation or Storage",
+    "someWear": "Some Wear but Still Usable",
+    "requiresWashing": "Requires Washing or Cleaning",
+    "requiresMaintenance": "Requires Maintenance or Repair",
+    "inUse": "In Use",
+    "completed": "Completed"
+  },
+  "seasonal": {
+    "switchToHeavyQuilt": "Switch to Heavy Quilt",
+    "switchToLightQuilt": "Switch to Light Quilt",
+    "useBreathableQuilt": "Use Breathable Quilt",
+    "checkStorageConditions": "Check Storage Conditions",
+    "useWinterQuilt": "Use Winter Quilt",
+    "prepareForTrend": "Prepare for Trend",
+    "coldAndDry": "Cold and Dry",
+    "hotAndHumid": "Hot and Humid",
+    "mildAndComfortable": "Mild and Comfortable",
+    "goodTransitionalChoice": "Good Transitional Choice",
+    "heavyWeightForCold": "Heavy Weight for Cold Weather",
+    "lightWeightForWarm": "Light Weight for Warm Weather",
+    "mediumWeightModerate": "Medium Weight for Moderate Temperature",
+    "matchesMaterialPreference": "Matches Your Material Preference",
+    "downMayRetainMoisture": "Down May Retain Moisture in High Humidity",
+    "cottonBreathesWell": "Cotton Breathes Well in Dry Conditions"
+  },
+  "dashboardSpecific": {
+    "overviewAndStats": "Overview and Quick Stats",
+    "manageCollection": "Manage Your Quilt Collection",
+    "trackUsagePeriods": "Track Quilt Usage Periods",
+    "usageInsightsAndTrends": "Usage Insights and Trends",
+    "exportAndReporting": "Import and Export Data",
+    "appConfiguration": "App Configuration",
+    "registerNewQuilt": "Register a New Quilt in Your Collection",
+    "beginTrackingUsage": "Begin Tracking Quilt Usage",
+    "exploreUsagePatterns": "Explore Usage Patterns and Insights",
+    "scheduleQuiltCare": "Schedule Quilt Care and Cleaning",
+    "createReports": "Create Usage and Inventory Reports",
+    "generateReport": "Generate Report",
+    "viewSeasonalDetails": "View Seasonal Details",
+    "viewUsageTrends": "View Usage Trends",
+    "startedUsing": "Started Using",
+    "finishedUsing": "Finished Using",
+    "mostUsed": "Most Used",
+    "overview": "Overview",
+    "alerts": "Alerts"
+  },
+  "mobile": {
+    "quilts": "Quilts",
+    "searchQuilts": "Search Quilts...",
+    "tryAdjustingSearch": "Try Adjusting Your Search or Filters",
+    "addFirstQuiltToStart": "Add Your First Quilt to Get Started",
+    "quiltManagementSystem": "Quilt Management System",
+    "overviewAndStatistics": "Overview and Statistics",
+    "manageYourCollection": "Manage Your Collection",
+    "trackQuiltUsage": "Track Quilt Usage",
+    "seasonalInsights": "Seasonal Insights"
+  },
+  "importExport": {
+    "import": "Import",
+    "export": "Export",
+    "importData": "Import Data",
+    "exportData": "Export Data",
+    "importFromExcel": "Import quilt data from Excel file",
+    "exportToExcel": "Export to Excel",
+    "exportToCsv": "Export to CSV",
+    "exportToJson": "Export to JSON",
+    "selectFile": "Select File",
+    "dataPreview": "Data Preview",
+    "batchImport": "Batch Import",
+    "fileUploaded": "File Uploaded",
+    "uploadFailed": "Upload Failed",
+    "previewFailed": "Preview Failed",
+    "importCompleted": "Import Completed",
+    "importFailed": "Import Failed",
+    "exportCompleted": "Export Completed",
+    "exportFailed": "Export Failed",
+    "downloadFailed": "Download Failed",
+    "invalidFileType": "Invalid File Type",
+    "fileTooLarge": "File Too Large",
+    "supportedFormats": "Supports .xlsx and .xls formats",
+    "previewAndValidate": "Preview and validate data before import",
+    "importMultipleRecords": "Import multiple quilt records at once",
+    "exportFullInventory": "Export complete quilt inventory list",
+    "exportToCsvFormat": "Export data to CSV format for use with other tools",
+    "exportToJsonFormat": "Export raw data to JSON format",
+    "failedToProcessFile": "Failed to process the uploaded file",
+    "failedToReadFile": "Failed to read the uploaded file",
+    "failedToDownloadFile": "Failed to download the exported file"
+  },
+  "importProcess": {
+    "title": "Import Quilts",
+    "description": "Import quilt data from Excel files",
+    "processTitle": "Import Process",
+    "processDescription": "Follow these steps to import your quilt data",
+    "steps": {
+      "upload": "upload",
+      "preview": "preview",
+      "results": "results"
+    },
+    "status": {
+      "completed": "completed",
+      "current": "current",
+      "upcoming": "upcoming"
+    },
+    "loading": {
+      "preview": "Loading preview...",
+      "results": "Loading results..."
+    }
+  },
+  "seasonalIntelligence": {
+    "title": "Seasonal Intelligence",
+    "description": "Smart recommendations and insights for optimal quilt selection",
+    "currentSeason": "Current Season",
+    "overview": "Overview of your quilt collection for the current season",
+    "seasonQuilts": "Season Quilts",
+    "availableNow": "Available Now",
+    "totalUses": "Total Uses",
+    "collectionOverview": "Collection Overview",
+    "current": "Current",
+    "inactive": "Inactive",
+    "allTime": "All Time",
+    "tabs": {
+      "recommendations": "Recommendations",
+      "weather": "Weather",
+      "patterns": "Patterns",
+      "insights": "Insights"
+    },
+    "emptyState": {
+      "title": "No quilts in your collection",
+      "description": "Add some quilts to your collection to get personalized seasonal recommendations and insights."
+    },
+    "patternAnalysis": {
+      "title": "Usage Pattern Analysis",
+      "comingSoon": "Coming soon - Advanced usage pattern analysis",
+      "placeholder": "Pattern analysis will be available soon"
+    },
+    "smartInsights": {
+      "title": "Smart Insights",
+      "description": "AI-powered insights and recommendations based on your usage patterns"
+    },
+    "customizePreferences": "Customize Preferences"
+  },
+  "confirmations": {
+    "deleteQuilt": "Are you sure you want to delete \"{name}\"? This action cannot be undone.",
+    "deleteMultipleQuilts": "Are you sure you want to delete {count} selected quilts? This action cannot be undone."
+  },
+  "toasts": {
+    "usageStarted": "Usage started",
+    "startedUsing": "Started using {name}",
+    "failedToStartUsage": "Failed to start usage",
+    "usageEnded": "Usage ended",
+    "stoppedUsing": "Stopped using {name}",
+    "failedToEndUsage": "Failed to end usage",
+    "quiltDeleted": "Quilt deleted",
+    "removedFromCollection": "{name} has been removed from your collection",
+    "failedToDeleteQuilt": "Failed to delete quilt"
+  },
+  "actions": {
+    "creating": "Creating",
+    "updating": "Updating",
+    "deleting": "Deleting",
+    "saving": "Saving",
+    "loading": "Loading",
+    "importing": "Importing",
+    "exporting": "Exporting",
+    "createdSuccessfully": "Created Successfully",
+    "updatedSuccessfully": "Updated Successfully",
+    "deletedSuccessfully": "Deleted Successfully",
+    "savedSuccessfully": "Saved Successfully",
+    "importedSuccessfully": "Imported Successfully",
+    "exportedSuccessfully": "Exported Successfully",
+    "failedToCreate": "Failed to Create",
+    "failedToUpdate": "Failed to Update",
+    "failedToDelete": "Failed to Delete",
+    "failedToSave": "Failed to Save",
+    "failedToImport": "Failed to Import",
+    "failedToExport": "Failed to Export",
+    "networkError": "Network Error",
+    "unknownError": "Unknown Error",
+    "noChanges": "No Changes",
+    "pleaseSelectItems": "Please Select Items",
+    "confirmDelete": "Confirm Delete",
+    "pleaseTryAgain": "Please Try Again",
+    "usageStarted": "Usage Started",
+    "usageEnded": "Usage Ended",
+    "failedToStartUsage": "Failed to Start Usage",
+    "failedToEndUsage": "Failed to End Usage",
+    "quiltDeleted": "Quilt Deleted",
+    "failedToDeleteQuilt": "Failed to Delete Quilt",
+    "quiltUpdated": "Quilt Updated",
+    "quiltCreated": "Quilt Created",
+    "failedToUpdateQuilt": "Failed to Update Quilt",
+    "failedToCreateQuilt": "Failed to Create Quilt"
+  },
+  "validation": {
+    "required": "Required",
+    "invalidFormat": "Invalid Format",
+    "tooLong": "Too Long",
+    "tooShort": "Too Short",
+    "mustBePositive": "Must Be Positive",
+    "itemNumberMustBePositive": "Item Number Must Be Positive",
+    "nameRequired": "Name is Required",
+    "nameTooLong": "Name Too Long",
+    "lengthMustBePositive": "Length Must Be Positive",
+    "widthMustBePositive": "Width Must Be Positive",
+    "weightMustBePositive": "Weight Must Be Positive",
+    "fillMaterialRequired": "Fill Material is Required",
+    "colorRequired": "Color is Required",
+    "locationRequired": "Location is Required",
+    "maintenanceTypeRequired": "Maintenance Type is Required",
+    "descriptionRequired": "Description is Required"
+  },
+  "emptyStates": {
+    "noQuiltsYet": "No Quilts Yet",
+    "noQuiltsFound": "No Quilts Found",
+    "noUsageHistory": "No Historical Usage Records",
+    "noNotifications": "No Notifications",
+    "noLocation": "No Location",
+    "noData": "No Data Available",
+    "tryAdjustingFilters": "Try Adjusting Your Search or Filters",
+    "addFirstQuilt": "Add Your First Quilt to Get Started"
+  },
+  "dialogs": {
+    "areYouSure": "Are You Sure",
+    "confirmDeleteQuilt": "Are You Sure You Want to Delete Quilt",
+    "confirmDeleteMultiple": "Are You Sure You Want to Delete",
+    "items": "Items",
+    "deletingItems": "Deleting",
+    "successfullyDeleted": "Successfully Deleted",
+    "selectAll": "Select All",
+    "deselectAll": "Deselect All"
+  },
+  "cards": {
+    "title": "Trading Cards",
+    "subtitle": "Manage your sports card collection, track values, and grading",
+    "actions": {
+      "add": "Add Card",
+      "edit": "Edit",
+      "delete": "Delete",
+      "view": "View Details"
+    },
+    "toolbar": {
+      "searchPlaceholder": "Search cards...",
+      "filters": "Filters",
+      "active": "Active",
+      "activeFilters": "Active Filters",
+      "clearFilters": "Clear filters",
+      "sport": "Sport",
+      "allSports": "All Sports",
+      "basketball": "Basketball",
+      "soccer": "Soccer",
+      "grading": "Grading",
+      "anyGrading": "Any Grading",
+      "ungraded": "Ungraded",
+      "status": "Status",
+      "allStatus": "All Status",
+      "collection": "Collection",
+      "forSale": "For Sale",
+      "sold": "Sold"
+    },
+    "empty": {
+      "title": "No cards found",
+      "description": "Start building your collection by adding a new card"
+    },
+    "pagination": {
+      "page": "Page {current} of {total}"
+    },
+    "dialogs": {
+      "addTitle": "Add New Card",
+      "editTitle": "Edit Card"
+    },
+    "gallery": {
+      "title": "Images",
+      "main": "Main Image",
+      "attachment": "Attachment",
+      "ariaLabel": "Card Image Gallery"
+    },
+    "player": {
+      "title": "Player Info",
+      "name": "Player Name",
+      "sport": "Sport",
+      "team": "Team",
+      "position": "Position"
+    },
+    "details": {
+      "title": "Card Details",
+      "year": "Year",
+      "brand": "Brand",
+      "series": "Series",
+      "number": "Card #"
+    },
+    "grading": {
+      "title": "Grading Info",
+      "company": "Grading Company",
+      "grade": "Grade",
+      "certNumber": "Cert #",
+      "ungraded": "Ungraded"
+    },
+    "value": {
+      "title": "Value Info",
+      "purchasePrice": "Purchase Price",
+      "purchaseDate": "Purchase Date",
+      "currentValue": "Current Value",
+      "estimatedValue": "Estimated Value",
+      "roi": "ROI",
+      "range": "Est. Value Range",
+      "estimated": "Estimated",
+      "disclaimer": "Estimate based on card attributes, actual price may vary"
+    },
+    "market": {
+      "title": "Market Data",
+      "viewPrices": "View Market Prices",
+      "searchKeywords": "Search Keywords",
+      "ebay": "eBay Sold",
+      "psa": "PSA CardFacts",
+      "beckett": "Beckett Pricing",
+      "point130": "130Point Sales"
+    },
+    "physical": {
+      "title": "Physical Traits",
+      "parallel": "Parallel",
+      "serialNumber": "Serial #",
+      "autograph": "Autograph",
+      "memorabilia": "Memorabilia",
+      "memorabiliaType": "Type",
+      "isAutographed": "Autographed",
+      "notAutographed": "No Autograph",
+      "hasMemorabilia": "Has Memorabilia",
+      "noMemorabilia": "No Memorabilia",
+      "yes": "Yes",
+      "no": "No"
+    },
+    "storage": {
+      "title": "Storage Info",
+      "status": "Status",
+      "location": "Location",
+      "type": "Storage Type",
+      "condition": "Condition"
+    },
+    "notes": {
+      "title": "Notes",
+      "label": "Notes"
+    },
+    "records": {
+      "title": "Record Info",
+      "created": "Created At",
+      "updated": "Updated At"
+    },
+    "labels": {
+      "tags": "Card Tags"
+    }
+  },
+  "users": {
+    "title": "User Management",
+    "subtitle": "Manage users and permissions",
+    "add": "Add User",
+    "listTitle": "User List",
+    "totalCount": "Total {count} users",
+    "empty": "No users found",
+    "table": {
+      "name": "Name",
+      "email": "Email",
+      "role": "Role",
+      "modules": "Modules",
+      "created": "Created At",
+      "actions": "Actions",
+      "noModules": "None"
+    },
+    "roles": {
+      "admin": "Admin",
+      "member": "Member"
+    },
+    "modules": {
+      "quilts": "Quilts",
+      "cards": "Trading Cards"
+    },
+    "dialogs": {
+      "create": {
+        "title": "Add User",
+        "desc": "Create a new system user"
+      },
+      "edit": {
+        "title": "Edit User",
+        "desc": "Modify user details and permissions"
+      },
+      "delete": {
+        "title": "Confirm Delete",
+        "desc": "Are you sure you want to delete user {name}? This action will delete all data for this user and cannot be undone."
+      },
+      "fields": {
+        "name": "Name",
+        "namePlaceholder": "Enter name",
+        "email": "Email",
+        "emailPlaceholder": "Enter email",
+        "password": "Password",
+        "passwordPlaceholder": "At least 6 characters",
+        "newPassword": "New Password",
+        "newPasswordPlaceholder": "Leave empty to keep unchanged",
+        "role": "Role",
+        "modules": "Modules"
+      }
+    }
+  },
+  "welcome": {
+    "title": "Welcome to QMS",
+    "subtitle": "Simple, intelligent collection management.",
+    "actions": {
+      "viewList": "View List",
+      "viewReports": "View Reports",
+      "configure": "Configure",
+      "commonTitle": "Common Actions",
+      "commonDesc": "Quick tasks you might want to perform.",
+      "addItem": "Add New Item",
+      "search": "Search Database"
+    },
+    "cards": {
+      "title": "Trading Cards",
+      "desc": "View, value, and track your card collection."
+    }
+  },
+  "commandPalette": {
+    "title": "Command Palette",
+    "desc": "Quick navigation and search",
+    "placeholder": "Type a command or search... (Ctrl+K)",
+    "searching": "Searching...",
+    "noResults": "No results found",
+    "headers": {
+      "navigation": "System Navigation",
+      "quilts": "Quilts",
+      "theme": "Theme"
+    },
+    "theme": {
+      "light": "Light Mode",
+      "dark": "Dark Mode",
+      "system": "System"
+    }
+  },
+  "common": {
+    "appName": "QMS",
+    "loading": "Loading...",
+    "create": "Create",
+    "error": "Error",
+    "save": "Save",
+    "cancel": "Cancel",
+    "edit": "Edit",
+    "delete": "Delete",
+    "view": "View",
+    "add": "Add",
+    "search": "Search",
+    "notes": "Notes",
+    "comingSoon": "Coming Soon",
+    "back": "Back",
+    "yes": "Yes",
+    "no": "No",
+    "ok": "OK",
+    "close": "Close",
+    "confirm": "Confirm",
+    "retry": "Retry",
+    "refresh": "Refresh",
+    "clear": "Clear",
+    "viewDetails": "View Details",
+    "backToHome": "Back to Home",
+    "use": "Use",
+    "stop": "Stop",
+    "startUsing": "Start Using",
+    "stopUsing": "Stop Using",
+    "pleaseTryAgain": "Please try again",
+    "today": "today",
+    "neverUsed": "Never used",
+    "inUseSince": "In use since {date}",
+    "lastUsed": "Last used",
+    "daysAgo": "{days} days ago",
+    "openSidebar": "Open sidebar",
+    "expandSidebar": "Expand sidebar",
+    "collapseSidebar": "Collapse sidebar",
+    "viewNotifications": "View notifications",
+    "quiltManagement": "Quilt Management",
+    "version": "Version",
+    "failedToLogout": "Failed to logout. Please try again."
+  }
+}

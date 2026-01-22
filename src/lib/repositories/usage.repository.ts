@@ -15,7 +15,8 @@ import {
   usageRecordToRow,
 } from '@/lib/database/types';
 import { UsageType } from '@/lib/validations/quilt';
-import { eq, and, desc, isNull, sql, SQL, count, sum, max } from 'drizzle-orm';
+import { eq, and, desc, isNull, sql, count, max } from 'drizzle-orm';
+import { updateTag } from 'next/cache';
 
 export interface CreateUsageRecordData {
   quiltId: string;
@@ -70,7 +71,7 @@ export class UsageRepository extends BaseRepositoryImpl<UsageRecordRow, UsageRec
         const { quiltId, limit = 50, offset = 0 } = filters;
         const d = tx || db;
 
-        let query = d.select({
+        const query = d.select({
             id: usageRecords.id,
             quiltId: usageRecords.quiltId,
             startDate: usageRecords.startDate,
@@ -174,10 +175,6 @@ export class UsageRepository extends BaseRepositoryImpl<UsageRecordRow, UsageRec
         
         dbLogger.info('Creating usage record', { quiltId: data.quiltId });
 
-        // id is uuid defaultRandom in schema? 
-        // Schema: id: uuid("id").primaryKey().defaultRandom().notNull(),
-        // so we don't need to pass ID.
-        
         const rows = await d.insert(usageRecords).values({
             quiltId: data.quiltId,
             startDate: data.startDate,
@@ -189,6 +186,15 @@ export class UsageRepository extends BaseRepositoryImpl<UsageRecordRow, UsageRec
         }).returning();
 
         dbLogger.info('Usage record created successfully', { id: rows[0].id, quiltId: data.quiltId });
+        
+        // Invalidate cache tags
+        if (!tx) {
+            updateTag('usage');
+            updateTag('usage-list');
+            updateTag(`usage-quilt-${data.quiltId}`);
+            updateTag('stats');
+        }
+        
         return this.rowToModel(rows[0] as unknown as UsageRecordRow);
       },
       'createUsageRecord',
@@ -215,10 +221,6 @@ export class UsageRepository extends BaseRepositoryImpl<UsageRecordRow, UsageRec
         const rows = await d.update(usageRecords)
             .set({
                 endDate: endDate,
-                notes: notes ? notes : undefined, // Only update notes if provided? Original logic: COALESCE(val, notes) which means update if val provided.
-                // Wait, original logic: notes = COALESCE(${notes || null}, notes). 
-                // If notes arg is null, it keeps existing notes.
-                // In Drizzle, if we don't set 'notes', it keeps existing.
                 ...(notes ? { notes } : {}),
                 updatedAt: now
             })
@@ -231,6 +233,16 @@ export class UsageRepository extends BaseRepositoryImpl<UsageRecordRow, UsageRec
         }
 
         dbLogger.info('Usage record ended successfully', { id: rows[0].id, quiltId });
+        
+        // Invalidate cache tags
+        if (!tx) {
+            updateTag('usage');
+            updateTag('usage-list');
+            updateTag(`usage-${rows[0].id}`);
+            updateTag(`usage-quilt-${quiltId}`);
+            updateTag('stats');
+        }
+
         return this.rowToModel(rows[0] as unknown as UsageRecordRow);
       },
       'endUsageRecord',
@@ -264,6 +276,16 @@ export class UsageRepository extends BaseRepositoryImpl<UsageRecordRow, UsageRec
         }
 
         dbLogger.info('Usage record updated successfully', { id });
+        
+        // Invalidate cache tags
+        if (!tx) {
+            updateTag('usage');
+            updateTag('usage-list');
+            updateTag(`usage-${id}`);
+            updateTag(`usage-quilt-${rows[0].quiltId}`);
+            updateTag('stats');
+        }
+
         return this.rowToModel(rows[0] as unknown as UsageRecordRow);
       },
       'update',
@@ -343,6 +365,10 @@ export class UsageRepository extends BaseRepositoryImpl<UsageRecordRow, UsageRec
     return this.executeQuery(
       async () => {
         const d = tx || db;
+        // Get the record first to know quiltId for invalidation
+        const record = await d.select().from(usageRecords).where(eq(usageRecords.id, id)).limit(1);
+        const quiltId = record[0]?.quiltId;
+
         const result = await d.delete(usageRecords)
             .where(eq(usageRecords.id, id))
             .returning({ id: usageRecords.id });
@@ -350,6 +376,16 @@ export class UsageRepository extends BaseRepositoryImpl<UsageRecordRow, UsageRec
         const success = result.length > 0;
         if (success) {
           dbLogger.info('Usage record deleted successfully', { id });
+          
+          if (!tx) {
+             updateTag('usage');
+             updateTag('usage-list');
+             updateTag(`usage-${id}`);
+             if (quiltId) {
+                 updateTag(`usage-quilt-${quiltId}`);
+             }
+             updateTag('stats');
+          }
         }
         return success;
       },

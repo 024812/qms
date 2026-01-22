@@ -1,9 +1,8 @@
 'use client';
 
-import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { Link, usePathname } from '@/i18n/routing';
 import { useSession } from 'next-auth/react';
-import { useLanguage } from '@/lib/language-provider';
+import { useTranslations } from 'next-intl';
 import { useState, useEffect } from 'react';
 import {
   Package,
@@ -11,7 +10,6 @@ import {
   Settings,
   Calendar,
   Github,
-  Upload,
   CreditCard,
   Bed,
   Users,
@@ -46,22 +44,9 @@ const moduleIcons: Record<string, LucideIcon> = {
   Package,
 };
 
-// Module-specific navigation items
-const moduleNavigation: Record<string, Array<{ name: string; href: string; icon: LucideIcon }>> = {
-  quilts: [
-    { name: '被子列表', href: '/quilts', icon: Package },
-    { name: '使用跟踪', href: '/usage', icon: Calendar },
-    { name: '数据分析', href: '/analytics', icon: BarChart3 },
-  ],
-  cards: [
-    { name: '卡片列表', href: '/cards', icon: CreditCard },
-    // Add more card-specific navigation as needed
-  ],
-};
-
 export function AppSidebar() {
   const pathname = usePathname();
-  const { t } = useLanguage();
+  const t = useTranslations();
   const { data: session, status } = useSession();
 
   const allModules = getAllModules();
@@ -72,6 +57,25 @@ export function AppSidebar() {
 
   // Filter modules based on user's subscriptions
   const subscribedModules = allModules.filter(module => activeModuleIds.includes(module.id));
+
+  // Module-specific navigation items (Memoized or created inside render to access 't')
+  // We'll create a helper function or object inside the component
+  const getModuleNavigation = (moduleId: string) => {
+    switch (moduleId) {
+      case 'quilts':
+        return [
+          { name: t('sidebar.quiltsList'), href: '/quilts', icon: Package },
+          { name: t('navigation.usage'), href: '/usage', icon: Calendar },
+          { name: t('navigation.analytics'), href: '/analytics', icon: BarChart3 },
+        ];
+      case 'cards':
+        return [
+          { name: t('sidebar.cardsList'), href: '/cards', icon: CreditCard },
+        ];
+      default:
+        return [];
+    }
+  };
 
   // Determine which module is currently active based on pathname
   const getCurrentModuleId = () => {
@@ -129,8 +133,8 @@ export function AppSidebar() {
           <Link href="/" className="flex items-center gap-2 px-2 py-1">
             <Package className="h-6 w-6 text-blue-600 shrink-0" />
             <div className="flex flex-col group-data-[collapsible=icon]:hidden">
-              <span className="text-sm font-bold leading-tight">QMS</span>
-              <span className="text-xs text-muted-foreground">家庭物品管理系统</span>
+              <span className="text-sm font-bold leading-tight">{t('common.appName')}</span>
+              <span className="text-xs text-muted-foreground">{t('common.appDescription')}</span>
             </div>
           </Link>
         </SidebarHeader>
@@ -149,8 +153,8 @@ export function AppSidebar() {
         <Link href="/" className="flex items-center gap-2 px-2 py-1">
           <Package className="h-6 w-6 text-blue-600 shrink-0" />
           <div className="flex flex-col group-data-[collapsible=icon]:hidden">
-            <span className="text-sm font-bold leading-tight">QMS</span>
-            <span className="text-xs text-muted-foreground">家庭物品管理系统</span>
+            <span className="text-sm font-bold leading-tight">{t('common.appName')}</span>
+            <span className="text-xs text-muted-foreground">{t('common.appDescription')}</span>
           </div>
         </Link>
       </SidebarHeader>
@@ -159,9 +163,14 @@ export function AppSidebar() {
         {/* My Modules - Show subscribed modules with their sub-navigation */}
         {subscribedModules.map(module => {
           const IconComponent = moduleIcons[module.icon] || Package;
-          const moduleNav = moduleNavigation[module.id] || [];
+          const moduleNav = getModuleNavigation(module.id);
           const isModuleActive = currentModuleId === module.id;
           const hasSubNav = moduleNav.length > 0;
+          
+          // Get translated module name if possible, or fallback to name from registry
+          // Since registry names might be hardcoded in English/Chinese, it's better to translate them 
+          // But for now we use the name from registry. Ideally registry should return translation keys.
+          const moduleName = t(`users.modules.${module.id}`) || module.name;
 
           if (hasSubNav) {
             return (
@@ -178,9 +187,9 @@ export function AppSidebar() {
                     >
                       <SidebarMenuItem>
                         <CollapsibleTrigger asChild>
-                          <SidebarMenuButton tooltip={module.name} isActive={isModuleActive}>
+                          <SidebarMenuButton tooltip={moduleName} isActive={isModuleActive}>
                             <IconComponent className="h-4 w-4" />
-                            <span>{module.name}</span>
+                            <span>{moduleName}</span>
                             <ChevronRight className="ml-auto h-4 w-4 transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
                           </SidebarMenuButton>
                         </CollapsibleTrigger>
@@ -217,10 +226,10 @@ export function AppSidebar() {
               <SidebarGroupContent>
                 <SidebarMenu>
                   <SidebarMenuItem>
-                    <SidebarMenuButton asChild isActive={isModuleActive} tooltip={module.name}>
+                    <SidebarMenuButton asChild isActive={isModuleActive} tooltip={moduleName}>
                       <Link href={`/${module.id}s`} prefetch={false}>
                         <IconComponent className="h-4 w-4" />
-                        <span>{module.name}</span>
+                        <span>{moduleName}</span>
                       </Link>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
@@ -244,7 +253,7 @@ export function AppSidebar() {
                   <SidebarMenuItem>
                     <CollapsibleTrigger asChild>
                       <SidebarMenuButton
-                        tooltip="系统管理"
+                        tooltip={t('sidebar.system')}
                         isActive={
                           pathname.startsWith('/users') ||
                           pathname.startsWith('/admin') ||
@@ -252,7 +261,7 @@ export function AppSidebar() {
                         }
                       >
                         <Wrench className="h-4 w-4" />
-                        <span>系统管理</span>
+                        <span>{t('sidebar.system')}</span>
                         <ChevronRight className="ml-auto h-4 w-4 transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
                       </SidebarMenuButton>
                     </CollapsibleTrigger>
@@ -262,7 +271,7 @@ export function AppSidebar() {
                           <SidebarMenuSubButton asChild isActive={pathname === '/users'}>
                             <Link href="/users" prefetch={false}>
                               <Users className="h-4 w-4" />
-                              <span>用户管理</span>
+                              <span>{t('users.title')}</span>
                             </Link>
                           </SidebarMenuSubButton>
                         </SidebarMenuSubItem>
@@ -270,7 +279,7 @@ export function AppSidebar() {
                           <SidebarMenuSubButton asChild isActive={pathname === '/admin/settings'}>
                             <Link href="/admin/settings" prefetch={false}>
                               <Settings className="h-4 w-4" />
-                              <span>系统配置</span>
+                              <span>{t('sidebar.configuration')}</span>
                             </Link>
                           </SidebarMenuSubButton>
                         </SidebarMenuSubItem>
@@ -278,7 +287,7 @@ export function AppSidebar() {
                           <SidebarMenuSubButton asChild isActive={pathname === '/quilts/settings'}>
                             <Link href="/quilts/settings" prefetch={false}>
                               <Bed className="h-4 w-4" />
-                              <span>被子管理设置</span>
+                              <span>{t('sidebar.quiltSettings')}</span>
                             </Link>
                           </SidebarMenuSubButton>
                         </SidebarMenuSubItem>
@@ -299,11 +308,11 @@ export function AppSidebar() {
                 <SidebarMenuButton
                   asChild
                   isActive={pathname === '/settings' || pathname === '/modules'}
-                  tooltip="用户设置"
+                  tooltip={t('sidebar.userSettings')}
                 >
                   <Link href="/settings" prefetch={false}>
                     <Settings className="h-4 w-4" />
-                    <span>用户设置</span>
+                    <span>{t('sidebar.userSettings')}</span>
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>

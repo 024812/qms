@@ -7,19 +7,10 @@
  * Requirements: 4.1, 4.2
  */
 
-// Generic Item type for card display
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-interface Item {
-  id: string;
-  name: string;
-  createdAt: Date;
-  type?: string;
-  status?: string;
-  [key: string]: any; // Allow other properties for Quilt/Card types
-}
 import { getModule } from '@/modules/registry';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { useTranslations } from 'next-intl';
 
 /**
  * ItemCard Props
@@ -37,9 +28,10 @@ interface ItemCardProps {
  * Falls back to a default card layout if no custom CardComponent is provided.
  */
 export function ItemCard({ item, onClick }: ItemCardProps) {
-  const module = getModule(item.type);
+  const t = useTranslations('status');
+  const moduleConfig = getModule(item.type);
 
-  if (!module) {
+  if (!moduleConfig) {
     return (
       <Card className="cursor-pointer hover:shadow-lg transition-shadow" onClick={onClick}>
         <CardContent className="p-4">
@@ -50,8 +42,8 @@ export function ItemCard({ item, onClick }: ItemCardProps) {
   }
 
   // Use module-specific CardComponent if provided
-  if (module.CardComponent) {
-    const { CardComponent } = module;
+  if (moduleConfig.CardComponent) {
+    const { CardComponent } = moduleConfig;
     return (
       <Card className="cursor-pointer hover:shadow-lg transition-shadow" onClick={onClick}>
         <CardContent className="p-4">
@@ -68,9 +60,9 @@ export function ItemCard({ item, onClick }: ItemCardProps) {
         <div className="space-y-2">
           <div className="flex items-start justify-between">
             <h3 className="font-semibold text-lg">{item.name}</h3>
-            <Badge variant={getStatusVariant(item.status)}>{getStatusLabel(item.status)}</Badge>
+            <Badge variant={getStatusVariant(item.status)}>{t(item.status.toUpperCase())}</Badge>
           </div>
-          <p className="text-sm text-muted-foreground">{module.name}</p>
+          <p className="text-sm text-muted-foreground">{moduleConfig.name}</p>
           <div className="text-xs text-muted-foreground">
             Created: {new Date(item.createdAt).toLocaleDateString()}
           </div>
@@ -96,17 +88,4 @@ function getStatusVariant(status: string): 'default' | 'secondary' | 'outline' |
     default:
       return 'secondary';
   }
-}
-
-/**
- * Get status label
- */
-function getStatusLabel(status: string): string {
-  const labels: Record<string, string> = {
-    in_use: '使用中',
-    storage: '存储中',
-    maintenance: '维护中',
-    lost: '丢失',
-  };
-  return labels[status] || status;
 }

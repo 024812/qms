@@ -405,6 +405,19 @@ export class QuiltRepository extends BaseRepositoryImpl<QuiltRow, Quilt> {
            const updated = await this.update(id, { currentStatus: newStatus }, tx);
            if (!updated) throw new Error('Failed to update quilt status');
 
+           // Invalidate cache tags
+           // Note: this.update already invalidates 'quilts' and related quilt tags.
+           // We need to invalidate 'usage' tags because we manually modified usageRecords table above.
+           if (usageRecord || (previousStatus === 'IN_USE' && newStatus !== 'IN_USE')) {
+               updateTag('usage');
+               updateTag('usage-list');
+               updateTag(`usage-quilt-${id}`);
+               if (usageRecord) {
+                   updateTag(`usage-${usageRecord.id}`);
+               }
+               updateTag('stats');
+           }
+
            return { quilt: updated, usageRecord };
         });
       },

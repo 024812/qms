@@ -22,19 +22,21 @@ import {
   Minus,
 } from 'lucide-react';
 import { type WeatherForecast } from '@/lib/weather-service';
-import { useLanguage } from '@/lib/language-provider';
+import { useLocale, useTranslations } from 'next-intl';
 
 interface WeatherForecastProps {
   className?: string;
 }
 
 export function WeatherForecastWidget({ className }: WeatherForecastProps) {
-  const { language, t } = useLanguage();
+  const locale = useLocale();
+  const t = useTranslations();
+  const language = locale; // Adapter for existing logic if strictly needed, though logic below uses locale directly or language checks
   const [forecast, setForecast] = useState<WeatherForecast[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const locale = language === 'zh' ? 'zh-CN' : 'en-US';
+  const apiLocale = locale === 'zh' ? 'zh-CN' : 'en-US';
 
   const fetchForecast = async () => {
     try {
@@ -126,7 +128,7 @@ export function WeatherForecastWidget({ className }: WeatherForecastProps) {
           <div className="flex items-center gap-2">
             <MapPin className="w-5 h-5 text-muted-foreground" />
             <h3 className="text-lg font-semibold text-foreground">
-              {language === 'zh' ? '上海 · 未来7天天气' : 'Shanghai · 7-Day Forecast'}
+              {locale === 'zh' ? '上海 · 未来7天天气' : 'Shanghai · 7-Day Forecast'}
             </h3>
           </div>
           <Button onClick={fetchForecast} variant="ghost" size="sm" className="h-8 w-8 p-0">
@@ -179,7 +181,7 @@ export function WeatherForecastWidget({ className }: WeatherForecastProps) {
         </div>
 
         <div className="mt-4 text-xs text-muted-foreground text-center">
-          {language === 'zh' ? '数据来源：Open-Meteo' : 'Data source: Open-Meteo'}
+          {locale === 'zh' ? '数据来源：Open-Meteo' : 'Data source: Open-Meteo'}
         </div>
       </CardContent>
     </Card>

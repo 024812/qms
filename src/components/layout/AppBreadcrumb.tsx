@@ -1,7 +1,7 @@
 'use client';
 
-import { usePathname } from 'next/navigation';
-import { useLanguage } from '@/lib/language-provider';
+import { usePathname } from '@/i18n/routing';
+import { useTranslations } from 'next-intl';
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -25,7 +25,7 @@ const getRouteNames = (t: (key: string) => string): Record<string, string> => ({
 
 export function AppBreadcrumb() {
   const pathname = usePathname();
-  const { t } = useLanguage();
+  const t = useTranslations();
   const routeNames = getRouteNames(t);
 
   // 解析路径段

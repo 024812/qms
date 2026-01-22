@@ -1,8 +1,8 @@
 'use client';
 
 import * as React from 'react';
-import { useRouter } from 'next/navigation';
-import { useLanguage } from '@/lib/language-provider';
+import { useRouter } from '@/i18n/routing';
+import { useTranslations } from 'next-intl';
 import { useSession } from 'next-auth/react'; // Session Context
 import {
   CommandDialog,
@@ -41,7 +41,7 @@ export function CommandPalette() {
   const [quilts, setQuilts] = React.useState<Quilt[]>([]);
   const [loading, setLoading] = React.useState(false);
   const router = useRouter();
-  const { t } = useLanguage();
+  const t = useTranslations();
   const { setTheme } = useTheme();
 
   // Get Access Control List from Session
@@ -139,13 +139,13 @@ export function CommandPalette() {
       requiredModule: 'reports',
     },
     {
-      name: t('navigation.users') || 'User Management',
+      name: t('users.title'),
       href: '/users',
       icon: Users,
       requiredModule: 'admin',
     }, // Or check role === ADMIN
     {
-      name: t('navigation.settings') || 'Settings',
+      name: t('navigation.settings'),
       href: '/settings',
       icon: Settings,
       requiredModule: null,
@@ -176,10 +176,10 @@ export function CommandPalette() {
         onValueChange={setSearch}
       />
       <CommandList>
-        <CommandEmpty>{loading ? 'Searching...' : 'No results found.'}</CommandEmpty>
+        <CommandEmpty>{loading ? t('common.loading') : t('commandPalette.noResults')}</CommandEmpty>
 
         {/* System Navigation - Dynamic based on permissions */}
-        <CommandGroup heading="System Navigation">
+        <CommandGroup heading={t('commandPalette.headers.navigation')}>
           {filteredNavigation.map(item => (
             <CommandItem
               key={item.href}
@@ -196,7 +196,7 @@ export function CommandPalette() {
 
         {/* Quilt Search Results - Only shown if authorized */}
         {quilts.length > 0 && canAccess('quilts') && (
-          <CommandGroup heading="Quilts">
+          <CommandGroup heading={t('commandPalette.headers.quilts')}>
             {quilts.map(quilt => (
               <CommandItem
                 key={quilt.id}
@@ -216,18 +216,18 @@ export function CommandPalette() {
         )}
 
         {/* Theme Toggles */}
-        <CommandGroup heading="Theme">
+        <CommandGroup heading={t('commandPalette.headers.theme')}>
           <CommandItem value="theme-light" onSelect={() => runCommand(() => setTheme('light'))}>
             <Sun className="mr-2 h-4 w-4" />
-            <span>Light Mode</span>
+            <span>{t('commandPalette.theme.light')}</span>
           </CommandItem>
           <CommandItem value="theme-dark" onSelect={() => runCommand(() => setTheme('dark'))}>
             <Moon className="mr-2 h-4 w-4" />
-            <span>Dark Mode</span>
+            <span>{t('commandPalette.theme.dark')}</span>
           </CommandItem>
           <CommandItem value="theme-system" onSelect={() => runCommand(() => setTheme('system'))}>
             <Monitor className="mr-2 h-4 w-4" />
-            <span>System</span>
+            <span>{t('commandPalette.theme.system')}</span>
           </CommandItem>
         </CommandGroup>
       </CommandList>

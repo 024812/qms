@@ -5,7 +5,7 @@ import { Search, LogOut } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { SidebarTrigger } from '@/components/ui/sidebar';
 import { ThemeToggle } from '@/components/ui/theme-toggle';
-import { useLanguage } from '@/lib/language-provider';
+import { useTranslations } from 'next-intl';
 import { Separator } from '@/components/ui/separator';
 import { AppBreadcrumb } from './AppBreadcrumb';
 import { logoutUser } from '@/app/actions/logout';
@@ -22,17 +22,8 @@ import {
 } from '@/components/ui/alert-dialog';
 
 export function AppHeader() {
-  const { t } = useLanguage();
+  const t = useTranslations();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
-
-  const handleLogout = async () => {
-    setIsLoggingOut(true);
-    try {
-      await logoutUser();
-    } catch {
-      setIsLoggingOut(false);
-    }
-  };
 
   return (
     <header className="sticky top-0 z-40 flex h-16 shrink-0 items-center gap-2 border-b bg-background px-4">
@@ -95,7 +86,14 @@ export function AppHeader() {
             <AlertDialogFooter>
               <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
               <AlertDialogAction
-                onClick={handleLogout}
+                onClick={async () => {
+                  setIsLoggingOut(true);
+                  try {
+                    await logoutUser();
+                  } catch {
+                    setIsLoggingOut(false);
+                  }
+                }}
                 disabled={isLoggingOut}
                 className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
               >

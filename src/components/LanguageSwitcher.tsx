@@ -1,7 +1,7 @@
 'use client';
 
-import { useLanguage } from '@/lib/language-provider';
-import type { Language } from '@/lib/i18n';
+import { useLocale } from 'next-intl';
+import { usePathname, useRouter } from '@/i18n/routing';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -11,14 +11,22 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Languages, Check } from 'lucide-react';
 
-const localeNames: Record<Language, { flag: string; name: string }> = {
+const localeNames: Record<string, { flag: string; name: string }> = {
   zh: { flag: '🇨🇳', name: '中文' },
   en: { flag: '🇺🇸', name: 'English' },
 };
 
 export function LanguageSwitcher() {
-  const { language, setLanguage } = useLanguage();
-  const current = localeNames[language];
+  const locale = useLocale();
+  const router = useRouter();
+  const pathname = usePathname();
+  const current = localeNames[locale];
+
+  const handleLanguageChange = (newLocale: string) => {
+    router.replace(pathname, { locale: newLocale });
+  };
+
+  if (!current) return null;
 
   return (
     <DropdownMenu>
@@ -35,12 +43,12 @@ export function LanguageSwitcher() {
         {Object.entries(localeNames).map(([key, { flag, name }]) => (
           <DropdownMenuItem
             key={key}
-            onClick={() => setLanguage(key as Language)}
+            onClick={() => handleLanguageChange(key)}
             className="gap-2 cursor-pointer"
           >
             <span>{flag}</span>
             <span>{name}</span>
-            {key === language && <Check className="ml-auto h-4 w-4" />}
+            {key === locale && <Check className="ml-auto h-4 w-4" />}
           </DropdownMenuItem>
         ))}
       </DropdownMenuContent>

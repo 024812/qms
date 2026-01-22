@@ -10,7 +10,7 @@
 'use client';
 
 // Generic Item type for list display
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+ 
 interface Item {
   id: string;
   name: string;

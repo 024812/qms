@@ -1,0 +1,918 @@
+{
+  "auth": {
+    "login": "登录",
+    "logout": "退出登录",
+    "password": "密码",
+    "passwordPlaceholder": "请输入密码",
+    "rememberMe": "记住我（30天）",
+    "loginTitle": "QMS 被子管理系统",
+    "loginSubtitle": "请登录以继续",
+    "loginButton": "登录",
+    "loggingIn": "登录中...",
+    "invalidPassword": "密码错误",
+    "tooManyAttempts": "尝试次数过多，请15分钟后再试",
+    "sessionExpired": "会话已过期，请重新登录",
+    "loginSuccess": "登录成功",
+    "logoutSuccess": "已退出登录",
+    "logoutConfirm": "确定要退出登录吗？",
+    "registerTitle": "注册新账户",
+    "name": "姓名",
+    "namePlaceholder": "请输入您的姓名",
+    "email": "邮箱",
+    "emailPlaceholder": "请输入您的邮箱",
+    "confirmPassword": "确认密码",
+    "confirmPasswordPlaceholder": "再次输入密码",
+    "passwordMinLength": "至少6个字符",
+    "registerButton": "注册",
+    "registering": "注册中...",
+    "registerSuccess": "注册成功！正在跳转..."
+  },
+
+  "sidebar": {
+    "system": "系统管理",
+    "configuration": "系统配置",
+    "quiltSettings": "被子管理设置",
+    "userSettings": "用户设置",
+    "quiltsList": "被子列表",
+    "cardsList": "卡片列表"
+  },
+  "navigation": {
+    "dashboard": "仪表面板",
+    "quilts": "被子管理",
+    "usage": "使用跟踪",
+    "analytics": "数据分析",
+    "maintenance": "维护",
+    "reports": "导入导出",
+    "settings": "系统设置"
+  },
+  "dashboard": {
+    "title": "仪表面板",
+    "subtitle": "",
+    "stats": {
+      "totalQuilts": "被子总数",
+      "inUse": "使用中",
+      "storage": "已存储",
+      "maintenance": "维护中"
+    },
+    "tabs": {
+      "currentUse": "当前使用",
+      "historicalUse": "历史使用"
+    },
+    "charts": {
+      "title": "季节分布",
+      "winter": "冬季",
+      "springAutumn": "春秋",
+      "summer": "夏季"
+    },
+    "actions": {
+      "title": "快速操作",
+      "viewQuilts": "查看被子",
+      "usageTracking": "使用跟踪",
+      "importData": "导入数据",
+      "exportData": "导出数据"
+    },
+    "success": {
+      "title": "成功！",
+      "message": "QMS 应用程序正在运行，仪表板数据已成功加载。"
+    }
+  },
+  "quilts": {
+    "title": "被子收藏",
+    "subtitle": "管理您的被子并跟踪使用情况",
+    "actions": {
+      "add": "添加被子",
+      "addFirst": "添加您的第一床被子",
+      "search": "搜索被子...",
+      "edit": "编辑"
+    },
+    "views": {
+      "card": "卡片",
+      "list": "列表",
+      "name": "名称",
+      "actions": "操作"
+    },
+    "table": {
+      "itemNumber": "编号",
+      "season": "季节",
+      "size": "尺寸",
+      "weight": "重量",
+      "material": "材料",
+      "fillMaterial": "填充材料",
+      "color": "颜色",
+      "location": "位置",
+      "packagingInfo": "存放用包",
+      "status": "状态"
+    },
+    "form": {
+      "name": "被子名称",
+      "length": "长度 (cm)",
+      "width": "宽度 (cm)",
+      "color": "颜色",
+      "brand": "品牌",
+      "materialDetails": "材料详情",
+      "notes": "备注",
+      "purchaseDate": "购买日期",
+      "packagingInfo": "存放用包",
+      "namePlaceholder": "例如：冬季羽绒被",
+      "colorPlaceholder": "白色",
+      "materialPlaceholder": "羽绒",
+      "brandPlaceholder": "品牌名称",
+      "locationPlaceholder": "卧室衣柜",
+      "packagingInfoPlaceholder": "例如：真空袋、收纳箱",
+      "materialDetailsPlaceholder": "详细的材料信息...",
+      "notesPlaceholder": "其他备注信息..."
+    },
+    "messages": {
+      "noQuiltsFound": "未找到被子",
+      "showing": "显示",
+      "of": "共",
+      "quilts": "床被子"
+    },
+    "dialogs": {
+      "addTitle": "添加被子",
+      "editTitle": "编辑被子",
+      "addDesc": "添加新的被子到您的收藏",
+      "editDesc": "修改被子信息",
+      "changeStatus": "更改状态",
+      "changeStatusDesc": "更改被子 \"{name}\" 的状态",
+      "currentStatus": "当前状态",
+      "newStatus": "新状态"
+    }
+  },
+  "usage": {
+    "title": "使用跟踪",
+    "subtitle": "监控和跟踪被子使用情况",
+    "selection": {
+      "title": "选择要跟踪的被子",
+      "description": "选择一床被子来查看和管理其使用情况",
+      "prompt": "从上面的列表中选择一床被子来查看和跟踪其使用情况"
+    },
+    "details": {
+      "title": "使用详情",
+      "actions": "使用操作",
+      "history": "使用历史",
+      "noHistory": "尚未记录使用历史"
+    },
+    "actions": {
+      "startUsing": "开始使用",
+      "endUsage": "结束使用",
+      "notAvailable": "不可用"
+    },
+    "labels": {
+      "usagePeriod": "使用期间",
+      "started": "开始日期",
+      "ended": "结束日期",
+      "duration": "持续时间",
+      "active": "使用中",
+      "notes": "备注",
+      "currentUsageInfo": "当前使用信息",
+      "startingUsageTracking": "开始使用跟踪",
+      "endingUsageTracking": "结束使用跟踪",
+      "notesOptional": "备注（可选）",
+      "notesPlaceholder": "添加备注信息..."
+    },
+    "status": {
+      "active": "使用中",
+      "completed": "已完成"
+    },
+    "stats": {
+      "totalRecords": "总记录"
+    },
+    "empty": {
+      "title": "暂无使用记录",
+      "description": "开始使用被子后，记录将显示在这里"
+    },
+    "edit": {
+      "title": "编辑使用记录",
+      "startDate": "开始日期",
+      "endDate": "结束日期",
+      "usageType": "使用类型",
+      "notes": "备注",
+      "pickDate": "选择日期",
+      "pickDateOptional": "选择日期（可选）",
+      "leaveEmptyIfActive": "如果仍在使用请留空",
+      "selectUsageType": "选择使用类型",
+      "addNotes": "添加关于此使用期间的备注...",
+      "saveChanges": "保存更改",
+      "saving": "保存中...",
+      "confirmDelete": "确认删除",
+      "updated": "使用记录更新成功",
+      "deleted": "使用记录删除成功",
+      "updateFailed": "更新使用记录失败",
+      "deleteFailed": "删除使用记录失败",
+      "dateError": "开始日期不能晚于结束日期",
+      "regularUse": "常规使用",
+      "guestUse": "客人使用",
+      "specialOccasion": "特殊场合",
+      "seasonalRotation": "季节轮换"
+    }
+  },
+  "settings": {
+    "title": "系统设置",
+    "subtitle": "管理您的应用程序偏好设置",
+    "sections": {
+      "app": {
+        "title": "应用程序设置",
+        "description": "配置常规应用程序偏好设置",
+        "applicationName": "应用程序名称",
+        "language": "语言"
+      },
+      "database": {
+        "title": "数据库",
+        "description": "数据库连接和配置",
+        "provider": "数据库提供商",
+        "connectionStatus": "连接状态",
+        "connected": "已连接",
+        "totalRecords": "总记录数"
+      },
+      "modules": {
+        "title": "模块订阅",
+        "description": "选择要使用的功能模块",
+        "subscribe": "订阅",
+        "subscribed": "已订阅"
+      },
+      "notifications": {
+        "title": "通知",
+        "description": "管理通知偏好设置",
+        "usageReminders": "使用提醒",
+        "usageRemindersDesc": "获取被子使用模式通知",
+        "maintenanceAlerts": "维护警报",
+        "maintenanceAlertsDesc": "接收维护提醒"
+      },
+      "system": {
+        "title": "系统信息",
+        "version": "版本",
+        "framework": "框架",
+        "deployment": "部署"
+      }
+    },
+    "actions": {
+      "save": "保存设置",
+      "saved": "设置已保存！",
+      "saveSuccess": "设置保存成功！"
+    }
+  },
+  "status": {
+    "IN_USE": "使用中",
+    "STORAGE": "存储中",
+    "MAINTENANCE": "维护中"
+  },
+  "season": {
+    "WINTER": "冬季",
+    "SPRING_AUTUMN": "春秋",
+    "SUMMER": "夏季"
+  },
+  "analytics": {
+    "title": "数据分析",
+    "subtitle": "被子使用情况分析和趋势",
+    "comingSoon": "即将推出",
+    "description": "这个页面将显示详细的使用分析和趋势图表。",
+    "totalQuilts": "被子总数",
+    "usageRecords": "使用记录",
+    "totalUsageDays": "总使用天数",
+    "avgUsageDays": "平均使用天数",
+    "statusDistribution": "状态分布",
+    "seasonDistribution": "季节分布",
+    "mostUsedQuilts": "最常使用的被子",
+    "topByUsageCount": "按使用次数排序的前5名",
+    "usageTrendByYear": "年度使用趋势",
+    "avg": "平均",
+    "days": "天",
+    "uses": "次"
+  },
+  "maintenance": {
+    "title": "维护",
+    "subtitle": "被子护理和维护记录",
+    "comingSoon": "即将推出",
+    "description": "这个页面将帮助您跟踪被子的护理和维护历史。"
+  },
+  "reports": {
+    "title": "导入导出",
+    "subtitle": "批量导入和导出被子数据",
+    "comingSoon": "即将推出",
+    "description": "这个页面将提供各种报告和数据导出功能。",
+    "exportOptions": "导出选项",
+    "selectFormatAndDownload": "选择报告格式并下载数据",
+    "exportButton": "导出",
+    "dataBackup": "数据备份",
+    "fullBackup": "完整备份",
+    "inventoryReport": "库存报告",
+    "quiltCollectionStatus": "被子收藏和状态报告",
+    "fullInventoryList": "完整库存清单",
+    "byStatus": "按状态分类",
+    "usageReport": "使用报告",
+    "usageAnalysis": "使用情况和趋势分析",
+    "usageHistory": "使用历史报告",
+    "analyticsReport": "分析报告",
+    "tabs": {
+      "export": "导出",
+      "import": "导入"
+    },
+    "export": {
+      "title": "导出选项",
+      "description": "选择导出格式",
+      "downloadFailed": "下载失败"
+    },
+    "import": {
+      "title": "导入数据",
+      "description": "从Excel文件导入被子数据",
+      "uploadTitle": "上传Excel文件",
+      "uploadDescription": "选择或拖放包含被子数据的Excel文件",
+      "dropFile": "将Excel文件拖放到这里",
+      "orClickToBrowse": "或点击浏览并选择文件",
+      "selectFile": "选择文件",
+      "uploading": "上传中...",
+      "processingFile": "处理文件中...",
+      "fileRequirements": "文件要求",
+      "supportedFormats": "支持的格式",
+      "excelFiles": "Excel文件（.xlsx, .xls）",
+      "maximumFileSize": "最大文件大小",
+      "perFile": "每个文件10MB",
+      "expectedColumns": "预期列",
+      "columnDescription": "系统将自动检测并映射Excel文件中的列。常见列包括：编号、名称、季节、颜色、品牌、位置等。",
+      "importTips": "导入提示",
+      "tip1": "确保您的Excel文件每行都有列名标题",
+      "tip2": "每床被子的编号应该是唯一的"
+    },
+    "quickActions": "快速操作",
+    "oneClickDownload": "一键下载常用报告",
+    "inventory": "库存",
+    "usage": "使用",
+    "analysis": "分析",
+    "status": "状态"
+  },
+  "weather": {
+    "clear": "晴朗",
+    "mostlyClear": "大部晴朗",
+    "partlyCloudy": "部分多云",
+    "overcast": "阴天",
+    "foggy": "有雾",
+    "rime": "雾凇",
+    "lightDrizzle": "小雨",
+    "moderateDrizzle": "中雨",
+    "heavyDrizzle": "大雨",
+    "lightRain": "小雨",
+    "moderateRain": "中雨",
+    "heavyRain": "大雨",
+    "lightSnow": "小雪",
+    "moderateSnow": "中雪",
+    "heavySnow": "大雪",
+    "lightShowers": "阵雨",
+    "moderateShowers": "中阵雨",
+    "heavyShowers": "大阵雨",
+    "thunderstorm": "雷暴",
+    "thunderstormWithHail": "雷暴伴冰雹",
+    "severeThunderstorm": "强雷暴伴冰雹",
+    "unknown": "未知",
+    "unavailable": "无法获取",
+    "failedToFetch": "获取天气数据失败",
+    "cached": "缓存",
+    "minutes": "分钟"
+  },
+  "notifications": {
+    "title": "通知历史",
+    "markAllAsRead": "全部标记为已读",
+    "clearAll": "清空全部",
+    "noNotifications": "暂无通知",
+    "stillOffline": "仍然离线"
+  },
+  "errorBoundary": {
+    "title": "出错了",
+    "message": "应用程序遇到了意外错误",
+    "suggestion": "请尝试刷新页面或返回首页",
+    "retry": "重试",
+    "refreshPage": "刷新页面",
+    "backToHome": "返回首页",
+    "unexpectedError": "发生意外错误"
+  },
+  "pages": {
+    "currentlyInUse": "当前在用被子",
+    "noQuiltsInUse": "暂无在用被子",
+    "noQuilts": "暂无被子",
+    "noQuiltsDescription": "点击\"添加被子\"按钮添加您的第一条被子记录",
+    "historicalUsage": "往年今日在用被子",
+    "fillMaterial": "填充物",
+    "weight": "重量",
+    "location": "位置",
+    "viewDetails": "查看详情",
+    "noHistoricalRecords": "暂无历史使用记录"
+  },
+  "ui": {
+    "sortBy": "排序方式",
+    "selectSeason": "选择季节",
+    "selectStatus": "选择状态",
+    "selectLocation": "选择位置",
+    "selectBrand": "选择品牌",
+    "selectCondition": "选择状况",
+    "selectUsageType": "选择使用类型",
+    "pickDate": "选择日期",
+    "toggleSidebar": "切换侧边栏",
+    "pullToRefresh": "下拉刷新",
+    "releaseToRefresh": "释放刷新",
+    "backToTop": "返回顶部",
+    "allSeasons": "所有季节",
+    "allStatuses": "所有状态",
+    "filterByLocation": "按位置筛选"
+  },
+  "forms": {
+    "essentialDetails": "基本详情",
+    "specifications": "规格",
+    "notesAndImages": "备注和图片",
+    "additionalNotes": "其他备注信息...",
+    "initialObservations": "初始观察或使用原因...",
+    "heavyQuiltsForCold": "适合寒冷天气的厚被子",
+    "mediumWeightTransitional": "适合过渡季节的中等重量",
+    "lightQuiltsForWarm": "适合温暖天气的轻被子",
+    "readyForUse": "可以使用",
+    "currentlyBeingUsed": "正在使用中",
+    "storedAway": "已存放",
+    "needsCareOrRepair": "需要护理或维修"
+  },
+  "usageTracking": {
+    "usedByGuests": "客人或访客使用",
+    "specialEvents": "特殊活动或场合",
+    "seasonalRotation": "季节轮换或存储",
+    "someWear": "有些磨损但仍可用",
+    "requiresWashing": "需要清洗或清洁",
+    "requiresMaintenance": "需要维护或维修",
+    "inUse": "使用中",
+    "completed": "已完成"
+  },
+  "seasonal": {
+    "switchToHeavyQuilt": "切换到厚被子",
+    "switchToLightQuilt": "切换到轻被子",
+    "useBreathableQuilt": "使用透气被子",
+    "checkStorageConditions": "检查存储条件",
+    "useWinterQuilt": "使用冬季被子",
+    "prepareForTrend": "为趋势做准备",
+    "coldAndDry": "寒冷干燥",
+    "hotAndHumid": "炎热潮湿",
+    "mildAndComfortable": "温和舒适",
+    "goodTransitionalChoice": "良好的过渡选择",
+    "heavyWeightForCold": "适合寒冷天气的重量",
+    "lightWeightForWarm": "适合温暖天气的重量",
+    "mediumWeightModerate": "适合温和温度的中等重量",
+    "matchesMaterialPreference": "符合您的材料偏好",
+    "downMayRetainMoisture": "羽绒在高湿度下可能保持水分",
+    "cottonBreathesWell": "棉在干燥条件下透气性好"
+  },
+  "dashboardSpecific": {
+    "overviewAndStats": "概览和统计",
+    "manageCollection": "管理您的收藏",
+    "trackUsagePeriods": "跟踪使用期间",
+    "usageInsightsAndTrends": "使用见解和趋势",
+    "exportAndReporting": "导入和导出数据",
+    "appConfiguration": "应用配置",
+    "registerNewQuilt": "在您的收藏中注册新被子",
+    "beginTrackingUsage": "开始跟踪被子使用",
+    "exploreUsagePatterns": "探索使用模式和见解",
+    "scheduleQuiltCare": "安排被子护理和清洁",
+    "createReports": "创建使用和库存报告",
+    "generateReport": "生成报告",
+    "viewSeasonalDetails": "查看季节详情",
+    "viewUsageTrends": "查看使用趋势",
+    "startedUsing": "开始使用",
+    "finishedUsing": "完成使用",
+    "mostUsed": "最常用",
+    "overview": "概览",
+    "alerts": "警报"
+  },
+  "mobile": {
+    "quilts": "被子",
+    "searchQuilts": "搜索被子...",
+    "tryAdjustingSearch": "尝试调整搜索或筛选",
+    "addFirstQuiltToStart": "添加您的第一床被子开始",
+    "quiltManagementSystem": "被子管理系统",
+    "overviewAndStatistics": "概览和统计",
+    "manageYourCollection": "管理您的收藏",
+    "trackQuiltUsage": "跟踪被子使用",
+    "seasonalInsights": "季节性见解"
+  },
+  "importExport": {
+    "import": "导入",
+    "export": "导出",
+    "importData": "导入数据",
+    "exportData": "导出数据",
+    "importFromExcel": "从 Excel 文件导入被子数据",
+    "exportToExcel": "导出为 Excel",
+    "exportToCsv": "导出为 CSV",
+    "exportToJson": "导出为 JSON",
+    "selectFile": "选择文件",
+    "dataPreview": "数据预览",
+    "batchImport": "批量导入",
+    "fileUploaded": "文件已上传",
+    "uploadFailed": "上传失败",
+    "previewFailed": "预览失败",
+    "importCompleted": "导入完成",
+    "importFailed": "导入失败",
+    "exportCompleted": "导出完成",
+    "exportFailed": "导出失败",
+    "downloadFailed": "下载失败",
+    "invalidFileType": "无效的文件类型",
+    "fileTooLarge": "文件太大",
+    "supportedFormats": "支持 .xlsx 和 .xls 格式",
+    "previewAndValidate": "导入前预览和验证数据",
+    "importMultipleRecords": "一次性导入多个被子记录",
+    "exportFullInventory": "导出完整的被子库存清单",
+    "exportToCsvFormat": "导出数据到 CSV 格式，便于其他工具使用",
+    "exportToJsonFormat": "导出原始数据到 JSON 格式",
+    "failedToProcessFile": "处理上传文件失败",
+    "failedToReadFile": "读取上传文件失败",
+    "failedToDownloadFile": "下载导出文件失败"
+  },
+  "importProcess": {
+    "title": "导入被子",
+    "description": "从 Excel 文件导入被子数据",
+    "processTitle": "导入流程",
+    "processDescription": "按照以下步骤导入您的被子数据",
+    "steps": {
+      "upload": "上传",
+      "preview": "预览",
+      "results": "结果"
+    },
+    "status": {
+      "completed": "已完成",
+      "current": "当前",
+      "upcoming": "待处理"
+    },
+    "loading": {
+      "preview": "加载预览中...",
+      "results": "加载结果中..."
+    }
+  },
+  "seasonalIntelligence": {
+    "title": "季节智能",
+    "description": "智能推荐和见解，帮助您选择最佳被子",
+    "currentSeason": "当前季节",
+    "overview": "当前季节被子收藏概览",
+    "seasonQuilts": "季节被子",
+    "availableNow": "当前可用",
+    "totalUses": "总使用次数",
+    "collectionOverview": "收藏概览",
+    "current": "当前",
+    "inactive": "非活跃",
+    "allTime": "全部时间",
+    "tabs": {
+      "recommendations": "推荐",
+      "weather": "天气",
+      "patterns": "模式",
+      "insights": "见解"
+    },
+    "emptyState": {
+      "title": "您的收藏中没有被子",
+      "description": "添加一些被子到您的收藏中，以获得个性化的季节推荐和见解。"
+    },
+    "patternAnalysis": {
+      "title": "使用模式分析",
+      "comingSoon": "即将推出 - 高级使用模式分析",
+      "placeholder": "模式分析即将推出"
+    },
+    "smartInsights": {
+      "title": "智能见解",
+      "description": "基于您的使用模式的 AI 驱动见解和推荐"
+    },
+    "customizePreferences": "自定义偏好"
+  },
+  "confirmations": {
+    "deleteQuilt": "确定要删除\"{name}\"吗？此操作无法撤销。",
+    "deleteMultipleQuilts": "确定要删除选中的 {count} 床被子吗？此操作无法撤销。"
+  },
+  "toasts": {
+    "usageStarted": "使用已开始",
+    "startedUsing": "开始使用 {name}",
+    "failedToStartUsage": "开始使用失败",
+    "usageEnded": "使用已结束",
+    "stoppedUsing": "停止使用 {name}",
+    "failedToEndUsage": "结束使用失败",
+    "quiltDeleted": "被子已删除",
+    "removedFromCollection": "{name} 已从您的收藏中移除",
+    "failedToDeleteQuilt": "删除被子失败"
+  },
+  "actions": {
+    "creating": "正在创建",
+    "updating": "正在更新",
+    "deleting": "正在删除",
+    "saving": "正在保存",
+    "loading": "加载中",
+    "importing": "正在导入",
+    "exporting": "正在导出",
+    "createdSuccessfully": "创建成功",
+    "updatedSuccessfully": "更新成功",
+    "deletedSuccessfully": "删除成功",
+    "savedSuccessfully": "保存成功",
+    "importedSuccessfully": "导入成功",
+    "exportedSuccessfully": "导出成功",
+    "failedToCreate": "创建失败",
+    "failedToUpdate": "更新失败",
+    "failedToDelete": "删除失败",
+    "failedToSave": "保存失败",
+    "failedToImport": "导入失败",
+    "failedToExport": "导出失败",
+    "networkError": "网络错误",
+    "unknownError": "未知错误",
+    "noChanges": "没有更改",
+    "pleaseSelectItems": "请选择项目",
+    "confirmDelete": "确认删除",
+    "pleaseTryAgain": "请重试",
+    "usageStarted": "使用已开始",
+    "usageEnded": "使用已结束",
+    "failedToStartUsage": "开始使用失败",
+    "failedToEndUsage": "结束使用失败",
+    "quiltDeleted": "被子已删除",
+    "failedToDeleteQuilt": "删除被子失败",
+    "quiltUpdated": "被子已更新",
+    "quiltCreated": "被子已创建",
+    "failedToUpdateQuilt": "更新被子失败",
+    "failedToCreateQuilt": "创建被子失败"
+  },
+  "validation": {
+    "required": "必填项",
+    "invalidFormat": "格式无效",
+    "tooLong": "太长",
+    "tooShort": "太短",
+    "mustBePositive": "必须为正数",
+    "itemNumberMustBePositive": "编号必须为正数",
+    "nameRequired": "名称必填",
+    "nameTooLong": "名称太长",
+    "lengthMustBePositive": "长度必须为正数",
+    "widthMustBePositive": "宽度必须为正数",
+    "weightMustBePositive": "重量必须为正数",
+    "fillMaterialRequired": "填充物必填",
+    "colorRequired": "颜色必填",
+    "locationRequired": "位置必填",
+    "maintenanceTypeRequired": "维护类型必填",
+    "descriptionRequired": "描述必填"
+  },
+  "emptyStates": {
+    "noQuiltsYet": "暂无被子数据",
+    "noQuiltsFound": "未找到被子",
+    "noUsageHistory": "暂无历史使用记录",
+    "noNotifications": "暂无通知",
+    "noLocation": "无位置",
+    "noData": "暂无数据",
+    "tryAdjustingFilters": "尝试调整搜索或筛选条件",
+    "addFirstQuilt": "添加您的第一床被子开始使用"
+  },
+  "dialogs": {
+    "areYouSure": "确定吗",
+    "confirmDeleteQuilt": "确定要删除被子",
+    "confirmDeleteMultiple": "确定要删除选中的",
+    "items": "个被子吗",
+    "deletingItems": "正在删除",
+    "successfullyDeleted": "成功删除",
+    "selectAll": "全选",
+    "deselectAll": "取消全选"
+  },
+  "cards": {
+    "title": "球星卡管理",
+    "subtitle": "管理您的球星卡收藏，追踪价值和评级信息",
+    "actions": {
+      "add": "添加球星卡",
+      "edit": "编辑",
+      "delete": "删除",
+      "view": "查看详情"
+    },
+    "toolbar": {
+      "searchPlaceholder": "搜索球星卡...",
+      "filters": "筛选",
+      "active": "已启用",
+      "activeFilters": "当前筛选",
+      "clearFilters": "清除筛选",
+      "sport": "运动类型",
+      "allSports": "所有运动",
+      "basketball": "篮球",
+      "soccer": "足球",
+      "grading": "评级",
+      "anyGrading": "所有评级",
+      "ungraded": "未评级",
+      "status": "状态",
+      "allStatus": "所有状态",
+      "collection": "收藏中",
+      "forSale": "待售",
+      "sold": "已售出"
+    },
+    "empty": {
+      "title": "未找到球星卡",
+      "description": "添加您的第一张球星卡开始收藏"
+    },
+    "pagination": {
+      "page": "第 {current} 页，共 {total} 页"
+    },
+    "dialogs": {
+      "addTitle": "添加球星卡",
+      "editTitle": "编辑球星卡"
+    },
+    "gallery": {
+      "title": "图片",
+      "main": "主图",
+      "attachment": "附加图片",
+      "ariaLabel": "球星卡图片画廊"
+    },
+    "player": {
+      "title": "球员信息",
+      "name": "球员姓名",
+      "sport": "运动类型",
+      "team": "球队",
+      "position": "位置"
+    },
+    "details": {
+      "title": "卡片详情",
+      "year": "年份",
+      "brand": "品牌",
+      "series": "系列",
+      "number": "卡号"
+    },
+    "grading": {
+      "title": "评级信息",
+      "company": "评级公司",
+      "grade": "评级分数",
+      "certNumber": "认证编号",
+      "ungraded": "未评级"
+    },
+    "value": {
+      "title": "价值信息",
+      "purchasePrice": "购买价格",
+      "purchaseDate": "购买日期",
+      "currentValue": "当前价值",
+      "estimatedValue": "估计价值",
+      "roi": "投资回报率",
+      "range": "估计价值区间",
+      "estimated": "预估",
+      "disclaimer": "基于卡片属性的估算，实际价格可能有所不同"
+    },
+    "market": {
+      "title": "市场数据",
+      "viewPrices": "查看市场价格",
+      "searchKeywords": "搜索关键词",
+      "ebay": "eBay 已售记录",
+      "psa": "PSA CardFacts",
+      "beckett": "Beckett 价格指南",
+      "point130": "130Point 销售数据"
+    },
+    "physical": {
+      "title": "物理特征",
+      "parallel": "平行版本",
+      "serialNumber": "序列号",
+      "autograph": "签名",
+      "memorabilia": "实物",
+      "memorabiliaType": "实物类型",
+      "isAutographed": "已签名",
+      "notAutographed": "未签名",
+      "hasMemorabilia": "含实物",
+      "noMemorabilia": "不含实物",
+      "yes": "是",
+      "no": "否"
+    },
+    "storage": {
+      "title": "存储信息",
+      "status": "状态",
+      "location": "位置",
+      "type": "存储方式",
+      "condition": "品相描述"
+    },
+    "notes": {
+      "title": "备注信息",
+      "label": "备注"
+    },
+    "records": {
+      "title": "记录信息",
+      "created": "创建时间",
+      "updated": "更新时间"
+    },
+    "labels": {
+      "tags": "卡片标签"
+    }
+  },
+  "users": {
+    "title": "用户管理",
+    "subtitle": "管理系统用户和权限",
+    "add": "添加用户",
+    "listTitle": "用户列表",
+    "totalCount": "共 {count} 个用户",
+    "empty": "暂无用户",
+    "table": {
+      "name": "姓名",
+      "email": "邮箱",
+      "role": "角色",
+      "modules": "订阅模块",
+      "created": "创建时间",
+      "actions": "操作",
+      "noModules": "无"
+    },
+    "roles": {
+      "admin": "管理员",
+      "member": "成员"
+    },
+    "modules": {
+      "quilts": "被子管理",
+      "cards": "球星卡管理"
+    },
+    "dialogs": {
+      "create": {
+        "title": "添加用户",
+        "desc": "创建新的系统用户"
+      },
+      "edit": {
+        "title": "编辑用户",
+        "desc": "修改用户信息和权限"
+      },
+      "delete": {
+        "title": "确认删除",
+        "desc": "确定要删除用户 {name} 吗？此操作将同时删除该用户的所有数据，且无法恢复。"
+      },
+      "fields": {
+        "name": "姓名",
+        "namePlaceholder": "请输入姓名",
+        "email": "邮箱",
+        "emailPlaceholder": "请输入邮箱",
+        "password": "密码",
+        "passwordPlaceholder": "至少6个字符",
+        "newPassword": "新密码",
+        "newPasswordPlaceholder": "留空则不修改",
+        "role": "角色",
+        "modules": "订阅模块"
+      }
+    }
+  },
+
+  "welcome": {
+    "title": "欢迎来到 QMS",
+    "subtitle": "简单、智能的收藏管理系统。",
+    "actions": {
+      "viewList": "查看列表",
+      "viewReports": "查看报告",
+      "configure": "配置",
+      "commonTitle": "常用操作",
+      "commonDesc": "您可能想要执行的快速任务。",
+      "addItem": "添加新项目",
+      "search": "搜索数据库"
+    },
+    "cards": {
+      "title": "球星卡管理",
+      "desc": "浏览、评价和跟踪您的球星卡收藏。"
+    }
+  },
+  "commandPalette": {
+    "title": "命令面板",
+    "desc": "快速导航和搜索",
+    "placeholder": "输入命令或搜索... (Ctrl+K)",
+    "searching": "搜索中...",
+    "noResults": "未找到结果",
+    "headers": {
+      "navigation": "系统导航",
+      "quilts": "被子",
+      "theme": "主题"
+    },
+    "theme": {
+      "light": "亮色模式",
+      "dark": "暗色模式",
+      "system": "跟随系统"
+    }
+  },
+  "common": {
+    "appName": "QMS",
+    "appDescription": "家庭物品管理系统",
+    "locale": "zh-CN",
+    "success": "成功",
+    "create": "创建",
+    "loading": "加载中...",
+    "error": "错误",
+    "save": "保存",
+    "cancel": "取消",
+    "edit": "编辑",
+    "delete": "删除",
+    "view": "查看",
+    "add": "添加",
+    "search": "搜索",
+    "notes": "备注",
+    "comingSoon": "即将推出",
+    "back": "返回",
+    "yes": "是",
+    "no": "否",
+    "ok": "确定",
+    "close": "关闭",
+    "confirm": "确认",
+    "retry": "重试",
+    "refresh": "刷新",
+    "clear": "清除",
+    "viewDetails": "查看详情",
+    "backToHome": "返回首页",
+    "use": "使用",
+    "stop": "停止",
+    "startUsing": "开始使用",
+    "stopUsing": "停止使用",
+    "pleaseTryAgain": "请重试",
+    "today": "今天",
+    "neverUsed": "从未使用",
+    "inUseSince": "自 {date} 起使用",
+    "lastUsed": "上次使用",
+    "daysAgo": "{days} 天前",
+    "openSidebar": "打开侧边栏",
+    "expandSidebar": "展开侧边栏",
+    "collapseSidebar": "收起侧边栏",
+    "viewNotifications": "查看通知",
+    "quiltManagement": "被子管理",
+    "version": "版本",
+    "failedToLogout": "退出登录失败。请重试。"
+  }
+}

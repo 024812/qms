@@ -9,8 +9,9 @@ import { ConditionalLayout } from '@/components/layout/ConditionalLayout';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { Toaster as SonnerToaster } from 'sonner';
 import { GlobalErrorHandler } from '@/components/GlobalErrorHandler';
+import { ServiceWorkerCleaner } from '@/components/ServiceWorkerCleaner';
 import { NextIntlClientProvider } from 'next-intl';
-import { getMessages , setRequestLocale } from 'next-intl/server';
+import { getMessages, setRequestLocale } from 'next-intl/server';
 import { notFound } from 'next/navigation';
 import { routing } from '@/i18n/routing';
 
@@ -38,19 +39,18 @@ export const viewport: Viewport = {
 
 // Generate static params for all supported locales
 export function generateStaticParams() {
-  return routing.locales.map((locale) => ({ locale }));
+  return routing.locales.map(locale => ({ locale }));
 }
-
 
 export default async function LocaleLayout({
   children,
-  params
+  params,
 }: {
   children: React.ReactNode;
   params: Promise<{ locale: string }>;
 }) {
   const { locale } = await params;
-  
+
   // Enable static rendering
   setRequestLocale(locale);
 
@@ -72,6 +72,7 @@ export default async function LocaleLayout({
               <NextIntlClientProvider messages={messages}>
                 <QueryProvider>
                   <GlobalErrorHandler />
+                  <ServiceWorkerCleaner />
                   <Suspense fallback={null}>
                     <ConditionalLayout>{children}</ConditionalLayout>
                   </Suspense>

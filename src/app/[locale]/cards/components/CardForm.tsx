@@ -91,6 +91,7 @@ interface CardFormProps {
 
 export function CardForm({ initialData, onSuccess }: CardFormProps) {
   const t = useTranslations('cards.form');
+  const tGlobal = useTranslations('cards');
   const { success, error, info } = useToast();
   const router = useRouter();
   const [loading, setLoading] = React.useState(false);
@@ -249,7 +250,7 @@ export function CardForm({ initialData, onSuccess }: CardFormProps) {
                   ) : (
                     <Sparkles className="mr-2 h-4 w-4" />
                   )}
-                  {t('actions.smartScan')}
+                  {tGlobal('actions.smartScan')}
                 </Button>
                 <p className="text-xs text-muted-foreground text-center">
                   {aiScanning ? t('ai.identifying') : 'Auto-detect card details from image'}
@@ -291,9 +292,11 @@ export function CardForm({ initialData, onSuccess }: CardFormProps) {
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      <SelectItem value="BASKETBALL">{t('enums.sports.BASKETBALL')}</SelectItem>
-                      <SelectItem value="SOCCER">{t('enums.sports.SOCCER')}</SelectItem>
-                      <SelectItem value="OTHER">{t('enums.sports.OTHER')}</SelectItem>
+                      <SelectItem value="BASKETBALL">
+                        {tGlobal('enums.sports.BASKETBALL')}
+                      </SelectItem>
+                      <SelectItem value="SOCCER">{tGlobal('enums.sports.SOCCER')}</SelectItem>
+                      <SelectItem value="OTHER">{tGlobal('enums.sports.OTHER')}</SelectItem>
                     </SelectContent>
                   </Select>
                   <FormMessage />
@@ -409,11 +412,11 @@ export function CardForm({ initialData, onSuccess }: CardFormProps) {
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      <SelectItem value="UNGRADED">{t('enums.grading.UNGRADED')}</SelectItem>
-                      <SelectItem value="PSA">{t('enums.grading.PSA')}</SelectItem>
-                      <SelectItem value="BGS">{t('enums.grading.BGS')}</SelectItem>
-                      <SelectItem value="SGC">{t('enums.grading.SGC')}</SelectItem>
-                      <SelectItem value="CGC">{t('enums.grading.CGC')}</SelectItem>
+                      <SelectItem value="UNGRADED">{tGlobal('enums.grading.UNGRADED')}</SelectItem>
+                      <SelectItem value="PSA">{tGlobal('enums.grading.PSA')}</SelectItem>
+                      <SelectItem value="BGS">{tGlobal('enums.grading.BGS')}</SelectItem>
+                      <SelectItem value="SGC">{tGlobal('enums.grading.SGC')}</SelectItem>
+                      <SelectItem value="CGC">{tGlobal('enums.grading.CGC')}</SelectItem>
                     </SelectContent>
                   </Select>
                   <FormMessage />
@@ -459,7 +462,7 @@ export function CardForm({ initialData, onSuccess }: CardFormProps) {
               ) : (
                 <Calculator className="mr-1 h-3 w-3" />
               )}
-              {t('actions.estimatePrice')}
+              {tGlobal('actions.estimatePrice')}
             </Button>
           </div>
           <div className="grid grid-cols-2 gap-4">
@@ -489,11 +492,13 @@ export function CardForm({ initialData, onSuccess }: CardFormProps) {
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      <SelectItem value="COLLECTION">{t('enums.status.COLLECTION')}</SelectItem>
-                      <SelectItem value="FOR_SALE">{t('enums.status.FOR_SALE')}</SelectItem>
-                      <SelectItem value="SOLD">{t('enums.status.SOLD')}</SelectItem>
-                      <SelectItem value="GRADING">{t('enums.status.GRADING')}</SelectItem>
-                      <SelectItem value="DISPLAY">{t('enums.status.DISPLAY')}</SelectItem>
+                      <SelectItem value="COLLECTION">
+                        {tGlobal('enums.status.COLLECTION')}
+                      </SelectItem>
+                      <SelectItem value="FOR_SALE">{tGlobal('enums.status.FOR_SALE')}</SelectItem>
+                      <SelectItem value="SOLD">{tGlobal('enums.status.SOLD')}</SelectItem>
+                      <SelectItem value="GRADING">{tGlobal('enums.status.GRADING')}</SelectItem>
+                      <SelectItem value="DISPLAY">{tGlobal('enums.status.DISPLAY')}</SelectItem>
                     </SelectContent>
                   </Select>
                   <FormMessage />

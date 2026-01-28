@@ -154,12 +154,13 @@ export function CardForm({ initialData, onSuccess }: CardFormProps) {
   };
 
   const handleEstimatePrice = async () => {
+    const rawGrade = form.getValues('grade');
     const details = {
       playerName: form.getValues('playerName'),
       year: form.getValues('year'),
       brand: form.getValues('brand'),
       gradingCompany: form.getValues('gradingCompany'),
-      grade: form.getValues('grade'),
+      grade: rawGrade === '' ? null : rawGrade,
     };
 
     setEstimating(true);

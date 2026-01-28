@@ -50,6 +50,123 @@
     "settings": "系统设置",
     "cards": "球星卡"
   },
+  "cards": {
+    "title": "球星卡收藏",
+    "subtitle": "管理您的球星卡收藏，支持 AI 识别和价值追踪",
+    "actions": {
+      "add": "添加卡片",
+      "import": "批量导入",
+      "smartScan": "智能识别",
+      "estimatePrice": "价格估算",
+      "edit": "编辑",
+      "clone": "复制",
+      "delete": "删除",
+      "viewDetails": "查看详情"
+    },
+    "empty": {
+      "title": "暂无球星卡",
+      "description": "点击\"添加卡片\"开始您的收藏之旅"
+    },
+    "list": {
+      "image": "图片",
+      "itemNumber": "编号",
+      "player": "球员",
+      "year": "年份",
+      "brand": "品牌",
+      "sport": "运动",
+      "grade": "评级",
+      "value": "价值",
+      "status": "状态",
+      "actions": "操作"
+    },
+    "form": {
+      "playerInfo": "球员信息",
+      "cardDetails": "卡片详情",
+      "grading": "评级信息",
+      "valueStatus": "价值与状态",
+      "attributes": "属性特征",
+      "advanced": "高级选项",
+      "physical": "物理细节",
+      "storage": "仓储位置",
+      "images": "图片",
+      "playerName": "球员姓名",
+      "playerNamePlaceholder": "例如: Michael Jordan",
+      "sport": "运动项目",
+      "team": "球队",
+      "teamPlaceholder": "例如: Chicago Bulls",
+      "position": "位置",
+      "positionPlaceholder": "例如: SG",
+      "year": "年份",
+      "brand": "品牌",
+      "brandPlaceholder": "例如: Panini Prizm",
+      "series": "系列",
+      "seriesPlaceholder": "例如: Silver Prizm",
+      "cardNumber": "卡号",
+      "cardNumberPlaceholder": "例如: #23",
+      "gradingCompany": "评级公司",
+      "grade": "分数",
+      "certNumber": "认证编号",
+      "certNumberPlaceholder": "输入认证码",
+      "status": "状态",
+      "currentValue": "当前估值 ($)",
+      "purchasePrice": "买入价格 ($)",
+      "purchaseDate": "买入日期",
+      "autographed": "亲笔签名",
+      "memorabilia": "实物切割 (Jersey/Patch)",
+      "serialNumber": "限量编号",
+      "serialNumberPlaceholder": "例如: 23/99",
+      "location": "存放位置",
+      "storageType": "存储方式",
+      "condition": "品相描述",
+      "notes": "备注",
+      "save": "保存卡片",
+      "cancel": "取消",
+      "success": "成功",
+      "cardSaved": "卡片已成功保存",
+      "error": "错误",
+      "failedToSave": "保存失败，请重试",
+      "ai": {
+        "title": "AI 智能助手",
+        "identifying": "正在识别...",
+        "identifyError": "识别失败，请手动输入",
+        "identifySuccess": "识别成功！已自动填充信息",
+        "estimating": "正在估价...",
+        "estimateError": "估价服务暂时不可用",
+        "riskTitle": "⚠️ AI 潜在风险提示"
+      }
+    },
+    "dialogs": {
+      "addTitle": "添加新卡片",
+      "editTitle": "编辑卡片信息",
+      "deleteTitle": "删除确认",
+      "deleteDescription": "确定要删除这张卡片吗？此操作无法撤销。",
+      "deleteSuccess": "卡片已删除"
+    },
+    "pagination": {
+      "page": "第 {current} 页 / 共 {total} 页"
+    },
+    "enums": {
+      "sports": {
+        "BASKETBALL": "篮球",
+        "SOCCER": "足球",
+        "OTHER": "其他"
+      },
+      "status": {
+        "COLLECTION": "收藏中",
+        "FOR_SALE": "待售",
+        "SOLD": "已售出",
+        "GRADING": "评级中",
+        "DISPLAY": "展示中"
+      },
+      "grading": {
+        "UNGRADED": "未评级",
+        "PSA": "PSA",
+        "BGS": "BGS",
+        "SGC": "SGC",
+        "CGC": "CGC"
+      }
+    }
+  },
   "dashboard": {
     "title": "仪表面板",
     "subtitle": "",

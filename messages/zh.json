@@ -32,6 +32,7 @@
     "system": "系统管理",
     "configuration": "系统配置",
     "quiltSettings": "被子管理设置",
+    "cardSettings": "球星卡管理设置",
     "userSettings": "用户设置",
     "quiltsList": "被子列表",
     "cardsList": "卡片列表"

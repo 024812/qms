@@ -64,10 +64,11 @@ export class SystemSettingsRepository extends BaseRepositoryImpl<SystemSettingRo
     return this.executeQuery(
       async () => {
         const d = tx || db;
-        const rows = await d.select({ value: systemSettings.value })
-            .from(systemSettings)
-            .where(eq(systemSettings.key, key))
-            .limit(1);
+        const rows = await d
+          .select({ value: systemSettings.value })
+          .from(systemSettings)
+          .where(eq(systemSettings.key, key))
+          .limit(1);
 
         return rows[0]?.value || null;
       },
@@ -87,21 +88,26 @@ export class SystemSettingsRepository extends BaseRepositoryImpl<SystemSettingRo
 
         // Check if exists using count or direct query?
         // Use insert on conflict update
-        
-        await d.insert(systemSettings).values({
+
+        await d
+          .insert(systemSettings)
+          .values({
             key,
             value,
             description: description || null,
             createdAt: now,
-            updatedAt: now
-        }).onConflictDoUpdate({
+            updatedAt: now,
+          })
+          .onConflictDoUpdate({
             target: systemSettings.key,
             set: {
-                value,
-                description: description ? description : sql`COALESCE(${description}::text, system_settings.description)`,
-                updatedAt: now
-            }
-        });
+              value,
+              description: description
+                ? description
+                : sql`COALESCE(${description}::text, system_settings.description)`,
+              updatedAt: now,
+            },
+          });
 
         dbLogger.info('Setting updated', { key });
       },
@@ -116,8 +122,9 @@ export class SystemSettingsRepository extends BaseRepositoryImpl<SystemSettingRo
   async getAllSettings(tx?: Tx): Promise<Record<string, string>> {
     return this.executeQuery(async () => {
       const d = tx || db;
-      const rows = await d.select({ key: systemSettings.key, value: systemSettings.value })
-          .from(systemSettings);
+      const rows = await d
+        .select({ key: systemSettings.key, value: systemSettings.value })
+        .from(systemSettings);
 
       const settings: Record<string, string> = {};
       rows.forEach(row => {
@@ -135,9 +142,10 @@ export class SystemSettingsRepository extends BaseRepositoryImpl<SystemSettingRo
     return this.executeQuery(
       async () => {
         const d = tx || db;
-        const result = await d.delete(systemSettings)
-            .where(eq(systemSettings.key, key))
-            .returning({ key: systemSettings.key });
+        const result = await d
+          .delete(systemSettings)
+          .where(eq(systemSettings.key, key))
+          .returning({ key: systemSettings.key });
 
         const success = result.length > 0;
         if (success) {
@@ -189,8 +197,16 @@ export class SystemSettingsRepository extends BaseRepositoryImpl<SystemSettingRo
   /**
    * Update double click action
    */
-  async updateDoubleClickAction(action: 'none' | 'view' | 'status' | 'edit', tx?: Tx): Promise<void> {
-    return this.setSetting('double_click_action', action, 'Double click behavior in quilt list', tx);
+  async updateDoubleClickAction(
+    action: 'none' | 'view' | 'status' | 'edit',
+    tx?: Tx
+  ): Promise<void> {
+    return this.setSetting(
+      'double_click_action',
+      action,
+      'Double click behavior in quilt list',
+      tx
+    );
   }
 
   /**
@@ -210,6 +226,42 @@ export class SystemSettingsRepository extends BaseRepositoryImpl<SystemSettingRo
       'Double click behavior in usage record list',
       tx
     );
+  }
+
+  /**
+   * Get Azure OpenAI Configuration
+   */
+  async getAzureOpenAIConfig(tx?: Tx) {
+    const [apiKey, endpoint, deployment] = await Promise.all([
+      this.getSetting('azure_openai_api_key', tx),
+      this.getSetting('azure_openai_endpoint', tx),
+      this.getSetting('azure_openai_deployment', tx),
+    ]);
+
+    return {
+      apiKey,
+      endpoint,
+      deployment,
+    };
+  }
+
+  /**
+   * Update Azure OpenAI Configuration
+   */
+  async updateAzureOpenAIConfig(
+    config: { apiKey: string; endpoint: string; deployment: string },
+    tx?: Tx
+  ): Promise<void> {
+    await Promise.all([
+      this.setSetting('azure_openai_api_key', config.apiKey, 'Azure OpenAI API Key', tx),
+      this.setSetting('azure_openai_endpoint', config.endpoint, 'Azure OpenAI Endpoint', tx),
+      this.setSetting(
+        'azure_openai_deployment',
+        config.deployment,
+        'Azure OpenAI Deployment Name',
+        tx
+      ),
+    ]);
   }
 }
 

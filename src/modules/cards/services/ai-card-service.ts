@@ -26,16 +26,33 @@ interface PriceEstimateResult {
  * Service to handle AI operations for cards
  * Uses Azure OpenAI (GPT-5-mini) for vision tasks
  */
+import { systemSettingsRepository } from '@/lib/repositories/system-settings.repository';
+
 export class AICardService {
   private client: OpenAI | null = null;
   private deployment: string = 'gpt-5-mini';
+  private lastConfigFetch: number = 0;
+  private readonly CONFIG_TTL = 60 * 1000; // Cache config for 1 minute
 
-  constructor() {
-    const apiKey = process.env.AZURE_OPENAI_API_KEY;
-    const endpoint = process.env.AZURE_OPENAI_ENDPOINT;
-    const deployment = process.env.AZURE_OPENAI_DEPLOYMENT;
+  constructor() {}
 
-    if (apiKey && endpoint) {
+  private async getClient(): Promise<{ client: OpenAI | null; deployment: string }> {
+    // Check if we need to refresh config
+    const now = Date.now();
+    if (this.client && now - this.lastConfigFetch < this.CONFIG_TTL) {
+      return { client: this.client, deployment: this.deployment };
+    }
+
+    try {
+      const config = await systemSettingsRepository.getAzureOpenAIConfig();
+      const apiKey = config.apiKey;
+      const endpoint = config.endpoint;
+      const deployment = config.deployment;
+
+      if (!apiKey || !endpoint) {
+        return { client: null, deployment: 'gpt-5-mini' };
+      }
+
       // Handle AI Studio Project URLs by stripping the path if present
       let effectiveEndpoint = endpoint;
       if (endpoint.includes('/api/projects')) {
@@ -53,7 +70,14 @@ export class AICardService {
         defaultQuery: { 'api-version': '2024-06-01' },
         defaultHeaders: { 'api-key': apiKey },
       });
-      if (deployment) this.deployment = deployment;
+
+      this.deployment = deployment || 'gpt-5-mini';
+      this.lastConfigFetch = now;
+
+      return { client: this.client, deployment: this.deployment };
+    } catch (error) {
+      console.error('Failed to load AI config from settings:', error);
+      return { client: null, deployment: 'gpt-5-mini' };
     }
   }
 
@@ -61,17 +85,19 @@ export class AICardService {
    * Identify card details from an image (Base64)
    */
   async identifyCard(base64Image: string): Promise<CardRecognitionResult> {
+    const { client, deployment } = await this.getClient();
+
     // 1. Mock Mode (if no key)
-    if (!this.client) {
-      console.warn('AI Service: No Azure Key found, using mock response.');
+    if (!client) {
+      console.warn('AI Service: No Azure Key found in System Settings, using mock response.');
       await new Promise(resolve => setTimeout(resolve, 2000)); // Simulate delay
       return this.getMockRecognitionResult();
     }
 
     try {
       // 2. Real Azure OpenAI Call
-      const response = await this.client.chat.completions.create({
-        model: this.deployment, // gpt-5-mini
+      const response = await client.chat.completions.create({
+        model: deployment,
         messages: [
           {
             role: 'system',
@@ -93,7 +119,7 @@ export class AICardService {
                 "series": "string (optional)",
                 "cardNumber": "string (optional)",
                 "sport": "BASKETBALL" | "SOCCER" | "OTHER",
-                "gradingCompany": "PSA" | "BGS" | "SGC" | "UNGRADED",
+                "gradingCompany": "PSA" | "BGS" | "SGC" | "CGC" | "UNGRADED",
                 "grade": number (optional),
                 "isAutographed": boolean,
                 "riskWarning": "string (optional - only if you detect potential issues like 'Looks like a facsimile auto' or 'Possible reprint')",
@@ -126,9 +152,6 @@ export class AICardService {
       return JSON.parse(content) as CardRecognitionResult;
     } catch (error) {
       console.error('AI Identification Failed:', error);
-      // Fallback to mock if API fails in dev? Or throw.
-      // For user exp, getting *something* is better in demo, but bad in prod.
-      // Let's throw to let UI handle error.
       throw new Error('Failed to identify card.');
     }
   }

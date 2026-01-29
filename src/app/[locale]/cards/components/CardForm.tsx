@@ -39,8 +39,8 @@ const formSchema = z.object({
   // Player Info
   playerName: z.string().min(1, 'Player name is required'),
   sport: z.enum(['BASKETBALL', 'SOCCER', 'OTHER']),
-  team: z.string().optional(),
-  position: z.string().optional(),
+  team: z.string().optional().nullable().or(z.literal('')),
+  position: z.string().optional().nullable().or(z.literal('')),
 
   // Card Details
   year: z.coerce
@@ -48,38 +48,38 @@ const formSchema = z.object({
     .min(1800)
     .max(new Date().getFullYear() + 1),
   brand: z.string().min(1, 'Brand is required'),
-  series: z.string().optional(),
-  cardNumber: z.string().optional(),
+  series: z.string().optional().nullable().or(z.literal('')),
+  cardNumber: z.string().optional().nullable().or(z.literal('')),
 
   // Grading
   gradingCompany: z.enum(['PSA', 'BGS', 'SGC', 'CGC', 'UNGRADED']).default('UNGRADED'),
   grade: z.coerce.number().min(1).max(10).optional().nullable().or(z.literal('')),
-  certificationNumber: z.string().optional(),
+  certificationNumber: z.string().optional().nullable().or(z.literal('')),
 
   // Value
   purchasePrice: z.coerce.number().min(0).optional().nullable().or(z.literal('')),
-  purchaseDate: z.string().optional(),
+  purchaseDate: z.string().optional().nullable().or(z.literal('')),
   currentValue: z.coerce.number().min(0).optional().nullable().or(z.literal('')),
   estimatedValue: z.coerce.number().min(0).optional().nullable().or(z.literal('')),
 
   // Physical
-  parallel: z.string().optional(),
-  serialNumber: z.string().optional(),
+  parallel: z.string().optional().nullable().or(z.literal('')),
+  serialNumber: z.string().optional().nullable().or(z.literal('')),
   isAutographed: z.boolean().default(false),
   hasMemorabilia: z.boolean().default(false),
-  memorabiliaType: z.string().optional(),
+  memorabiliaType: z.string().optional().nullable().or(z.literal('')),
 
   // Storage
   status: z.enum(['COLLECTION', 'FOR_SALE', 'SOLD', 'GRADING', 'DISPLAY']).default('COLLECTION'),
-  location: z.string().optional(),
-  storageType: z.string().optional(),
-  condition: z.string().optional(),
-  notes: z.string().optional(),
+  location: z.string().optional().nullable().or(z.literal('')),
+  storageType: z.string().optional().nullable().or(z.literal('')),
+  condition: z.string().optional().nullable().or(z.literal('')),
+  notes: z.string().optional().nullable().or(z.literal('')),
 
   // Images
-  mainImage: z.string().optional(),
-  frontImage: z.string().optional(),
-  backImage: z.string().optional(),
+  mainImage: z.string().optional().nullable().or(z.literal('')),
+  frontImage: z.string().optional().nullable().or(z.literal('')),
+  backImage: z.string().optional().nullable().or(z.literal('')),
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -134,6 +134,9 @@ export function CardForm({ initialData, onSuccess }: CardFormProps) {
         if (result.series) form.setValue('series', result.series);
         if (result.cardNumber) form.setValue('cardNumber', result.cardNumber);
         if (result.sport) form.setValue('sport', result.sport);
+        if (result.team) form.setValue('team', result.team);
+        if (result.position) form.setValue('position', result.position);
+
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         if (result.gradingCompany) form.setValue('gradingCompany', result.gradingCompany as any);
         if (result.grade) form.setValue('grade', result.grade);
@@ -310,7 +313,11 @@ export function CardForm({ initialData, onSuccess }: CardFormProps) {
                 <FormItem>
                   <FormLabel>{t('team')}</FormLabel>
                   <FormControl>
-                    <Input placeholder={t('teamPlaceholder')} {...field} />
+                    <Input
+                      placeholder={t('teamPlaceholder')}
+                      {...field}
+                      value={field.value ?? ''}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -323,7 +330,11 @@ export function CardForm({ initialData, onSuccess }: CardFormProps) {
                 <FormItem>
                   <FormLabel>{t('position')}</FormLabel>
                   <FormControl>
-                    <Input placeholder={t('positionPlaceholder')} {...field} />
+                    <Input
+                      placeholder={t('positionPlaceholder')}
+                      {...field}
+                      value={field.value ?? ''}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -371,7 +382,11 @@ export function CardForm({ initialData, onSuccess }: CardFormProps) {
                 <FormItem>
                   <FormLabel>{t('series')}</FormLabel>
                   <FormControl>
-                    <Input placeholder={t('seriesPlaceholder')} {...field} />
+                    <Input
+                      placeholder={t('seriesPlaceholder')}
+                      {...field}
+                      value={field.value ?? ''}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -384,7 +399,11 @@ export function CardForm({ initialData, onSuccess }: CardFormProps) {
                 <FormItem>
                   <FormLabel>{t('cardNumber')}</FormLabel>
                   <FormControl>
-                    <Input placeholder={t('cardNumberPlaceholder')} {...field} />
+                    <Input
+                      placeholder={t('cardNumberPlaceholder')}
+                      {...field}
+                      value={field.value ?? ''}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -571,7 +590,11 @@ export function CardForm({ initialData, onSuccess }: CardFormProps) {
                     <FormItem>
                       <FormLabel>{t('memorabiliaType')}</FormLabel>
                       <FormControl>
-                        <Input placeholder={t('memorabiliaPlaceholder')} {...field} />
+                        <Input
+                          placeholder={t('memorabiliaPlaceholder')}
+                          {...field}
+                          value={field.value ?? ''}
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -586,7 +609,11 @@ export function CardForm({ initialData, onSuccess }: CardFormProps) {
                     <FormItem>
                       <FormLabel>{t('serialNumber')}</FormLabel>
                       <FormControl>
-                        <Input placeholder={t('serialNumberPlaceholder')} {...field} />
+                        <Input
+                          placeholder={t('serialNumberPlaceholder')}
+                          {...field}
+                          value={field.value ?? ''}
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -599,7 +626,11 @@ export function CardForm({ initialData, onSuccess }: CardFormProps) {
                     <FormItem>
                       <FormLabel>{t('certNumber')}</FormLabel>
                       <FormControl>
-                        <Input placeholder={t('certNumberPlaceholder')} {...field} />
+                        <Input
+                          placeholder={t('certNumberPlaceholder')}
+                          {...field}
+                          value={field.value ?? ''}
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -621,7 +652,7 @@ export function CardForm({ initialData, onSuccess }: CardFormProps) {
                     <FormItem>
                       <FormLabel>{t('location')}</FormLabel>
                       <FormControl>
-                        <Input {...field} />
+                        <Input {...field} value={field.value ?? ''} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -647,7 +678,7 @@ export function CardForm({ initialData, onSuccess }: CardFormProps) {
                     <FormItem>
                       <FormLabel>{t('purchaseDate')}</FormLabel>
                       <FormControl>
-                        <Input type="date" {...field} />
+                        <Input type="date" {...field} value={field.value ?? ''} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -661,7 +692,7 @@ export function CardForm({ initialData, onSuccess }: CardFormProps) {
                   <FormItem>
                     <FormLabel>{t('notes')}</FormLabel>
                     <FormControl>
-                      <Input {...field} />
+                      <Input {...field} value={field.value ?? ''} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>

@@ -65,9 +65,7 @@ export function CardListView({ items }: CardListViewProps) {
 
   const handleEdit = (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    // In a real app this might open a modal or navigate to edit page
-    // For now we navigate to detail which usually has edit
-    router.push(`/cards/${id}`);
+    router.push(`/cards/${id}/edit`);
   };
 
   return (

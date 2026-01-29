@@ -7,6 +7,8 @@ interface CardRecognitionResult {
   series?: string;
   cardNumber?: string;
   sport?: 'BASKETBALL' | 'SOCCER' | 'OTHER';
+  team?: string;
+  position?: string;
   gradingCompany?: string;
   grade?: number;
   isAutographed?: boolean;
@@ -104,7 +106,7 @@ export class AICardService {
             content: `You are an expert sports card identifier. 
               Analyze the image for details and POTENTIAL AUTHENTICITY RISKS.
               
-              Extract: Player, Year, Brand, Series, Card Number, Sport, Grading.
+              Extract: Player, Year, Brand, Series, Card Number, Sport, Team, Position, Grading.
               
               CRITICAL: Assess for "Prohibited" or "Sketchy" indicators:
               - Is it an unlicensed "custom" card?
@@ -119,6 +121,8 @@ export class AICardService {
                 "series": "string (optional)",
                 "cardNumber": "string (optional)",
                 "sport": "BASKETBALL" | "SOCCER" | "OTHER",
+                "team": "string (optional)",
+                "position": "string (optional)",
                 "gradingCompany": "PSA" | "BGS" | "SGC" | "CGC" | "UNGRADED",
                 "grade": number (optional),
                 "isAutographed": boolean,
@@ -187,6 +191,8 @@ export class AICardService {
       series: 'Premier',
       cardNumber: '57',
       sport: 'BASKETBALL',
+      team: 'Chicago Bulls',
+      position: 'SG',
       gradingCompany: 'PSA',
       grade: 9,
       isAutographed: false,

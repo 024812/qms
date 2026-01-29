@@ -103,6 +103,23 @@
     "upload": {
       "title": "上传卡片图片"
     },
+    "toolbar": {
+      "searchPlaceholder": "搜索球员、球队或年份...",
+      "filters": "筛选",
+      "active": "生效中",
+      "sport": "运动项目",
+      "allSports": "所有运动",
+      "basketball": "篮球",
+      "soccer": "足球",
+      "grading": "评级机构",
+      "anyGrading": "不限",
+      "ungraded": "未评级",
+      "status": "状态",
+      "allStatus": "所有状态",
+      "collection": "收藏中",
+      "forSale": "待售",
+      "sold": "已售出"
+    },
 
     "detail": {
       "images": "卡片图片",

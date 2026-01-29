@@ -67,9 +67,7 @@ export default function CardsPage() {
     <div className="space-y-6">
       <div className="flex flex-col gap-1">
         <h1 className="text-3xl font-bold">{t('title')}</h1>
-        <p className="text-muted-foreground">
-          {t('subtitle')}
-        </p>
+        <p className="text-muted-foreground">{t('subtitle')}</p>
       </div>
 
       <CardToolbar
@@ -99,7 +97,7 @@ export default function CardsPage() {
       ) : viewMode === 'list' ? (
         <CardListView items={cards} />
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-4">
           {cards.map(card => (
             <div key={card.id}>
               <CardCard item={card} />

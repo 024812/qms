@@ -128,20 +128,41 @@ export function CardForm({ initialData, onSuccess }: CardFormProps) {
       const result = await identifyCardAction(frontImage);
 
       if (result) {
-        if (result.playerName) form.setValue('playerName', result.playerName);
-        if (result.year) form.setValue('year', result.year);
-        if (result.brand) form.setValue('brand', result.brand);
-        if (result.series) form.setValue('series', result.series);
-        if (result.cardNumber) form.setValue('cardNumber', result.cardNumber);
-        if (result.sport) form.setValue('sport', result.sport);
-        if (result.team) form.setValue('team', result.team);
-        if (result.position) form.setValue('position', result.position);
+        if (result.playerName)
+          form.setValue('playerName', result.playerName, {
+            shouldValidate: true,
+            shouldDirty: true,
+          });
+        if (result.year)
+          form.setValue('year', result.year, { shouldValidate: true, shouldDirty: true });
+        if (result.brand)
+          form.setValue('brand', result.brand, { shouldValidate: true, shouldDirty: true });
+        if (result.series)
+          form.setValue('series', result.series, { shouldValidate: true, shouldDirty: true });
+        if (result.cardNumber)
+          form.setValue('cardNumber', result.cardNumber, {
+            shouldValidate: true,
+            shouldDirty: true,
+          });
+        if (result.sport)
+          form.setValue('sport', result.sport, { shouldValidate: true, shouldDirty: true });
+        if (result.team)
+          form.setValue('team', result.team, { shouldValidate: true, shouldDirty: true });
+        if (result.position)
+          form.setValue('position', result.position, { shouldValidate: true, shouldDirty: true });
 
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        if (result.gradingCompany) form.setValue('gradingCompany', result.gradingCompany as any);
-        if (result.grade) form.setValue('grade', result.grade);
+        if (result.gradingCompany)
+          form.setValue('gradingCompany', result.gradingCompany as any, {
+            shouldValidate: true,
+            shouldDirty: true,
+          });
+        if (result.grade)
+          form.setValue('grade', result.grade, { shouldValidate: true, shouldDirty: true });
         if (result.isAutographed !== undefined)
-          form.setValue('isAutographed', result.isAutographed);
+          form.setValue('isAutographed', result.isAutographed, {
+            shouldValidate: true,
+            shouldDirty: true,
+          });
 
         if (result.riskWarning) {
           setWarningMsg(result.riskWarning);
@@ -200,7 +221,8 @@ export function CardForm({ initialData, onSuccess }: CardFormProps) {
 
       await saveCard(payload);
       success(t('success'), t('cardSaved'));
-      form.reset();
+      // Update form state to the new saved values so it doesn't revert to old initialData
+      form.reset(values);
       router.refresh();
       if (onSuccess) onSuccess();
     } catch (err) {

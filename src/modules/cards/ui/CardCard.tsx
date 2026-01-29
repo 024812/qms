@@ -89,7 +89,7 @@ export function CardCard({ item }: CardCardProps) {
     <article>
       {/* Main Image */}
       {item.mainImage && (
-        <div className="mb-3 relative h-40 bg-muted rounded-md overflow-hidden">
+        <div className="mb-3 relative w-full aspect-[2.5/3.5] bg-muted rounded-md overflow-hidden">
           <Image
             src={item.mainImage}
             alt={`${item.playerName} - ${item.year} ${item.brand} ${item.series || ''} ${t('detail.mainImage')}${item.gradingCompany !== 'UNGRADED' ? ` - ${t(`enums.grading.${item.gradingCompany as 'PSA' | 'BGS' | 'SGC' | 'CGC' | 'UNGRADED'}`)} ${item.grade}` : ''}`}
@@ -126,7 +126,10 @@ export function CardCard({ item }: CardCardProps) {
               className="bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200 border-amber-200"
               role="listitem"
             >
-              {t(`enums.grading.${item.gradingCompany as 'PSA' | 'BGS' | 'SGC' | 'CGC' | 'UNGRADED'}`)} {item.grade}
+              {t(
+                `enums.grading.${item.gradingCompany as 'PSA' | 'BGS' | 'SGC' | 'CGC' | 'UNGRADED'}`
+              )}{' '}
+              {item.grade}
             </Badge>
           )}
 
@@ -139,7 +142,9 @@ export function CardCard({ item }: CardCardProps) {
         <section className="text-sm text-muted-foreground space-y-1">
           {/* Year and Brand */}
           <div>
-            <span className="sr-only">{t('fields.year')} & {t('fields.brand')}: </span>
+            <span className="sr-only">
+              {t('fields.year')} & {t('fields.brand')}:{' '}
+            </span>
             {item.year} • {item.brand}
           </div>
 

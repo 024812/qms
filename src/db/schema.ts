@@ -13,6 +13,7 @@
  * Requirements: 2.1, 2.2, 8.1
  */
 
+import crypto from 'crypto';
 import {
   pgTable,
   text,
@@ -334,7 +335,10 @@ export const auditLogs = pgTable(
  * Key-value store for application configuration
  */
 export const systemSettings = pgTable('system_settings', {
-  key: text('key').primaryKey(),
+  id: text('id')
+    .primaryKey()
+    .$defaultFn(() => crypto.randomUUID()),
+  key: text('key').notNull().unique(),
   value: text('value').notNull(),
   description: text('description'),
   createdAt: timestamp('created_at').notNull().defaultNow(),

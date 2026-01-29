@@ -76,9 +76,54 @@
       "brand": "品牌",
       "sport": "运动",
       "grade": "评级",
-      "value": "价值",
+      "gradingCompany": "评级公司",
+      "certNumber": "证书编号",
+      "purchasePrice": "买入价格",
+      "purchaseDate": "买入日期",
+      "currentValue": "当前价值",
+      "estimatedValue": "估算价值",
+      "roi": "ROI",
+      "series": "系列",
+      "cardNumber": "卡号",
+      "parallel": "平行/折射",
+      "serialNumber": "限量编号",
+      "autograph": "签字",
+      "memorabilia": "实物依附",
       "status": "状态",
-      "actions": "操作"
+      "location": "位置",
+      "storageType": "存储类型",
+      "condition": "品相",
+      "createdAt": "创建时间",
+      "updatedAt": "更新时间"
+    },
+    "values": {
+      "noData": "暂无数据",
+      "no": "无"
+    },
+    "upload": {
+      "title": "上传卡片图片"
+    },
+
+    "detail": {
+      "images": "卡片图片",
+      "mainImage": "主图",
+      "playerInfo": "球员信息",
+      "cardDetails": "卡片详情",
+      "gradingInfo": "评级信息",
+      "valueInfo": "价值信息",
+      "marketData": "市场数据",
+      "estimatedRange": "估价范围",
+      "estimated": "估算",
+      "estimateDisclaimer": "估算仅供参考，基于历史成交数据。",
+      "checkMarketPrice": "查看市场价格",
+      "ebaySold": "eBay 成交",
+      "psaFacts": "PSA 数据",
+      "beckettPrice": "Beckett 价格",
+      "point130": "130 Point",
+      "searchKeywords": "搜索关键词",
+      "physical": "物理信息",
+      "storage": "仓储信息",
+      "records": "记录"
     },
     "form": {
       "playerInfo": "球员信息",
@@ -147,6 +192,16 @@
       "page": "第 {current} 页 / 共 {total} 页"
     },
     "enums": {
+      "sport": {
+        "BASKETBALL": "篮球",
+        "FOOTBALL": "足球",
+        "BASEBALL": "棒球",
+        "HOCKEY": "冰球",
+        "TENNIS": "网球",
+        "GOLF": "高尔夫",
+        "F1": "F1赛车",
+        "OTHER": "其他"
+      },
       "sports": {
         "BASKETBALL": "篮球",
         "SOCCER": "足球",

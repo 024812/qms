@@ -98,10 +98,14 @@
     },
     "values": {
       "noData": "暂无数据",
-      "no": "无"
+      "no": "无",
+      "yes": "是",
+      "autographed": "有签名",
+      "memorabilia": "有实物"
     },
     "upload": {
-      "title": "上传卡片图片"
+      "title": "上传卡片图片",
+      "backLabel": "背面图片"
     },
     "toolbar": {
       "searchPlaceholder": "搜索球员、球队或年份...",
@@ -118,7 +122,9 @@
       "allStatus": "所有状态",
       "collection": "收藏中",
       "forSale": "待售",
-      "sold": "已售出"
+      "sold": "已售出",
+      "clearFilters": "清除筛选",
+      "activeFilters": "已选筛选"
     },
 
     "detail": {
@@ -178,6 +184,7 @@
       "memorabilia": "实物切割 (Jersey/Patch)",
       "serialNumber": "限量编号",
       "serialNumberPlaceholder": "例如: 23/99",
+      "memorabiliaType": "实物类型",
       "location": "存放位置",
       "storageType": "存储方式",
       "condition": "品相描述",
@@ -197,6 +204,9 @@
         "estimateError": "估价服务暂时不可用",
         "riskTitle": "⚠️ AI 潜在风险提示"
       }
+    },
+    "messages": {
+      "noCardsFound": "未找到球星卡"
     },
     "dialogs": {
       "addTitle": "添加新卡片",

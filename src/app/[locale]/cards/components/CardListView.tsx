@@ -91,7 +91,7 @@ export function CardListView({ items }: CardListViewProps) {
           {items.length === 0 ? (
             <TableRow>
               <TableCell colSpan={10} className="h-24 text-center">
-                {t('messages.noQuiltsFound')}
+                {t('messages.noCardsFound')}
               </TableCell>
             </TableRow>
           ) : (

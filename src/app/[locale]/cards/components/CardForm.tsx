@@ -704,7 +704,14 @@ export function CardForm({ initialData, onSuccess }: CardFormProps) {
 
         {/* Actions */}
         <div className="flex justify-end gap-2 pt-4">
-          <Button type="button" variant="outline" onClick={() => onSuccess && onSuccess()}>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => {
+              if (onSuccess) onSuccess();
+              else router.back();
+            }}
+          >
             {t('cancel')}
           </Button>
           <Button type="submit" disabled={loading}>

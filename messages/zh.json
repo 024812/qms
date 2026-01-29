@@ -129,7 +129,9 @@
       "storageType": "存储方式",
       "condition": "品相",
       "notes": "备注",
-      "editTitle": "编辑球星卡"
+      "status": "状态",
+      "createdAt": "创建时间",
+      "updatedAt": "更新时间"
     },
     "toolbar": {
       "searchPlaceholder": "搜索球员、球队或年份...",
@@ -227,7 +229,8 @@
         "estimating": "正在估价...",
         "estimateError": "估价服务暂时不可用",
         "riskTitle": "⚠️ AI 潜在风险提示"
-      }
+      },
+      "editTitle": "编辑球星卡"
     },
     "messages": {
       "noCardsFound": "未找到球星卡"

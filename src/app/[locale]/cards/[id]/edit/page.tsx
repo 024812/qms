@@ -43,7 +43,7 @@ export default async function EditCardPage({ params }: EditCardPageProps) {
       </div>
 
       <div className="bg-white rounded-lg border p-6 shadow-sm">
-        <CardForm initialData={initialData} onSuccess={() => {}} />
+        <CardForm initialData={initialData} />
       </div>
     </div>
   );

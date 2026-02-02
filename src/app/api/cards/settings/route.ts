@@ -1,7 +1,7 @@
 import { NextRequest } from 'next/server';
 import { z } from 'zod';
 import { systemSettingsRepository } from '@/lib/repositories/system-settings.repository';
-import { sanitizeApiInput } from '@/lib/sanitization';
+
 import {
   createSuccessResponse,
   createValidationErrorResponse,
@@ -64,7 +64,9 @@ export async function PUT(request: NextRequest) {
     }
 
     const rawBody = await request.json();
-    const body = sanitizeApiInput(rawBody);
+    // Do not use sanitizeApiInput here as it corrupts URLs (e.g. escaping // to &#x2F;&#x2F;)
+    // Zod validation below provides sufficient safety for the structure and types.
+    const body = rawBody;
     const validationResult = updateCardSettingsSchema.safeParse(body);
 
     if (!validationResult.success) {

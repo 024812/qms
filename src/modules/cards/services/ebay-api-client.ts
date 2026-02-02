@@ -41,15 +41,35 @@ export class eBayApiClient {
     // 1. Get credentials from DB
     const config = await systemSettingsRepository.getEbayApiConfig();
 
-    if (!config?.appId || !config?.certId) {
+    let appId = config?.appId || undefined;
+    let certId = config?.certId || undefined;
+    let devId = config?.devId || undefined; // Optional
+
+    // 2. Fallback to Env Vars if DB is missing
+    if (!appId || !certId) {
+      if (process.env.App_ID) appId = process.env.App_ID;
+      // Also support standard naming convention
+      if (process.env.EBAY_APP_ID) appId = process.env.EBAY_APP_ID;
+
+      if (process.env.Cert_ID) certId = process.env.Cert_ID;
+      if (process.env.EBAY_CERT_ID) certId = process.env.EBAY_CERT_ID;
+
+      if (process.env.Dev_ID) devId = process.env.Dev_ID;
+      if (process.env.EBAY_DEV_ID) devId = process.env.EBAY_DEV_ID;
+    }
+
+    if (!appId || !certId) {
       // Return null or throw. Throwing is safer to alert the user.
-      throw new Error('eBay API not configured. Please check System Settings.');
+      throw new Error(
+        'eBay API not configured. Please check System Settings or Environment Variables.'
+      );
     }
 
     // 2. Initialize Client
     this.client = new eBayApi({
-      appId: config.appId,
-      certId: config.certId,
+      appId: appId,
+      certId: certId,
+      devId: devId,
       sandbox: false, // Production
       siteId: eBayApi.SiteId.EBAY_US,
       marketplaceId: eBayApi.MarketplaceId.EBAY_US,

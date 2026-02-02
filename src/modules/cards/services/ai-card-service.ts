@@ -82,24 +82,45 @@ export class AICardService {
     }
 
     try {
+      // 1. Try Config from DB
       const config = await systemSettingsRepository.getAzureOpenAIConfig();
-      const apiKey = config.apiKey;
-      const endpoint = config.endpoint;
-      const deployment = config.deployment;
+      let apiKey = config.apiKey;
+      let endpoint = config.endpoint;
+      let deployment = config.deployment;
+
+      // 2. Fallback to Env Vars if DB is missing or invalid (specifically check for bad URL chars like &)
+      const isDbEndpointValid =
+        endpoint &&
+        !endpoint.includes('&') &&
+        (endpoint.startsWith('http') || endpoint.includes('api.azure.com'));
+
+      if (!apiKey || !isDbEndpointValid) {
+        console.warn('AI Service: DB Settings missing or invalid, checking env vars fallback...');
+        if (process.env.AZURE_OPENAI_API_KEY) apiKey = process.env.AZURE_OPENAI_API_KEY;
+        if (process.env.AZURE_OPENAI_ENDPOINT) endpoint = process.env.AZURE_OPENAI_ENDPOINT;
+        if (process.env.AZURE_OPENAI_DEPLOYMENT) deployment = process.env.AZURE_OPENAI_DEPLOYMENT;
+      }
 
       if (!apiKey || !endpoint) {
+        console.warn('AI Service: No valid config found (checked DB and Env), using mock mode.');
         return { client: null, deployment: 'gpt-5-mini' };
       }
 
-      // Handle AI Studio Project URLs by stripping the path if present
+      // 3. Strict URL Validation & Normalization
       let effectiveEndpoint = endpoint;
-      if (endpoint.includes('/api/projects')) {
-        try {
+      try {
+        // Strip /api/projects... if present
+        if (endpoint.includes('/api/projects')) {
           const url = new URL(endpoint);
           effectiveEndpoint = url.origin;
-        } catch {
-          console.warn('Invalid Azure Endpoint URL, using as is:', endpoint);
+        } else {
+          // Just validate it parses as URL
+          new URL(endpoint);
         }
+      } catch (e) {
+        console.error(`AI Service: Invalid Endpoint URL: "${endpoint}"`, e);
+        // Fail gracefully to mock instead of crashing
+        return { client: null, deployment: 'gpt-5-mini' };
       }
 
       this.client = new OpenAI({

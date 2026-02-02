@@ -28,6 +28,7 @@ export default async function EditCardPage({ params }: EditCardPageProps) {
     ...card,
     // Ensure relations or specific fields are mapped correctly if needed
     // For now spread is mostly compatible with FormValues
+    backImage: card.attachmentImages?.[0] || null,
   };
 
   return (

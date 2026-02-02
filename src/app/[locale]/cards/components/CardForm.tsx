@@ -396,16 +396,16 @@ export function CardForm({ initialData, onSuccess }: CardFormProps) {
             <h3 className="text-sm font-medium text-muted-foreground">{t('valueStatus')}</h3>
             <Button
               type="button"
-              variant="outline"
+              variant="default"
               size="sm"
               onClick={handleEstimatePrice}
               disabled={estimating}
-              className="h-7 text-xs"
+              className="bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white border-0"
             >
               {estimating ? (
-                <Loader2 className="mr-1 h-3 w-3 animate-spin" />
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               ) : (
-                <Calculator className="mr-1 h-3 w-3" />
+                <Calculator className="mr-2 h-4 w-4" />
               )}
               {tGlobal('actions.estimatePrice')}
             </Button>

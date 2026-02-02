@@ -7,7 +7,7 @@ type Props = {
 export default async function SoldCardsPage({ params }: Props) {
   const { locale } = await params;
   setRequestLocale(locale);
-  const t = await getTranslations('cards.sidebar');
+  const t = await getTranslations('sidebar');
 
   return (
     <div className="space-y-6">

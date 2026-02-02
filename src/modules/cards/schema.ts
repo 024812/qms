@@ -123,6 +123,11 @@ export const cardAttributesSchema = z.object({
 
   memorabiliaType: z.string().max(100, 'Memorabilia type too long').optional(),
 
+  // Sold Information
+  soldPrice: z.number().min(0, 'Sold price cannot be negative').optional(),
+
+  soldDate: z.date().max(new Date(), 'Sold date cannot be in the future').optional(),
+
   // Storage and Condition
   status: CardStatusSchema.optional().default('COLLECTION'),
 
@@ -169,6 +174,8 @@ export const CardSchema = z.object({
   currentValue: z.number().nullable(),
   estimatedValue: z.number().nullable(),
   lastValueUpdate: z.date().nullable(),
+  soldPrice: z.number().nullable(),
+  soldDate: z.date().nullable(),
   parallel: z.string().nullable(),
   serialNumber: z.string().nullable(),
   isAutographed: z.boolean(),
@@ -216,6 +223,8 @@ export interface CardItem {
   currentValue: number | null;
   estimatedValue: number | null;
   lastValueUpdate: Date | null;
+  soldPrice: number | null;
+  soldDate: Date | null;
   parallel: string | null;
   serialNumber: string | null;
   isAutographed: boolean;
@@ -257,6 +266,8 @@ export function cardToCardItem(card: Card): CardItem {
     currentValue: card.currentValue,
     estimatedValue: card.estimatedValue,
     lastValueUpdate: card.lastValueUpdate,
+    soldPrice: card.soldPrice,
+    soldDate: card.soldDate,
     parallel: card.parallel,
     serialNumber: card.serialNumber,
     isAutographed: card.isAutographed,
@@ -298,6 +309,8 @@ export function cardItemToCard(item: CardItem): Card {
     currentValue: item.currentValue,
     estimatedValue: item.estimatedValue,
     lastValueUpdate: item.lastValueUpdate,
+    soldPrice: item.soldPrice,
+    soldDate: item.soldDate,
     parallel: item.parallel,
     serialNumber: item.serialNumber,
     isAutographed: item.isAutographed,

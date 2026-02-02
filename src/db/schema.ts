@@ -265,6 +265,8 @@ export const cards = pgTable(
     purchaseDate: date('purchase_date'),
     currentValue: numeric('current_value', { precision: 10, scale: 2 }),
     estimatedValue: numeric('estimated_value', { precision: 10, scale: 2 }),
+    soldPrice: numeric('sold_price', { precision: 10, scale: 2 }),
+    soldDate: date('sold_date'),
 
     // Physical characteristics
     parallel: text('parallel'),

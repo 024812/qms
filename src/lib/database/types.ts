@@ -279,6 +279,9 @@ export interface CardRow {
   purchase_date: string | null; // date stored as string
   current_value: string | null; // numeric stored as string
   estimated_value: string | null; // numeric stored as string
+  sold_price: string | null; // numeric stored as string
+  sold_date: string | null; // date stored as string
+  last_value_update: string | null; // date stored as string
   parallel: string | null;
   serial_number: string | null;
   is_autographed: boolean;
@@ -322,8 +325,10 @@ export function rowToCardItem(row: CardRow): CardItem {
     purchasePrice: row.purchase_price ? parseFloat(row.purchase_price) : null,
     purchaseDate: row.purchase_date ? new Date(row.purchase_date) : null,
     currentValue: row.current_value ? parseFloat(row.current_value) : null,
-    estimatedValue: row.estimated_value ? parseFloat(row.estimated_value) : null,
-    lastValueUpdate: null, // Not stored in cards table yet
+    estimatedValue: row.estimated_value ? Number(row.estimated_value) : null,
+    soldPrice: row.sold_price ? Number(row.sold_price) : null,
+    soldDate: row.sold_date ? new Date(row.sold_date) : null,
+    lastValueUpdate: row.last_value_update ? new Date(row.last_value_update) : null,
     parallel: row.parallel,
     serialNumber: row.serial_number,
     isAutographed: row.is_autographed,
@@ -374,6 +379,10 @@ export function cardItemToRow(item: Partial<CardItem>): Partial<CardRow> {
     row.current_value = item.currentValue !== null ? item.currentValue.toString() : null;
   if (item.estimatedValue !== undefined)
     row.estimated_value = item.estimatedValue !== null ? item.estimatedValue.toString() : null;
+  if (item.soldPrice !== undefined)
+    row.sold_price = item.soldPrice !== null ? item.soldPrice.toString() : null;
+  if (item.soldDate !== undefined)
+    row.sold_date = item.soldDate ? item.soldDate.toISOString() : null;
   if (item.parallel !== undefined) row.parallel = item.parallel;
   if (item.serialNumber !== undefined) row.serial_number = item.serialNumber;
   if (item.isAutographed !== undefined) row.is_autographed = item.isAutographed;

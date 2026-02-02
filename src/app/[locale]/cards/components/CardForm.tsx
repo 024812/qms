@@ -61,6 +61,8 @@ const formSchema = z.object({
   purchaseDate: z.string().optional().nullable().or(z.literal('')),
   currentValue: z.coerce.number().min(0).optional().nullable().or(z.literal('')),
   estimatedValue: z.coerce.number().min(0).optional().nullable().or(z.literal('')),
+  soldPrice: z.coerce.number().min(0).optional().nullable().or(z.literal('')),
+  soldDate: z.string().optional().nullable().or(z.literal('')),
 
   // Physical
   parallel: z.string().optional().nullable().or(z.literal('')),
@@ -217,6 +219,8 @@ export function CardForm({ initialData, onSuccess }: CardFormProps) {
         purchasePrice: values.purchasePrice === '' ? null : values.purchasePrice,
         currentValue: values.currentValue === '' ? null : values.currentValue,
         estimatedValue: values.estimatedValue === '' ? null : values.estimatedValue,
+        soldPrice: values.soldPrice === '' ? null : values.soldPrice,
+        soldDate: values.soldDate === '' ? null : values.soldDate,
       };
 
       await saveCard(payload);
@@ -425,6 +429,45 @@ export function CardForm({ initialData, onSuccess }: CardFormProps) {
                 </FormItem>
               )}
             />
+            {form.watch('status') === 'SOLD' && (
+              <>
+                <FormField
+                  control={form.control}
+                  name="soldPrice"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>{t('soldPrice')}</FormLabel>
+                      <FormControl>
+                        <Input type="number" step="0.01" {...field} value={field.value || ''} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="soldDate"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>{t('soldDate')}</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="date"
+                          {...field}
+                          value={
+                            field.value ? new Date(field.value).toISOString().split('T')[0] : ''
+                          }
+                          onChange={e =>
+                            field.onChange(e.target.value ? new Date(e.target.value) : null)
+                          }
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </>
+            )}
             <FormField
               control={form.control}
               name="status"

@@ -70,9 +70,9 @@ export function AppSidebar() {
         ];
       case 'cards':
         return [
+          { name: t('sidebar.cardOverview'), href: '/cards/overview', icon: BarChart3 },
           { name: t('sidebar.cardsList'), href: '/cards', icon: CreditCard },
           { name: t('sidebar.soldCards'), href: '/cards/sold', icon: CreditCard },
-          { name: t('sidebar.cardOverview'), href: '/cards/overview', icon: BarChart3 },
         ];
       default:
         return [];

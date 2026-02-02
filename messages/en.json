@@ -79,6 +79,8 @@
       "currentValuation": "Current Valuation",
       "purchasePrice": "Purchase Price",
       "purchaseDate": "Purchase Date",
+      "soldPrice": "Sold Price",
+      "soldDate": "Sold Date",
       "status": "Status",
       "actions": "Actions"
     },

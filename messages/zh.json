@@ -81,6 +81,8 @@
       "currentValuation": "当前估值",
       "purchasePrice": "买入价格",
       "purchaseDate": "买入时间",
+      "soldPrice": "售出价格",
+      "soldDate": "售出时间",
       "status": "状态",
       "actions": "操作"
     },

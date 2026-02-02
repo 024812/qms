@@ -16,10 +16,13 @@
  * @returns {JSX.Element} Card component
  */
 
+'use client';
+
 import { Badge } from '@/components/ui/badge';
 import { CreditCard } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import Image from 'next/image';
+import { useRouter } from '@/i18n/routing';
 import type { CardItem, SportType, CardStatus } from '../schema';
 
 interface CardCardProps {
@@ -84,12 +87,20 @@ function formatCurrency(value: number | null | undefined): string {
  */
 export function CardCard({ item }: CardCardProps) {
   const t = useTranslations('cards');
+  const router = useRouter();
+
+  const handleDoubleClick = () => {
+    router.push(`/cards/${item.id}/edit`);
+  };
 
   return (
     <article>
       {/* Main Image */}
       {item.mainImage && (
-        <div className="mb-3 relative w-full aspect-[2.5/3.5] bg-muted rounded-md overflow-hidden">
+        <div
+          className="mb-3 relative w-full aspect-[2.5/3.5] bg-muted rounded-md overflow-hidden cursor-pointer"
+          onDoubleClick={handleDoubleClick}
+        >
           <Image
             src={item.mainImage}
             alt={`${item.playerName} - ${item.year} ${item.brand} ${item.series || ''} ${t('detail.mainImage')}${item.gradingCompany !== 'UNGRADED' ? ` - ${t(`enums.grading.${item.gradingCompany as 'PSA' | 'BGS' | 'SGC' | 'CGC' | 'UNGRADED'}`)} ${item.grade}` : ''}`}

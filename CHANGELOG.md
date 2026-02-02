@@ -5,6 +5,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2026.02.02] - 2026-02-02
+
+### 🃏 Trading Cards Module Production Release
+
+- **Price Estimation & Smart Scan**
+  - ✅ **Production Ready**: Enabled Production eBay API integration for real-time market data.
+  - ✅ **Smart Scan**: Enhanced AI identification with locale-aware risk warnings (Chinese support).
+  - ✅ **Valuation**: Restored "Estimate Price" button for manual valuation triggers.
+- **Bug Fixes & Stability**
+  - **Environment Fallback**: Added robust fallback to `.env` credentials if database settings are missing.
+  - **Data Integrity**: Fixed URL corruption issue in System Settings API.
+  - **Authentication**: Resolved eBay Client Credentials scope issues.
+- **Cleanup**
+  - Removed temporary debug scripts.
+  - Updated project documentation.
+
 ## [2026.01.21] - 2026-01-21
 
 ### 🧹 Project Clean & Archival

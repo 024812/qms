@@ -31,11 +31,15 @@ export default function CardsPage() {
   const fetchData = useCallback(async () => {
     try {
       setLoading(true);
+      // Build filter object, excluding 'ALL' values
+      const filter: Record<string, string> = {};
+      if (filters.sport !== 'ALL') filter.sport = filters.sport;
+      if (filters.gradingCompany !== 'ALL') filter.gradingCompany = filters.gradingCompany;
+      if (filters.status !== 'ALL') filter.status = filters.status;
+
       const data = await getCards({
-        search: searchTerm,
-        sport: filters.sport,
-        gradingCompany: filters.gradingCompany,
-        status: filters.status,
+        search: searchTerm || undefined,
+        filter: Object.keys(filter).length > 0 ? filter : undefined,
         page: currentPage,
       });
       // eslint-disable-next-line @typescript-eslint/no-explicit-any

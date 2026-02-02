@@ -227,6 +227,20 @@
       "cardSaved": "卡片已成功保存",
       "error": "错误",
       "failedToSave": "保存失败，请重试",
+      "createSuccess": "卡片创建成功",
+      "updateSuccess": "卡片更新成功",
+      "priceEstimated": "价格估算完成",
+      "autoSaving": "已检测到足够信息，自动保存中...",
+      "smartScanHint": "上传卡片照片，AI 将自动识别信息",
+      "rescanHint": "使用 AI 重新扫描并更新卡片信息",
+      "errors": {
+        "noFrontImage": "请先上传正面图片",
+        "aiScanFailed": "AI 识别失败，请手动输入",
+        "insufficientDataForEstimate": "需要填写球员、年份和品牌才能估价",
+        "noEstimateAvailable": "暂无估价数据",
+        "estimateFailed": "估价服务暂时不可用",
+        "saveFailed": "保存失败，请重试"
+      },
       "ai": {
         "title": "AI 智能助手",
         "identifying": "正在识别...",

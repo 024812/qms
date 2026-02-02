@@ -5,6 +5,7 @@ import { getTranslations } from 'next-intl/server';
 import { Button } from '@/components/ui/button';
 import { Link } from '@/i18n/routing';
 import { ChevronLeft } from 'lucide-react';
+import { parseBackImage } from '@/modules/cards/utils';
 
 interface EditCardPageProps {
   params: Promise<{
@@ -22,35 +23,39 @@ export default async function EditCardPage({ params }: EditCardPageProps) {
     notFound();
   }
 
-  // Robustly parse attachmentImages
-  let backImage = null;
-  const attachments = card.attachmentImages;
-
-  if (Array.isArray(attachments) && attachments.length > 0) {
-    backImage = attachments[0];
-  } else if (typeof attachments === 'string') {
-    // Attempt to parse stringified JSON or treat as single URL
-    try {
-      const parsed = JSON.parse(attachments as string);
-      if (Array.isArray(parsed) && parsed.length > 0) {
-        backImage = parsed[0];
-      }
-    } catch {
-      // If parse fails, might be a single raw URL string
-      if ((attachments as string).length > 20) {
-        // arbitrary primitive check
-        backImage = attachments;
-      }
-    }
-  }
-
   // Convert DB card to Form initial values
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const initialData: any = {
-    ...card,
-    // Ensure relations or specific fields are mapped correctly if needed
-    // For now spread is mostly compatible with FormValues
-    backImage: backImage,
+  // Replace null with undefined where needed for form compatibility
+  const initialData = {
+    id: card.id,
+    playerName: card.playerName,
+    sport: card.sport,
+    team: card.team ?? undefined,
+    position: card.position ?? undefined,
+    year: card.year,
+    brand: card.brand,
+    series: card.series ?? undefined,
+    cardNumber: card.cardNumber ?? undefined,
+    gradingCompany: card.gradingCompany ?? 'UNGRADED',
+    grade: card.grade ? Number(card.grade) : undefined,
+    certificationNumber: card.certificationNumber ?? undefined,
+    purchasePrice: card.purchasePrice ? Number(card.purchasePrice) : undefined,
+    purchaseDate: card.purchaseDate ?? undefined,
+    currentValue: card.currentValue ? Number(card.currentValue) : undefined,
+    estimatedValue: card.estimatedValue ? Number(card.estimatedValue) : undefined,
+    soldPrice: card.soldPrice ? Number(card.soldPrice) : undefined,
+    soldDate: card.soldDate ?? undefined,
+    isAutographed: card.isAutographed,
+    hasMemorabilia: card.hasMemorabilia,
+    memorabiliaType: card.memorabiliaType ?? undefined,
+    parallel: card.parallel ?? undefined,
+    serialNumber: card.serialNumber ?? undefined,
+    status: card.status,
+    location: card.location ?? undefined,
+    condition: card.condition ?? undefined,
+    notes: card.notes ?? undefined,
+    frontImage: card.mainImage ?? undefined,
+    mainImage: card.mainImage ?? undefined,
+    backImage: parseBackImage(card.attachmentImages) ?? undefined,
   };
 
   return (

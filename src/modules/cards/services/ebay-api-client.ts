@@ -38,8 +38,16 @@ export class eBayApiClient {
       return this.client;
     }
 
-    // 1. Get credentials from DB
-    const config = await systemSettingsRepository.getEbayApiConfig();
+    // 1. Get credentials from DB (Safe fetch)
+    let config = null;
+    try {
+      config = await systemSettingsRepository.getEbayApiConfig();
+    } catch (error) {
+      console.warn(
+        'eBay Client: Failed to fetch settings from DB, proceeding to env fallback.',
+        error
+      );
+    }
 
     let appId = config?.appId || undefined;
     let certId = config?.certId || undefined;
@@ -66,11 +74,13 @@ export class eBayApiClient {
     }
 
     // 2. Initialize Client
+    const isSandbox = process.env.EBAY_ENVIRONMENT === 'sandbox';
+
     this.client = new eBayApi({
       appId: appId,
       certId: certId,
       devId: devId,
-      sandbox: false, // Production
+      sandbox: isSandbox,
       siteId: eBayApi.SiteId.EBAY_US,
       marketplaceId: eBayApi.MarketplaceId.EBAY_US,
       autoRefreshToken: true,
@@ -78,7 +88,9 @@ export class eBayApiClient {
 
     // 3. Authenticate (Client Credentials Flow)
     try {
-      this.client.OAuth2.setScope(['https://api.ebay.com/oauth/api-scope/buy.browse']);
+      // Use the correct generic scope for Client Credentials flow
+      // Note: api_scope (underscore) is critical. Specific scopes like buy.browse often fail here.
+      this.client.OAuth2.setScope(['https://api.ebay.com/oauth/api_scope']);
       await this.client.OAuth2.getApplicationAccessToken();
     } catch (error) {
       console.error('eBay Auth Failed:', error);

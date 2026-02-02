@@ -133,56 +133,56 @@ export function CardForm({ initialData, onSuccess }: CardFormProps) {
     setWarningMsg(null);
     try {
       info(t('ai.title'), t('ai.identifying'));
-      const result = await identifyCardAction(frontImage, locale);
+
+      // Get back image if available
+      const backImage = form.getValues('backImage') || undefined;
+
+      // Compress images before sending (dynamic import for client-side only)
+      const { compressImage } = await import('@/lib/utils/image-compression');
+      const compressedFront = await compressImage(frontImage);
+      const compressedBack = backImage ? await compressImage(backImage) : undefined;
+
+      // Call AI with both images
+      const result = await identifyCardAction(compressedFront, compressedBack, locale);
 
       if (result) {
         if (result.imageQualityFeedback) {
-          // If the AI flagged the image as poor quality, show a warning/error and suggest retaking
           error(t('ai.imageQualityIssue'), result.imageQualityFeedback);
-          // Optional: You could choose to stop here or still populate what was found
         }
 
-        if (result.playerName)
-          form.setValue('playerName', result.playerName, {
-            shouldValidate: true,
-            shouldDirty: true,
-          });
-        if (result.year)
-          form.setValue('year', result.year, { shouldValidate: true, shouldDirty: true });
-        if (result.brand)
-          form.setValue('brand', result.brand, { shouldValidate: true, shouldDirty: true });
-        if (result.series)
-          form.setValue('series', result.series, { shouldValidate: true, shouldDirty: true });
-        if (result.cardNumber)
-          form.setValue('cardNumber', result.cardNumber, {
-            shouldValidate: true,
-            shouldDirty: true,
-          });
-        if (result.sport)
-          form.setValue('sport', result.sport, { shouldValidate: true, shouldDirty: true });
-        if (result.team)
-          form.setValue('team', result.team, { shouldValidate: true, shouldDirty: true });
-        if (result.position)
-          form.setValue('position', result.position, { shouldValidate: true, shouldDirty: true });
-
+        // Batch update form values for better performance
+        const updates: Partial<FormValues> = {};
+        if (result.playerName) updates.playerName = result.playerName;
+        if (result.year) updates.year = result.year;
+        if (result.brand) updates.brand = result.brand;
+        if (result.series) updates.series = result.series;
+        if (result.cardNumber) updates.cardNumber = result.cardNumber;
+        if (result.sport) updates.sport = result.sport;
+        if (result.team) updates.team = result.team;
+        if (result.position) updates.position = result.position;
         if (result.gradingCompany)
-          form.setValue('gradingCompany', result.gradingCompany as any, {
+          updates.gradingCompany = result.gradingCompany as FormValues['gradingCompany'];
+        if (result.grade) updates.grade = result.grade;
+        if (result.isAutographed !== undefined) updates.isAutographed = result.isAutographed;
+
+        // Apply all updates at once
+        Object.entries(updates).forEach(([key, value]) => {
+          form.setValue(key as keyof FormValues, value, {
             shouldValidate: true,
             shouldDirty: true,
           });
-        if (result.grade)
-          form.setValue('grade', result.grade, { shouldValidate: true, shouldDirty: true });
-        if (result.isAutographed !== undefined)
-          form.setValue('isAutographed', result.isAutographed, {
-            shouldValidate: true,
-            shouldDirty: true,
-          });
+        });
 
         if (result.riskWarning) {
           setWarningMsg(result.riskWarning);
         }
 
         success(t('ai.title'), t('ai.identifySuccess'));
+
+        // Auto-trigger price estimation if we have enough data
+        if (result.playerName && result.brand) {
+          setTimeout(() => handleEstimatePrice(), 500);
+        }
       }
     } catch (err) {
       console.error(err);

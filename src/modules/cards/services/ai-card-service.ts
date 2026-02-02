@@ -1,22 +1,26 @@
 import OpenAI from 'openai';
+import { z } from 'zod';
 import { ebayProvider, web130Provider, CardDetails, eBaySalesResult } from './price-data-providers';
 
-interface CardRecognitionResult {
-  playerName?: string;
-  year?: number;
-  brand?: string;
-  series?: string;
-  cardNumber?: string;
-  sport?: 'BASKETBALL' | 'SOCCER' | 'OTHER';
-  team?: string;
-  position?: string;
-  gradingCompany?: string;
-  grade?: number;
-  isAutographed?: boolean;
-  riskWarning?: string; // New field for authenticity risks
-  imageQualityFeedback?: string; // New field for image quality issues (e.g., "Too blurry", "Glare obscuring text")
-  confidence?: 'HIGH' | 'MEDIUM' | 'LOW';
-}
+// Zod schema for validating AI response
+const CardRecognitionSchema = z.object({
+  playerName: z.string().optional(),
+  year: z.number().optional(),
+  brand: z.string().optional(),
+  series: z.string().optional(),
+  cardNumber: z.string().optional(),
+  sport: z.enum(['BASKETBALL', 'SOCCER', 'OTHER']).optional(),
+  team: z.string().optional(),
+  position: z.string().optional(),
+  gradingCompany: z.string().optional(),
+  grade: z.number().optional(),
+  isAutographed: z.boolean().optional(),
+  riskWarning: z.string().optional(),
+  imageQualityFeedback: z.string().optional(),
+  confidence: z.enum(['HIGH', 'MEDIUM', 'LOW']).optional(),
+});
+
+type CardRecognitionResult = z.infer<typeof CardRecognitionSchema>;
 
 export interface PriceEstimateResult {
   low: number;
@@ -24,10 +28,36 @@ export interface PriceEstimateResult {
   average: number;
   lastSold?: number;
   currency: string;
-  confidence: 'HIGH' | 'MEDIUM' | 'LOW'; // Added
-  sources: string[]; // Added
-  salesCount: number; // Added
-  lastSaleDate?: string; // Added
+  confidence: 'HIGH' | 'MEDIUM' | 'LOW';
+  sources: string[];
+  salesCount: number;
+  lastSaleDate?: string;
+}
+
+/**
+ * Retry utility with exponential backoff
+ */
+async function withRetry<T>(
+  fn: () => Promise<T>,
+  maxRetries: number = 2,
+  baseDelayMs: number = 1000
+): Promise<T> {
+  let lastError: Error | null = null;
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      return await fn();
+    } catch (error) {
+      lastError = error as Error;
+      if (attempt < maxRetries) {
+        const delay = baseDelayMs * Math.pow(2, attempt);
+        console.warn(
+          `AI request failed, retrying in ${delay}ms... (attempt ${attempt + 1}/${maxRetries})`
+        );
+        await new Promise(resolve => setTimeout(resolve, delay));
+      }
+    }
+  }
+  throw lastError;
 }
 
 /**
@@ -90,9 +120,16 @@ export class AICardService {
   }
 
   /**
-   * Identify card details from an image (Base64)
+   * Identify card details from images (Base64)
+   * @param frontImage - Front image of the card (required)
+   * @param backImage - Back image of the card (optional, improves accuracy)
+   * @param locale - Language for risk warnings
    */
-  async identifyCard(base64Image: string, locale: string = 'en'): Promise<CardRecognitionResult> {
+  async identifyCard(
+    frontImage: string,
+    backImage?: string,
+    locale: string = 'en'
+  ): Promise<CardRecognitionResult> {
     const { client, deployment } = await this.getClient();
 
     // 1. Mock Mode (if no key)
@@ -102,17 +139,40 @@ export class AICardService {
       return this.getMockRecognitionResult();
     }
 
-    try {
-      const language = locale === 'zh' ? 'Chinese (Simplified)' : 'English';
+    const language = locale === 'zh' ? 'Chinese (Simplified)' : 'English';
 
-      // 2. Real Azure OpenAI Call
+    // Build image content array - use 'as const' for proper type inference
+    const imageContent = [
+      {
+        type: 'image_url' as const,
+        image_url: {
+          url: frontImage.startsWith('data:') ? frontImage : `data:image/jpeg;base64,${frontImage}`,
+          detail: 'high' as const,
+        },
+      },
+    ];
+
+    // Add back image if provided
+    if (backImage) {
+      imageContent.push({
+        type: 'image_url' as const,
+        image_url: {
+          url: backImage.startsWith('data:') ? backImage : `data:image/jpeg;base64,${backImage}`,
+          detail: 'high' as const,
+        },
+      });
+    }
+
+    // Use retry mechanism for API call
+    return withRetry(async () => {
       const response = await client.chat.completions.create({
         model: deployment,
         messages: [
           {
             role: 'system',
             content: `You are an expert sports card identifier. 
-              Analyze the image for details and POTENTIAL AUTHENTICITY RISKS.
+              Analyze the image(s) for details and POTENTIAL AUTHENTICITY RISKS.
+              ${backImage ? 'You are provided with both FRONT and BACK images of the card. Use both to extract complete information.' : ''}
               
               Extract: Player, Year, Brand, Series, Card Number, Sport, Team, Position, Grading.
               
@@ -155,16 +215,13 @@ export class AICardService {
           {
             role: 'user',
             content: [
-              { type: 'text', text: 'Identify this card and flag any risks.' },
               {
-                type: 'image_url',
-                image_url: {
-                  url: base64Image.startsWith('data:')
-                    ? base64Image
-                    : `data:image/jpeg;base64,${base64Image}`,
-                  detail: 'high',
-                },
+                type: 'text',
+                text: backImage
+                  ? 'Identify this card using both front and back images. Flag any risks.'
+                  : 'Identify this card and flag any risks.',
               },
+              ...imageContent,
             ],
           },
         ],
@@ -175,11 +232,18 @@ export class AICardService {
       const content = response.choices[0].message.content;
       if (!content) throw new Error('No content from AI');
 
-      return JSON.parse(content) as CardRecognitionResult;
-    } catch (error) {
-      console.error('AI Identification Failed:', error);
-      throw new Error('Failed to identify card.');
-    }
+      // Parse and validate with Zod
+      const parsed = JSON.parse(content);
+      const validated = CardRecognitionSchema.safeParse(parsed);
+
+      if (!validated.success) {
+        console.warn('AI response validation warning:', validated.error.issues);
+        // Return parsed data even if validation fails (partial data is better than nothing)
+        return parsed as CardRecognitionResult;
+      }
+
+      return validated.data;
+    });
   }
 
   /**

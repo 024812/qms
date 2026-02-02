@@ -1,7 +1,7 @@
-import { useTranslations } from 'next-intl';
+import { getTranslations } from 'next-intl/server';
 
-export default function SoldCardsPage() {
-  const t = useTranslations('cards.sidebar');
+export default async function SoldCardsPage() {
+  const t = await getTranslations('cards.sidebar');
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-1">

@@ -1,7 +1,14 @@
-import { getTranslations } from 'next-intl/server';
+import { getTranslations, setRequestLocale } from 'next-intl/server';
 
-export default async function CardOverviewPage() {
+type Props = {
+  params: Promise<{ locale: string }>;
+};
+
+export default async function CardOverviewPage({ params }: Props) {
+  const { locale } = await params;
+  setRequestLocale(locale);
   const t = await getTranslations('cards.sidebar');
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-1">

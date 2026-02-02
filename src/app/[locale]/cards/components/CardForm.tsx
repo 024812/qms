@@ -365,6 +365,95 @@ export function CardForm({ initialData, onSuccess }: CardFormProps) {
           </div>
         </div>
 
+        {/* Value Group */}
+        <div className="space-y-4">
+          <div className="flex items-center justify-between border-b pb-2">
+            <h3 className="text-sm font-medium text-muted-foreground">{t('valueStatus')}</h3>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={handleEstimatePrice}
+              disabled={estimating}
+              className="h-7 text-xs"
+            >
+              {estimating ? (
+                <Loader2 className="mr-1 h-3 w-3 animate-spin" />
+              ) : (
+                <Calculator className="mr-1 h-3 w-3" />
+              )}
+              {tGlobal('actions.estimatePrice')}
+            </Button>
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <FormField
+              control={form.control}
+              name="currentValue"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>{t('currentValue')}</FormLabel>
+                  <FormControl>
+                    <Input type="number" step="0.01" {...field} value={field.value || ''} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="purchasePrice"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>{t('purchasePrice')}</FormLabel>
+                  <FormControl>
+                    <Input type="number" step="0.01" {...field} value={field.value || ''} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="purchaseDate"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>{t('purchaseDate')}</FormLabel>
+                  <FormControl>
+                    <Input type="date" {...field} value={field.value ?? ''} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="status"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>{t('status')}</FormLabel>
+                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      <SelectItem value="COLLECTION">
+                        {tGlobal('enums.status.COLLECTION')}
+                      </SelectItem>
+                      <SelectItem value="FOR_SALE">{tGlobal('enums.status.FOR_SALE')}</SelectItem>
+                      <SelectItem value="SOLD">{tGlobal('enums.status.SOLD')}</SelectItem>
+                      <SelectItem value="GRADING">{tGlobal('enums.status.GRADING')}</SelectItem>
+                      <SelectItem value="DISPLAY">{tGlobal('enums.status.DISPLAY')}</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
+        </div>
+
         {/* Card Details Group */}
         <div className="space-y-4">
           <h3 className="text-sm font-medium text-muted-foreground border-b pb-2">
@@ -479,69 +568,6 @@ export function CardForm({ initialData, onSuccess }: CardFormProps) {
                       value={field.value || ''}
                     />
                   </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          </div>
-        </div>
-
-        {/* Value Group */}
-        <div className="space-y-4">
-          <div className="flex items-center justify-between border-b pb-2">
-            <h3 className="text-sm font-medium text-muted-foreground">{t('valueStatus')}</h3>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={handleEstimatePrice}
-              disabled={estimating}
-              className="h-7 text-xs"
-            >
-              {estimating ? (
-                <Loader2 className="mr-1 h-3 w-3 animate-spin" />
-              ) : (
-                <Calculator className="mr-1 h-3 w-3" />
-              )}
-              {tGlobal('actions.estimatePrice')}
-            </Button>
-          </div>
-          <div className="grid grid-cols-2 gap-4">
-            <FormField
-              control={form.control}
-              name="currentValue"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>{t('currentValue')}</FormLabel>
-                  <FormControl>
-                    <Input type="number" step="0.01" {...field} value={field.value || ''} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="status"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>{t('status')}</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      <SelectItem value="COLLECTION">
-                        {tGlobal('enums.status.COLLECTION')}
-                      </SelectItem>
-                      <SelectItem value="FOR_SALE">{tGlobal('enums.status.FOR_SALE')}</SelectItem>
-                      <SelectItem value="SOLD">{tGlobal('enums.status.SOLD')}</SelectItem>
-                      <SelectItem value="GRADING">{tGlobal('enums.status.GRADING')}</SelectItem>
-                      <SelectItem value="DISPLAY">{tGlobal('enums.status.DISPLAY')}</SelectItem>
-                    </SelectContent>
-                  </Select>
                   <FormMessage />
                 </FormItem>
               )}
@@ -664,7 +690,7 @@ export function CardForm({ initialData, onSuccess }: CardFormProps) {
             {/* Storage & Purchase Info */}
             <div className="space-y-4 border-t pt-4">
               <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                {t('storage')} & {t('purchaseDate')}
+                {t('storage')}
               </h4>
               <div className="grid grid-cols-2 gap-4">
                 <FormField
@@ -675,32 +701,6 @@ export function CardForm({ initialData, onSuccess }: CardFormProps) {
                       <FormLabel>{t('location')}</FormLabel>
                       <FormControl>
                         <Input {...field} value={field.value ?? ''} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="purchasePrice"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>{t('purchasePrice')}</FormLabel>
-                      <FormControl>
-                        <Input type="number" step="0.01" {...field} value={field.value || ''} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="purchaseDate"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>{t('purchaseDate')}</FormLabel>
-                      <FormControl>
-                        <Input type="date" {...field} value={field.value ?? ''} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>

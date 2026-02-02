@@ -4,13 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Pencil, Trash2 } from 'lucide-react';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from '@/components/ui/dialog';
+import { Link } from '@/i18n/routing';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -22,7 +16,6 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
-import { EditCardForm } from './EditCardForm';
 import { deleteCard } from '@/app/actions/card-actions';
 import { useToast } from '@/hooks/useToast';
 import type { CardItem } from '@/modules/cards/schema';
@@ -32,7 +25,6 @@ interface CardDetailActionsProps {
 }
 
 export function CardDetailActions({ card }: CardDetailActionsProps) {
-  const [editOpen, setEditOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const router = useRouter();
   const { success, error } = useToast();
@@ -48,29 +40,17 @@ export function CardDetailActions({ card }: CardDetailActionsProps) {
     }
   };
 
-  const handleEditSuccess = () => {
-    setEditOpen(false);
-    router.refresh();
-  };
-
   return (
     <div className="flex gap-2">
-      <Dialog open={editOpen} onOpenChange={setEditOpen}>
-        <DialogTrigger asChild>
-          <Button variant="outline" size="sm">
-            <Pencil className="w-4 h-4 mr-2" />
-            Edit
-          </Button>
-        </DialogTrigger>
-        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Edit Card</DialogTitle>
-          </DialogHeader>
-          {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-          <EditCardForm initialData={card as any} onSuccess={handleEditSuccess} />
-        </DialogContent>
-      </Dialog>
+      {/* Edit - Navigate to dedicated edit page */}
+      <Button variant="outline" size="sm" asChild>
+        <Link href={`/cards/${card.id}/edit`}>
+          <Pencil className="w-4 h-4 mr-2" />
+          Edit
+        </Link>
+      </Button>
 
+      {/* Delete - Keep as AlertDialog */}
       <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
         <AlertDialogTrigger asChild>
           <Button variant="destructive" size="sm">

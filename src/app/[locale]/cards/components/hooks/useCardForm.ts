@@ -33,7 +33,7 @@ export function useCardForm({
   onSuccess,
 }: UseCardFormOptions = {}) {
   const t = useTranslations('cards.form');
-  const tGlobal = useTranslations('global');
+
   const router = useRouter();
 
   const [aiScanning, setAiScanning] = useState(false);
@@ -131,7 +131,7 @@ export function useCardForm({
       if (result.isAutographed !== undefined) form.setValue('isAutographed', result.isAutographed);
       // Note: hasMemorabilia, parallel, serialNumber are not in CardRecognitionSchema
 
-      toast.success(tGlobal('actions.scanSuccess'));
+      toast.success(t('ai.identifySuccess'));
       setShowDetails(true);
 
       // Auto-save for CreateCardForm if enabled and we have minimum required data
@@ -148,7 +148,7 @@ export function useCardForm({
     } finally {
       setAiScanning(false);
     }
-  }, [form, autoSaveOnAISuccess, t, tGlobal]);
+  }, [form, autoSaveOnAISuccess, t]);
 
   const handleEstimatePrice = useCallback(async () => {
     const values = form.getValues();

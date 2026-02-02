@@ -28,7 +28,7 @@ interface EditCardFormProps {
 
 export function EditCardForm({ initialData, onSuccess }: EditCardFormProps) {
   const t = useTranslations('cards.form');
-  const tGlobal = useTranslations('global');
+  const tCards = useTranslations('cards');
 
   const {
     form,
@@ -85,7 +85,7 @@ export function EditCardForm({ initialData, onSuccess }: EditCardFormProps) {
               ) : (
                 <Sparkles className="mr-2 h-4 w-4" />
               )}
-              {tGlobal('actions.smartScan')}
+              {tCards('actions.smartScan')}
             </Button>
             <p className="text-xs text-muted-foreground">{t('rescanHint')}</p>
           </div>

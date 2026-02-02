@@ -26,7 +26,7 @@ interface CreateCardFormProps {
 
 export function CreateCardForm({ onSuccess }: CreateCardFormProps) {
   const t = useTranslations('cards.form');
-  const tGlobal = useTranslations('global');
+  const tCards = useTranslations('cards');
 
   const {
     form,
@@ -86,7 +86,7 @@ export function CreateCardForm({ onSuccess }: CreateCardFormProps) {
                 ) : (
                   <Sparkles className="mr-2 h-4 w-4" />
                 )}
-                {tGlobal('actions.smartScan')}
+                {tCards('actions.smartScan')}
               </Button>
               <p className="text-xs text-muted-foreground">{t('smartScanHint')}</p>
             </div>

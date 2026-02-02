@@ -7,7 +7,12 @@ export async function identifyCardAction(frontImage: string, backImage?: string,
     return await aiCardService.identifyCard(frontImage, backImage, locale);
   } catch (error) {
     console.error('Identify Action Error:', error);
-    throw new Error('Failed to identify card');
+    if (error instanceof Error) {
+      console.error('Stack:', error.stack);
+      // Reshape error to be simple text so it serializes safely to client
+      throw new Error(`AI Scan Failed: ${error.message}`);
+    }
+    throw new Error('Failed to identify card due to unknown error');
   }
 }
 
@@ -28,6 +33,10 @@ export async function estimatePriceAction(details: EstimateParams) {
     return await aiCardService.estimatePrice(sanitizedDetails);
   } catch (error) {
     console.error('Estimate Action Error:', error);
+    if (error instanceof Error) {
+      console.error('Stack:', error.stack);
+      throw new Error(`Estimate Failed: ${error.message}`);
+    }
     throw new Error('Failed to estimate price');
   }
 }

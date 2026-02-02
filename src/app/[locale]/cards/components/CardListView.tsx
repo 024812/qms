@@ -80,7 +80,9 @@ export function CardListView({ items }: CardListViewProps) {
             <TableHead>{t('list.brand')}</TableHead>
             <TableHead>{t('list.sport')}</TableHead>
             <TableHead>{t('list.grade')}</TableHead>
-            <TableHead>{t('list.value')}</TableHead>
+            <TableHead>{t('list.currentValuation')}</TableHead>
+            <TableHead>{t('list.purchasePrice')}</TableHead>
+            <TableHead>{t('list.purchaseDate')}</TableHead>
             <TableHead>{t('list.status')}</TableHead>
             <TableHead className="w-[50px]">{t('list.actions')}</TableHead>
           </TableRow>
@@ -144,6 +146,14 @@ export function CardListView({ items }: CardListViewProps) {
 
                 <TableCell>
                   {card.currentValue ? `$${card.currentValue.toLocaleString()}` : '-'}
+                </TableCell>
+
+                <TableCell>
+                  {card.purchasePrice ? `$${card.purchasePrice.toLocaleString()}` : '-'}
+                </TableCell>
+
+                <TableCell>
+                  {card.purchaseDate ? new Date(card.purchaseDate).toLocaleDateString() : '-'}
                 </TableCell>
 
                 <TableCell>

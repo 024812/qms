@@ -33,7 +33,9 @@
     "quiltSettings": "Quilt Settings",
     "userSettings": "User Settings",
     "quiltsList": "Quilts List",
-    "cardsList": "Cards List"
+    "cardsList": "Collected Cards",
+    "soldCards": "Sold Cards",
+    "cardOverview": "Card Overview"
   },
   "modules": {
     "title": "Module Management",
@@ -74,7 +76,9 @@
       "brand": "Brand",
       "sport": "Sport",
       "grade": "Grade",
-      "value": "Value",
+      "currentValuation": "Current Valuation",
+      "purchasePrice": "Purchase Price",
+      "purchaseDate": "Purchase Date",
       "status": "Status",
       "actions": "Actions"
     },

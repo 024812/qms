@@ -35,7 +35,9 @@
     "cardSettings": "球星卡管理设置",
     "userSettings": "用户设置",
     "quiltsList": "被子列表",
-    "cardsList": "卡片列表"
+    "cardsList": "收藏卡片",
+    "soldCards": "售出卡片",
+    "cardOverview": "卡片总览"
   },
   "modules": {
     "title": "模块管理",
@@ -76,7 +78,9 @@
       "brand": "品牌",
       "sport": "运动",
       "grade": "评级",
-      "value": "价值",
+      "currentValuation": "当前估值",
+      "purchasePrice": "买入价格",
+      "purchaseDate": "买入时间",
       "status": "状态",
       "actions": "操作"
     },

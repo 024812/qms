@@ -71,6 +71,8 @@ export function AppSidebar() {
       case 'cards':
         return [
           { name: t('sidebar.cardsList'), href: '/cards', icon: CreditCard },
+          { name: t('sidebar.soldCards'), href: '/cards/sold', icon: CreditCard },
+          { name: t('sidebar.cardOverview'), href: '/cards/overview', icon: BarChart3 },
         ];
       default:
         return [];
@@ -166,9 +168,9 @@ export function AppSidebar() {
           const moduleNav = getModuleNavigation(module.id);
           const isModuleActive = currentModuleId === module.id;
           const hasSubNav = moduleNav.length > 0;
-          
+
           // Get translated module name if possible, or fallback to name from registry
-          // Since registry names might be hardcoded in English/Chinese, it's better to translate them 
+          // Since registry names might be hardcoded in English/Chinese, it's better to translate them
           // But for now we use the name from registry. Ideally registry should return translation keys.
           const moduleName = t(`users.modules.${module.id}`) || module.name;
 

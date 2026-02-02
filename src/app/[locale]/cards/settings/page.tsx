@@ -1,75 +1,67 @@
 'use client';
 
-import { useTranslations } from 'next-intl';
+import { useLocale } from 'next-intl';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-
+import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Settings, ShieldAlert, Key, Server, Box, Save } from 'lucide-react';
+import { Settings, ShieldAlert, Save, ExternalLink } from 'lucide-react';
 import { toast } from 'sonner';
-import { useCardSettings, useUpdateCardSettings } from '@/hooks/useCardSettings';
 import { useSession } from 'next-auth/react';
-import { useEffect } from 'react';
-import { useForm } from 'react-hook-form';
-import { z } from 'zod';
-import { zodResolver } from '@hookform/resolvers/zod';
-import {
-  Form,
-  FormControl,
-  FormDescription,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from '@/components/ui/form';
-
-const settingsSchema = z.object({
-  azureOpenAIApiKey: z.string().optional(),
-  azureOpenAIEndpoint: z.string().url('Must be a valid URL').optional().or(z.literal('')),
-  azureOpenAIDeployment: z.string().optional(),
-});
-
-type SettingsFormValues = z.infer<typeof settingsSchema>;
+import { useCardSettings, useUpdateCardSettings } from '@/hooks/useCardSettings';
+import { useEffect, useState } from 'react';
 
 export default function CardSettingsPage() {
-  const t = useTranslations('cards.settings');
+  const locale = useLocale();
+  const isZh = locale === 'zh';
   const { data: session, status } = useSession();
 
+  // Fetch settings
   const { data: settings, isLoading } = useCardSettings();
   const updateSettings = useUpdateCardSettings();
 
-  const form = useForm<SettingsFormValues>({
-    resolver: zodResolver(settingsSchema),
-    defaultValues: {
-      azureOpenAIApiKey: '',
-      azureOpenAIEndpoint: '',
-      azureOpenAIDeployment: '',
-    },
+  // Local state for form
+  const [formData, setFormData] = useState({
+    azureOpenAIApiKey: '',
+    azureOpenAIEndpoint: '',
+    azureOpenAIDeployment: '',
+    ebayAppId: '',
+    ebayCertId: '',
+    ebayDevId: '',
   });
 
-  // Reset form when settings are loaded
+  // Load data into form when fetched
   useEffect(() => {
     if (settings) {
-      form.reset({
+      // eslint-disable-next-line
+      setFormData({
         azureOpenAIApiKey: settings.azureOpenAIApiKey || '',
         azureOpenAIEndpoint: settings.azureOpenAIEndpoint || '',
         azureOpenAIDeployment: settings.azureOpenAIDeployment || '',
+        ebayAppId: settings.ebayAppId || '',
+        ebayCertId: settings.ebayCertId || '',
+        ebayDevId: settings.ebayDevId || '',
       });
     }
-  }, [settings, form]);
+  }, [settings]);
 
-  const isAdmin = session?.user?.role === 'admin';
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
+  };
 
-  const onSubmit = async (data: SettingsFormValues) => {
+  const handleSave = async () => {
     try {
-      await updateSettings.mutateAsync(data);
-      toast.success(t('success'));
+      await updateSettings.mutateAsync(formData);
+      toast.success(isZh ? '设置已保存' : 'Settings saved');
     } catch (error) {
-      toast.error(t('error'));
+      toast.error(isZh ? '保存失败' : 'Failed to save settings');
       console.error(error);
     }
   };
+
+  const isAdmin = session?.user?.role === 'admin';
 
   if (status === 'loading' || isLoading) {
     return (
@@ -82,7 +74,6 @@ export default function CardSettingsPage() {
     );
   }
 
-  // Non-admin access denied
   if (!isAdmin) {
     return (
       <div className="container mx-auto py-8 px-4">
@@ -91,9 +82,13 @@ export default function CardSettingsPage() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-destructive">
                 <ShieldAlert className="w-6 h-6" />
-                {t('accessDenied')}
+                {isZh ? '访问被拒绝' : 'Access Denied'}
               </CardTitle>
-              <CardDescription>{t('accessDeniedDesc')}</CardDescription>
+              <CardDescription>
+                {isZh
+                  ? '只有管理员可以访问球星卡管理设置。'
+                  : 'Only administrators can access card management settings.'}
+              </CardDescription>
             </CardHeader>
           </Card>
         </div>
@@ -103,99 +98,126 @@ export default function CardSettingsPage() {
 
   return (
     <div className="container mx-auto py-8 px-4">
-      <div className="max-w-2xl mx-auto space-y-6">
+      <div className="max-w-3xl mx-auto space-y-6">
         <div className="mb-8">
           <h1 className="text-3xl font-bold mb-2 flex items-center gap-3">
             <Settings className="w-8 h-8" />
-            {t('title')}
+            {isZh ? '球星卡管理设置' : 'Card Management Settings'}
           </h1>
-          <p className="text-muted-foreground">{t('subtitle')}</p>
+          <p className="text-muted-foreground">
+            {isZh
+              ? '配置球星卡模块的API集成和行为（仅管理员）'
+              : 'Configure card module API integrations and behavior (Admin only)'}
+          </p>
         </div>
 
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-            {/* Azure OpenAI Settings */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center space-x-2">
-                  <Server className="w-5 h-5" />
-                  <span>{t('azure.title')}</span>
-                </CardTitle>
-                <CardDescription>{t('azure.description')}</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <FormField
-                  control={form.control}
-                  name="azureOpenAIEndpoint"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="flex items-center gap-2">
-                        <Server className="w-4 h-4" />
-                        {t('azure.endpoint')}
-                      </FormLabel>
-                      <FormControl>
-                        <Input placeholder={t('azure.endpointPlaceholder')} {...field} />
-                      </FormControl>
-                      <FormDescription>{t('azure.endpointDesc')}</FormDescription>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+        {/* eBay Configuration */}
+        <Card>
+          <CardHeader>
+            <CardTitle>eBay API Integration</CardTitle>
+            <CardDescription>
+              {isZh
+                ? '配置 eBay 开发者凭证以获取且市场价格数据'
+                : 'Configure eBay Developer credentials for market data'}
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="ebayAppId">App ID (Client ID)</Label>
+              <Input
+                id="ebayAppId"
+                name="ebayAppId"
+                value={formData.ebayAppId}
+                onChange={handleChange}
+                placeholder="Enter eBay App ID"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="ebayCertId">Cert ID (Client Secret)</Label>
+              <Input
+                id="ebayCertId"
+                name="ebayCertId"
+                type="password"
+                value={formData.ebayCertId}
+                onChange={handleChange}
+                placeholder={settings?.ebayCertId ? '********' : 'Enter eBay Cert ID'}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="ebayDevId">Dev ID (Optional)</Label>
+              <Input
+                id="ebayDevId"
+                name="ebayDevId"
+                value={formData.ebayDevId}
+                onChange={handleChange}
+                placeholder="Enter eBay Dev ID"
+              />
+            </div>
+            <div className="text-sm text-muted-foreground pt-2">
+              <a
+                href="https://developer.ebay.com/my/keys"
+                target="_blank"
+                rel="noreferrer"
+                className="flex items-center gap-1 hover:text-primary transition-colors"
+              >
+                <ExternalLink className="w-3 h-3" />
+                {isZh ? '获取 eBay API Keys' : 'Get eBay API Keys'}
+              </a>
+            </div>
+          </CardContent>
+        </Card>
 
-                <FormField
-                  control={form.control}
-                  name="azureOpenAIApiKey"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="flex items-center gap-2">
-                        <Key className="w-4 h-4" />
-                        {t('azure.apiKey')}
-                      </FormLabel>
-                      <FormControl>
-                        <Input
-                          type="password"
-                          placeholder={
-                            settings?.azureOpenAIApiKey?.includes('*')
-                              ? t('azure.apiKeyMasked')
-                              : t('azure.apiKeyPlaceholder')
-                          }
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormDescription>{t('azure.apiKeyDesc')}</FormDescription>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+        {/* Azure OpenAI Configuration */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Azure OpenAI (AI Scanning)</CardTitle>
+            <CardDescription>
+              {isZh
+                ? '配置用于卡片识别和估价的 AI 模型'
+                : 'Configure AI model for card recognition and valuation'}
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="azureOpenAIApiKey">API Key</Label>
+              <Input
+                id="azureOpenAIApiKey"
+                name="azureOpenAIApiKey"
+                type="password"
+                value={formData.azureOpenAIApiKey}
+                onChange={handleChange}
+                placeholder={settings?.azureOpenAIApiKey ? '********' : 'Enter Azure OpenAI Key'}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="azureOpenAIEndpoint">Endpoint URL</Label>
+              <Input
+                id="azureOpenAIEndpoint"
+                name="azureOpenAIEndpoint"
+                value={formData.azureOpenAIEndpoint}
+                onChange={handleChange}
+                placeholder="https://resource-name.openai.azure.com/"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="azureOpenAIDeployment">Deployment Name (Model)</Label>
+              <Input
+                id="azureOpenAIDeployment"
+                name="azureOpenAIDeployment"
+                value={formData.azureOpenAIDeployment}
+                onChange={handleChange}
+                placeholder="gpt-4o"
+              />
+            </div>
+          </CardContent>
+        </Card>
 
-                <FormField
-                  control={form.control}
-                  name="azureOpenAIDeployment"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="flex items-center gap-2">
-                        <Box className="w-4 h-4" />
-                        {t('azure.deployment')}
-                      </FormLabel>
-                      <FormControl>
-                        <Input placeholder={t('azure.deploymentPlaceholder')} {...field} />
-                      </FormControl>
-                      <FormDescription>{t('azure.deploymentDesc')}</FormDescription>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <div className="flex justify-end pt-4">
-                  <Button type="submit" disabled={updateSettings.isPending}>
-                    <Save className="mr-2 h-4 w-4" />
-                    {t('save')}
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          </form>
-        </Form>
+        <div className="flex justify-end">
+          <Button onClick={handleSave} disabled={updateSettings.isPending}>
+            <Save className="w-4 h-4 mr-2" />
+            {isZh ? '保存所有设置' : 'Save All Settings'}
+          </Button>
+        </div>
       </div>
     </div>
   );

@@ -31,6 +31,7 @@
     "system": "System Management",
     "configuration": "Configuration",
     "quiltSettings": "Quilt Settings",
+    "cardSettings": "Card Settings",
     "userSettings": "User Settings",
     "quiltsList": "Quilts List",
     "cardsList": "Collected Cards",

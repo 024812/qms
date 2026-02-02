@@ -122,6 +122,7 @@ export function AppSidebar() {
       pathname.startsWith('/users') ||
         pathname.startsWith('/admin') ||
         pathname === '/quilts/settings' ||
+        pathname === '/cards/settings' ||
         isHomePage
     );
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -262,7 +263,8 @@ export function AppSidebar() {
                         isActive={
                           pathname.startsWith('/users') ||
                           pathname.startsWith('/admin') ||
-                          pathname === '/quilts/settings'
+                          pathname === '/quilts/settings' ||
+                          pathname === '/cards/settings'
                         }
                       >
                         <Wrench className="h-4 w-4" />
@@ -293,6 +295,14 @@ export function AppSidebar() {
                             <Link href="/quilts/settings" prefetch={false}>
                               <Bed className="h-4 w-4" />
                               <span>{t('sidebar.quiltSettings')}</span>
+                            </Link>
+                          </SidebarMenuSubButton>
+                        </SidebarMenuSubItem>
+                        <SidebarMenuSubItem>
+                          <SidebarMenuSubButton asChild isActive={pathname === '/cards/settings'}>
+                            <Link href="/cards/settings" prefetch={false}>
+                              <CreditCard className="h-4 w-4" />
+                              <span>{t('sidebar.cardSettings')}</span>
                             </Link>
                           </SidebarMenuSubButton>
                         </SidebarMenuSubItem>

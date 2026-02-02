@@ -8,12 +8,18 @@ export interface CardSettings {
   azureOpenAIApiKey: string;
   azureOpenAIEndpoint: string;
   azureOpenAIDeployment: string;
+  ebayAppId?: string;
+  ebayCertId?: string;
+  ebayDevId?: string;
 }
 
 export interface UpdateCardSettingsInput {
   azureOpenAIApiKey?: string;
   azureOpenAIEndpoint?: string;
   azureOpenAIDeployment?: string;
+  ebayAppId?: string;
+  ebayCertId?: string;
+  ebayDevId?: string;
 }
 
 async function fetchCardSettings(): Promise<CardSettings> {

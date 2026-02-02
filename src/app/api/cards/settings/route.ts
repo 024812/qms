@@ -11,14 +11,17 @@ import {
 import { auth } from '@/auth';
 
 const updateCardSettingsSchema = z.object({
-  azureOpenAIApiKey: z.string().min(1).optional(),
-  azureOpenAIEndpoint: z.string().url().optional(),
-  azureOpenAIDeployment: z.string().min(1).optional(),
+  azureOpenAIApiKey: z.string().optional(),
+  azureOpenAIEndpoint: z.string().url().optional().or(z.literal('')),
+  azureOpenAIDeployment: z.string().optional(),
+  ebayAppId: z.string().optional(),
+  ebayCertId: z.string().optional(),
+  ebayDevId: z.string().optional(),
 });
 
 /**
  * GET /api/cards/settings
- * Get card module settings (Azure OpenAI config)
+ * Get card module settings (Azure OpenAI & eBay config)
  * Admin only.
  */
 export async function GET() {
@@ -28,13 +31,19 @@ export async function GET() {
       return createUnauthorizedResponse('Requires admin privileges');
     }
 
-    const config = await systemSettingsRepository.getAzureOpenAIConfig();
+    const [azureConfig, ebayConfig] = await Promise.all([
+      systemSettingsRepository.getAzureOpenAIConfig(),
+      systemSettingsRepository.getEbayApiConfig(),
+    ]);
 
     return createSuccessResponse({
       settings: {
-        azureOpenAIApiKey: config.apiKey ? '********' : '', // Mask API key
-        azureOpenAIEndpoint: config.endpoint || '',
-        azureOpenAIDeployment: config.deployment || '',
+        azureOpenAIApiKey: azureConfig.apiKey ? '********' : '', // Mask API key
+        azureOpenAIEndpoint: azureConfig.endpoint || '',
+        azureOpenAIDeployment: azureConfig.deployment || '',
+        ebayAppId: ebayConfig.appId || '',
+        ebayCertId: ebayConfig.certId ? '********' : '', // Mask Secret
+        ebayDevId: ebayConfig.devId || '',
       },
     });
   } catch (error) {
@@ -67,22 +76,32 @@ export async function PUT(request: NextRequest) {
 
     const input = validationResult.data;
 
-    // Get existing config to merge if partial update (though UI likely sends all)
-    const currentConfig = await systemSettingsRepository.getAzureOpenAIConfig();
-
-    // If input key is masked/empty and we have existing, keep existing
-    // But simplistic approach: update if provided and not masked.
-    // If user sends '********', we should NOT update it.
-
-    const newApiKey =
+    // 1. Update Azure Config
+    const currentAzureConfig = await systemSettingsRepository.getAzureOpenAIConfig();
+    const newAzureApiKey =
       input.azureOpenAIApiKey && input.azureOpenAIApiKey !== '********'
         ? input.azureOpenAIApiKey
-        : currentConfig.apiKey || '';
+        : currentAzureConfig.apiKey || '';
 
     await systemSettingsRepository.updateAzureOpenAIConfig({
-      apiKey: newApiKey,
-      endpoint: input.azureOpenAIEndpoint || currentConfig.endpoint || '',
-      deployment: input.azureOpenAIDeployment || currentConfig.deployment || '',
+      apiKey: newAzureApiKey,
+      endpoint: input.azureOpenAIEndpoint || currentAzureConfig.endpoint || '',
+      deployment: input.azureOpenAIDeployment || currentAzureConfig.deployment || '',
+    });
+
+    // 2. Update eBay Config
+    const currentEbayConfig = await systemSettingsRepository.getEbayApiConfig();
+
+    // Only update if provided (and not masked)
+    const newEbayCertId =
+      input.ebayCertId && input.ebayCertId !== '********'
+        ? input.ebayCertId
+        : currentEbayConfig.certId || '';
+
+    await systemSettingsRepository.updateEbayApiConfig({
+      appId: input.ebayAppId || currentEbayConfig.appId || '',
+      certId: newEbayCertId,
+      devId: input.ebayDevId || currentEbayConfig.devId || '',
     });
 
     return createSuccessResponse({

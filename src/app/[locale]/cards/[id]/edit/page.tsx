@@ -22,13 +22,41 @@ export default async function EditCardPage({ params }: EditCardPageProps) {
     notFound();
   }
 
+  console.log('EditCardPage: fetched card', {
+    id: card.id,
+    attachmentImages: card.attachmentImages,
+    mainImage: card.mainImage,
+  });
+
+  // Robustly parse attachmentImages
+  let backImage = null;
+  const attachments = card.attachmentImages;
+
+  if (Array.isArray(attachments) && attachments.length > 0) {
+    backImage = attachments[0];
+  } else if (typeof attachments === 'string') {
+    // Attempt to parse stringified JSON or treat as single URL
+    try {
+      const parsed = JSON.parse(attachments as string);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        backImage = parsed[0];
+      }
+    } catch {
+      // If parse fails, might be a single raw URL string
+      if ((attachments as string).length > 20) {
+        // arbitrary primitive check
+        backImage = attachments;
+      }
+    }
+  }
+
   // Convert DB card to Form initial values
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const initialData: any = {
     ...card,
     // Ensure relations or specific fields are mapped correctly if needed
     // For now spread is mostly compatible with FormValues
-    backImage: card.attachmentImages?.[0] || null,
+    backImage: backImage,
   };
 
   return (

@@ -230,6 +230,7 @@
       "ai": {
         "title": "AI 智能助手",
         "identifying": "正在识别...",
+        "imageQualityIssue": "图片质量问题",
         "identifyError": "识别失败，请手动输入",
         "identifySuccess": "识别成功！已自动填充信息",
         "estimating": "正在估价...",

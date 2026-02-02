@@ -228,6 +228,7 @@
       "ai": {
         "title": "AI Assistant",
         "identifying": "Identifying...",
+        "imageQualityIssue": "Image Quality Issue",
         "identifyError": "Identification failed, please enter manually",
         "identifySuccess": "Identification successful! Info filled.",
         "estimating": "Estimating...",

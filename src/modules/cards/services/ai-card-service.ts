@@ -14,6 +14,7 @@ interface CardRecognitionResult {
   grade?: number;
   isAutographed?: boolean;
   riskWarning?: string; // New field for authenticity risks
+  imageQualityFeedback?: string; // New field for image quality issues (e.g., "Too blurry", "Glare obscuring text")
   confidence?: 'HIGH' | 'MEDIUM' | 'LOW';
 }
 
@@ -120,12 +121,17 @@ export class AICardService {
               - Does the autograph look printed (facsimile) vs wet ink?
               - Are there visual signs of a reprint?
               - Is the slab/case suspicious?
+
+              CRITICAL: Assess IMAGE QUALITY:
+              - Is the image too blurry to read text?
+              - Is there severe glare obscuring key details (especially the card number or name)?
+              - Is the card too far away or cropped out?
               
               Return JSON only.
               
-              IMPORTANT: For the 'riskWarning' field:
-              1. If risks are detected, provide a DETAILED explanation including specific visual evidence.
-              2. You MUST translate the 'riskWarning' content to ${language}.
+              IMPORTANT: 
+              1. For 'riskWarning': If authentic risks are detected, provide a DETAILED explanation in ${language}.
+              2. For 'imageQualityFeedback': If the image is poor (blurry, glare, etc.) and PREVENTS identification of key fields (Name, Number), provide a user-friendly suggestion to retake the photo in ${language}. If image is good, leave null.
               3. Keep other fields (like Player, Brand) in their original language (usually English) unless the card is specifically foreign.
 
               Format:
@@ -142,6 +148,7 @@ export class AICardService {
                 "grade": number (optional),
                 "isAutographed": boolean,
                 "riskWarning": "string (optional - detailed explanation in ${language} if risks found)",
+                "imageQualityFeedback": "string (optional - suggestion to retake photo in ${language} if image is poor)",
                 "confidence": "HIGH" | "MEDIUM" | "LOW"
               }`,
           },

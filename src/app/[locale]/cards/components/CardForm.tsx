@@ -136,6 +136,12 @@ export function CardForm({ initialData, onSuccess }: CardFormProps) {
       const result = await identifyCardAction(frontImage, locale);
 
       if (result) {
+        if (result.imageQualityFeedback) {
+          // If the AI flagged the image as poor quality, show a warning/error and suggest retaking
+          error(t('ai.imageQualityIssue'), result.imageQualityFeedback);
+          // Optional: You could choose to stop here or still populate what was found
+        }
+
         if (result.playerName)
           form.setValue('playerName', result.playerName, {
             shouldValidate: true,

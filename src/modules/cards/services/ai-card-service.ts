@@ -4,27 +4,27 @@ import { ebayProvider, web130Provider, CardDetails, eBaySalesResult } from './pr
 
 // Zod schema for validating AI response
 const CardRecognitionSchema = z.object({
-  playerName: z.string().optional(),
-  year: z.number().optional(),
-  brand: z.string().optional(),
-  series: z.string().optional(),
-  cardNumber: z.string().optional(),
-  sport: z.enum(['BASKETBALL', 'SOCCER', 'OTHER']).optional(),
-  team: z.string().optional(),
-  position: z.string().optional(),
-  gradingCompany: z.string().optional(),
-  grade: z.number().optional(),
-  isAutographed: z.boolean().optional(),
-  riskWarning: z.string().optional(),
-  imageQualityFeedback: z.string().optional(),
-  confidence: z.enum(['HIGH', 'MEDIUM', 'LOW']).optional(),
+  playerName: z.string().nullable().optional(),
+  year: z.number().nullable().optional(),
+  brand: z.string().nullable().optional(),
+  series: z.string().nullable().optional(),
+  cardNumber: z.string().nullable().optional(),
+  sport: z.enum(['BASKETBALL', 'SOCCER', 'OTHER']).nullable().optional(),
+  team: z.string().nullable().optional(),
+  position: z.string().nullable().optional(),
+  gradingCompany: z.string().nullable().optional(),
+  grade: z.number().nullable().optional(),
+  isAutographed: z.boolean().nullable().optional(),
+  riskWarning: z.string().nullable().optional(),
+  imageQualityFeedback: z.string().nullable().optional(),
+  confidence: z.enum(['HIGH', 'MEDIUM', 'LOW']).nullable().optional(),
 });
 
 type CardRecognitionResult = z.infer<typeof CardRecognitionSchema>;
 
 const AuthenticityAnalysisSchema = z.object({
   riskWarning: z.string().nullable().optional(),
-  confidence: z.enum(['HIGH', 'MEDIUM', 'LOW']).optional(),
+  confidence: z.enum(['HIGH', 'MEDIUM', 'LOW']).nullable().optional(),
 });
 
 export interface PriceEstimateResult {
@@ -262,12 +262,6 @@ export class AICardService {
   /**
    * Analyze card for authenticity risks
    */
-
-  // ... inside class ...
-
-  /**
-   * Analyze card for authenticity risks
-   */
   async analyzeAuthenticity(
     frontImage: string,
     backImage?: string,
@@ -276,7 +270,6 @@ export class AICardService {
     const { client, deployment } = await this.getClient();
 
     if (!client) {
-      // Changed: Throw error instead of silent failure to prevent false "Safe" positives
       throw new Error('AI Service not configured. Please check system settings.');
     }
 
@@ -317,7 +310,7 @@ export class AICardService {
               - Are there visual signs of a reprint / counterfeit?
               - Is the grading slab suspicious?
   
-              Return JSON only.
+              Return VALID JSON ONLY. Do not include markdown formatting like \`\`\`json.
               
               IMPORTANT: Provide a detailed explanation in ${language}.
   
@@ -343,7 +336,13 @@ export class AICardService {
       });
 
       const content = response.choices[0].message.content;
-      if (!content) throw new Error('No content from AI');
+      if (!content) {
+        console.error('AI Authenticity Error: Empty content received', {
+          finish_reason: response.choices[0].finish_reason,
+          id: response.id,
+        });
+        throw new Error('No content from AI');
+      }
 
       // Parse and validate with Zod
       const parsed = JSON.parse(content);
@@ -371,13 +370,13 @@ export class AICardService {
   async estimatePrice(details: Partial<CardRecognitionResult>): Promise<PriceEstimateResult> {
     const cardDetails: CardDetails = {
       playerName: details.playerName || '',
-      year: details.year,
-      brand: details.brand,
-      series: details.series,
-      cardNumber: details.cardNumber,
-      gradingCompany: details.gradingCompany,
-      grade: details.grade,
-      isAutographed: details.isAutographed,
+      year: details.year || undefined,
+      brand: details.brand || undefined,
+      series: details.series || undefined,
+      cardNumber: details.cardNumber || undefined,
+      gradingCompany: details.gradingCompany || undefined,
+      grade: details.grade || undefined,
+      isAutographed: details.isAutographed === null ? undefined : details.isAutographed,
     };
 
     // 1. Fetch sales data (eBay as primary)

@@ -135,7 +135,9 @@ export function useCardForm({
         }
       }
       if (result.grade) form.setValue('grade', result.grade);
-      if (result.isAutographed !== undefined) form.setValue('isAutographed', result.isAutographed);
+      if (result.isAutographed !== undefined && result.isAutographed !== null) {
+        form.setValue('isAutographed', result.isAutographed);
+      }
 
       toast.success(t('ai.identifySuccess'));
       setShowDetails(true);

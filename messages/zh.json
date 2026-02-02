@@ -249,7 +249,8 @@
         "estimating": "正在估价...",
         "estimateError": "估价服务暂时不可用",
         "riskTitle": "⚠️ AI 潜在风险提示",
-        "autoDetect": "从图片自动检测卡片详情"
+        "autoDetect": "从图片自动检测卡片详情",
+        "noRisksDetected": "未检测到真伪风险。"
       },
       "editTitle": "编辑球星卡"
     },
@@ -277,7 +278,9 @@
       "editTitle": "编辑卡片信息",
       "deleteTitle": "删除确认",
       "deleteDescription": "确定要删除这张卡片吗？此操作无法撤销。",
-      "deleteSuccess": "卡片已删除"
+      "deleteSuccess": "卡片已删除",
+      "cancel": "取消",
+      "delete": "删除"
     },
     "pagination": {
       "page": "第 {current} 页 / 共 {total} 页"

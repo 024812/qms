@@ -224,7 +224,7 @@ export async function saveCard(data: unknown) {
     });
   }
 
-  revalidatePath('/cards');
+  revalidatePath('/', 'layout');
   return { success: true };
 }
 
@@ -241,6 +241,6 @@ export async function deleteCard(id: string) {
 
   await db.delete(cards).where(and(eq(cards.id, id), eq(cards.userId, session.user.id)));
 
-  revalidatePath('/cards');
+  revalidatePath('/', 'layout');
   return { success: true };
 }

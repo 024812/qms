@@ -42,6 +42,7 @@ export function EditCardForm({ initialData, onSuccess }: EditCardFormProps) {
     handleSubmit,
     handleAuthenticityCheck,
     checkingAuthenticity,
+    authCheckResult,
   } = useCardForm({
     initialData,
     autoSaveOnAISuccess: false, // Key difference: no auto-save for edits
@@ -55,6 +56,16 @@ export function EditCardForm({ initialData, onSuccess }: EditCardFormProps) {
         {riskWarning && (
           <Alert variant="destructive">
             <AlertDescription>{riskWarning}</AlertDescription>
+          </Alert>
+        )}
+
+        {/* Authenticity Safe Message */}
+        {authCheckResult === 'SAFE' && (
+          <Alert className="border-green-500 text-green-700 bg-green-50">
+            <ShieldCheck className="h-4 w-4 stroke-green-600" />
+            <AlertDescription className="text-green-700 font-medium ml-2">
+              {t('ai.noRisksDetected')}
+            </AlertDescription>
           </Alert>
         )}
 

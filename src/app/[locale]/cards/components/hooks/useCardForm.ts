@@ -48,6 +48,7 @@ export function useCardForm({
   const [riskWarning, setRiskWarning] = useState<string | null>(null);
   const [imageQualityFeedback, setImageQualityFeedback] = useState<string | null>(null);
   const [showDetails, setShowDetails] = useState(!!initialData?.id);
+  const [authCheckResult, setAuthCheckResult] = useState<'SAFE' | 'RISK' | null>(null);
 
   // Create form with default values
   const form = useForm({
@@ -102,6 +103,7 @@ export function useCardForm({
 
     setAiScanning(true);
     setRiskWarning(null); // Clear previous risks logic
+    setAuthCheckResult(null);
     setImageQualityFeedback(null);
 
     try {
@@ -165,6 +167,7 @@ export function useCardForm({
 
     setCheckingAuthenticity(true);
     setRiskWarning(null);
+    setAuthCheckResult(null);
 
     try {
       const compressedFront = await compressImage(frontImage, { maxSizeKB: 512 });
@@ -176,8 +179,10 @@ export function useCardForm({
 
       if (result.riskWarning) {
         setRiskWarning(result.riskWarning);
+        setAuthCheckResult('RISK');
         toast.warning(t('ai.risksFound'));
       } else {
+        setAuthCheckResult('SAFE');
         toast.success(t('ai.noRisksToken'));
       }
     } catch (error) {
@@ -274,6 +279,7 @@ export function useCardForm({
     estimating,
     checkingAuthenticity,
     riskWarning,
+    authCheckResult,
     imageQualityFeedback,
     showDetails,
     setShowDetails,

@@ -278,7 +278,7 @@ export function CardForm({ initialData, onSuccess }: CardFormProps) {
                   {tGlobal('actions.smartScan')}
                 </Button>
                 <p className="text-xs text-muted-foreground text-center">
-                  {aiScanning ? t('ai.identifying') : 'Auto-detect card details from image'}
+                  {aiScanning ? t('ai.identifying') : t('ai.autoDetect')}
                 </p>
               </div>
             )}

@@ -1,6 +1,6 @@
 'use client';
 
-import { useLocale } from 'next-intl';
+import { useTranslations } from 'next-intl';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 
 import { Input } from '@/components/ui/input';
@@ -33,8 +33,7 @@ const settingsSchema = z.object({
 type SettingsFormValues = z.infer<typeof settingsSchema>;
 
 export default function CardSettingsPage() {
-  const locale = useLocale();
-  const language = locale;
+  const t = useTranslations('cards.settings');
   const { data: session, status } = useSession();
 
   const { data: settings, isLoading } = useCardSettings();
@@ -65,9 +64,9 @@ export default function CardSettingsPage() {
   const onSubmit = async (data: SettingsFormValues) => {
     try {
       await updateSettings.mutateAsync(data);
-      toast.success(language === 'zh' ? '设置已保存' : 'Settings saved');
+      toast.success(t('success'));
     } catch (error) {
-      toast.error(language === 'zh' ? '保存失败' : 'Save failed');
+      toast.error(t('error'));
       console.error(error);
     }
   };
@@ -92,13 +91,9 @@ export default function CardSettingsPage() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-destructive">
                 <ShieldAlert className="w-6 h-6" />
-                {language === 'zh' ? '访问被拒绝' : 'Access Denied'}
+                {t('accessDenied')}
               </CardTitle>
-              <CardDescription>
-                {language === 'zh'
-                  ? '只有管理员可以访问球星卡管理设置。'
-                  : 'Only administrators can access card management settings.'}
-              </CardDescription>
+              <CardDescription>{t('accessDeniedDesc')}</CardDescription>
             </CardHeader>
           </Card>
         </div>
@@ -112,13 +107,9 @@ export default function CardSettingsPage() {
         <div className="mb-8">
           <h1 className="text-3xl font-bold mb-2 flex items-center gap-3">
             <Settings className="w-8 h-8" />
-            {language === 'zh' ? '球星卡管理设置' : 'Card Management Settings'}
+            {t('title')}
           </h1>
-          <p className="text-muted-foreground">
-            {language === 'zh'
-              ? '配置球星卡模块的AI服务（仅管理员）'
-              : 'Configure card module AI services (Admin only)'}
-          </p>
+          <p className="text-muted-foreground">{t('subtitle')}</p>
         </div>
 
         <Form {...form}>
@@ -128,13 +119,9 @@ export default function CardSettingsPage() {
               <CardHeader>
                 <CardTitle className="flex items-center space-x-2">
                   <Server className="w-5 h-5" />
-                  <span>Azure OpenAI Configuration</span>
+                  <span>{t('azure.title')}</span>
                 </CardTitle>
-                <CardDescription>
-                  {language === 'zh'
-                    ? '配置用于卡片识别和分析的 Azure OpenAI 服务'
-                    : 'Configure Azure OpenAI service for card recognition and analysis'}
-                </CardDescription>
+                <CardDescription>{t('azure.description')}</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <FormField
@@ -144,17 +131,12 @@ export default function CardSettingsPage() {
                     <FormItem>
                       <FormLabel className="flex items-center gap-2">
                         <Server className="w-4 h-4" />
-                        Endpoint URL
+                        {t('azure.endpoint')}
                       </FormLabel>
                       <FormControl>
-                        <Input
-                          placeholder="https://resource-name.openai.azure.com/..."
-                          {...field}
-                        />
+                        <Input placeholder={t('azure.endpointPlaceholder')} {...field} />
                       </FormControl>
-                      <FormDescription>
-                        The base URL for your Azure OpenAI resource.
-                      </FormDescription>
+                      <FormDescription>{t('azure.endpointDesc')}</FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -167,22 +149,20 @@ export default function CardSettingsPage() {
                     <FormItem>
                       <FormLabel className="flex items-center gap-2">
                         <Key className="w-4 h-4" />
-                        API Key
+                        {t('azure.apiKey')}
                       </FormLabel>
                       <FormControl>
                         <Input
                           type="password"
                           placeholder={
                             settings?.azureOpenAIApiKey?.includes('*')
-                              ? '********'
-                              : 'Enter API Key'
+                              ? t('azure.apiKeyMasked')
+                              : t('azure.apiKeyPlaceholder')
                           }
                           {...field}
                         />
                       </FormControl>
-                      <FormDescription>
-                        Your Azure OpenAI API Key. Leave blank to keep unchanged.
-                      </FormDescription>
+                      <FormDescription>{t('azure.apiKeyDesc')}</FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -195,14 +175,12 @@ export default function CardSettingsPage() {
                     <FormItem>
                       <FormLabel className="flex items-center gap-2">
                         <Box className="w-4 h-4" />
-                        Deployment Name
+                        {t('azure.deployment')}
                       </FormLabel>
                       <FormControl>
-                        <Input placeholder="e.g. gpt-4o, gpt-5-mini" {...field} />
+                        <Input placeholder={t('azure.deploymentPlaceholder')} {...field} />
                       </FormControl>
-                      <FormDescription>
-                        The model deployment name to use (e.g. gpt-4o).
-                      </FormDescription>
+                      <FormDescription>{t('azure.deploymentDesc')}</FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -211,7 +189,7 @@ export default function CardSettingsPage() {
                 <div className="flex justify-end pt-4">
                   <Button type="submit" disabled={updateSettings.isPending}>
                     <Save className="mr-2 h-4 w-4" />
-                    {language === 'zh' ? '保存设置' : 'Save Settings'}
+                    {t('save')}
                   </Button>
                 </div>
               </CardContent>

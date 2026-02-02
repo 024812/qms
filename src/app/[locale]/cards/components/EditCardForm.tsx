@@ -94,7 +94,6 @@ export function EditCardForm({ initialData, onSuccess }: EditCardFormProps) {
                 )}
                 {tCards('actions.smartScan')}
               </Button>
-              <p className="text-[10px] text-muted-foreground px-1">{t('rescanHint')}</p>
             </div>
 
             {/* 2. Authenticity Check */}
@@ -110,7 +109,7 @@ export function EditCardForm({ initialData, onSuccess }: EditCardFormProps) {
               ) : (
                 <ShieldCheck className="mr-2 h-4 w-4 text-green-600" />
               )}
-              {t('actions.checkAuthenticity')}
+              {tCards('actions.checkAuthenticity')}
             </Button>
 
             {/* 3. Estimate Price */}
@@ -126,7 +125,7 @@ export function EditCardForm({ initialData, onSuccess }: EditCardFormProps) {
               ) : (
                 <DollarSign className="mr-2 h-4 w-4 text-yellow-600" />
               )}
-              {t('actions.estimateValue')}
+              {tCards('actions.estimatePrice')}
             </Button>
           </div>
         </div>

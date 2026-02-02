@@ -22,7 +22,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
-import { CardForm } from './CardForm';
+import { EditCardForm } from './EditCardForm';
 import { deleteCard } from '@/app/actions/card-actions';
 import { useToast } from '@/hooks/useToast';
 import type { CardItem } from '@/modules/cards/schema';
@@ -67,7 +67,7 @@ export function CardDetailActions({ card }: CardDetailActionsProps) {
             <DialogTitle>Edit Card</DialogTitle>
           </DialogHeader>
           {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-          <CardForm initialData={card as any} onSuccess={handleEditSuccess} />
+          <EditCardForm initialData={card as any} onSuccess={handleEditSuccess} />
         </DialogContent>
       </Dialog>
 

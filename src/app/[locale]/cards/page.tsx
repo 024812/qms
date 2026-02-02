@@ -8,7 +8,7 @@ import { CardCard } from '@/modules/cards/ui/CardCard';
 import type { CardItem } from '@/modules/cards/schema';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { getCards } from '@/app/actions/card-actions';
-import { CardForm } from './components/CardForm';
+import { CreateCardForm } from './components/CreateCardForm';
 import { CardToolbar } from './components/CardToolbar';
 import { CardListView } from './components/CardListView';
 import { useTranslations } from 'next-intl';
@@ -132,7 +132,7 @@ export default function CardsPage() {
           <DialogHeader>
             <DialogTitle>{t('dialogs.addTitle')}</DialogTitle>
           </DialogHeader>
-          <CardForm onSuccess={handleSuccess} />
+          <CreateCardForm onSuccess={handleSuccess} />
         </DialogContent>
       </Dialog>
     </div>

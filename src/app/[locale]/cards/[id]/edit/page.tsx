@@ -1,9 +1,9 @@
 import { notFound } from 'next/navigation';
 import { getCard } from '@/app/actions/card-actions';
-import { CardForm } from '../../components/CardForm';
+import { EditCardForm } from '../../components/EditCardForm';
 import { getTranslations } from 'next-intl/server';
 import { Button } from '@/components/ui/button';
-import Link from 'next/link';
+import { Link } from '@/i18n/routing';
 import { ChevronLeft } from 'lucide-react';
 
 interface EditCardPageProps {
@@ -21,12 +21,6 @@ export default async function EditCardPage({ params }: EditCardPageProps) {
   if (!card) {
     notFound();
   }
-
-  console.log('EditCardPage: fetched card', {
-    id: card.id,
-    attachmentImages: card.attachmentImages,
-    mainImage: card.mainImage,
-  });
 
   // Robustly parse attachmentImages
   let backImage = null;
@@ -72,7 +66,7 @@ export default async function EditCardPage({ params }: EditCardPageProps) {
       </div>
 
       <div className="bg-white rounded-lg border p-6 shadow-sm">
-        <CardForm initialData={initialData} />
+        <EditCardForm initialData={initialData} />
       </div>
     </div>
   );

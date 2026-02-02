@@ -1,4 +1,5 @@
 import OpenAI from 'openai';
+import { ebayProvider, web130Provider, CardDetails, eBaySalesResult } from './price-data-providers';
 
 interface CardRecognitionResult {
   playerName?: string;
@@ -16,12 +17,16 @@ interface CardRecognitionResult {
   confidence?: 'HIGH' | 'MEDIUM' | 'LOW';
 }
 
-interface PriceEstimateResult {
+export interface PriceEstimateResult {
   low: number;
   high: number;
   average: number;
   lastSold?: number;
   currency: string;
+  confidence: 'HIGH' | 'MEDIUM' | 'LOW'; // Added
+  sources: string[]; // Added
+  salesCount: number; // Added
+  lastSaleDate?: string; // Added
 }
 
 /**
@@ -161,25 +166,116 @@ export class AICardService {
   }
 
   /**
-   * Estimate price based on details
-   * (Currently Mocked - would connect to eBay/130point API)
+   * Estimate price based on details using multiple data sources
    */
   async estimatePrice(details: Partial<CardRecognitionResult>): Promise<PriceEstimateResult> {
-    await new Promise(resolve => setTimeout(resolve, 1500));
+    const cardDetails: CardDetails = {
+      playerName: details.playerName || '',
+      year: details.year,
+      brand: details.brand,
+      series: details.series,
+      cardNumber: details.cardNumber,
+      gradingCompany: details.gradingCompany,
+      grade: details.grade,
+      isAutographed: details.isAutographed,
+    };
 
-    // Mock logic based on input to make it feel "real"
-    const basePrice = details.gradingCompany === 'PSA' && details.grade === 10 ? 500 : 50;
-    const yearMod = details.year ? (2025 - details.year) * 2 : 0;
-    const randomFlux = Math.floor(Math.random() * 50);
+    // 1. Fetch sales data (eBay as primary)
+    let sales = await ebayProvider.getRecentSales(cardDetails);
+    const sources = ['eBay'];
 
-    const avg = basePrice + yearMod + randomFlux;
+    // If insufficient data, try fallback
+    if (sales.length < 3) {
+      const webSales = await web130Provider.getRecentSales(cardDetails);
+      if (webSales.length > 0) {
+        sales = [...sales, ...webSales];
+        sources.push('130Point');
+      }
+    }
+
+    // 2. Data Cleaning: Outlier Detection (IQR)
+    const cleanedSales = this.removeOutliers(sales);
+
+    // 3. Statistical Estimate (if enough data)
+    if (cleanedSales.length >= 2) {
+      return this.calculateStatisticalEstimate(cleanedSales, sources);
+    }
+
+    // 4. AI-Assisted Estimate (Fallback for low data)
+    // For now, we return a conservative estimate or a specific flag
+    // TODO: Implement GPT-based extrapolation if needed
+    // Using a basic fallback based on what we found (even if single item)
+    if (cleanedSales.length === 1) {
+      return {
+        low: cleanedSales[0].price,
+        high: cleanedSales[0].price,
+        average: cleanedSales[0].price,
+        lastSold: cleanedSales[0].price,
+        currency: 'USD',
+        confidence: 'LOW',
+        sources,
+        salesCount: 1,
+        lastSaleDate: cleanedSales[0].date,
+      };
+    }
+
+    // If absolutely no data found
+    return {
+      low: 0,
+      high: 0,
+      average: 0,
+      currency: 'USD',
+      confidence: 'LOW',
+      sources: [],
+      salesCount: 0,
+    };
+  }
+
+  /**
+   * Remove outliers using Interquartile Range (IQR) method
+   */
+  private removeOutliers(sales: eBaySalesResult[]): eBaySalesResult[] {
+    if (sales.length < 4) return sales;
+
+    const prices = sales.map(s => s.price).sort((a, b) => a - b);
+    const q1 = prices[Math.floor(prices.length / 4)];
+    const q3 = prices[Math.floor(prices.length * (3 / 4))];
+    const iqr = q3 - q1;
+
+    // Define bounds (typically 1.5 * IQR)
+    const lowerBound = q1 - 1.5 * iqr;
+    const upperBound = q3 + 1.5 * iqr;
+
+    return sales.filter(s => s.price >= lowerBound && s.price <= upperBound);
+  }
+
+  /**
+   * Calculate estimate from cleaned sales data
+   */
+  private calculateStatisticalEstimate(
+    sales: eBaySalesResult[],
+    sources: string[]
+  ): PriceEstimateResult {
+    const prices = sales.map(s => s.price);
+    const average = prices.reduce((a, b) => a + b, 0) / prices.length;
+    const min = Math.min(...prices);
+    const max = Math.max(...prices);
+
+    // Sort by date to get last sold
+    const sortedByDate = [...sales].sort(
+      (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
+    );
 
     return {
-      low: Math.floor(avg * 0.8),
-      high: Math.floor(avg * 1.2),
-      average: avg,
-      lastSold: avg - 5,
+      low: min,
+      high: max,
+      average: Number(average.toFixed(2)),
+      lastSold: sortedByDate[0].price,
       currency: 'USD',
+      confidence: sales.length >= 5 ? 'HIGH' : 'MEDIUM',
+      sources,
+      salesCount: sales.length,
+      lastSaleDate: sortedByDate[0].date,
     };
   }
 

@@ -268,6 +268,12 @@ export const cards = pgTable(
     soldPrice: numeric('sold_price', { precision: 10, scale: 2 }),
     soldDate: date('sold_date'),
 
+    // Valuation metadata
+    valuationDate: timestamp('valuation_date'),
+    valuationConfidence: text('valuation_confidence'), // HIGH, MEDIUM, LOW
+    valuationSources: jsonb('valuation_sources').$type<string[]>().default([]),
+    priceHistory: jsonb('price_history').$type<Record<string, any>[]>().default([]),
+
     // Physical characteristics
     parallel: text('parallel'),
     serialNumber: text('serial_number'),

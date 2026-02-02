@@ -64,6 +64,11 @@ const formSchema = z.object({
   soldPrice: z.coerce.number().min(0).optional().nullable().or(z.literal('')),
   soldDate: z.string().optional().nullable().or(z.literal('')),
 
+  // Valuation Metadata
+  valuationDate: z.string().optional().nullable(), // ISO string
+  valuationConfidence: z.string().optional().nullable(),
+  valuationSources: z.array(z.string()).optional().default([]),
+
   // Physical
   parallel: z.string().optional().nullable().or(z.literal('')),
   serialNumber: z.string().optional().nullable().or(z.literal('')),
@@ -198,7 +203,20 @@ export function CardForm({ initialData, onSuccess }: CardFormProps) {
       if (result && result.average) {
         form.setValue('estimatedValue', result.average);
         form.setValue('currentValue', result.average);
-        info(t('ai.title'), `Estimated value: $${result.low} - $${result.high}`);
+
+        // Set new metadata fields
+        if (result.confidence) {
+          form.setValue('valuationConfidence', result.confidence);
+        }
+        if (result.sources) {
+          form.setValue('valuationSources', result.sources);
+        }
+        form.setValue('valuationDate', new Date().toISOString());
+
+        info(
+          t('ai.title'),
+          `Est: $${result.low}-$${result.high} (Conf: ${result.confidence}, Srces: ${result.sources?.join(', ')})`
+        );
       }
     } catch (err) {
       console.error(err);
@@ -221,6 +239,9 @@ export function CardForm({ initialData, onSuccess }: CardFormProps) {
         estimatedValue: values.estimatedValue === '' ? null : values.estimatedValue,
         soldPrice: values.soldPrice === '' ? null : values.soldPrice,
         soldDate: values.soldDate === '' ? null : values.soldDate,
+        valuationDate: values.valuationDate ? new Date(values.valuationDate) : null,
+        valuationConfidence: values.valuationConfidence,
+        valuationSources: values.valuationSources,
       };
 
       await saveCard(payload);

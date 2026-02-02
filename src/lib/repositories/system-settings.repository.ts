@@ -263,6 +263,41 @@ export class SystemSettingsRepository extends BaseRepositoryImpl<SystemSettingRo
       ),
     ]);
   }
+  /**
+   * Get eBay API Configuration
+   */
+  async getEbayApiConfig(tx?: Tx) {
+    const [appId, certId, devId] = await Promise.all([
+      this.getSetting('ebay_app_id', tx),
+      this.getSetting('ebay_cert_id', tx),
+      this.getSetting('ebay_dev_id', tx),
+    ]);
+
+    return {
+      appId,
+      certId,
+      devId,
+    };
+  }
+
+  /**
+   * Update eBay API Configuration
+   */
+  async updateEbayApiConfig(
+    config: { appId: string; certId: string; devId?: string },
+    tx?: Tx
+  ): Promise<void> {
+    const promises = [
+      this.setSetting('ebay_app_id', config.appId, 'eBay App ID (Client ID)', tx),
+      this.setSetting('ebay_cert_id', config.certId, 'eBay Cert ID (Client Secret)', tx),
+    ];
+
+    if (config.devId) {
+      promises.push(this.setSetting('ebay_dev_id', config.devId, 'eBay Dev ID', tx));
+    }
+
+    await Promise.all(promises);
+  }
 }
 
 // Export singleton instance

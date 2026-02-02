@@ -37,6 +37,8 @@ export function EditCardForm({ initialData, onSuccess }: EditCardFormProps) {
     riskWarning,
     imageQualityFeedback,
     handleSmartScan,
+    handleEstimatePrice,
+    estimating,
     handleSubmit,
   } = useCardForm({
     initialData,
@@ -96,7 +98,7 @@ export function EditCardForm({ initialData, onSuccess }: EditCardFormProps) {
           <PlayerInfoFields />
           <CardDetailsFields />
           <GradingFields />
-          <ValueFields />
+          <ValueFields onEstimate={handleEstimatePrice} estimating={estimating} />
           <AdvancedDetailsFields />
 
           <div className="flex justify-end gap-2 pt-4">

@@ -12,7 +12,7 @@ import { useForm, type UseFormReturn } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
-import { useTranslations } from 'next-intl';
+import { useTranslations, useLocale } from 'next-intl';
 import { formSchema, type FormValues } from '../form-schema';
 import { saveCard } from '@/app/actions/card-actions';
 import { identifyCardAction, estimatePriceAction } from '@/app/actions/ai-card-actions';
@@ -33,6 +33,7 @@ export function useCardForm({
   onSuccess,
 }: UseCardFormOptions = {}) {
   const t = useTranslations('cards.form');
+  const locale = useLocale();
 
   const router = useRouter();
 
@@ -105,8 +106,8 @@ export function useCardForm({
         ? await compressImage(backImage, { maxSizeKB: 512 })
         : undefined;
 
-      // Call AI identification
-      const result = await identifyCardAction(compressedFront, compressedBack);
+      // Call AI identification with locale
+      const result = await identifyCardAction(compressedFront, compressedBack, locale);
 
       // Handle warnings from AI
       if (result.riskWarning) setRiskWarning(result.riskWarning);

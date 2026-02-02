@@ -36,6 +36,8 @@ export function CreateCardForm({ onSuccess }: CreateCardFormProps) {
     imageQualityFeedback,
     showDetails,
     handleSmartScan,
+    handleEstimatePrice,
+    estimating,
     handleSubmit,
   } = useCardForm({
     autoSaveOnAISuccess: true, // Key difference: auto-save enabled for new cards
@@ -99,7 +101,7 @@ export function CreateCardForm({ onSuccess }: CreateCardFormProps) {
             <PlayerInfoFields />
             <CardDetailsFields />
             <GradingFields />
-            <ValueFields />
+            <ValueFields onEstimate={handleEstimatePrice} estimating={estimating} />
             <AdvancedDetailsFields />
 
             <div className="flex justify-end gap-2 pt-4">

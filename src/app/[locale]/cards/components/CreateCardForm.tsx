@@ -32,7 +32,6 @@ export function CreateCardForm({ onSuccess }: CreateCardFormProps) {
     form,
     loading,
     aiScanning,
-    riskWarning,
     imageQualityFeedback,
     showDetails,
     handleSmartScan,
@@ -50,11 +49,8 @@ export function CreateCardForm({ onSuccess }: CreateCardFormProps) {
     <FormProvider {...form}>
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* Risk Warning from AI */}
-        {riskWarning && (
-          <Alert variant="destructive">
-            <AlertDescription>{riskWarning}</AlertDescription>
-          </Alert>
-        )}
+        {/* Note: Risk Warning is intentionally omitted here as we auto-save on success */
+        /* Only Image Quality feedback is relevant for creation flow */}
 
         {/* Image Quality Feedback from AI */}
         {imageQualityFeedback && (

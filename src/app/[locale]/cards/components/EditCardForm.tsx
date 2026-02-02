@@ -10,7 +10,7 @@
 import { FormProvider } from 'react-hook-form';
 import { useTranslations } from 'next-intl';
 import { Button } from '@/components/ui/button';
-import { Loader2, Sparkles } from 'lucide-react';
+import { Loader2, Sparkles, ShieldCheck, DollarSign } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { CardImageUpload } from '@/components/cards/CardImageUpload';
 import { PlayerInfoFields } from './form-parts/PlayerInfoFields';
@@ -40,6 +40,8 @@ export function EditCardForm({ initialData, onSuccess }: EditCardFormProps) {
     handleEstimatePrice,
     estimating,
     handleSubmit,
+    handleAuthenticityCheck,
+    checkingAuthenticity,
   } = useCardForm({
     initialData,
     autoSaveOnAISuccess: false, // Key difference: no auto-save for edits
@@ -74,22 +76,58 @@ export function EditCardForm({ initialData, onSuccess }: EditCardFormProps) {
             />
           </div>
 
-          {/* Smart Scan Button */}
-          <div className="flex flex-col gap-2 justify-start">
+          {/* Utility Buttons - Vertical Group */}
+          <div className="flex flex-col gap-3 justify-start w-full sm:w-auto min-w-[160px]">
+            {/* 1. Smart Scan */}
+            <div className="flex flex-col gap-1">
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={handleSmartScan}
+                disabled={aiScanning || loading}
+                className="w-full justify-start"
+              >
+                {aiScanning ? (
+                  <Loader2 className="animate-spin mr-2 h-4 w-4" />
+                ) : (
+                  <Sparkles className="mr-2 h-4 w-4 text-blue-500" />
+                )}
+                {tCards('actions.smartScan')}
+              </Button>
+              <p className="text-[10px] text-muted-foreground px-1">{t('rescanHint')}</p>
+            </div>
+
+            {/* 2. Authenticity Check */}
             <Button
               type="button"
-              onClick={handleSmartScan}
-              disabled={aiScanning}
-              className="min-w-[140px]"
+              variant="outline"
+              onClick={handleAuthenticityCheck}
+              disabled={checkingAuthenticity || loading}
+              className="w-full justify-start"
             >
-              {aiScanning ? (
+              {checkingAuthenticity ? (
                 <Loader2 className="animate-spin mr-2 h-4 w-4" />
               ) : (
-                <Sparkles className="mr-2 h-4 w-4" />
+                <ShieldCheck className="mr-2 h-4 w-4 text-green-600" />
               )}
-              {tCards('actions.smartScan')}
+              {t('actions.checkAuthenticity')}
             </Button>
-            <p className="text-xs text-muted-foreground">{t('rescanHint')}</p>
+
+            {/* 3. Estimate Price */}
+            <Button
+              type="button"
+              variant="outline"
+              onClick={handleEstimatePrice}
+              disabled={estimating || loading}
+              className="w-full justify-start"
+            >
+              {estimating ? (
+                <Loader2 className="animate-spin mr-2 h-4 w-4" />
+              ) : (
+                <DollarSign className="mr-2 h-4 w-4 text-yellow-600" />
+              )}
+              {t('actions.estimateValue')}
+            </Button>
           </div>
         </div>
 

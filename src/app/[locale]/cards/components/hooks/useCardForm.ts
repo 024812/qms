@@ -15,7 +15,11 @@ import { toast } from 'sonner';
 import { useTranslations, useLocale } from 'next-intl';
 import { formSchema, type FormValues } from '../form-schema';
 import { saveCard } from '@/app/actions/card-actions';
-import { identifyCardAction, estimatePriceAction } from '@/app/actions/ai-card-actions';
+import {
+  identifyCardAction,
+  estimatePriceAction,
+  analyzeAuthenticityAction,
+} from '@/app/actions/ai-card-actions';
 import { compressImage } from '@/lib/utils/image-compression';
 
 // Type for grading company values (matches form schema and AI result)
@@ -39,6 +43,7 @@ export function useCardForm({
 
   const [aiScanning, setAiScanning] = useState(false);
   const [estimating, setEstimating] = useState(false);
+  const [checkingAuthenticity, setCheckingAuthenticity] = useState(false);
   const [loading, setLoading] = useState(false);
   const [riskWarning, setRiskWarning] = useState<string | null>(null);
   const [imageQualityFeedback, setImageQualityFeedback] = useState<string | null>(null);
@@ -96,7 +101,7 @@ export function useCardForm({
     }
 
     setAiScanning(true);
-    setRiskWarning(null);
+    setRiskWarning(null); // Clear previous risks logic
     setImageQualityFeedback(null);
 
     try {
@@ -109,11 +114,10 @@ export function useCardForm({
       // Call AI identification with locale
       const result = await identifyCardAction(compressedFront, compressedBack, locale);
 
-      // Handle warnings from AI
-      if (result.riskWarning) setRiskWarning(result.riskWarning);
+      // Handle quality feedback
       if (result.imageQualityFeedback) setImageQualityFeedback(result.imageQualityFeedback);
 
-      // Update form with AI results (only fields that exist in CardRecognitionResult)
+      // Update form with AI results
       if (result.playerName) form.setValue('playerName', result.playerName);
       if (result.sport) form.setValue('sport', result.sport);
       if (result.team) form.setValue('team', result.team);
@@ -121,7 +125,7 @@ export function useCardForm({
       if (result.brand) form.setValue('brand', result.brand);
       if (result.series) form.setValue('series', result.series);
       if (result.cardNumber) form.setValue('cardNumber', result.cardNumber);
-      // Cast gradingCompany to correct type - AI may return values like 'PSA', 'BGS', etc.
+
       if (result.gradingCompany) {
         const gc = result.gradingCompany as GradingCompanyValue;
         if (['PSA', 'BGS', 'SGC', 'CGC', 'UNGRADED'].includes(gc)) {
@@ -130,13 +134,12 @@ export function useCardForm({
       }
       if (result.grade) form.setValue('grade', result.grade);
       if (result.isAutographed !== undefined) form.setValue('isAutographed', result.isAutographed);
-      // Note: hasMemorabilia, parallel, serialNumber are not in CardRecognitionSchema
 
       toast.success(t('ai.identifySuccess'));
       setShowDetails(true);
 
-      // Auto-save for CreateCardForm if enabled and we have minimum required data
-      if (autoSaveOnAISuccess && result.playerName && result.brand && result.year) {
+      // Auto-save logic (only if image quality is passable)
+      if (autoSaveOnAISuccess && !result.imageQualityFeedback && result.playerName) {
         toast.info(t('autoSaving'));
         const values = form.getValues() as FormValues;
         if (submitFormRef.current) {
@@ -149,9 +152,44 @@ export function useCardForm({
     } finally {
       setAiScanning(false);
     }
-  }, [form, autoSaveOnAISuccess, t]);
+  }, [form, autoSaveOnAISuccess, t, locale]);
+
+  const handleAuthenticityCheck = useCallback(async () => {
+    const frontImage = form.getValues('frontImage') || form.getValues('mainImage');
+    const backImage = form.getValues('backImage');
+
+    if (!frontImage) {
+      toast.error(t('errors.noFrontImage'));
+      return;
+    }
+
+    setCheckingAuthenticity(true);
+    setRiskWarning(null);
+
+    try {
+      const compressedFront = await compressImage(frontImage, { maxSizeKB: 512 });
+      const compressedBack = backImage
+        ? await compressImage(backImage, { maxSizeKB: 512 })
+        : undefined;
+
+      const result = await analyzeAuthenticityAction(compressedFront, compressedBack, locale);
+
+      if (result.riskWarning) {
+        setRiskWarning(result.riskWarning);
+        toast.warning(t('ai.risksFound'));
+      } else {
+        toast.success(t('ai.noRisksToken'));
+      }
+    } catch (error) {
+      console.error('Authenticity check error:', error);
+      toast.error(t('errors.authCheckFailed'));
+    } finally {
+      setCheckingAuthenticity(false);
+    }
+  }, [form, t, locale]);
 
   const handleEstimatePrice = useCallback(async () => {
+    // ... logic same as before ...
     const values = form.getValues();
     const playerName = values.playerName;
     const year = values.year;
@@ -164,7 +202,6 @@ export function useCardForm({
 
     setEstimating(true);
     try {
-      // Extract grade as number or undefined for the API
       const gradeValue = typeof values.grade === 'number' ? values.grade : undefined;
 
       const result = await estimatePriceAction({
@@ -175,7 +212,6 @@ export function useCardForm({
         grade: gradeValue,
       });
 
-      // Use 'average' from PriceEstimateResult
       if (result.average) {
         form.setValue('currentValue', result.average);
         form.setValue('estimatedValue', result.average);
@@ -236,12 +272,14 @@ export function useCardForm({
     loading,
     aiScanning,
     estimating,
+    checkingAuthenticity,
     riskWarning,
     imageQualityFeedback,
     showDetails,
     setShowDetails,
     handleSmartScan,
     handleEstimatePrice,
+    handleAuthenticityCheck,
     handleSubmit,
     submitForm,
   };

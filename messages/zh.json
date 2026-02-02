@@ -27,7 +27,6 @@
     "registering": "注册中...",
     "registerSuccess": "注册成功！正在跳转..."
   },
-
   "sidebar": {
     "system": "系统管理",
     "configuration": "系统配置",
@@ -60,6 +59,7 @@
       "add": "添加卡片",
       "import": "批量导入",
       "smartScan": "智能识别",
+      "checkAuthenticity": "鉴别真伪",
       "estimatePrice": "价格估算",
       "edit": "编辑",
       "clone": "复制",
@@ -158,7 +158,6 @@
       "clearFilters": "清除筛选",
       "activeFilters": "已选筛选"
     },
-
     "detail": {
       "images": "卡片图片",
       "mainImage": "主图",
@@ -532,7 +531,6 @@
       "unknownError": "未知错误"
     }
   },
-
   "usage": {
     "title": "使用跟踪",
     "subtitle": "监控和跟踪被子使用情况",
@@ -1232,7 +1230,6 @@
     "selectAll": "全选",
     "deselectAll": "取消全选"
   },
-
   "users": {
     "title": "用户管理",
     "subtitle": "管理系统用户和权限",
@@ -1284,7 +1281,6 @@
       }
     }
   },
-
   "welcome": {
     "title": "欢迎来到 QMS",
     "subtitle": "简单、智能的收藏管理系统。",

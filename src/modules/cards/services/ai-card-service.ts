@@ -184,7 +184,6 @@ export class AICardService {
       });
     }
 
-    // Use retry mechanism for API call
     return withRetry(async () => {
       const response = await client.chat.completions.create({
         model: deployment,
@@ -192,28 +191,20 @@ export class AICardService {
           {
             role: 'system',
             content: `You are an expert sports card identifier. 
-              Analyze the image(s) for details and POTENTIAL AUTHENTICITY RISKS.
+              Analyze the image(s) for details.
               ${backImage ? 'You are provided with both FRONT and BACK images of the card. Use both to extract complete information.' : ''}
               
               Extract: Player, Year, Brand, Series, Card Number, Sport, Team, Position, Grading.
               
-              CRITICAL: Assess for "Prohibited" or "Sketchy" indicators:
-              - Is it an unlicensed "custom" card?
-              - Does the autograph look printed (facsimile) vs wet ink?
-              - Are there visual signs of a reprint?
-              - Is the slab/case suspicious?
-
-              CRITICAL: Assess IMAGE QUALITY:
+              CRITICAL: Assess IMAGE QUALITY.
               - Is the image too blurry to read text?
-              - Is there severe glare obscuring key details (especially the card number or name)?
-              - Is the card too far away or cropped out?
+              - Is there severe glare obscuring key details?
               
               Return JSON only.
               
               IMPORTANT: 
-              1. For 'riskWarning': If authentic risks are detected, provide a DETAILED explanation in ${language}.
-              2. For 'imageQualityFeedback': If the image is poor (blurry, glare, etc.) and PREVENTS identification of key fields (Name, Number), provide a user-friendly suggestion to retake the photo in ${language}. If image is good, leave null.
-              3. Keep other fields (like Player, Brand) in their original language (usually English) unless the card is specifically foreign.
+              1. For 'imageQualityFeedback': If the image is poor (blurry, glare, etc.) and PREVENTS identification of key fields (Name, Number), provide a user-friendly suggestion to retake the photo in ${language}. If image is good, leave null.
+              2. Keep other fields (like Player, Brand) in their original language (usually English) unless the card is specifically foreign.
 
               Format:
               {
@@ -228,8 +219,7 @@ export class AICardService {
                 "gradingCompany": "PSA" | "BGS" | "SGC" | "CGC" | "UNGRADED",
                 "grade": number (optional),
                 "isAutographed": boolean,
-                "riskWarning": "string (optional - detailed explanation in ${language} if risks found)",
-                "imageQualityFeedback": "string (optional - suggestion to retake photo in ${language} if image is poor)",
+                "imageQualityFeedback": "string (optional)",
                 "confidence": "HIGH" | "MEDIUM" | "LOW"
               }`,
           },
@@ -238,15 +228,13 @@ export class AICardService {
             content: [
               {
                 type: 'text',
-                text: backImage
-                  ? 'Identify this card using both front and back images. Flag any risks.'
-                  : 'Identify this card and flag any risks.',
+                text: backImage ? 'Identify this card details.' : 'Identify this card details.',
               },
               ...imageContent,
             ],
           },
         ],
-        max_completion_tokens: 2500,
+        max_completion_tokens: 1000,
         response_format: { type: 'json_object' },
       });
 
@@ -259,12 +247,90 @@ export class AICardService {
 
       if (!validated.success) {
         console.warn('AI response validation warning:', validated.error.issues);
-        // Return parsed data even if validation fails (partial data is better than nothing)
         return parsed as CardRecognitionResult;
       }
 
       return validated.data;
     });
+  }
+
+  /**
+   * Analyze card for authenticity risks
+   */
+  async analyzeAuthenticity(
+    frontImage: string,
+    backImage?: string,
+    locale: string = 'en'
+  ): Promise<{ riskWarning: string | null; confidence: string }> {
+    const { client, deployment } = await this.getClient();
+
+    if (!client) {
+      return { riskWarning: null, confidence: 'LOW' };
+    }
+
+    const language = locale === 'zh' ? 'Chinese (Simplified)' : 'English';
+
+    const imageContent = [
+      {
+        type: 'image_url' as const,
+        image_url: {
+          url: frontImage.startsWith('data:') ? frontImage : `data:image/jpeg;base64,${frontImage}`,
+          detail: 'high' as const,
+        },
+      },
+    ];
+
+    if (backImage) {
+      imageContent.push({
+        type: 'image_url' as const,
+        image_url: {
+          url: backImage.startsWith('data:') ? backImage : `data:image/jpeg;base64,${backImage}`,
+          detail: 'high' as const,
+        },
+      });
+    }
+
+    const response = await client.chat.completions.create({
+      model: deployment,
+      messages: [
+        {
+          role: 'system',
+          content: `You are an expert sports card authenticator.
+            Analyze the image(s) for POTENTIAL AUTHENTICITY RISKS.
+            
+            Check for:
+            - Is it an unlicensed "custom" or "home-made" card?
+            - Does the autograph look printed (facsimile) vs wet ink?
+            - Are there visual signs of a reprint / counterfeit?
+            - Is the grading slab suspicious?
+
+            Return JSON only.
+            
+            IMPORTANT: Provide a detailed explanation in ${language}.
+
+            Format:
+            {
+              "riskWarning": "string (null if no risks found, otherwise detailed explanation)",
+              "confidence": "HIGH" | "MEDIUM" | "LOW"
+            }`,
+        },
+        {
+          role: 'user',
+          content: [
+            {
+              type: 'text',
+              text: 'Analyze authenticity risks.',
+            },
+            ...imageContent,
+          ],
+        },
+      ],
+      max_completion_tokens: 1000,
+      response_format: { type: 'json_object' },
+    });
+
+    const content = response.choices[0].message.content || '{}';
+    return JSON.parse(content);
   }
 
   /**

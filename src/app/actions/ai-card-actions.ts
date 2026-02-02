@@ -16,6 +16,22 @@ export async function identifyCardAction(frontImage: string, backImage?: string,
   }
 }
 
+export async function analyzeAuthenticityAction(
+  frontImage: string,
+  backImage?: string,
+  locale?: string
+) {
+  try {
+    return await aiCardService.analyzeAuthenticity(frontImage, backImage, locale);
+  } catch (error) {
+    console.error('Authenticity Action Error:', error);
+    if (error instanceof Error) {
+      throw new Error(`Authenticity Check Failed: ${error.message}`);
+    }
+    throw new Error('Failed to analyze authenticity');
+  }
+}
+
 interface EstimateParams {
   playerName?: string;
   year?: number;

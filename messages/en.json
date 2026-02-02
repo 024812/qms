@@ -59,6 +59,7 @@
       "add": "Add Card",
       "import": "Batch Import",
       "smartScan": "Smart Scan",
+      "checkAuthenticity": "Check Authenticity",
       "estimatePrice": "Estimate Price",
       "edit": "Edit",
       "clone": "Clone",
@@ -516,7 +517,6 @@
       "unknownError": "Unknown error"
     }
   },
-
   "usage": {
     "title": "Usage Tracking",
     "subtitle": "Monitor and track quilt usage",
@@ -1216,7 +1216,6 @@
     "selectAll": "Select All",
     "deselectAll": "Deselect All"
   },
-
   "users": {
     "title": "User Management",
     "subtitle": "Manage users and permissions",

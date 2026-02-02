@@ -2,9 +2,9 @@
 
 import { aiCardService } from '@/modules/cards/services/ai-card-service';
 
-export async function identifyCardAction(base64Image: string) {
+export async function identifyCardAction(base64Image: string, locale?: string) {
   try {
-    return await aiCardService.identifyCard(base64Image);
+    return await aiCardService.identifyCard(base64Image, locale);
   } catch (error) {
     console.error('Identify Action Error:', error);
     throw new Error('Failed to identify card');

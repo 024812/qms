@@ -29,7 +29,7 @@ import { saveCard } from '@/app/actions/card-actions';
 import { identifyCardAction, estimatePriceAction } from '@/app/actions/ai-card-actions';
 import { useToast } from '@/hooks/useToast';
 import { useRouter } from 'next/navigation';
-import { useTranslations } from 'next-intl';
+import { useTranslations, useLocale } from 'next-intl';
 
 // Schema based on src/modules/cards/schema.ts
 const formSchema = z.object({
@@ -99,6 +99,7 @@ interface CardFormProps {
 export function CardForm({ initialData, onSuccess }: CardFormProps) {
   const t = useTranslations('cards.form');
   const tGlobal = useTranslations('cards');
+  const locale = useLocale();
   const { success, error, info } = useToast();
   const router = useRouter();
   const [loading, setLoading] = React.useState(false);
@@ -132,7 +133,7 @@ export function CardForm({ initialData, onSuccess }: CardFormProps) {
     setWarningMsg(null);
     try {
       info(t('ai.title'), t('ai.identifying'));
-      const result = await identifyCardAction(frontImage);
+      const result = await identifyCardAction(frontImage, locale);
 
       if (result) {
         if (result.playerName)

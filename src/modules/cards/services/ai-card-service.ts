@@ -91,7 +91,7 @@ export class AICardService {
   /**
    * Identify card details from an image (Base64)
    */
-  async identifyCard(base64Image: string): Promise<CardRecognitionResult> {
+  async identifyCard(base64Image: string, locale: string = 'en'): Promise<CardRecognitionResult> {
     const { client, deployment } = await this.getClient();
 
     // 1. Mock Mode (if no key)
@@ -102,6 +102,8 @@ export class AICardService {
     }
 
     try {
+      const language = locale === 'zh' ? 'Chinese (Simplified)' : 'English';
+
       // 2. Real Azure OpenAI Call
       const response = await client.chat.completions.create({
         model: deployment,
@@ -117,8 +119,16 @@ export class AICardService {
               - Is it an unlicensed "custom" card?
               - Does the autograph look printed (facsimile) vs wet ink?
               - Are there visual signs of a reprint?
+              - Is the slab/case suspicious?
               
-              Return JSON only. Format:
+              Return JSON only.
+              
+              IMPORTANT: For the 'riskWarning' field:
+              1. If risks are detected, provide a DETAILED explanation including specific visual evidence.
+              2. You MUST translate the 'riskWarning' content to ${language}.
+              3. Keep other fields (like Player, Brand) in their original language (usually English) unless the card is specifically foreign.
+
+              Format:
               {
                 "playerName": "string",
                 "year": number,
@@ -131,7 +141,7 @@ export class AICardService {
                 "gradingCompany": "PSA" | "BGS" | "SGC" | "CGC" | "UNGRADED",
                 "grade": number (optional),
                 "isAutographed": boolean,
-                "riskWarning": "string (optional - only if you detect potential issues like 'Looks like a facsimile auto' or 'Possible reprint')",
+                "riskWarning": "string (optional - detailed explanation in ${language} if risks found)",
                 "confidence": "HIGH" | "MEDIUM" | "LOW"
               }`,
           },

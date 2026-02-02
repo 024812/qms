@@ -202,7 +202,10 @@ export function AppSidebar() {
                                 <SidebarMenuSubButton
                                   asChild
                                   isActive={
-                                    pathname === item.href || pathname.startsWith(item.href + '/')
+                                    item.href === '/cards' || item.href === '/quilts'
+                                      ? pathname === item.href
+                                      : pathname === item.href ||
+                                        pathname.startsWith(item.href + '/')
                                   }
                                 >
                                   <Link href={item.href} prefetch={false}>

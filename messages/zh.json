@@ -242,6 +242,22 @@
     "messages": {
       "noCardsFound": "未找到球星卡"
     },
+    "overview": {
+      "title": "卡片总览",
+      "subtitle": "趋势识别与收藏价值追踪",
+      "collectionCost": "持仓成本",
+      "collectionCostDesc": "未售出卡片的总成本",
+      "totalSpend": "总投入",
+      "totalSpendDesc": "历史累计购买金额",
+      "totalSales": "总销售额",
+      "totalSalesDesc": "已售出卡片的总收入",
+      "realizedPnL": "已实现盈亏",
+      "realizedPnLDesc": "已售出卡片的利润",
+      "portfolioDistribution": "持仓分布",
+      "recentActivity": "近期动态",
+      "chartPlaceholder": "图表区域 (品牌/年份/运动)",
+      "listPlaceholder": "列表区域 (近期添加/出售)"
+    },
     "dialogs": {
       "addTitle": "添加新卡片",
       "editTitle": "编辑卡片信息",

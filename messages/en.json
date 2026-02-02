@@ -239,6 +239,22 @@
     "messages": {
       "noCardsFound": "No cards found"
     },
+    "overview": {
+      "title": "Card Overview",
+      "subtitle": "Identify trends and track the value of your collection",
+      "collectionCost": "Collection Cost",
+      "collectionCostDesc": "Total cost of unsold cards",
+      "totalSpend": "Total Spend",
+      "totalSpendDesc": "Lifetime purchase amount",
+      "totalSales": "Total Sales",
+      "totalSalesDesc": "Total revenue from sold cards",
+      "realizedPnL": "Realized P&L",
+      "realizedPnLDesc": "Profit from sold cards",
+      "portfolioDistribution": "Portfolio Distribution",
+      "recentActivity": "Recent Activity",
+      "chartPlaceholder": "Chart Placeholder (Brand/Year/Sport)",
+      "listPlaceholder": "List Placeholder (Recent Adds/Sales)"
+    },
     "dialogs": {
       "addTitle": "Add New Card",
       "editTitle": "Edit Card Info",

@@ -3,7 +3,7 @@
 import * as React from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm, FormProvider } from 'react-hook-form';
-import { Loader2, Sparkles, AlertTriangle } from 'lucide-react';
+import { Loader2, Sparkles, AlertTriangle, ChevronDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { CardImageUpload } from '@/components/cards/CardImageUpload';
 import { saveCard } from '@/app/actions/card-actions';
@@ -32,6 +32,7 @@ export function CreateCardForm({ onSuccess }: CreateCardFormProps) {
   const [aiScanning, setAiScanning] = React.useState(false);
   const [estimating, setEstimating] = React.useState(false);
   const [warningMsg, setWarningMsg] = React.useState<string | null>(null);
+  const [showDetails, setShowDetails] = React.useState(false);
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema) as any,
@@ -185,6 +186,8 @@ export function CreateCardForm({ onSuccess }: CreateCardFormProps) {
         }
 
         // Fallback: If not auto-saved (e.g. missing Year), trigger price estimation anyway to help user
+        // AND SHOW THE FORM
+        setShowDetails(true);
         if (result.playerName && result.brand) {
           setTimeout(() => handleEstimatePrice(), 500);
         }
@@ -228,6 +231,8 @@ export function CreateCardForm({ onSuccess }: CreateCardFormProps) {
     }
   };
 
+  const hasFrontImage = form.watch('frontImage') || form.watch('mainImage');
+
   return (
     <FormProvider {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
@@ -255,47 +260,75 @@ export function CreateCardForm({ onSuccess }: CreateCardFormProps) {
             </div>
 
             {/* AI Actions Panel - shown when front image exists */}
-            {(form.watch('frontImage') || form.watch('mainImage')) && (
+            {hasFrontImage && (
               <div className="w-full md:w-64 flex flex-col gap-3 justify-center border-l pl-0 md:pl-6">
                 <Button
                   type="button"
+                  size="lg"
                   variant="default"
-                  className="w-full bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white border-0"
+                  className="w-full bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white border-0 shadow-md transition-all hover:scale-[1.02]"
                   onClick={handleSmartScan}
                   disabled={aiScanning}
                 >
                   {aiScanning ? (
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    <Loader2 className="mr-2 h-5 w-5 animate-spin" />
                   ) : (
-                    <Sparkles className="mr-2 h-4 w-4" />
+                    <Sparkles className="mr-2 h-5 w-5" />
                   )}
                   {tGlobal('actions.smartScan')}
                 </Button>
                 <p className="text-xs text-muted-foreground text-center">
                   {aiScanning ? t('ai.identifying') : t('ai.autoDetect')}
                 </p>
+
+                {!showDetails && (
+                  <div className="relative my-4">
+                    <div className="absolute inset-0 flex items-center">
+                      <span className="w-full border-t" />
+                    </div>
+                    <div className="relative flex justify-center text-xs uppercase">
+                      <span className="bg-background px-2 text-muted-foreground">Or</span>
+                    </div>
+                  </div>
+                )}
+
+                {!showDetails && (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="w-full"
+                    onClick={() => setShowDetails(true)}
+                  >
+                    {tGlobal('actions.manualEntry')} <ChevronDown className="ml-1 h-3 w-3" />
+                  </Button>
+                )}
               </div>
             )}
           </div>
         </div>
 
-        {/* Modular Form Parts */}
-        <PlayerInfoFields />
-        <CardDetailsFields />
-        <ValueFields onEstimate={handleEstimatePrice} estimating={estimating} />
-        <GradingFields />
-        <AdvancedDetailsFields />
+        {/* Modular Form Parts - Hidden by default until "Manual Entry" or AI fallback */}
+        {showDetails && (
+          <div className="animate-in fade-in slide-in-from-top-4 space-y-6 border-t pt-6">
+            <PlayerInfoFields />
+            <CardDetailsFields />
+            <ValueFields onEstimate={handleEstimatePrice} estimating={estimating} />
+            <GradingFields />
+            <AdvancedDetailsFields />
 
-        {/* Actions */}
-        <div className="flex justify-end gap-2 pt-4">
-          <Button type="button" variant="outline" onClick={() => onSuccess?.()}>
-            {t('cancel')}
-          </Button>
-          <Button type="submit" disabled={loading}>
-            {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-            {t('save')}
-          </Button>
-        </div>
+            {/* Actions */}
+            <div className="flex justify-end gap-2 pt-4">
+              <Button type="button" variant="outline" onClick={() => onSuccess?.()}>
+                {t('cancel')}
+              </Button>
+              <Button type="submit" disabled={loading}>
+                {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                {t('save')}
+              </Button>
+            </div>
+          </div>
+        )}
       </form>
     </FormProvider>
   );

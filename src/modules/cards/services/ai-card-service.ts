@@ -22,6 +22,11 @@ const CardRecognitionSchema = z.object({
 
 type CardRecognitionResult = z.infer<typeof CardRecognitionSchema>;
 
+const AuthenticityAnalysisSchema = z.object({
+  riskWarning: z.string().nullable().optional(),
+  confidence: z.enum(['HIGH', 'MEDIUM', 'LOW']).optional(),
+});
+
 export interface PriceEstimateResult {
   low: number;
   high: number;
@@ -257,6 +262,12 @@ export class AICardService {
   /**
    * Analyze card for authenticity risks
    */
+
+  // ... inside class ...
+
+  /**
+   * Analyze card for authenticity risks
+   */
   async analyzeAuthenticity(
     frontImage: string,
     backImage?: string,
@@ -265,7 +276,8 @@ export class AICardService {
     const { client, deployment } = await this.getClient();
 
     if (!client) {
-      return { riskWarning: null, confidence: 'LOW' };
+      // Changed: Throw error instead of silent failure to prevent false "Safe" positives
+      throw new Error('AI Service not configured. Please check system settings.');
     }
 
     const language = locale === 'zh' ? 'Chinese (Simplified)' : 'English';
@@ -290,47 +302,67 @@ export class AICardService {
       });
     }
 
-    const response = await client.chat.completions.create({
-      model: deployment,
-      messages: [
-        {
-          role: 'system',
-          content: `You are an expert sports card authenticator.
-            Analyze the image(s) for POTENTIAL AUTHENTICITY RISKS.
-            
-            Check for:
-            - Is it an unlicensed "custom" or "home-made" card?
-            - Does the autograph look printed (facsimile) vs wet ink?
-            - Are there visual signs of a reprint / counterfeit?
-            - Is the grading slab suspicious?
+    return withRetry(async () => {
+      const response = await client.chat.completions.create({
+        model: deployment,
+        messages: [
+          {
+            role: 'system',
+            content: `You are an expert sports card authenticator.
+              Analyze the image(s) for POTENTIAL AUTHENTICITY RISKS.
+              
+              Check for:
+              - Is it an unlicensed "custom" or "home-made" card?
+              - Does the autograph look printed (facsimile) vs wet ink?
+              - Are there visual signs of a reprint / counterfeit?
+              - Is the grading slab suspicious?
+  
+              Return JSON only.
+              
+              IMPORTANT: Provide a detailed explanation in ${language}.
+  
+              Format:
+              {
+                "riskWarning": "string (null if no risks found, otherwise detailed explanation)",
+                "confidence": "HIGH" | "MEDIUM" | "LOW"
+              }`,
+          },
+          {
+            role: 'user',
+            content: [
+              {
+                type: 'text',
+                text: 'Analyze authenticity risks.',
+              },
+              ...imageContent,
+            ],
+          },
+        ],
+        max_completion_tokens: 1000,
+        response_format: { type: 'json_object' },
+      });
 
-            Return JSON only.
-            
-            IMPORTANT: Provide a detailed explanation in ${language}.
+      const content = response.choices[0].message.content;
+      if (!content) throw new Error('No content from AI');
 
-            Format:
-            {
-              "riskWarning": "string (null if no risks found, otherwise detailed explanation)",
-              "confidence": "HIGH" | "MEDIUM" | "LOW"
-            }`,
-        },
-        {
-          role: 'user',
-          content: [
-            {
-              type: 'text',
-              text: 'Analyze authenticity risks.',
-            },
-            ...imageContent,
-          ],
-        },
-      ],
-      max_completion_tokens: 1000,
-      response_format: { type: 'json_object' },
+      // Parse and validate with Zod
+      const parsed = JSON.parse(content);
+      const validated = AuthenticityAnalysisSchema.safeParse(parsed);
+
+      if (!validated.success) {
+        console.warn('Authenticity AI response validation warning:', validated.error.issues);
+        // Fallback to parsed if manageable, or handle error
+        return {
+          riskWarning: parsed.riskWarning || null,
+          confidence: parsed.confidence || 'LOW',
+        };
+      }
+
+      return {
+        riskWarning: validated.data.riskWarning || null,
+        confidence: validated.data.confidence || 'MEDIUM',
+      };
     });
-
-    const content = response.choices[0].message.content || '{}';
-    return JSON.parse(content);
   }
 
   /**

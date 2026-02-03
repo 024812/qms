@@ -90,7 +90,7 @@ export function CardCard({ item }: CardCardProps) {
   const router = useRouter();
 
   const handleDoubleClick = () => {
-    router.push(`/cards/${item.id}/edit`);
+    router.push(`/cards/${item.id}`);
   };
 
   return (

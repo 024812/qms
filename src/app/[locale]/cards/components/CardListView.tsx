@@ -106,7 +106,7 @@ export function CardListView({ items, onCardsChange }: CardListViewProps) {
 
   const handleEdit = (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    router.push(`/cards/${id}/edit`);
+    router.push(`/cards/${id}`);
   };
 
   return (

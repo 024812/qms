@@ -32,10 +32,13 @@ A modern Next.js application with Neon PostgreSQL that provides a modular, exten
 
 ### 🃏 Sports Card Management
 
+- **Unified Card Dashboard**: Single interface for viewing and editing card details with a 3-column layout (Images, Data, AI Analysis)
+- **AI-Powered Insights**: Real-time player news and market sentiment gathering via Perplexity API integration, combined with Azure OpenAI analysis
 - **Card Tracking**: Detailed attributes including player, team, year, brand, and series
 - **Grading Support**: Track professional grading (PSA, BGS, SGC, CGC) with certification numbers
 - **Value Estimation**: Built-in algorithm to estimate card value based on grade, age, and features
 - **Market Connect**: Direct integration with eBay, 130Point, PSA CardFacts, and Beckett for market data
+- **ROI Visualization**: Real-time Return on Investment (ROI) calculation based on purchase vs. current value
 - **Collection Stats**: Comprehensive statistics on total value, ROI, and brand distribution
 
 ### 🎨 Modern UI/UX

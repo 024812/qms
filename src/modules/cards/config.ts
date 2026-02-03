@@ -10,7 +10,6 @@
 import { ModuleDefinition } from '../types';
 import { cardAttributesSchema } from './schema';
 import { CardCard } from './ui/CardCard';
-import { CardDetail } from './ui/CardDetail';
 
 /**
  * Sports Card module configuration
@@ -34,9 +33,6 @@ export const cardModule: ModuleDefinition = {
 
   // Card component for list view
   CardComponent: CardCard,
-
-  // Detail component for detail view
-  DetailComponent: CardDetail,
 
   // ============================================================================
   // COMPREHENSIVE FORM FIELDS

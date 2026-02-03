@@ -19,7 +19,6 @@ import {
   Loader2,
   Sparkles,
   ShieldCheck,
-  TrendingUp,
   BarChart3,
   Save,
   Trash2,
@@ -381,11 +380,11 @@ export function UnifiedCardDashboard({ initialData }: UnifiedCardDashboardProps)
             variants={containerVariants}
             initial="hidden"
             animate="visible"
-            className="grid grid-cols-1 lg:grid-cols-10 gap-6 pb-12"
+            className="grid grid-cols-1 lg:grid-cols-10 gap-6 pb-12 items-stretch"
           >
             {/* 1. IMAGE & BUTTONS PANEL (3 cols) */}
-            <div className="lg:col-span-3">
-              <GlassPanel className="p-4 flex flex-col" variant="slab">
+            <div className="lg:col-span-3 flex flex-col">
+              <GlassPanel className="p-4 flex flex-col flex-1" variant="slab">
                 {/* Grade Badge */}
                 <div className="flex justify-end mb-2">
                   <Badge className="bg-amber-500/20 text-amber-600 border-amber-500/50">
@@ -446,7 +445,7 @@ export function UnifiedCardDashboard({ initialData }: UnifiedCardDashboardProps)
             </div>
 
             {/* 2. FORM FIELDS PANEL (4 cols) */}
-            <div className="lg:col-span-4 space-y-6">
+            <div className="lg:col-span-4 space-y-6 flex flex-col">
               {/* Identity Section */}
               <GlassPanel className="p-6 border-t-4 border-t-cyan-500">
                 <div className="flex items-center gap-2 mb-6 text-cyan-500">
@@ -493,17 +492,8 @@ export function UnifiedCardDashboard({ initialData }: UnifiedCardDashboardProps)
             </div>
 
             {/* 3. AI RESULTS PANEL (3 cols) */}
-            <div className="lg:col-span-3">
-              <GlassPanel className="h-full flex flex-col min-h-[500px]">
-                <div className="p-4 border-b border-slate-200 bg-slate-50/50 flex justify-between items-center">
-                  <div className="flex items-center gap-2 text-violet-600">
-                    <TrendingUp className="w-5 h-5" />
-                    <h3 className="font-bold tracking-wider text-sm uppercase">
-                      {t('sections.market')}
-                    </h3>
-                  </div>
-                </div>
-
+            <div className="lg:col-span-3 flex flex-col">
+              <GlassPanel className="flex-1 flex flex-col">
                 <ScrollArea className="flex-1">
                   <div className="p-4">
                     {/* Loading State */}

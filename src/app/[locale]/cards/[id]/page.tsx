@@ -54,7 +54,7 @@ export default async function CardPage({ params }: CardPageProps) {
   };
 
   return (
-    <div className="container py-6 min-h-screen">
+    <div className="px-6 py-6 min-h-screen">
       <UnifiedCardDashboard initialData={initialData} />
     </div>
   );

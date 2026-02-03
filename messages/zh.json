@@ -118,7 +118,9 @@
       "desktopHint": "支持拖拽上传或粘贴图片",
       "validationError": "文件验证失败",
       "success": "图片处理成功",
-      "error": "图片处理失败"
+      "error": "图片处理失败",
+      "change": "更换图片",
+      "remove": "删除图片"
     },
     "fields": {
       "playerName": "球员姓名",

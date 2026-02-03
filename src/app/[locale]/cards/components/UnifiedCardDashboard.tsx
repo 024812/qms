@@ -5,9 +5,9 @@
  *
  * Replaces separate View/Edit pages.
  * Provides a consolidated view for managing a card:
- * - Left: Images & Visuals
- * - Center: Editable Data Fields
- * - Right: AI Analysis & Market Data
+ * - Left: Images & AI Action Buttons (3 cols)
+ * - Center: Editable Data Fields (4 cols)
+ * - Right: AI Analysis & Market Data (3 cols)
  */
 
 import { useState } from 'react';
@@ -24,6 +24,7 @@ import {
   Save,
   Trash2,
   ChevronLeft,
+  AlertTriangle,
 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
@@ -63,6 +64,13 @@ interface UnifiedCardDashboardProps {
   initialData: Partial<FormValues> & { id: string };
 }
 
+// Types for AI results displayed in the Market Intel panel
+interface AIResult {
+  type: 'authenticity' | 'risk' | 'quality';
+  status: 'safe' | 'warning' | 'error';
+  message: string;
+}
+
 export function UnifiedCardDashboard({ initialData }: UnifiedCardDashboardProps) {
   const t = useTranslations('cards.form');
   const tCards = useTranslations('cards');
@@ -97,6 +105,30 @@ export function UnifiedCardDashboard({ initialData }: UnifiedCardDashboardProps)
   const [analysisResult, setAnalysisResult] = useState<QuickAnalysisResult | null>(null);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+
+  // Collect AI results for display in Market Intel panel
+  const aiResults: AIResult[] = [];
+  if (authCheckResult === 'SAFE') {
+    aiResults.push({
+      type: 'authenticity',
+      status: 'safe',
+      message: t('ai.noRisksDetected'),
+    });
+  }
+  if (riskWarning) {
+    aiResults.push({
+      type: 'risk',
+      status: 'warning',
+      message: riskWarning,
+    });
+  }
+  if (imageQualityFeedback) {
+    aiResults.push({
+      type: 'quality',
+      status: 'warning',
+      message: imageQualityFeedback,
+    });
+  }
 
   // Computed Values for Header
   const purchasePrice = form.watch('purchasePrice');
@@ -192,7 +224,7 @@ export function UnifiedCardDashboard({ initialData }: UnifiedCardDashboardProps)
             <div className="hidden lg:flex items-center gap-6 px-6 border-l border-r border-slate-200">
               <div className="flex flex-col items-end">
                 <span className="text-[10px] uppercase tracking-wider text-slate-500 font-bold">
-                  Current Value
+                  {t('currentValue')}
                 </span>
                 <span className="text-lg font-mono font-bold text-emerald-600">
                   ${maxPrice?.toLocaleString()}
@@ -270,104 +302,68 @@ export function UnifiedCardDashboard({ initialData }: UnifiedCardDashboardProps)
           </div>
         </header>
 
-        {/* === BENTO GRID === */}
+        {/* === MAIN GRID: 3:4:3 ratio === */}
         <FormProvider {...form}>
           <motion.div
             variants={containerVariants}
             initial="hidden"
             animate="visible"
-            className="grid grid-cols-1 md:grid-cols-12 gap-6 pb-12"
+            className="grid grid-cols-1 lg:grid-cols-10 gap-6 pb-12"
           >
-            {/* 1. HERO SLAB (Top Left) - 4 cols */}
-            <div className="md:col-span-4 lg:col-span-3 row-span-2">
-              <GlassPanel
-                className="h-full flex flex-col p-4 relative group"
-                variant="slab"
-                hoverEffect
-              >
-                <div className="absolute top-4 right-4 z-20">
-                  <Badge className="bg-amber-500/20 text-amber-300 border-amber-500/50 backdrop-blur-md">
+            {/* 1. IMAGE & BUTTONS PANEL (3 cols) */}
+            <div className="lg:col-span-3">
+              <GlassPanel className="p-4 flex flex-col" variant="slab">
+                {/* Grade Badge */}
+                <div className="flex justify-end mb-2">
+                  <Badge className="bg-amber-500/20 text-amber-600 border-amber-500/50">
                     {form.watch('grade')
                       ? `${form.watch('gradingCompany')} ${form.watch('grade')}`
                       : 'RAW'}
                   </Badge>
                 </div>
-                <div className="flex-1 flex items-center justify-center p-2">
-                  <div className="relative w-full aspect-[3/4] transition-transform duration-500 group-hover:scale-105 group-hover:rotate-1">
-                    <CardImageUpload
-                      frontImage={form.watch('frontImage') || form.watch('mainImage') || ''}
-                      backImage={form.watch('backImage') || ''}
-                      onFrontImageChange={img =>
-                        form.setValue('frontImage', img, { shouldDirty: true })
-                      }
-                      onBackImageChange={img =>
-                        form.setValue('backImage', img, { shouldDirty: true })
-                      }
-                    />
-                    {/* Gloss Reflection */}
-                    <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none rounded-lg" />
-                  </div>
+
+                {/* Image Area - hover only affects this div */}
+                <div className="relative aspect-[3/4] rounded-xl overflow-hidden bg-slate-100">
+                  <CardImageUpload
+                    frontImage={form.watch('frontImage') || form.watch('mainImage') || ''}
+                    backImage={form.watch('backImage') || ''}
+                    onFrontImageChange={img =>
+                      form.setValue('frontImage', img, { shouldDirty: true })
+                    }
+                    onBackImageChange={img =>
+                      form.setValue('backImage', img, { shouldDirty: true })
+                    }
+                  />
                 </div>
 
-                {/* AI Tools Bar */}
-                <div className="mt-4 grid grid-cols-3 gap-2">
+                {/* AI Action Buttons - separated with mt-6 (half of h-12 button height) */}
+                <div className="mt-6 grid grid-cols-3 gap-2">
                   <TooltipButton
                     onClick={handleSmartScan}
                     loading={aiScanning}
-                    icon={<Sparkles className="w-4 h-4 text-cyan-400" />}
+                    icon={<Sparkles className="w-4 h-4 text-cyan-500" />}
                     label={tCards('actions.smartScan')}
                   />
-
                   <TooltipButton
                     onClick={handleAuthenticityCheck}
                     loading={checkingAuthenticity}
-                    icon={<ShieldCheck className="w-4 h-4 text-emerald-400" />}
+                    icon={<ShieldCheck className="w-4 h-4 text-emerald-500" />}
                     label={tCards('actions.checkAuthenticity')}
                   />
                   <TooltipButton
                     onClick={handleEstimatePrice}
                     loading={estimating}
-                    icon={<BarChart3 className="w-4 h-4 text-violet-400" />}
+                    icon={<BarChart3 className="w-4 h-4 text-violet-500" />}
                     label={tCards('actions.estimatePrice')}
                   />
-                </div>
-                {/* AI Alerts Overlay */}
-                <div className="absolute bottom-20 left-4 right-4 space-y-2 pointer-events-none">
-                  {riskWarning && (
-                    <motion.div
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      className="bg-red-500/90 text-white text-xs p-2 rounded backdrop-blur-md shadow-lg border border-red-400"
-                    >
-                      {riskWarning}
-                    </motion.div>
-                  )}
-                  {imageQualityFeedback && (
-                    <motion.div
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      className="bg-amber-500/90 text-white text-xs p-2 rounded backdrop-blur-md shadow-lg border border-amber-400"
-                    >
-                      {imageQualityFeedback}
-                    </motion.div>
-                  )}
-                  {authCheckResult === 'SAFE' && (
-                    <motion.div
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      className="bg-emerald-500/90 text-white text-xs p-2 rounded backdrop-blur-md shadow-lg border border-emerald-400 flex items-center gap-2"
-                    >
-                      <ShieldCheck className="w-3 h-3" />
-                      {t('ai.noRisksDetected')}
-                    </motion.div>
-                  )}
                 </div>
               </GlassPanel>
             </div>
 
-            {/* 2. IDENTITY (Top Mid) - 5 cols */}
-            <div className="md:col-span-8 lg:col-span-5">
-              <GlassPanel className="p-6 h-full border-t-4 border-t-cyan-500">
+            {/* 2. FORM FIELDS PANEL (4 cols) */}
+            <div className="lg:col-span-4 space-y-6">
+              {/* Identity Section */}
+              <GlassPanel className="p-6 border-t-4 border-t-cyan-500">
                 <div className="flex items-center gap-2 mb-6 text-cyan-500">
                   <Sparkles className="w-5 h-5" />
                   <h3 className="font-bold tracking-wider text-sm uppercase">
@@ -380,10 +376,39 @@ export function UnifiedCardDashboard({ initialData }: UnifiedCardDashboardProps)
                   <CardDetailsFields />
                 </div>
               </GlassPanel>
+
+              {/* Valuation Section */}
+              <GlassPanel className="p-6 border-t-4 border-t-emerald-500">
+                <div className="flex items-center gap-2 mb-6 text-emerald-500">
+                  <BarChart3 className="w-5 h-5" />
+                  <h3 className="font-bold tracking-wider text-sm uppercase">
+                    {t('sections.valuation')}
+                  </h3>
+                </div>
+                <ValueFields />
+              </GlassPanel>
+
+              {/* Grading & Physical Section */}
+              <GlassPanel className="p-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                  <div>
+                    <h3 className="font-bold tracking-wider text-sm uppercase text-slate-500 mb-4">
+                      {t('sections.grading')}
+                    </h3>
+                    <GradingFields />
+                  </div>
+                  <div>
+                    <h3 className="font-bold tracking-wider text-sm uppercase text-slate-500 mb-4">
+                      {t('sections.physical')}
+                    </h3>
+                    <AdvancedDetailsFields />
+                  </div>
+                </div>
+              </GlassPanel>
             </div>
 
-            {/* 3. MARKET INTEL (Top Right) - 4 cols */}
-            <div className="md:col-span-12 lg:col-span-4 row-span-2">
+            {/* 3. MARKET INTEL PANEL (3 cols) */}
+            <div className="lg:col-span-3">
               <GlassPanel className="h-full flex flex-col">
                 <div className="p-4 border-b border-slate-200 bg-slate-50/50 flex justify-between items-center">
                   <div className="flex items-center gap-2 text-violet-600">
@@ -406,6 +431,38 @@ export function UnifiedCardDashboard({ initialData }: UnifiedCardDashboardProps)
                     )}
                   </Button>
                 </div>
+
+                {/* AI Results Display Area */}
+                {aiResults.length > 0 && (
+                  <div className="p-4 space-y-2 border-b border-slate-200">
+                    {aiResults.map((result, index) => (
+                      <motion.div
+                        key={index}
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className={cn(
+                          'text-sm p-3 rounded-lg flex items-start gap-2',
+                          result.status === 'safe' &&
+                            'bg-emerald-50 text-emerald-700 border border-emerald-200',
+                          result.status === 'warning' &&
+                            'bg-amber-50 text-amber-700 border border-amber-200',
+                          result.status === 'error' &&
+                            'bg-red-50 text-red-700 border border-red-200'
+                        )}
+                      >
+                        {result.status === 'safe' && (
+                          <ShieldCheck className="w-4 h-4 mt-0.5 flex-shrink-0" />
+                        )}
+                        {result.status === 'warning' && (
+                          <AlertTriangle className="w-4 h-4 mt-0.5 flex-shrink-0" />
+                        )}
+                        <span className="text-xs leading-relaxed">{result.message}</span>
+                      </motion.div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Analysis Panel Content */}
                 <div className="flex-1 p-0 overflow-hidden relative">
                   <div className="absolute inset-0 overflow-y-auto custom-scrollbar">
                     <AnalysisPanel
@@ -421,39 +478,6 @@ export function UnifiedCardDashboard({ initialData }: UnifiedCardDashboardProps)
                         grade: form.watch('grade') ? Number(form.watch('grade')) : undefined,
                       }}
                     />
-                  </div>
-                </div>
-              </GlassPanel>
-            </div>
-
-            {/* 4. VALUATION (Mid Mid) - 5 cols */}
-            <div className="md:col-span-8 lg:col-span-5">
-              <GlassPanel className="p-6 border-t-4 border-t-emerald-500">
-                <div className="flex items-center gap-2 mb-6 text-emerald-400">
-                  <BarChart3 className="w-5 h-5" />
-                  <h3 className="font-bold tracking-wider text-sm uppercase">
-                    {t('sections.valuation')}
-                  </h3>
-                </div>
-                <ValueFields />
-              </GlassPanel>
-            </div>
-
-            {/* 5. DETAILS (Bottom) - 8 cols */}
-            <div className="md:col-span-12 lg:col-span-8">
-              <GlassPanel className="p-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                  <div>
-                    <h3 className="font-bold tracking-wider text-sm uppercase text-slate-500 mb-4">
-                      {t('sections.grading')}
-                    </h3>
-                    <GradingFields />
-                  </div>
-                  <div>
-                    <h3 className="font-bold tracking-wider text-sm uppercase text-slate-500 mb-4">
-                      {t('sections.physical')}
-                    </h3>
-                    <AdvancedDetailsFields />
                   </div>
                 </div>
               </GlassPanel>
@@ -483,7 +507,7 @@ function TooltipButton({
       onClick={onClick}
       disabled={loading}
       className={cn(
-        'h-12 flex flex-col items-center justify-center gap-1 rounded-xl border border-slate-200 bg-white/50 hover:bg-white hover:border-slate-300 transition-all shadow-sm',
+        'h-12 flex flex-col items-center justify-center gap-1 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 hover:border-slate-300 transition-all shadow-sm',
         loading && 'opacity-50 cursor-not-allowed'
       )}
     >

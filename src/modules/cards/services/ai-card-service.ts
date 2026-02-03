@@ -1,6 +1,7 @@
 import OpenAI from 'openai';
 import { z } from 'zod';
 import { ebayProvider, web130Provider, CardDetails, eBaySalesResult } from './price-data-providers';
+import { analysisCacheService } from './analysis-cache-service';
 
 // Zod schema for validating AI response
 const CardRecognitionSchema = z.object({
@@ -520,13 +521,18 @@ export class AICardService {
   ): Promise<QuickAnalysisResult> {
     const cacheKey = this.generateAnalysisCacheKey(cardDetails);
 
-    // 1. Check Cache (Only if no exclusions/custom query, OR key handles it.
-    // If exclusions are present, we might want to bypass cache or rely on key including them.
-    // Adding exclusions to key is safer.)
-    const cached = this.analysisCache.get(cacheKey);
-    if (cached && Date.now() - cached.lastUpdated < this.CACHE_TTL) {
-      // console.log('Returning cached analysis result');
-      return cached;
+    // 1. Check Cache - try memory first, then persistent storage
+    const memoryCached = this.analysisCache.get(cacheKey);
+    if (memoryCached && Date.now() - memoryCached.lastUpdated < this.CACHE_TTL) {
+      return memoryCached;
+    }
+
+    // Try persistent cache (survives server restarts)
+    const dbCached = await analysisCacheService.get<QuickAnalysisResult>(cacheKey);
+    if (dbCached && Date.now() - dbCached.lastUpdated < this.CACHE_TTL) {
+      // Populate memory cache for faster subsequent access
+      this.analysisCache.set(cacheKey, dbCached);
+      return dbCached;
     }
 
     // 2. Fetch Data (eBay)
@@ -596,8 +602,12 @@ export class AICardService {
       lastUpdated: Date.now(),
     };
 
-    // 5. Cache & Return
+    // 5. Cache & Return (both memory and persistent)
     this.analysisCache.set(cacheKey, result);
+    // Fire-and-forget persistent cache update
+    analysisCacheService
+      .set(cacheKey, result as unknown as Record<string, unknown>)
+      .catch(() => {});
     return result;
   }
 

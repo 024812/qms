@@ -5,9 +5,11 @@
  *
  * Shared hook for card form logic, used by both CreateCardForm and EditCardForm.
  * Eliminates code duplication between the two forms.
+ *
+ * Refactored to use useReducer for better state management.
  */
 
-import { useState, useCallback, useRef, useEffect } from 'react';
+import { useCallback, useRef, useEffect, useReducer } from 'react';
 import { useForm, type UseFormReturn } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useRouter } from 'next/navigation';
@@ -22,7 +24,86 @@ import {
 } from '@/app/actions/ai-card-actions';
 import { compressImage } from '@/lib/utils/image-compression';
 
-// Type for grading company values (matches form schema and AI result)
+// ========== State Types ==========
+
+type FormStatus = 'idle' | 'saving' | 'scanning' | 'estimating' | 'checking-auth';
+
+interface FormState {
+  status: FormStatus;
+  riskWarning: string | null;
+  imageQualityFeedback: string | null;
+  authCheckResult: 'SAFE' | 'RISK' | null;
+  showDetails: boolean;
+}
+
+type FormAction =
+  | { type: 'START_SCAN' }
+  | { type: 'SCAN_SUCCESS'; payload: { riskWarning?: string | null; imageQuality?: string | null } }
+  | { type: 'SCAN_ERROR' }
+  | { type: 'START_ESTIMATE' }
+  | { type: 'ESTIMATE_SUCCESS' }
+  | { type: 'ESTIMATE_ERROR' }
+  | { type: 'START_AUTH_CHECK' }
+  | { type: 'AUTH_CHECK_SUCCESS'; result: 'SAFE' | 'RISK'; riskWarning?: string | null }
+  | { type: 'AUTH_CHECK_ERROR' }
+  | { type: 'START_SAVE' }
+  | { type: 'SAVE_SUCCESS' }
+  | { type: 'SAVE_ERROR' }
+  | { type: 'SHOW_DETAILS' }
+  | { type: 'RESET_WARNINGS' };
+
+function formReducer(state: FormState, action: FormAction): FormState {
+  switch (action.type) {
+    case 'START_SCAN':
+      return {
+        ...state,
+        status: 'scanning',
+        riskWarning: null,
+        authCheckResult: null,
+        imageQualityFeedback: null,
+      };
+    case 'SCAN_SUCCESS':
+      return {
+        ...state,
+        status: 'idle',
+        riskWarning: action.payload.riskWarning || null,
+        imageQualityFeedback: action.payload.imageQuality || null,
+        showDetails: true,
+      };
+    case 'SCAN_ERROR':
+      return { ...state, status: 'idle' };
+    case 'START_ESTIMATE':
+      return { ...state, status: 'estimating' };
+    case 'ESTIMATE_SUCCESS':
+    case 'ESTIMATE_ERROR':
+      return { ...state, status: 'idle' };
+    case 'START_AUTH_CHECK':
+      return { ...state, status: 'checking-auth', riskWarning: null, authCheckResult: null };
+    case 'AUTH_CHECK_SUCCESS':
+      return {
+        ...state,
+        status: 'idle',
+        authCheckResult: action.result,
+        riskWarning: action.riskWarning || null,
+      };
+    case 'AUTH_CHECK_ERROR':
+      return { ...state, status: 'idle' };
+    case 'START_SAVE':
+      return { ...state, status: 'saving' };
+    case 'SAVE_SUCCESS':
+    case 'SAVE_ERROR':
+      return { ...state, status: 'idle' };
+    case 'SHOW_DETAILS':
+      return { ...state, showDetails: true };
+    case 'RESET_WARNINGS':
+      return { ...state, riskWarning: null, imageQualityFeedback: null, authCheckResult: null };
+    default:
+      return state;
+  }
+}
+
+// ========== Hook Options ==========
+
 type GradingCompanyValue = 'PSA' | 'BGS' | 'SGC' | 'CGC' | 'UNGRADED';
 
 interface UseCardFormOptions {
@@ -38,17 +119,24 @@ export function useCardForm({
 }: UseCardFormOptions = {}) {
   const t = useTranslations('cards.form');
   const locale = useLocale();
-
   const router = useRouter();
 
-  const [aiScanning, setAiScanning] = useState(false);
-  const [estimating, setEstimating] = useState(false);
-  const [checkingAuthenticity, setCheckingAuthenticity] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [riskWarning, setRiskWarning] = useState<string | null>(null);
-  const [imageQualityFeedback, setImageQualityFeedback] = useState<string | null>(null);
-  const [showDetails, setShowDetails] = useState(!!initialData?.id);
-  const [authCheckResult, setAuthCheckResult] = useState<'SAFE' | 'RISK' | null>(null);
+  // Initial state
+  const initialState: FormState = {
+    status: 'idle',
+    riskWarning: null,
+    imageQualityFeedback: null,
+    authCheckResult: null,
+    showDetails: !!initialData?.id,
+  };
+
+  const [state, dispatch] = useReducer(formReducer, initialState);
+
+  // Derived states for backwards compatibility
+  const loading = state.status === 'saving';
+  const aiScanning = state.status === 'scanning';
+  const estimating = state.status === 'estimating';
+  const checkingAuthenticity = state.status === 'checking-auth';
 
   // Create form with default values
   const form = useForm({
@@ -101,10 +189,7 @@ export function useCardForm({
       return;
     }
 
-    setAiScanning(true);
-    setRiskWarning(null); // Clear previous risks logic
-    setAuthCheckResult(null);
-    setImageQualityFeedback(null);
+    dispatch({ type: 'START_SCAN' });
 
     try {
       // Compress images for AI processing
@@ -115,9 +200,6 @@ export function useCardForm({
 
       // Call AI identification with locale
       const result = await identifyCardAction(compressedFront, compressedBack, locale);
-
-      // Handle quality feedback
-      if (result.imageQualityFeedback) setImageQualityFeedback(result.imageQualityFeedback);
 
       // Update form with AI results
       if (result.playerName) form.setValue('playerName', result.playerName);
@@ -139,8 +221,15 @@ export function useCardForm({
         form.setValue('isAutographed', result.isAutographed);
       }
 
+      dispatch({
+        type: 'SCAN_SUCCESS',
+        payload: {
+          riskWarning: result.riskWarning,
+          imageQuality: result.imageQualityFeedback,
+        },
+      });
+
       toast.success(t('ai.identifySuccess'));
-      setShowDetails(true);
 
       // Auto-save logic (only if image quality is passable)
       if (autoSaveOnAISuccess && !result.imageQualityFeedback && result.playerName) {
@@ -153,8 +242,7 @@ export function useCardForm({
     } catch (error) {
       console.error('AI scan error:', error);
       toast.error(error instanceof Error ? error.message : t('errors.aiScanFailed'));
-    } finally {
-      setAiScanning(false);
+      dispatch({ type: 'SCAN_ERROR' });
     }
   }, [form, autoSaveOnAISuccess, t, locale]);
 
@@ -167,9 +255,7 @@ export function useCardForm({
       return;
     }
 
-    setCheckingAuthenticity(true);
-    setRiskWarning(null);
-    setAuthCheckResult(null);
+    dispatch({ type: 'START_AUTH_CHECK' });
 
     try {
       const compressedFront = await compressImage(frontImage, { maxSizeKB: 512 });
@@ -180,23 +266,20 @@ export function useCardForm({
       const result = await analyzeAuthenticityAction(compressedFront, compressedBack, locale);
 
       if (result.riskWarning) {
-        setRiskWarning(result.riskWarning);
-        setAuthCheckResult('RISK');
+        dispatch({ type: 'AUTH_CHECK_SUCCESS', result: 'RISK', riskWarning: result.riskWarning });
         toast.warning(t('ai.risksFound'));
       } else {
-        setAuthCheckResult('SAFE');
+        dispatch({ type: 'AUTH_CHECK_SUCCESS', result: 'SAFE' });
         toast.success(t('ai.noRisksToken'));
       }
     } catch (error) {
       console.error('Authenticity check error:', error);
       toast.error(t('errors.authCheckFailed'));
-    } finally {
-      setCheckingAuthenticity(false);
+      dispatch({ type: 'AUTH_CHECK_ERROR' });
     }
   }, [form, t, locale]);
 
   const handleEstimatePrice = useCallback(async () => {
-    // ... logic same as before ...
     const values = form.getValues();
     const playerName = values.playerName;
     const year = values.year;
@@ -207,7 +290,8 @@ export function useCardForm({
       return;
     }
 
-    setEstimating(true);
+    dispatch({ type: 'START_ESTIMATE' });
+
     try {
       const gradeValue = typeof values.grade === 'number' ? values.grade : undefined;
 
@@ -226,17 +310,17 @@ export function useCardForm({
       } else {
         toast.warning(t('errors.noEstimateAvailable'));
       }
+      dispatch({ type: 'ESTIMATE_SUCCESS' });
     } catch (error) {
       console.error('Estimation error:', error);
       toast.error(error instanceof Error ? error.message : t('errors.estimateFailed'));
-    } finally {
-      setEstimating(false);
+      dispatch({ type: 'ESTIMATE_ERROR' });
     }
   }, [form, t]);
 
   const submitForm = useCallback(
     async (values: FormValues) => {
-      setLoading(true);
+      dispatch({ type: 'START_SAVE' });
       try {
         const payload = {
           ...values,
@@ -248,15 +332,15 @@ export function useCardForm({
         await saveCard(payload);
         toast.success(initialData?.id ? t('updateSuccess') : t('createSuccess'));
         router.refresh();
+        dispatch({ type: 'SAVE_SUCCESS' });
         onSuccess?.();
       } catch (error) {
         console.error('Save error:', error);
         toast.error(error instanceof Error ? error.message : t('errors.saveFailed'));
-      } finally {
-        setLoading(false);
+        dispatch({ type: 'SAVE_ERROR' });
       }
     },
-    [initialData?.id, router, onSuccess, t]
+    [initialData, router, onSuccess, t]
   );
 
   // Update ref when submitForm changes
@@ -274,16 +358,20 @@ export function useCardForm({
     [form, submitForm]
   );
 
+  const setShowDetails = useCallback((show: boolean) => {
+    if (show) dispatch({ type: 'SHOW_DETAILS' });
+  }, []);
+
   return {
     form: form as UseFormReturn<FormValues>,
     loading,
     aiScanning,
     estimating,
     checkingAuthenticity,
-    riskWarning,
-    authCheckResult,
-    imageQualityFeedback,
-    showDetails,
+    riskWarning: state.riskWarning,
+    authCheckResult: state.authCheckResult,
+    imageQualityFeedback: state.imageQualityFeedback,
+    showDetails: state.showDetails,
     setShowDetails,
     handleSmartScan,
     handleEstimatePrice,

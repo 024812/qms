@@ -442,6 +442,26 @@ export const usagePeriods = pgTable(
   })
 );
 
+/**
+ * Analysis cache table
+ * Persistent storage for card analysis results
+ * Improves cache survival across server restarts
+ */
+export const analysisCache = pgTable(
+  'analysis_cache',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    cacheKey: text('cache_key').notNull().unique(),
+    result: jsonb('result').$type<Record<string, unknown>>().notNull(),
+    createdAt: timestamp('created_at').notNull().defaultNow(),
+    expiresAt: timestamp('expires_at').notNull(),
+  },
+  table => ({
+    cacheKeyIdx: index('analysis_cache_key_idx').on(table.cacheKey),
+    expiresAtIdx: index('analysis_cache_expires_idx').on(table.expiresAt),
+  })
+);
+
 // Type exports for use in application code
 export type User = typeof users.$inferSelect;
 export type NewUser = typeof users.$inferInsert;
@@ -471,6 +491,9 @@ export type NewSeasonalRecommendation = typeof seasonalRecommendations.$inferIns
 export type UsagePeriod = typeof usagePeriods.$inferSelect;
 /** @deprecated Use NewUsageRecord instead */
 export type NewUsagePeriod = typeof usagePeriods.$inferInsert;
+
+export type AnalysisCache = typeof analysisCache.$inferSelect;
+export type NewAnalysisCache = typeof analysisCache.$inferInsert;
 
 // ============================================================================
 // Drizzle ORM Relations

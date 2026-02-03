@@ -316,6 +316,47 @@
         "CGC": "CGC"
       }
     },
+    "analysis": {
+      "analyzing": "正在分析...",
+      "estimatedValue": "估算价值",
+      "trend30d": "30天趋势",
+      "confidence": "置信度",
+      "source": "数据来源",
+      "aiInsights": "AI 洞察",
+      "noSummary": "暂无分析摘要",
+      "recentSales": "近期成交",
+      "noSalesFound": "未找到相关成交记录",
+      "tabs": {
+        "market": "市场分析",
+        "grading": "评级实验室"
+      },
+      "confidenceLevels": {
+        "high": "高",
+        "medium": "中",
+        "low": "低",
+        "HIGH": "高",
+        "MEDIUM": "中",
+        "LOW": "低"
+      },
+      "grading": {
+        "title": "评级分析",
+        "clickToLoad": "点击加载评级分析数据",
+        "loadData": "加载分析",
+        "recommendation": "建议",
+        "actions": {
+          "GRADE": "建议评级",
+          "HOLD": "建议持有",
+          "SELL_RAW": "建议裸卡出售"
+        },
+        "roi": "投资回报率分析",
+        "raw": "裸卡价格",
+        "psa9": "PSA 9",
+        "psa10": "PSA 10",
+        "disclaimer": "* 数据基于近期 eBay 成交记录，仅供参考",
+        "marketDepth": "市场深度",
+        "activeListings": "在售数量"
+      }
+    },
     "settings": {
       "title": "球星卡管理设置",
       "subtitle": "配置球星卡模块的AI服务（仅管理员）",

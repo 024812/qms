@@ -36,14 +36,18 @@ interface EstimateParams {
   playerName?: string;
   year?: number;
   brand?: string;
+  series?: string;
+  cardNumber?: string;
   gradingCompany?: string;
   grade?: number | null;
+  isAutographed?: boolean;
 }
 
 export async function estimatePriceAction(details: EstimateParams) {
   try {
     const sanitizedDetails = {
       ...details,
+      playerName: details.playerName || '',
       grade: details.grade ?? undefined,
     };
     return await aiCardService.estimatePrice(sanitizedDetails);
@@ -54,5 +58,39 @@ export async function estimatePriceAction(details: EstimateParams) {
       throw new Error(`Estimate Failed: ${error.message}`);
     }
     throw new Error('Failed to estimate price');
+  }
+}
+
+export async function analyzeCardQuickAction(details: EstimateParams, locale: string = 'en') {
+  try {
+    const sanitizedDetails = {
+      ...details,
+      playerName: details.playerName || '',
+      grade: details.grade ?? undefined,
+    };
+    return await aiCardService.analyzeCardQuick(sanitizedDetails, locale);
+  } catch (error) {
+    console.error('Analysis Action Error:', error);
+    if (error instanceof Error) {
+      throw new Error(`Analysis Failed: ${error.message}`);
+    }
+    throw new Error('Failed to analyze card');
+  }
+}
+
+export async function analyzeCardGradingAction(details: EstimateParams) {
+  try {
+    const sanitizedDetails = {
+      ...details,
+      playerName: details.playerName || '',
+      grade: details.grade ?? undefined,
+    };
+    return await aiCardService.analyzeGradingPotential(sanitizedDetails);
+  } catch (error) {
+    console.error('Grading Assessment Error:', error);
+    if (error instanceof Error) {
+      throw new Error(`Grading Assessment Failed: ${error.message}`);
+    }
+    throw new Error('Failed to assess grading potential');
   }
 }

@@ -493,6 +493,263 @@ export class AICardService {
       isAutographed: false,
     };
   }
+  private analysisCache = new Map<string, QuickAnalysisResult>();
+  private readonly CACHE_TTL = 24 * 60 * 60 * 1000; // 24 Hours
+
+  /**
+   * Quick Comprehensive Analysis (Phase 1)
+   * - Single eBay query
+   * - Basic Valuation
+   * - AI Summary
+   */
+  async analyzeCardQuick(
+    cardDetails: CardDetails,
+    locale: string = 'en'
+  ): Promise<QuickAnalysisResult> {
+    const cacheKey = this.generateAnalysisCacheKey(cardDetails);
+
+    // 1. Check Cache
+    const cached = this.analysisCache.get(cacheKey);
+    if (cached && Date.now() - cached.lastUpdated < this.CACHE_TTL) {
+      // console.log('Returning cached analysis result');
+      return cached;
+    }
+
+    // 2. Fetch Data (eBay)
+    // We get more results than usual to calculate trend
+    const sales = await ebayProvider.getRecentSales(cardDetails);
+
+    // Clean data
+    const cleanedSales = this.removeOutliers(sales);
+
+    // 3. Stats Calculation (Local)
+    // Valuation (Simple Average for now)
+    const prices = cleanedSales.map(s => s.price);
+    const avgPrice = prices.length > 0 ? prices.reduce((a, b) => a + b, 0) / prices.length : 0;
+
+    // Trend (Last 30 days vs Previous period, simplified)
+    // For MVP, we'll just compare first half avg vs second half avg of the result set if enough data
+    let trend = 0;
+    if (cleanedSales.length >= 4) {
+      const sortedByDate = [...cleanedSales].sort(
+        (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
+      );
+      const half = Math.floor(sortedByDate.length / 2);
+      const oldSlice = sortedByDate.slice(0, half);
+      const newSlice = sortedByDate.slice(half);
+
+      const oldAvg = oldSlice.reduce((a, b) => a + b.price, 0) / oldSlice.length;
+      const newAvg = newSlice.reduce((a, b) => a + b.price, 0) / newSlice.length;
+
+      if (oldAvg > 0) {
+        trend = ((newAvg - oldAvg) / oldAvg) * 100;
+      }
+    }
+
+    // 4. AI Summary (Azure OpenAI)
+    let aiSummary = '';
+    try {
+      aiSummary = await this.generateInvestmentSummary(cardDetails, avgPrice, trend, locale);
+    } catch (e) {
+      console.error('AI Summary Gen Failed, using fallback', e);
+      aiSummary =
+        locale === 'zh'
+          ? '暂无法生成AI投资简评，请参考价格数据。'
+          : 'AI summary unavailable. Please refer to price data.';
+    }
+
+    const result: QuickAnalysisResult = {
+      valuation: {
+        value: Number(avgPrice.toFixed(2)),
+        trend30d: Number(trend.toFixed(1)),
+        confidence: cleanedSales.length >= 5 ? 'HIGH' : cleanedSales.length >= 2 ? 'MEDIUM' : 'LOW',
+      },
+      recentSales: cleanedSales.slice(0, 10).map(s => ({
+        date: s.date,
+        price: s.price,
+        title: s.title,
+        url: s.url,
+        image: s.image,
+      })),
+      aiSummary,
+      lastUpdated: Date.now(),
+    };
+
+    // 5. Cache & Return
+    this.analysisCache.set(cacheKey, result);
+    return result;
+  }
+
+  private generateAnalysisCacheKey(details: CardDetails): string {
+    return `analysis|${details.year}|${details.playerName}|${details.brand}|${details.series}|${details.cardNumber}|${details.gradingCompany}|${details.grade}`;
+  }
+
+  /**
+   * Generate short investment summary using AI
+   */
+  private async generateInvestmentSummary(
+    details: CardDetails,
+    price: number,
+    trend: number,
+    locale: string
+  ): Promise<string> {
+    const { client, deployment } = await this.getClient();
+    if (!client) return '';
+
+    const language = locale === 'zh' ? 'Chinese (Simplified)' : 'English';
+    const trendText = trend > 0 ? `+${trend.toFixed(1)}%` : `${trend.toFixed(1)}%`;
+
+    const response = await client.chat.completions.create({
+      model: deployment,
+      messages: [
+        {
+          role: 'system',
+          content: `You are a sports card investment advisor. 
+            Based on the provided card data (Player, Price, Trend), provide a **concise 2-3 sentence** summary.
+            
+            Guidelines:
+            - Focus on the player's potential or current market status.
+            - Mention the price trend if significant.
+            - Be objective but professional.
+            - Answer in ${language}.`,
+        },
+        {
+          role: 'user',
+          content: `Card: ${details.year} ${details.brand} ${details.playerName}
+            Current Avg Price: $${price}
+            Recent Trend: ${trendText}
+            
+            Provide investment summary.`,
+        },
+      ],
+      max_completion_tokens: 200,
+    });
+
+    return response.choices[0].message.content || '';
+  }
+
+  /**
+   * Phase 2: Analyze Grading Potential (ROI)
+   * Fetches Raw, PSA 9, PSA 10 prices + Active Listings
+   */
+  async analyzeGradingPotential(cardDetails: CardDetails): Promise<GradingAnalysisResult> {
+    const baseDetails = {
+      playerName: cardDetails.playerName,
+      year: cardDetails.year,
+      brand: cardDetails.brand,
+      series: cardDetails.series,
+      cardNumber: cardDetails.cardNumber,
+      isAutographed: cardDetails.isAutographed,
+    };
+
+    // Parallel Fetching
+    const [rawSales, psa9Sales, psa10Sales, activeCount] = await Promise.all([
+      ebayProvider.getRecentSales({ ...baseDetails, gradingCompany: 'UNGRADED' }),
+      ebayProvider.getRecentSales({ ...baseDetails, gradingCompany: 'PSA', grade: 9 }),
+      ebayProvider.getRecentSales({ ...baseDetails, gradingCompany: 'PSA', grade: 10 }),
+      ebayProvider.getActiveListingCount(baseDetails),
+    ]);
+
+    // Calculate Averages
+    const calcAvg = (sales: eBaySalesResult[]) => {
+      const cleaned = this.removeOutliers(sales);
+      if (cleaned.length === 0) return 0;
+      return cleaned.reduce((a, b) => a + b.price, 0) / cleaned.length;
+    };
+
+    const rawPrice = calcAvg(rawSales);
+    const psa9Price = calcAvg(psa9Sales);
+    const psa10Price = calcAvg(psa10Sales);
+
+    // ROI Calculation Assumptions
+    // Cost basis = Raw Price
+    // Grading Cost = $25 (PSA Value Bulk/Standard avg estimate) + Shipping/Ins ($5)
+    const GRADING_COST_ESTIMATE = 30;
+
+    const calculateRoi = (targetPrice: number) => {
+      if (rawPrice === 0 || targetPrice === 0) return 0;
+      const totalCost = rawPrice + GRADING_COST_ESTIMATE;
+      const profit = targetPrice - totalCost; // eBay fees excluded for simplicity or add 13% later
+      return (profit / totalCost) * 100;
+    };
+
+    const psa9Roi = calculateRoi(psa9Price);
+    const psa10Roi = calculateRoi(psa10Price);
+
+    // Recommendation Logic
+    let recommendation: 'GRADE' | 'HOLD' | 'SELL_RAW' = 'SELL_RAW';
+    if (psa10Roi > 100 || (psa9Roi > 20 && psa10Roi > 50)) {
+      recommendation = 'GRADE';
+    } else if (psa10Roi > 0) {
+      recommendation = 'HOLD';
+    }
+
+    return {
+      rawPrice: Number(rawPrice.toFixed(2)),
+      psa9Price: Number(psa9Price.toFixed(2)),
+      psa10Price: Number(psa10Price.toFixed(2)),
+      psa9Roi: Number(psa9Roi.toFixed(1)),
+      psa10Roi: Number(psa10Roi.toFixed(1)),
+      marketDepth: {
+        activeListings: activeCount,
+        lastChecked: Date.now(),
+      },
+      recommendation,
+    };
+  }
 }
 
 export const aiCardService = new AICardService();
+
+/**
+ * Quick analysis result interface
+ */
+export interface QuickAnalysisResult {
+  valuation: {
+    value: number;
+    trend30d: number; // Percentage
+    confidence: 'HIGH' | 'MEDIUM' | 'LOW';
+  };
+  recentSales: {
+    date: string;
+    price: number;
+    title: string;
+    url: string;
+    image?: string;
+  }[];
+  aiSummary: string;
+  lastUpdated: number; // Timestamp
+}
+
+export interface GradingAnalysisResult {
+  rawPrice: number;
+  psa9Price: number;
+  psa10Price: number;
+  psa9Roi: number; // Percentage
+  psa10Roi: number; // Percentage
+  marketDepth: {
+    activeListings: number;
+    lastChecked: number;
+  };
+  recommendation: 'GRADE' | 'HOLD' | 'SELL_RAW';
+}
+
+export interface GradingAnalysisResult {
+  rawPrice: number;
+  psa9Price: number;
+  psa10Price: number;
+  psa9Roi: number; // Percentage
+  psa10Roi: number; // Percentage
+  marketDepth: {
+    activeListings: number;
+    lastChecked: number;
+  };
+  recommendation: 'GRADE' | 'HOLD' | 'SELL_RAW';
+}
+
+export class AICardServiceExtended extends AICardService {
+  // Extending purely for organization in this thought process, but better to add to main class.
+  // Merging into main class below via tool.
+}
+
+// ... actually just appending to the class via replace_file_content targeting end of class

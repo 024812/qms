@@ -15,6 +15,7 @@ export interface CardDetails {
 export interface IPriceDataProvider {
   name: string;
   getRecentSales(details: CardDetails): Promise<eBaySalesResult[]>;
+  getActiveListingCount(details: CardDetails): Promise<number>;
 }
 
 /**
@@ -36,6 +37,19 @@ export class EbayPriceProvider implements IPriceDataProvider {
       isAutographed: details.isAutographed,
     });
   }
+
+  async getActiveListingCount(details: CardDetails): Promise<number> {
+    return await ebayClient.getActiveListingsCount({
+      playerName: details.playerName,
+      year: details.year,
+      brand: details.brand,
+      series: details.series,
+      cardNum: details.cardNumber,
+      gradingCompany: details.gradingCompany,
+      grade: details.grade, // Note: active listings might not always have grade populated in the same field, but search query handles it
+      isAutographed: details.isAutographed,
+    });
+  }
 }
 
 /**
@@ -50,6 +64,10 @@ export class Web130PointProvider implements IPriceDataProvider {
     // that uses Puppeteer/Playwright to scrape 130point.com
     console.warn('130Point provider called for', details.playerName);
     return [];
+  }
+
+  async getActiveListingCount(_details: CardDetails): Promise<number> {
+    return 0; // Not supported or implemented yet
   }
 }
 
@@ -87,6 +105,16 @@ export class CachingPriceProvider implements IPriceDataProvider {
     }
 
     return results;
+  }
+
+  async getActiveListingCount(details: CardDetails): Promise<number> {
+    // We can cache this too, maybe for a shorter time or same? Let's use same for simplicity.
+    // const key = `active_${this.generateCacheKey(details)}`;
+    // We need a separate cache or reuse the map with a different structure.
+    // Since map stores { data: eBaySalesResult[] }, we can't easily reuse it without changing type.
+    // For MVP/Phase 2, let's just fetch live or use a separate simple map if strictly needed.
+    // Given the request volume, live is acceptable for "depth", but caching is better.
+    return await this.provider.getActiveListingCount(details);
   }
 
   private generateCacheKey(details: CardDetails): string {

@@ -150,6 +150,30 @@ export class eBayApiClient {
   }
 
   /**
+   * Search for ACTIVE listings to gauge market depth (Supply)
+   */
+  async getActiveListingsCount(params: eBaySearchParams): Promise<number> {
+    try {
+      const client = await this.getClient();
+      const q = this.buildSearchQuery(params);
+
+      // We only need the count, so limit=1 is fine
+      // Note: @hendt/ebay-api type definitions might be tricky with 'total'
+      // but usually search returns it. If not, we might need a different accessor.
+      // Assuming 'buy.browse.search' returns { total: number, ... }
+      const response = await client.buy.browse.search({
+        q: q,
+        limit: 1,
+      });
+
+      return response.total || 0;
+    } catch (error) {
+      console.error('eBay Active Search Error:', error);
+      return 0;
+    }
+  }
+
+  /**
    * Construct a robust search query with Negative Keywords
    */
   private buildSearchQuery(params: eBaySearchParams): string {

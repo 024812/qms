@@ -162,26 +162,26 @@ export function UnifiedCardDashboard({ initialData }: UnifiedCardDashboardProps)
   };
 
   return (
-    <div className="min-h-screen bg-black text-slate-100 p-4 font-sans selection:bg-cyan-500/30">
-      <div className="max-w-[1600px] mx-auto space-y-6">
+    <div className="min-h-screen bg-slate-50 text-slate-900 p-6 font-sans selection:bg-cyan-500/20">
+      <div className="w-full space-y-6">
         {/* === HEADER === */}
-        <header className="sticky top-4 z-50 rounded-2xl border border-white/10 bg-black/60 backdrop-blur-xl px-6 py-4 shadow-2xl flex flex-wrap items-center justify-between gap-4">
+        <header className="sticky top-4 z-50 rounded-2xl border border-white/40 bg-white/80 backdrop-blur-xl px-6 py-4 shadow-sm flex flex-wrap items-center justify-between gap-4">
           <div className="flex items-center gap-4">
             <Button
               variant="ghost"
               size="icon"
               asChild
-              className="rounded-full text-slate-400 hover:text-white hover:bg-white/10"
+              className="rounded-full text-slate-500 hover:text-slate-900 hover:bg-slate-100"
             >
               <Link href="/cards">
                 <ChevronLeft className="w-5 h-5" />
               </Link>
             </Button>
             <div>
-              <h1 className="text-2xl font-bold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-white to-slate-400">
+              <h1 className="text-2xl font-bold tracking-tight text-slate-900">
                 {form.watch('year') || 'Year'} {form.watch('brand') || 'Brand'}
               </h1>
-              <p className="text-sm text-cyan-400 font-mono tracking-wide">
+              <p className="text-sm text-slate-500 font-mono tracking-wide">
                 {form.watch('playerName') || 'Player Name'}
               </p>
             </div>
@@ -189,24 +189,24 @@ export function UnifiedCardDashboard({ initialData }: UnifiedCardDashboardProps)
 
           <div className="flex items-center gap-6">
             {/* Quick Stats in Header */}
-            <div className="hidden lg:flex items-center gap-6 px-6 border-l border-r border-white/10">
+            <div className="hidden lg:flex items-center gap-6 px-6 border-l border-r border-slate-200">
               <div className="flex flex-col items-end">
                 <span className="text-[10px] uppercase tracking-wider text-slate-500 font-bold">
                   Current Value
                 </span>
-                <span className="text-lg font-mono font-bold text-emerald-400">
+                <span className="text-lg font-mono font-bold text-emerald-600">
                   ${maxPrice?.toLocaleString()}
                 </span>
               </div>
               <div className="flex flex-col items-end">
-                <span className="text-[10px] uppercase tracking-wider text-slate-500 font-bold">
+                <span className="text-lg uppercase tracking-wider text-slate-500 font-bold">
                   ROI
                 </span>
                 <Badge
                   variant="outline"
                   className={cn(
-                    'font-mono border-0 bg-white/5',
-                    isPositiveROI ? 'text-emerald-400' : 'text-rose-400'
+                    'font-mono border-0 bg-slate-100',
+                    isPositiveROI ? 'text-emerald-600' : 'text-rose-600'
                   )}
                 >
                   {roi}
@@ -221,27 +221,27 @@ export function UnifiedCardDashboard({ initialData }: UnifiedCardDashboardProps)
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="text-rose-500 hover:text-rose-400 hover:bg-rose-500/10 rounded-full"
+                    className="text-rose-500 hover:text-rose-600 hover:bg-rose-50 rounded-full"
                   >
                     <Trash2 className="w-5 h-5" />
                   </Button>
                 </AlertDialogTrigger>
-                <AlertDialogContent className="bg-zinc-950 border-white/10 text-white">
+                <AlertDialogContent className="bg-white border-slate-200 text-slate-900">
                   <AlertDialogHeader>
                     <AlertDialogTitle>{tCards('actions.deleteTitle')}</AlertDialogTitle>
-                    <AlertDialogDescription className="text-slate-400">
+                    <AlertDialogDescription className="text-slate-500">
                       {tCards('actions.deleteConfirm', {
                         card: `${initialData.year} ${initialData.brand} ${initialData.playerName}`,
                       })}
                     </AlertDialogDescription>
                   </AlertDialogHeader>
                   <AlertDialogFooter>
-                    <AlertDialogCancel className="bg-transparent border-white/10 hover:bg-white/5 text-slate-300">
+                    <AlertDialogCancel className="bg-transparent border-slate-200 hover:bg-slate-50 text-slate-600">
                       {t('cancel')}
                     </AlertDialogCancel>
                     <AlertDialogAction
                       onClick={handleDelete}
-                      className="bg-rose-600 hover:bg-rose-700 text-white border-0"
+                      className="bg-rose-600 hover:bg-rose-700 text-white border-0 shadow-sm"
                     >
                       {isDeleting ? <Loader2 className="animate-spin w-4 h-4" /> : t('delete')}
                     </AlertDialogAction>
@@ -253,10 +253,10 @@ export function UnifiedCardDashboard({ initialData }: UnifiedCardDashboardProps)
                 onClick={handleSubmit}
                 disabled={loading || !hasUnsavedChanges}
                 className={cn(
-                  'rounded-full px-6 font-medium transition-all duration-300 shadow-[0_0_20px_-5px_rgba(255,255,255,0.3)]',
+                  'rounded-full px-6 font-medium transition-all duration-300 shadow-sm',
                   hasUnsavedChanges
-                    ? 'bg-cyan-500 hover:bg-cyan-400 text-black hover:shadow-cyan-500/50'
-                    : 'bg-white/10 text-slate-400 hover:bg-white/20'
+                    ? 'bg-cyan-600 hover:bg-cyan-500 text-white shadow-cyan-200'
+                    : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
                 )}
               >
                 {loading ? (
@@ -376,7 +376,7 @@ export function UnifiedCardDashboard({ initialData }: UnifiedCardDashboardProps)
                 </div>
                 <div className="space-y-6">
                   <PlayerInfoFields />
-                  <div className="h-px bg-white/5 my-4" />
+                  <div className="h-px bg-slate-200 my-4" />
                   <CardDetailsFields />
                 </div>
               </GlassPanel>
@@ -385,8 +385,8 @@ export function UnifiedCardDashboard({ initialData }: UnifiedCardDashboardProps)
             {/* 3. MARKET INTEL (Top Right) - 4 cols */}
             <div className="md:col-span-12 lg:col-span-4 row-span-2">
               <GlassPanel className="h-full flex flex-col">
-                <div className="p-4 border-b border-white/5 bg-white/5 flex justify-between items-center">
-                  <div className="flex items-center gap-2 text-violet-400">
+                <div className="p-4 border-b border-slate-200 bg-slate-50/50 flex justify-between items-center">
+                  <div className="flex items-center gap-2 text-violet-600">
                     <TrendingUp className="w-5 h-5" />
                     <h3 className="font-bold tracking-wider text-sm uppercase">
                       {t('sections.market')}
@@ -397,7 +397,7 @@ export function UnifiedCardDashboard({ initialData }: UnifiedCardDashboardProps)
                     variant="ghost"
                     onClick={handleAnalysis}
                     disabled={analyzing}
-                    className="h-8 w-8 p-0 rounded-full hover:bg-white/10"
+                    className="h-8 w-8 p-0 rounded-full hover:bg-slate-200 text-slate-500"
                   >
                     {analyzing ? (
                       <Loader2 className="animate-spin w-4 h-4" />
@@ -483,12 +483,12 @@ function TooltipButton({
       onClick={onClick}
       disabled={loading}
       className={cn(
-        'h-12 flex flex-col items-center justify-center gap-1 rounded-xl border border-white/5 bg-black/20 hover:bg-white/10 hover:border-white/20 transition-all',
+        'h-12 flex flex-col items-center justify-center gap-1 rounded-xl border border-slate-200 bg-white/50 hover:bg-white hover:border-slate-300 transition-all shadow-sm',
         loading && 'opacity-50 cursor-not-allowed'
       )}
     >
       {loading ? <Loader2 className="w-4 h-4 animate-spin text-slate-400" /> : icon}
-      <span className="text-[10px] uppercase font-bold text-slate-400">{label}</span>
+      <span className="text-[10px] uppercase font-bold text-slate-500">{label}</span>
     </Button>
   );
 }

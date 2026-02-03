@@ -18,10 +18,10 @@ const SelectTrigger = React.forwardRef<
   <SelectPrimitive.Trigger
     ref={ref}
     className={cn(
-      'flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground',
+      'flex h-10 w-full items-center justify-between rounded-md border border-input bg-white/80 px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground text-slate-900 border-slate-200',
       'dark:bg-white/5 dark:border-white/10 dark:text-slate-200',
       'transition-all duration-200 ease-in-out',
-      'hover:border-primary/50 hover:bg-accent/50 dark:hover:bg-white/10',
+      'hover:bg-white hover:border-slate-300 dark:hover:bg-white/10',
       'focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:border-primary',
       'disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:border-input disabled:hover:bg-background',
       'data-[state=open]:border-primary data-[state=open]:ring-2 data-[state=open]:ring-ring',
@@ -74,8 +74,8 @@ const SelectContent = React.forwardRef<
     <SelectPrimitive.Content
       ref={ref}
       className={cn(
-        'relative z-50 max-h-96 min-w-[8rem] overflow-hidden rounded-lg border bg-popover text-popover-foreground shadow-lg',
-        'dark:bg-zinc-950/90 dark:backdrop-blur-xl dark:border-white/10',
+        'relative z-50 max-h-96 min-w-[8rem] overflow-hidden rounded-lg border bg-white/90 backdrop-blur-xl border-slate-200 text-slate-900 shadow-xl',
+        'dark:bg-zinc-950/90 dark:backdrop-blur-xl dark:border-white/10 dark:text-slate-100',
         'data-[state=open]:animate-in data-[state=closed]:animate-out',
         'data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0',
         'data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95',

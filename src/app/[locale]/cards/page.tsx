@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { PackageOpen, Loader2, ChevronLeft, ChevronRight } from 'lucide-react';
+import { PackageOpen, Loader2, ChevronLeft, ChevronRight, LayoutDashboard } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/ui/empty-state';
 import { CardCard } from '@/modules/cards/ui/CardCard';
@@ -27,6 +27,7 @@ export default function CardsPage() {
   });
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const [totalItems, setTotalItems] = useState(0);
 
   const fetchData = useCallback(async () => {
     try {
@@ -45,6 +46,7 @@ export default function CardsPage() {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       setCards(data.items as any);
       setTotalPages(data.totalPages);
+      setTotalItems(data.total);
     } catch (error) {
       console.error('Failed to fetch cards:', error);
     } finally {
@@ -55,7 +57,7 @@ export default function CardsPage() {
   // Fetch cards on mount and when search/filters/page change
   useEffect(() => {
     fetchData();
-  }, [fetchData]); // Added fetchData to dependency array
+  }, [fetchData]);
 
   const handleFilterChange = (key: string, value: string) => {
     setFilters(prev => ({ ...prev, [key]: value }));
@@ -68,7 +70,30 @@ export default function CardsPage() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="w-full p-6 space-y-8 bg-background min-h-screen">
+      {/* Header Section */}
+      <div className="flex flex-col gap-2">
+        <div className="flex items-center gap-2 text-muted-foreground">
+          <LayoutDashboard className="w-5 h-5" />
+          <h2 className="text-lg font-medium">Dashboard</h2>
+        </div>
+        <div className="flex justify-between items-end">
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight text-foreground">{t('title')}</h1>
+            <p className="text-muted-foreground mt-1">
+              Manage your collection, track values, and analyze market trends.
+            </p>
+          </div>
+          <div className="flex gap-4 text-sm">
+            <div className="flex flex-col items-end">
+              <span className="text-muted-foreground">Total Cards</span>
+              <span className="font-mono font-bold text-xl">{totalItems}</span>
+            </div>
+            {/* Add more summary stats here later */}
+          </div>
+        </div>
+      </div>
+
       <CardToolbar
         viewMode={viewMode}
         onViewChange={setViewMode}
@@ -96,7 +121,7 @@ export default function CardsPage() {
       ) : viewMode === 'list' ? (
         <CardListView items={cards} />
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-6">
           {cards.map(card => (
             <div key={card.id}>
               <CardCard item={card} />
@@ -107,8 +132,8 @@ export default function CardsPage() {
 
       {/* Pagination Controls */}
       {cards.length > 0 && (
-        <div className="flex items-center justify-end gap-2 py-4">
-          <span className="text-sm text-muted-foreground mr-2">
+        <div className="flex items-center justify-end gap-2 py-4 border-t">
+          <span className="text-sm text-muted-foreground mr-6">
             {t('pagination.page', { current: currentPage, total: totalPages })}
           </span>
           <Button

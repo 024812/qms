@@ -16,7 +16,7 @@ import { toast } from 'sonner';
 import { FormProvider } from 'react-hook-form';
 import { useTranslations } from 'next-intl';
 import { Button } from '@/components/ui/button';
-import { Loader2, Sparkles, ShieldCheck, TrendingUp } from 'lucide-react';
+import { Loader2, Sparkles, ShieldCheck, TrendingUp, BarChart3 } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { CardImageUpload } from '@/components/cards/CardImageUpload';
 import { PlayerInfoFields } from './form-parts/PlayerInfoFields';
@@ -182,6 +182,22 @@ export function EditCardForm({ initialData, onSuccess }: EditCardFormProps) {
                   )}
                   {tCards('analysis.title')}
                 </Button>
+
+                {/* 4. Estimate Price */}
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="w-full justify-start text-emerald-600 border-emerald-200 hover:bg-emerald-50 hover:text-emerald-700"
+                  onClick={handleEstimatePrice}
+                  disabled={estimating || loading}
+                >
+                  {estimating ? (
+                    <Loader2 className="animate-spin mr-2 h-4 w-4" />
+                  ) : (
+                    <BarChart3 className="mr-2 h-4 w-4" />
+                  )}
+                  {t('estimate.estimatePrice')}
+                </Button>
               </div>
             </div>
 
@@ -190,9 +206,8 @@ export function EditCardForm({ initialData, onSuccess }: EditCardFormProps) {
               <PlayerInfoFields />
               <CardDetailsFields />
               <GradingFields />
-              <ValueFields onEstimate={handleEstimatePrice} estimating={estimating} />
+              <ValueFields /> {/* Removed onEstimate prop as button moved */}
               <AdvancedDetailsFields />
-
               <div className="flex justify-end gap-2 pt-4">
                 <Button type="submit" disabled={loading}>
                   {loading && <Loader2 className="animate-spin mr-2 h-4 w-4" />}
@@ -204,10 +219,22 @@ export function EditCardForm({ initialData, onSuccess }: EditCardFormProps) {
         </FormProvider>
       </div>
 
-      {/* Analysis Panel (Side on Desktop, Bottom/Drawer logic handled by responsive CSS or Dialog if needed, here just Column) */}
+      {/* Analysis Panel */}
       {showAnalysis && (
-        <div className="w-full lg:w-[400px] shrink-0 border-t lg:border-t-0 lg:border-l pl-0 lg:pl-6 pt-6 lg:pt-0">
-          <AnalysisPanel data={analysisResult} loading={analyzing} />
+        <div className="w-full lg:w-1/3 min-w-[400px] shrink-0 border-t lg:border-t-0 lg:border-l pl-0 lg:pl-6 pt-6 lg:pt-0">
+          <AnalysisPanel
+            data={analysisResult}
+            loading={analyzing}
+            cardDetails={{
+              playerName: form.getValues().playerName,
+              year: form.getValues().year,
+              brand: form.getValues().brand,
+              cardNumber: form.getValues().cardNumber || undefined,
+              series: form.getValues().series || undefined,
+              gradingCompany: form.getValues().gradingCompany || undefined,
+              grade: form.getValues().grade ? Number(form.getValues().grade) : undefined,
+            }}
+          />
         </div>
       )}
     </div>

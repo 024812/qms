@@ -35,6 +35,11 @@ const nextConfig = {
         hostname: '*.vercel.app',
         pathname: '/**',
       },
+      {
+        protocol: 'https',
+        hostname: 'i.ebayimg.com',
+        pathname: '/**',
+      },
     ],
     formats: ['image/webp', 'image/avif'],
     minimumCacheTTL: 60,
@@ -95,7 +100,7 @@ const nextConfig = {
               "default-src 'self'",
               "script-src 'self' 'unsafe-eval' 'unsafe-inline'", // Next.js requires these
               "style-src 'self' 'unsafe-inline'", // Tailwind requires unsafe-inline
-              "img-src 'self' blob: data:",
+              "img-src 'self' blob: data: https://i.ebayimg.com",
               "font-src 'self' data:",
               "connect-src 'self' ws: wss:",
               "object-src 'none'",

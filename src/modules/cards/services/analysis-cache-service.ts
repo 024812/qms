@@ -1,6 +1,6 @@
-import { db } from '@/db';
-import { analysisCache } from '@/db/schema';
-import { eq, lt } from 'drizzle-orm';
+// import { db } from '@/db';
+// import { analysisCache } from '@/db/schema';
+// import { eq, lt } from 'drizzle-orm';
 
 /**
  * Persistent cache service for card analysis results
@@ -13,7 +13,10 @@ class AnalysisCacheService {
    * Get a cached analysis result by key
    * @returns The cached result or null if not found/expired
    */
-  async get<T>(key: string): Promise<T | null> {
+  async get<T>(_key: string): Promise<T | null> {
+    // Disabled temporarily
+    return null;
+    /*
     try {
       const result = await db
         .select()
@@ -39,6 +42,7 @@ class AnalysisCacheService {
       console.error('AnalysisCacheService.get error:', error);
       return null;
     }
+    */
   }
 
   /**
@@ -50,25 +54,29 @@ class AnalysisCacheService {
   async set<T extends Record<string, unknown>>(
     key: string,
     value: T,
-    ttlMs: number = this.DEFAULT_TTL_MS
+    _ttlMs: number = this.DEFAULT_TTL_MS
   ): Promise<void> {
     try {
-      const expiresAt = new Date(Date.now() + ttlMs);
-
-      await db
-        .insert(analysisCache)
-        .values({
-          cacheKey: key,
-          result: value,
-          expiresAt,
-        })
-        .onConflictDoUpdate({
-          target: analysisCache.cacheKey,
-          set: {
-            result: value,
-            expiresAt,
-          },
-        });
+      /*
+       * TODO: Re-enable DB cache once migration synchronization issue on Vercel is resolved.
+       * Currently disabled to prevent "relation does not exist" errors in logs.
+       */
+      // const expiresAt = new Date(Date.now() + ttlMs);
+      // await db
+      //   .insert(analysisCache)
+      //   .values({
+      //     cacheKey: key,
+      //     result: value,
+      //     expiresAt,
+      //   })
+      //   .onConflictDoUpdate({
+      //     target: analysisCache.cacheKey,
+      //     set: {
+      //       result: value,
+      //       expiresAt,
+      //     },
+      //   });
+      return;
     } catch (error) {
       console.error('AnalysisCacheService.set error:', error);
       // Don't throw - cache failures should not break the main flow
@@ -78,12 +86,16 @@ class AnalysisCacheService {
   /**
    * Delete a cached entry
    */
-  async delete(key: string): Promise<void> {
+  async delete(_key: string): Promise<void> {
+    // Disabled temporarily
+    return;
+    /*
     try {
       await db.delete(analysisCache).where(eq(analysisCache.cacheKey, key));
     } catch (error) {
       console.error('AnalysisCacheService.delete error:', error);
     }
+    */
   }
 
   /**
@@ -91,6 +103,9 @@ class AnalysisCacheService {
    * Should be run periodically (e.g., via cron job)
    */
   async cleanup(): Promise<number> {
+    // Disabled temporarily
+    return 0;
+    /*
     try {
       // Delete entries where expiresAt < now (expired)
       const result = await db.delete(analysisCache).where(lt(analysisCache.expiresAt, new Date()));
@@ -99,6 +114,7 @@ class AnalysisCacheService {
       console.error('AnalysisCacheService.cleanup error:', error);
       return 0;
     }
+    */
   }
 }
 

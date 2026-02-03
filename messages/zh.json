@@ -354,6 +354,9 @@
         "marketDepth": "市场深度",
         "activeListings": "个在该等级的在售商品",
         "disclaimer": "* 估值仅供参考，基于近期成交价计算",
+        "noGradingData": "未找到该卡片的评级价格数据，可能是因为市场上没有足够的同类卡片成交记录。",
+        "noPriceData": "暂无",
+        "retry": "重试",
         "actions": {
           "GRADE": "建议评级 (GRADE)",
           "HOLD": "建议持有 (HOLD)",

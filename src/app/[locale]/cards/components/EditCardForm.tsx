@@ -92,10 +92,10 @@ export function EditCardForm({ initialData, onSuccess }: EditCardFormProps) {
   };
 
   return (
-    <div className="flex flex-col xl:flex-row gap-8">
+    <div className="flex flex-col xl:flex-row gap-6">
       {/* Main Form Area */}
       <div
-        className={`flex-1 min-w-0 transition-all duration-300 ${showAnalysis ? 'xl:max-w-[60%]' : 'w-full'}`}
+        className={`min-w-0 transition-all duration-300 ${showAnalysis ? 'xl:basis-[55%] xl:flex-shrink-0' : 'w-full'}`}
       >
         <FormProvider {...form}>
           <form onSubmit={handleSubmit} className="space-y-6">
@@ -137,22 +137,20 @@ export function EditCardForm({ initialData, onSuccess }: EditCardFormProps) {
               {/* Utility Buttons - Vertical Group */}
               <div className="flex flex-col gap-3 justify-start w-full sm:w-auto min-w-[160px]">
                 {/* 1. Smart Scan */}
-                <div className="flex flex-col gap-1">
-                  <Button
-                    type="button"
-                    variant="secondary"
-                    onClick={handleSmartScan}
-                    disabled={aiScanning || loading}
-                    className="w-full justify-start"
-                  >
-                    {aiScanning ? (
-                      <Loader2 className="animate-spin mr-2 h-4 w-4" />
-                    ) : (
-                      <Sparkles className="mr-2 h-4 w-4 text-blue-500" />
-                    )}
-                    {tCards('actions.smartScan')}
-                  </Button>
-                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={handleSmartScan}
+                  disabled={aiScanning || loading}
+                  className="w-full justify-start text-blue-600 border-blue-200 hover:bg-blue-50 hover:text-blue-700"
+                >
+                  {aiScanning ? (
+                    <Loader2 className="animate-spin mr-2 h-4 w-4" />
+                  ) : (
+                    <Sparkles className="mr-2 h-4 w-4" />
+                  )}
+                  {tCards('actions.smartScan')}
+                </Button>
 
                 {/* 2. Authenticity Check */}
                 <Button
@@ -160,20 +158,21 @@ export function EditCardForm({ initialData, onSuccess }: EditCardFormProps) {
                   variant="outline"
                   onClick={handleAuthenticityCheck}
                   disabled={checkingAuthenticity || loading}
-                  className="w-full justify-start"
+                  className="w-full justify-start text-green-600 border-green-200 hover:bg-green-50 hover:text-green-700"
                 >
                   {checkingAuthenticity ? (
                     <Loader2 className="animate-spin mr-2 h-4 w-4" />
                   ) : (
-                    <ShieldCheck className="mr-2 h-4 w-4 text-green-600" />
+                    <ShieldCheck className="mr-2 h-4 w-4" />
                   )}
                   {tCards('actions.checkAuthenticity')}
                 </Button>
 
-                {/* 3. Comprehensive Analysis (New) */}
+                {/* 3. Comprehensive Analysis */}
                 <Button
                   type="button"
-                  className="w-full justify-start bg-indigo-600 hover:bg-indigo-700 text-white"
+                  variant="outline"
+                  className="w-full justify-start text-indigo-600 border-indigo-200 hover:bg-indigo-50 hover:text-indigo-700"
                   onClick={handleAnalysis}
                   disabled={analyzing || loading}
                 >
@@ -198,7 +197,7 @@ export function EditCardForm({ initialData, onSuccess }: EditCardFormProps) {
                   ) : (
                     <BarChart3 className="mr-2 h-4 w-4" />
                   )}
-                  {t('estimate.estimatePrice')}
+                  {tCards('actions.estimatePrice')}
                 </Button>
               </div>
             </div>
@@ -223,7 +222,7 @@ export function EditCardForm({ initialData, onSuccess }: EditCardFormProps) {
 
       {/* Analysis Panel */}
       {showAnalysis && (
-        <div className="flex-1 min-w-[350px] border-t xl:border-t-0 xl:border-l pl-0 xl:pl-8 pt-8 xl:pt-0">
+        <div className="xl:basis-[45%] xl:flex-shrink-0 min-w-[350px] border-t xl:border-t-0 xl:border-l pl-0 xl:pl-6 pt-6 xl:pt-0">
           <AnalysisPanel
             data={analysisResult}
             loading={analyzing}

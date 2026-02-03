@@ -85,6 +85,25 @@ export function GradingAnalysisTab({ cardDetails }: GradingAnalysisTabProps) {
     );
   }
 
+  // Check for empty data (all zeros)
+  const noDataAvailable =
+    gradingData.rawPrice === 0 && gradingData.psa9Price === 0 && gradingData.psa10Price === 0;
+
+  if (noDataAvailable) {
+    return (
+      <div className="text-center p-6 text-muted-foreground space-y-3">
+        <p className="text-sm">{t('grading.noGradingData')}</p>
+        <Button variant="outline" size="sm" onClick={fetchGradingAnalysis}>
+          {t('grading.retry')}
+        </Button>
+      </div>
+    );
+  }
+
+  const formatPrice = (price: number) => {
+    return price > 0 ? `$${price}` : t('grading.noPriceData');
+  };
+
   return (
     <div className="space-y-4">
       {/* 1. Recommendation Hero */}
@@ -124,7 +143,7 @@ export function GradingAnalysisTab({ cardDetails }: GradingAnalysisTabProps) {
           <div>
             <div className="flex justify-between text-sm mb-1">
               <span className="font-medium text-gray-600">{t('grading.raw')}</span>
-              <span className="font-bold">${gradingData.rawPrice}</span>
+              <span className="font-bold">{formatPrice(gradingData.rawPrice)}</span>
             </div>
             <Progress value={100} className="h-2 bg-gray-100" />
           </div>
@@ -134,7 +153,7 @@ export function GradingAnalysisTab({ cardDetails }: GradingAnalysisTabProps) {
             <div className="flex justify-between text-sm mb-1">
               <span className="font-medium text-indigo-600">{t('grading.psa9')}</span>
               <div className="text-right">
-                <span className="font-bold block">${gradingData.psa9Price}</span>
+                <span className="font-bold block">{formatPrice(gradingData.psa9Price)}</span>
                 <span
                   className={`text-xs ${gradingData.psa9Roi > 0 ? 'text-green-600' : 'text-red-500'}`}
                 >
@@ -157,7 +176,7 @@ export function GradingAnalysisTab({ cardDetails }: GradingAnalysisTabProps) {
             <div className="flex justify-between text-sm mb-1">
               <span className="font-medium text-green-600">{t('grading.psa10')}</span>
               <div className="text-right">
-                <span className="font-bold block">${gradingData.psa10Price}</span>
+                <span className="font-bold block">{formatPrice(gradingData.psa10Price)}</span>
                 <span
                   className={`text-xs ${gradingData.psa10Roi > 0 ? 'text-green-600' : 'text-red-500'}`}
                 >

@@ -225,7 +225,8 @@ export function UnifiedCardDashboard({ initialData }: UnifiedCardDashboardProps)
       loading: true,
     });
     await handleAuthenticityCheck();
-    // Result will be shown via authCheckResult, riskWarning, imageQualityFeedback
+    // Clear loading state after check completes
+    setCurrentResult(prev => ({ ...prev, loading: false }));
   };
 
   // Update right panel when auth check completes
@@ -603,7 +604,7 @@ function TooltipButton({
       onClick={onClick}
       disabled={loading}
       className={cn(
-        'h-12 flex flex-col items-center justify-center gap-1 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 hover:border-slate-300 transition-all shadow-sm',
+        'h-16 flex flex-col items-center justify-center gap-1 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 hover:border-slate-300 transition-all shadow-sm',
         loading && 'opacity-50 cursor-not-allowed'
       )}
     >

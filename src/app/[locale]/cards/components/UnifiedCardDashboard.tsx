@@ -48,11 +48,11 @@ import { motion } from 'framer-motion';
 import { CardImageUpload } from '@/components/cards/CardImageUpload';
 import { GlassPanel } from '@/components/ui/glass-panel';
 import { calculateROI } from '@/modules/cards/utils';
-import { PlayerInfoFields } from './form-parts/PlayerInfoFields';
-import { CardDetailsFields } from './form-parts/CardDetailsFields';
-import { GradingFields } from './form-parts/GradingFields';
-import { ValueFields } from './form-parts/ValueFields';
-import { AdvancedDetailsFields } from './form-parts/AdvancedDetailsFields';
+import { SectionValueCost } from './form-parts/SectionValueCost';
+import { SectionPlayerTeam } from './form-parts/SectionPlayerTeam';
+import { SectionGradingCert } from './form-parts/SectionGradingCert';
+import { SectionFeatures } from './form-parts/SectionFeatures';
+import { SectionNotes } from './form-parts/SectionNotes';
 import { MarketAnalysisTab, GradingAnalysisTab } from './analysis';
 
 import { useCardForm } from './hooks/useCardForm';
@@ -447,47 +447,27 @@ export function UnifiedCardDashboard({ initialData }: UnifiedCardDashboardProps)
 
             {/* 2. FORM FIELDS PANEL (4 cols) */}
             <div className="lg:col-span-4 space-y-6 flex flex-col">
-              {/* Identity Section */}
-              <GlassPanel className="p-6 border-t-4 border-t-cyan-500">
-                <div className="flex items-center gap-2 mb-6 text-cyan-500">
-                  <Sparkles className="w-5 h-5" />
-                  <h3 className="font-bold tracking-wider text-sm uppercase">
-                    {t('sections.identity')}
-                  </h3>
-                </div>
-                <div className="space-y-6">
-                  <PlayerInfoFields />
-                  <div className="h-px bg-slate-200 my-4" />
-                  <CardDetailsFields />
-                </div>
-              </GlassPanel>
-
-              {/* Valuation Section */}
+              {/* Value & Cost Section - Top Priority */}
               <GlassPanel className="p-6 border-t-4 border-t-emerald-500">
-                <div className="flex items-center gap-2 mb-6 text-emerald-500">
-                  <BarChart3 className="w-5 h-5" />
-                  <h3 className="font-bold tracking-wider text-sm uppercase">
-                    {t('sections.valuation')}
-                  </h3>
-                </div>
-                <ValueFields />
+                <SectionValueCost />
               </GlassPanel>
 
-              {/* Grading & Physical Section */}
+              {/* Player & Team Section */}
+              <GlassPanel className="p-6 border-t-4 border-t-cyan-500">
+                <SectionPlayerTeam />
+              </GlassPanel>
+
+              {/* Grading & Certification Section */}
+              <GlassPanel className="p-6 border-t-4 border-t-indigo-500">
+                <SectionGradingCert />
+              </GlassPanel>
+
+              {/* Features & Notes Section */}
               <GlassPanel className="p-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                  <div>
-                    <h3 className="font-bold tracking-wider text-sm uppercase text-slate-500 mb-4">
-                      {t('sections.grading')}
-                    </h3>
-                    <GradingFields />
-                  </div>
-                  <div>
-                    <h3 className="font-bold tracking-wider text-sm uppercase text-slate-500 mb-4">
-                      {t('sections.physical')}
-                    </h3>
-                    <AdvancedDetailsFields />
-                  </div>
+                <div className="space-y-6">
+                  <SectionFeatures />
+                  <div className="h-px bg-slate-200" />
+                  <SectionNotes />
                 </div>
               </GlassPanel>
             </div>

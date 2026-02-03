@@ -10,6 +10,7 @@ export interface CardDetails {
   gradingCompany?: string;
   grade?: number;
   isAutographed?: boolean;
+  customQuery?: string;
 }
 
 export interface IPriceDataProvider {
@@ -35,6 +36,7 @@ export class EbayPriceProvider implements IPriceDataProvider {
       gradingCompany: details.gradingCompany,
       grade: details.grade,
       isAutographed: details.isAutographed,
+      customQuery: details.customQuery,
     });
   }
 
@@ -48,6 +50,7 @@ export class EbayPriceProvider implements IPriceDataProvider {
       gradingCompany: details.gradingCompany,
       grade: details.grade, // Note: active listings might not always have grade populated in the same field, but search query handles it
       isAutographed: details.isAutographed,
+      customQuery: details.customQuery,
     });
   }
 }
@@ -118,7 +121,7 @@ export class CachingPriceProvider implements IPriceDataProvider {
   }
 
   private generateCacheKey(details: CardDetails): string {
-    return `${details.year}|${details.playerName}|${details.brand}|${details.cardNumber}|${details.grade}`;
+    return `${details.year}|${details.playerName}|${details.brand}|${details.cardNumber}|${details.grade}|${details.customQuery || ''}`;
   }
 }
 

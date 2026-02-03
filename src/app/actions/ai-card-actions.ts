@@ -41,6 +41,8 @@ interface EstimateParams {
   gradingCompany?: string;
   grade?: number | null;
   isAutographed?: boolean;
+  customQuery?: string;
+  excludedListingIds?: string[];
 }
 
 export async function estimatePriceAction(details: EstimateParams) {

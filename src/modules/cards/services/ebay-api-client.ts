@@ -11,6 +11,7 @@ export interface eBaySearchParams {
   gradingCompany?: string; // PSA, BGS, SGC, etc.
   grade?: number; // 9, 10, etc.
   isAutographed?: boolean;
+  customQuery?: string;
 }
 
 export interface eBaySalesResult {
@@ -108,7 +109,7 @@ export class eBayApiClient {
       const client = await this.getClient();
 
       // Build optimal search query
-      const q = this.buildSearchQuery(params);
+      const q = params.customQuery ? params.customQuery : this.buildSearchQuery(params);
 
       // Execute Search
       // Uses the 'buy' API accessor from the SDK
@@ -155,7 +156,7 @@ export class eBayApiClient {
   async getActiveListingsCount(params: eBaySearchParams): Promise<number> {
     try {
       const client = await this.getClient();
-      const q = this.buildSearchQuery(params);
+      const q = params.customQuery ? params.customQuery : this.buildSearchQuery(params);
 
       // We only need the count, so limit=1 is fine
       // Note: @hendt/ebay-api type definitions might be tricky with 'total'

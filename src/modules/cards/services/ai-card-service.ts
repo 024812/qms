@@ -367,8 +367,13 @@ export class AICardService {
   /**
    * Estimate price based on details using multiple data sources
    */
-  async estimatePrice(details: Partial<CardRecognitionResult>): Promise<PriceEstimateResult> {
-    const cardDetails: CardDetails = {
+  async estimatePrice(
+    details: Partial<CardRecognitionResult> & {
+      customQuery?: string;
+      excludedListingIds?: string[];
+    }
+  ): Promise<PriceEstimateResult> {
+    const cardDetails: CardDetails & { customQuery?: string } = {
       playerName: details.playerName || '',
       year: details.year || undefined,
       brand: details.brand || undefined,
@@ -377,6 +382,7 @@ export class AICardService {
       gradingCompany: details.gradingCompany || undefined,
       grade: details.grade || undefined,
       isAutographed: details.isAutographed === null ? undefined : details.isAutographed,
+      customQuery: details.customQuery,
     };
 
     // 1. Fetch sales data (eBay as primary)
@@ -390,6 +396,12 @@ export class AICardService {
         sales = [...sales, ...webSales];
         sources.push('130Point');
       }
+    }
+
+    // 1b. Apply Exclusions (Phase 3)
+    if (details.excludedListingIds && details.excludedListingIds.length > 0) {
+      const excludeSet = new Set(details.excludedListingIds);
+      sales = sales.filter(s => !excludeSet.has(s.url));
     }
 
     // 2. Data Cleaning: Outlier Detection (IQR)
@@ -503,12 +515,14 @@ export class AICardService {
    * - AI Summary
    */
   async analyzeCardQuick(
-    cardDetails: CardDetails,
+    cardDetails: CardDetails & { customQuery?: string; excludedListingIds?: string[] },
     locale: string = 'en'
   ): Promise<QuickAnalysisResult> {
     const cacheKey = this.generateAnalysisCacheKey(cardDetails);
 
-    // 1. Check Cache
+    // 1. Check Cache (Only if no exclusions/custom query, OR key handles it.
+    // If exclusions are present, we might want to bypass cache or rely on key including them.
+    // Adding exclusions to key is safer.)
     const cached = this.analysisCache.get(cacheKey);
     if (cached && Date.now() - cached.lastUpdated < this.CACHE_TTL) {
       // console.log('Returning cached analysis result');
@@ -517,7 +531,14 @@ export class AICardService {
 
     // 2. Fetch Data (eBay)
     // We get more results than usual to calculate trend
-    const sales = await ebayProvider.getRecentSales(cardDetails);
+    let sales = await ebayProvider.getRecentSales(cardDetails);
+
+    // 2b. Apply Exclusions (Phase 3)
+    if (cardDetails.excludedListingIds && cardDetails.excludedListingIds.length > 0) {
+      const excludeSet = new Set(cardDetails.excludedListingIds);
+      // Filter by URL (assuming it's the ID, or extract Item ID if possible. URL is unique too)
+      sales = sales.filter(s => !excludeSet.has(s.url));
+    }
 
     // Clean data
     const cleanedSales = this.removeOutliers(sales);
@@ -580,8 +601,12 @@ export class AICardService {
     return result;
   }
 
-  private generateAnalysisCacheKey(details: CardDetails): string {
-    return `analysis|${details.year}|${details.playerName}|${details.brand}|${details.series}|${details.cardNumber}|${details.gradingCompany}|${details.grade}`;
+  private generateAnalysisCacheKey(
+    details: CardDetails & { customQuery?: string; excludedListingIds?: string[] }
+  ): string {
+    const base = `analysis|${details.year}|${details.playerName}|${details.brand}|${details.series}|${details.cardNumber}|${details.gradingCompany}|${details.grade}|${details.customQuery || ''}`;
+    const exclusions = details.excludedListingIds?.sort().join(',') || '';
+    return `${base}|ex:[${exclusions}]`;
   }
 
   /**

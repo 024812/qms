@@ -10,6 +10,7 @@ const CardRecognitionSchema = z.object({
   brand: z.string().nullable().optional(),
   series: z.string().nullable().optional(),
   cardNumber: z.string().nullable().optional(),
+  parallel: z.string().nullable().optional(),
   sport: z.enum(['BASKETBALL', 'SOCCER', 'OTHER']).nullable().optional(),
   team: z.string().nullable().optional(),
   position: z.string().nullable().optional(),
@@ -219,6 +220,7 @@ export class AICardService {
                 "brand": "string",
                 "series": "string (optional)",
                 "cardNumber": "string (optional)",
+                "parallel": "string (optional)",
                 "sport": "BASKETBALL" | "SOCCER" | "OTHER",
                 "team": "string (optional)",
                 "position": "string (optional)",
@@ -380,6 +382,7 @@ export class AICardService {
       brand: details.brand || undefined,
       series: details.series || undefined,
       cardNumber: details.cardNumber || undefined,
+      parallel: details.parallel || undefined,
       gradingCompany: details.gradingCompany || undefined,
       grade: details.grade || undefined,
       isAutographed: details.isAutographed === null ? undefined : details.isAutographed,
@@ -614,7 +617,7 @@ export class AICardService {
   private generateAnalysisCacheKey(
     details: CardDetails & { customQuery?: string; excludedListingIds?: string[] }
   ): string {
-    const base = `analysis|${details.year}|${details.playerName}|${details.brand}|${details.series}|${details.cardNumber}|${details.gradingCompany}|${details.grade}|${details.customQuery || ''}`;
+    const base = `analysis|${details.year}|${details.playerName}|${details.brand}|${details.series}|${details.cardNumber}|${details.parallel}|${details.gradingCompany}|${details.grade}|${details.customQuery || ''}`;
     const exclusions = details.excludedListingIds?.sort().join(',') || '';
     return `${base}|ex:[${exclusions}]`;
   }

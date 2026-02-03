@@ -7,6 +7,7 @@ export interface CardDetails {
   brand?: string;
   series?: string;
   cardNumber?: string;
+  parallel?: string;
   gradingCompany?: string;
   grade?: number;
   isAutographed?: boolean;
@@ -33,6 +34,7 @@ export class EbayPriceProvider implements IPriceDataProvider {
       brand: details.brand,
       series: details.series,
       cardNum: details.cardNumber,
+      parallel: details.parallel,
       gradingCompany: details.gradingCompany,
       grade: details.grade,
       isAutographed: details.isAutographed,
@@ -47,6 +49,7 @@ export class EbayPriceProvider implements IPriceDataProvider {
       brand: details.brand,
       series: details.series,
       cardNum: details.cardNumber,
+      parallel: details.parallel,
       gradingCompany: details.gradingCompany,
       grade: details.grade, // Note: active listings might not always have grade populated in the same field, but search query handles it
       isAutographed: details.isAutographed,
@@ -121,7 +124,7 @@ export class CachingPriceProvider implements IPriceDataProvider {
   }
 
   private generateCacheKey(details: CardDetails): string {
-    return `${details.year}|${details.playerName}|${details.brand}|${details.cardNumber}|${details.grade}|${details.customQuery || ''}`;
+    return `${details.year}|${details.playerName}|${details.brand}|${details.cardNumber}|${details.series || ''}|${details.parallel || ''}|${details.grade}|${details.customQuery || ''}`;
   }
 }
 

@@ -40,6 +40,7 @@ export interface eBaySearchParams {
   brand?: string;
   series?: string;
   cardNum?: string;
+  parallel?: string;
   gradingCompany?: string; // PSA, BGS, SGC, etc.
   grade?: number; // 9, 10, etc.
   isAutographed?: boolean;
@@ -226,6 +227,9 @@ export class eBayApiClient {
 
     // Card Number is very specific
     if (params.cardNum) parts.push(`#${params.cardNum}`);
+
+    // Parallel/Variation
+    if (params.parallel) parts.push(params.parallel);
 
     // Grading
     if (params.gradingCompany && params.gradingCompany !== 'UNGRADED') {

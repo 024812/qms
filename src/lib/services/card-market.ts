@@ -30,12 +30,18 @@ export function generateCardSearchQuery(card: {
   brand: string;
   series?: string;
   cardNumber?: string;
+  parallel?: string;
   gradingCompany?: string;
   grade?: number;
 }): string {
-  const parts = [card.year, card.brand, card.playerName, card.series, card.cardNumber].filter(
-    Boolean
-  );
+  const parts = [
+    card.year,
+    card.brand,
+    card.playerName,
+    card.series,
+    card.parallel,
+    card.cardNumber,
+  ].filter(Boolean);
 
   if (card.gradingCompany && card.gradingCompany !== 'UNGRADED' && card.grade) {
     parts.push(`${card.gradingCompany} ${card.grade}`);

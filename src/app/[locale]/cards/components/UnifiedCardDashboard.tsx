@@ -107,8 +107,7 @@ export function UnifiedCardDashboard({ initialData }: UnifiedCardDashboardProps)
     initialData,
     autoSaveOnAISuccess: false,
     onSuccess: () => {
-      toast.success(t('success.updated'));
-      router.refresh();
+      // Success handled by useCardForm (toast + refresh)
     },
   });
 
@@ -139,6 +138,7 @@ export function UnifiedCardDashboard({ initialData }: UnifiedCardDashboardProps)
       brand: form.watch('brand'),
       cardNumber: form.watch('cardNumber') || undefined,
       series: form.watch('series') || undefined,
+      parallel: form.watch('parallel') || undefined,
       gradingCompany: form.watch('gradingCompany') || undefined,
       grade: form.watch('grade') ? Number(form.watch('grade')) : undefined,
     }),

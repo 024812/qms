@@ -38,6 +38,7 @@ interface EstimateParams {
   brand?: string;
   series?: string;
   cardNumber?: string;
+  parallel?: string;
   gradingCompany?: string;
   grade?: number | null;
   isAutographed?: boolean;

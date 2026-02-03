@@ -45,6 +45,7 @@ export interface CardDetailsForAnalysis {
   brand?: string;
   cardNumber?: string;
   series?: string;
+  parallel?: string;
   grade?: number;
   gradingCompany?: string;
 }
@@ -217,14 +218,16 @@ export function MarketAnalysisTab({ data, loading, cardDetails }: MarketAnalysis
                       value={customQuery}
                       placeholder={
                         cardDetails
-                          ? `${cardDetails.year} ${cardDetails.brand} ${cardDetails.playerName}`
+                          ? `${cardDetails.year} ${cardDetails.brand} ${cardDetails.playerName} ${cardDetails.series || ''} ${cardDetails.parallel || ''}`
+                              .replace(/\s+/g, ' ')
+                              .trim()
                           : 'Enter search terms'
                       }
                       onChange={e => setCustomQuery(e.target.value)}
                     />
                     <p className="text-xs text-muted-foreground">
                       Defaults to: {cardDetails?.year} {cardDetails?.brand}{' '}
-                      {cardDetails?.playerName} {cardDetails?.cardNumber}
+                      {cardDetails?.playerName} {cardDetails?.cardNumber} {cardDetails?.parallel}
                     </p>
                   </div>
                 </div>

@@ -320,8 +320,8 @@ export function useCardForm({
 
   const submitForm = useCallback(
     async (values: FormValues) => {
-      dispatch({ type: 'START_SAVE' });
-      try {
+      const promise = async () => {
+        dispatch({ type: 'START_SAVE' });
         const payload = {
           ...values,
           id: initialData?.id,
@@ -330,15 +330,20 @@ export function useCardForm({
         };
 
         await saveCard(payload);
-        toast.success(initialData?.id ? t('updateSuccess') : t('createSuccess'));
         router.refresh();
         dispatch({ type: 'SAVE_SUCCESS' });
         onSuccess?.();
-      } catch (error) {
-        console.error('Save error:', error);
-        toast.error(error instanceof Error ? error.message : t('errors.saveFailed'));
-        dispatch({ type: 'SAVE_ERROR' });
-      }
+      };
+
+      toast.promise(promise(), {
+        loading: t('saving'),
+        success: initialData?.id ? t('updateSuccess') : t('createSuccess'),
+        error: error => {
+          console.error('Save error:', error);
+          dispatch({ type: 'SAVE_ERROR' });
+          return error instanceof Error ? error.message : t('errors.saveFailed');
+        },
+      });
     },
     [initialData, router, onSuccess, t]
   );

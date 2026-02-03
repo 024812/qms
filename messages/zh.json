@@ -224,6 +224,8 @@
       "currentValue": "当前估值 ($)",
       "purchasePrice": "买入价格 ($)",
       "purchaseDate": "买入日期",
+      "soldPrice": "售出价格",
+      "soldDate": "售出日期",
       "autographed": "亲笔签名",
       "memorabilia": "实物切割 (Jersey/Patch)",
       "serialNumber": "限量编号",
@@ -246,6 +248,8 @@
       "createSuccess": "卡片创建成功",
       "updateSuccess": "卡片更新成功",
       "priceEstimated": "价格估算完成",
+      "saving": "正在保存...",
+      "scanning": "正在扫描...",
       "autoSaving": "已检测到足够信息，自动保存中...",
       "smartScanHint": "上传卡片照片，AI 将自动识别信息",
       "rescanHint": "使用 AI 重新扫描并更新卡片信息",
@@ -393,7 +397,6 @@
         }
       }
     },
-
     "settings": {
       "title": "球星卡管理设置",
       "subtitle": "配置球星卡模块的AI服务（仅管理员）",

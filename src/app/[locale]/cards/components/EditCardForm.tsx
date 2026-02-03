@@ -92,9 +92,11 @@ export function EditCardForm({ initialData, onSuccess }: EditCardFormProps) {
   };
 
   return (
-    <div className="flex flex-col lg:flex-row gap-6">
+    <div className="flex flex-col xl:flex-row gap-8">
       {/* Main Form Area */}
-      <div className="flex-1 min-w-0">
+      <div
+        className={`flex-1 min-w-0 transition-all duration-300 ${showAnalysis ? 'xl:max-w-[60%]' : 'w-full'}`}
+      >
         <FormProvider {...form}>
           <form onSubmit={handleSubmit} className="space-y-6">
             {/* Risk Warning from AI */}
@@ -221,7 +223,7 @@ export function EditCardForm({ initialData, onSuccess }: EditCardFormProps) {
 
       {/* Analysis Panel */}
       {showAnalysis && (
-        <div className="w-full lg:w-1/3 min-w-[400px] shrink-0 border-t lg:border-t-0 lg:border-l pl-0 lg:pl-6 pt-6 lg:pt-0">
+        <div className="flex-1 min-w-[350px] border-t xl:border-t-0 xl:border-l pl-0 xl:pl-8 pt-8 xl:pt-0">
           <AnalysisPanel
             data={analysisResult}
             loading={analyzing}

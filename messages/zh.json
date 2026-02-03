@@ -301,6 +301,9 @@
         "SOCCER": "足球",
         "OTHER": "其他"
       },
+      "estimate": {
+        "estimatePrice": "价格估算"
+      },
       "status": {
         "COLLECTION": "收藏中",
         "FOR_SALE": "待售",
@@ -355,12 +358,12 @@
           "GRADE": "建议评级 (GRADE)",
           "HOLD": "建议持有 (HOLD)",
           "SELL": "建议出售 (SELL)",
-          "DONT_GRADE": "不建议评级"
+          "SELL_RAW": "建议出售裸卡",
+          "SELL_GRADED": "建议评级后出售",
+          "DONT_GRADE": "不建议评级",
+          "KEEP": "建议收藏"
         }
       }
-    },
-    "estimate": {
-      "estimatePrice": "价格估算"
     },
 
     "settings": {

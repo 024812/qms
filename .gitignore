@@ -62,3 +62,11 @@ venv.bak/
 
 
 .agent/
+
+# System Files
+desktop.ini
+*.swp
+*.swo
+
+# Documentation Artifacts
+design_system_output.md

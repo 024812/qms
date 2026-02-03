@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from 'next';
-import { Inter } from 'next/font/google';
+import { Inter, Fira_Code } from 'next/font/google';
 import { Suspense } from 'react';
 import '@/app/globals.css';
 import { SessionProvider } from '@/components/providers/SessionProvider';
@@ -15,7 +15,8 @@ import { getMessages, setRequestLocale } from 'next-intl/server';
 import { notFound } from 'next/navigation';
 import { routing } from '@/i18n/routing';
 
-const inter = Inter({ subsets: ['latin'] });
+const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
+const firaCode = Fira_Code({ subsets: ['latin'], variable: '--font-fira-code' });
 
 export const metadata: Metadata = {
   title: 'QMS - 家庭被子管理系统',
@@ -65,7 +66,10 @@ export default async function LocaleLayout({
 
   return (
     <html lang={locale} className="h-full" suppressHydrationWarning>
-      <body className={`${inter.className} h-full`} suppressHydrationWarning>
+      <body
+        className={`${inter.variable} ${firaCode.variable} font-sans h-full`}
+        suppressHydrationWarning
+      >
         <ThemeProvider defaultTheme="system" storageKey="qms-theme">
           <ErrorBoundary>
             <SessionProvider>

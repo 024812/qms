@@ -55,6 +55,15 @@
   "cards": {
     "title": "球星卡收藏",
     "subtitle": "管理您的球星卡收藏，支持 AI 识别和价值追踪",
+    "success": {
+      "deleted": "删除成功",
+      "updated": "更新成功"
+    },
+    "errors": {
+      "deleteFailed": "删除失败",
+      "generic": "发生错误",
+      "analysisFailed": "分析失败"
+    },
     "actions": {
       "add": "添加卡片",
       "import": "批量导入",
@@ -64,7 +73,9 @@
       "edit": "编辑",
       "clone": "复制",
       "delete": "删除",
-      "viewDetails": "查看详情"
+      "viewDetails": "查看详情",
+      "deleteTitle": "删除确认",
+      "deleteConfirm": "您确定要删除这张卡片吗？此操作无法撤销。"
     },
     "empty": {
       "title": "暂无球星卡",
@@ -220,6 +231,10 @@
       "storageType": "存储方式",
       "condition": "品相描述",
       "notes": "备注",
+      "delete": "删除",
+      "saveChanges": "保存更改",
+      "saved": "已保存",
+      "refresh": "刷新",
       "save": "保存卡片",
       "cancel": "取消",
       "success": "成功",
@@ -252,7 +267,15 @@
         "autoDetect": "从图片自动检测卡片详情",
         "noRisksDetected": "未检测到真伪风险。"
       },
-      "editTitle": "编辑球星卡"
+      "editTitle": "编辑球星卡",
+      "backToList": "返回列表",
+      "sections": {
+        "identity": "身份信息",
+        "market": "市场情报",
+        "valuation": "估值与资产",
+        "grading": "评级数据",
+        "physical": "物理与仓储"
+      }
     },
     "messages": {
       "noCardsFound": "未找到球星卡"

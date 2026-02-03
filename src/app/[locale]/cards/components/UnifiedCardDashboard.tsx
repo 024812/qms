@@ -27,7 +27,6 @@ import {
 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
-import { Alert, AlertDescription } from '@/components/ui/alert';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -39,8 +38,13 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
+import { Badge } from '@/components/ui/badge';
+import { cn } from '@/lib/utils';
+import { motion } from 'framer-motion';
 
 import { CardImageUpload } from '@/components/cards/CardImageUpload';
+import { GlassPanel } from '@/components/ui/glass-panel';
+import { calculateROI } from '@/modules/cards/utils';
 import { PlayerInfoFields } from './form-parts/PlayerInfoFields';
 import { CardDetailsFields } from './form-parts/CardDetailsFields';
 import { GradingFields } from './form-parts/GradingFields';
@@ -81,21 +85,24 @@ export function UnifiedCardDashboard({ initialData }: UnifiedCardDashboardProps)
     authCheckResult,
   } = useCardForm({
     initialData,
-    autoSaveOnAISuccess: false, // Manual save only
+    autoSaveOnAISuccess: false,
     onSuccess: () => {
       toast.success(t('success.updated'));
-      router.refresh(); // Refresh server data
+      router.refresh();
     },
   });
 
   // Analysis State
-  // Default to showing analysis if we have data, or if user wants it.
-  // We'll keep it collapsible or always visible on large screens?
-  // Let's make it always visible in the 3rd column if space permits.
   const [analyzing, setAnalyzing] = useState(false);
   const [analysisResult, setAnalysisResult] = useState<QuickAnalysisResult | null>(null);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+
+  // Computed Values for Header
+  const purchasePrice = form.watch('purchasePrice');
+  const maxPrice = form.watch('currentValue') || 0;
+  const roi = calculateROI(purchasePrice || undefined, maxPrice || undefined);
+  const isPositiveROI = roi.startsWith('+');
 
   // Analysis Handler
   const handleAnalysis = async () => {
@@ -120,7 +127,7 @@ export function UnifiedCardDashboard({ initialData }: UnifiedCardDashboardProps)
       setAnalysisResult(result);
     } catch (error) {
       console.error(error);
-      toast.error('Analysis failed');
+      toast.error(tCards('errors.analysisFailed'));
     } finally {
       setAnalyzing(false);
     }
@@ -143,210 +150,345 @@ export function UnifiedCardDashboard({ initialData }: UnifiedCardDashboardProps)
   const hasUnsavedChanges =
     form.formState.isDirty || Object.keys(form.formState.dirtyFields).length > 0;
 
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.1,
+        delayChildren: 0.2,
+      },
+    },
+  };
+
   return (
-    <div className="space-y-6">
-      {/* Header Actions */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 sticky top-0 z-10 bg-background/95 backdrop-blur py-2 border-b">
-        <div className="flex items-center gap-2">
-          <Button variant="ghost" size="sm" asChild>
-            <Link href="/cards">
-              <ChevronLeft className="w-4 h-4 mr-1" />
-              {tCards('backToList')}
-            </Link>
-          </Button>
-          <div className="hidden md:block w-px h-6 bg-border mx-2" />
-          <h1 className="text-xl font-bold truncate max-w-[200px] md:max-w-md">
-            {form.watch('year')} {form.watch('brand')} {form.watch('playerName')}
-          </h1>
-        </div>
+    <div className="min-h-screen bg-black text-slate-100 p-4 font-sans selection:bg-cyan-500/30">
+      <div className="max-w-[1600px] mx-auto space-y-6">
+        {/* === HEADER === */}
+        <header className="sticky top-4 z-50 rounded-2xl border border-white/10 bg-black/60 backdrop-blur-xl px-6 py-4 shadow-2xl flex flex-wrap items-center justify-between gap-4">
+          <div className="flex items-center gap-4">
+            <Button
+              variant="ghost"
+              size="icon"
+              asChild
+              className="rounded-full text-slate-400 hover:text-white hover:bg-white/10"
+            >
+              <Link href="/cards">
+                <ChevronLeft className="w-5 h-5" />
+              </Link>
+            </Button>
+            <div>
+              <h1 className="text-2xl font-bold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-white to-slate-400">
+                {form.watch('year') || 'Year'} {form.watch('brand') || 'Brand'}
+              </h1>
+              <p className="text-sm text-cyan-400 font-mono tracking-wide">
+                {form.watch('playerName') || 'Player Name'}
+              </p>
+            </div>
+          </div>
 
-        <div className="flex items-center gap-2 w-full sm:w-auto">
-          {/* Delete */}
-          <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
-            <AlertDialogTrigger asChild>
+          <div className="flex items-center gap-6">
+            {/* Quick Stats in Header */}
+            <div className="hidden lg:flex items-center gap-6 px-6 border-l border-r border-white/10">
+              <div className="flex flex-col items-end">
+                <span className="text-[10px] uppercase tracking-wider text-slate-500 font-bold">
+                  Current Value
+                </span>
+                <span className="text-lg font-mono font-bold text-emerald-400">
+                  ${maxPrice?.toLocaleString()}
+                </span>
+              </div>
+              <div className="flex flex-col items-end">
+                <span className="text-[10px] uppercase tracking-wider text-slate-500 font-bold">
+                  ROI
+                </span>
+                <Badge
+                  variant="outline"
+                  className={cn(
+                    'font-mono border-0 bg-white/5',
+                    isPositiveROI ? 'text-emerald-400' : 'text-rose-400'
+                  )}
+                >
+                  {roi}
+                </Badge>
+              </div>
+            </div>
+
+            {/* Actions */}
+            <div className="flex items-center gap-2">
+              <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
+                <AlertDialogTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="text-rose-500 hover:text-rose-400 hover:bg-rose-500/10 rounded-full"
+                  >
+                    <Trash2 className="w-5 h-5" />
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent className="bg-zinc-950 border-white/10 text-white">
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>{tCards('actions.deleteTitle')}</AlertDialogTitle>
+                    <AlertDialogDescription className="text-slate-400">
+                      {tCards('actions.deleteConfirm', {
+                        card: `${initialData.year} ${initialData.brand} ${initialData.playerName}`,
+                      })}
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel className="bg-transparent border-white/10 hover:bg-white/5 text-slate-300">
+                      {t('cancel')}
+                    </AlertDialogCancel>
+                    <AlertDialogAction
+                      onClick={handleDelete}
+                      className="bg-rose-600 hover:bg-rose-700 text-white border-0"
+                    >
+                      {isDeleting ? <Loader2 className="animate-spin w-4 h-4" /> : t('delete')}
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+
               <Button
-                variant="ghost"
-                size="sm"
-                className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                onClick={handleSubmit}
+                disabled={loading || !hasUnsavedChanges}
+                className={cn(
+                  'rounded-full px-6 font-medium transition-all duration-300 shadow-[0_0_20px_-5px_rgba(255,255,255,0.3)]',
+                  hasUnsavedChanges
+                    ? 'bg-cyan-500 hover:bg-cyan-400 text-black hover:shadow-cyan-500/50'
+                    : 'bg-white/10 text-slate-400 hover:bg-white/20'
+                )}
               >
-                <Trash2 className="w-4 h-4 mr-2" />
-                <span className="hidden sm:inline">{t('delete')}</span>
+                {loading ? (
+                  <Loader2 className="animate-spin mr-2 h-4 w-4" />
+                ) : (
+                  <Save className="mr-2 h-4 w-4" />
+                )}
+                {hasUnsavedChanges ? t('saveChanges') : t('saved')}
               </Button>
-            </AlertDialogTrigger>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>{tCards('actions.deleteTitle')}</AlertDialogTitle>
-                <AlertDialogDescription>
-                  {tCards('actions.deleteConfirm', {
-                    card: `${initialData.year} ${initialData.brand} ${initialData.playerName}`,
-                  })}
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel>{t('cancel')}</AlertDialogCancel>
-                <AlertDialogAction
-                  onClick={handleDelete}
-                  className="bg-destructive hover:bg-destructive/90"
-                >
-                  {isDeleting ? <Loader2 className="animate-spin w-4 h-4" /> : t('delete')}
-                </AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
+            </div>
+          </div>
+        </header>
 
-          {/* Save */}
-          <Button
-            onClick={handleSubmit}
-            disabled={loading || !hasUnsavedChanges}
-            variant={hasUnsavedChanges ? 'default' : 'secondary'}
-            className="flex-1 sm:flex-none min-w-[100px]"
+        {/* === BENTO GRID === */}
+        <FormProvider {...form}>
+          <motion.div
+            variants={containerVariants}
+            initial="hidden"
+            animate="visible"
+            className="grid grid-cols-1 md:grid-cols-12 gap-6 pb-12"
           >
-            {loading ? (
-              <Loader2 className="animate-spin mr-2 h-4 w-4" />
-            ) : (
-              <Save className="mr-2 h-4 w-4" />
-            )}
-            {hasUnsavedChanges ? t('saveChanges') : t('saved')}
-          </Button>
-        </div>
+            {/* 1. HERO SLAB (Top Left) - 4 cols */}
+            <div className="md:col-span-4 lg:col-span-3 row-span-2">
+              <GlassPanel
+                className="h-full flex flex-col p-4 relative group"
+                variant="slab"
+                hoverEffect
+              >
+                <div className="absolute top-4 right-4 z-20">
+                  <Badge className="bg-amber-500/20 text-amber-300 border-amber-500/50 backdrop-blur-md">
+                    {form.watch('grade')
+                      ? `${form.watch('gradingCompany')} ${form.watch('grade')}`
+                      : 'RAW'}
+                  </Badge>
+                </div>
+                <div className="flex-1 flex items-center justify-center p-2">
+                  <div className="relative w-full aspect-[3/4] transition-transform duration-500 group-hover:scale-105 group-hover:rotate-1">
+                    <CardImageUpload
+                      frontImage={form.watch('frontImage') || form.watch('mainImage') || ''}
+                      backImage={form.watch('backImage') || ''}
+                      onFrontImageChange={img =>
+                        form.setValue('frontImage', img, { shouldDirty: true })
+                      }
+                      onBackImageChange={img =>
+                        form.setValue('backImage', img, { shouldDirty: true })
+                      }
+                    />
+                    {/* Gloss Reflection */}
+                    <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none rounded-lg" />
+                  </div>
+                </div>
+
+                {/* AI Tools Bar */}
+                <div className="mt-4 grid grid-cols-3 gap-2">
+                  <TooltipButton
+                    onClick={handleSmartScan}
+                    loading={aiScanning}
+                    icon={<Sparkles className="w-4 h-4 text-cyan-400" />}
+                    label={tCards('actions.smartScan')}
+                  />
+
+                  <TooltipButton
+                    onClick={handleAuthenticityCheck}
+                    loading={checkingAuthenticity}
+                    icon={<ShieldCheck className="w-4 h-4 text-emerald-400" />}
+                    label={tCards('actions.checkAuthenticity')}
+                  />
+                  <TooltipButton
+                    onClick={handleEstimatePrice}
+                    loading={estimating}
+                    icon={<BarChart3 className="w-4 h-4 text-violet-400" />}
+                    label={tCards('actions.estimatePrice')}
+                  />
+                </div>
+                {/* AI Alerts Overlay */}
+                <div className="absolute bottom-20 left-4 right-4 space-y-2 pointer-events-none">
+                  {riskWarning && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="bg-red-500/90 text-white text-xs p-2 rounded backdrop-blur-md shadow-lg border border-red-400"
+                    >
+                      {riskWarning}
+                    </motion.div>
+                  )}
+                  {imageQualityFeedback && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="bg-amber-500/90 text-white text-xs p-2 rounded backdrop-blur-md shadow-lg border border-amber-400"
+                    >
+                      {imageQualityFeedback}
+                    </motion.div>
+                  )}
+                  {authCheckResult === 'SAFE' && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="bg-emerald-500/90 text-white text-xs p-2 rounded backdrop-blur-md shadow-lg border border-emerald-400 flex items-center gap-2"
+                    >
+                      <ShieldCheck className="w-3 h-3" />
+                      {t('ai.noRisksDetected')}
+                    </motion.div>
+                  )}
+                </div>
+              </GlassPanel>
+            </div>
+
+            {/* 2. IDENTITY (Top Mid) - 5 cols */}
+            <div className="md:col-span-8 lg:col-span-5">
+              <GlassPanel className="p-6 h-full border-t-4 border-t-cyan-500">
+                <div className="flex items-center gap-2 mb-6 text-cyan-500">
+                  <Sparkles className="w-5 h-5" />
+                  <h3 className="font-bold tracking-wider text-sm uppercase">
+                    {t('sections.identity')}
+                  </h3>
+                </div>
+                <div className="space-y-6">
+                  <PlayerInfoFields />
+                  <div className="h-px bg-white/5 my-4" />
+                  <CardDetailsFields />
+                </div>
+              </GlassPanel>
+            </div>
+
+            {/* 3. MARKET INTEL (Top Right) - 4 cols */}
+            <div className="md:col-span-12 lg:col-span-4 row-span-2">
+              <GlassPanel className="h-full flex flex-col">
+                <div className="p-4 border-b border-white/5 bg-white/5 flex justify-between items-center">
+                  <div className="flex items-center gap-2 text-violet-400">
+                    <TrendingUp className="w-5 h-5" />
+                    <h3 className="font-bold tracking-wider text-sm uppercase">
+                      {t('sections.market')}
+                    </h3>
+                  </div>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={handleAnalysis}
+                    disabled={analyzing}
+                    className="h-8 w-8 p-0 rounded-full hover:bg-white/10"
+                  >
+                    {analyzing ? (
+                      <Loader2 className="animate-spin w-4 h-4" />
+                    ) : (
+                      <Sparkles className="w-4 h-4" />
+                    )}
+                  </Button>
+                </div>
+                <div className="flex-1 p-0 overflow-hidden relative">
+                  <div className="absolute inset-0 overflow-y-auto custom-scrollbar">
+                    <AnalysisPanel
+                      data={analysisResult}
+                      loading={analyzing}
+                      cardDetails={{
+                        playerName: form.watch('playerName'),
+                        year: form.watch('year'),
+                        brand: form.watch('brand'),
+                        cardNumber: form.watch('cardNumber') || undefined,
+                        series: form.watch('series') || undefined,
+                        gradingCompany: form.watch('gradingCompany') || undefined,
+                        grade: form.watch('grade') ? Number(form.watch('grade')) : undefined,
+                      }}
+                    />
+                  </div>
+                </div>
+              </GlassPanel>
+            </div>
+
+            {/* 4. VALUATION (Mid Mid) - 5 cols */}
+            <div className="md:col-span-8 lg:col-span-5">
+              <GlassPanel className="p-6 border-t-4 border-t-emerald-500">
+                <div className="flex items-center gap-2 mb-6 text-emerald-400">
+                  <BarChart3 className="w-5 h-5" />
+                  <h3 className="font-bold tracking-wider text-sm uppercase">
+                    {t('sections.valuation')}
+                  </h3>
+                </div>
+                <ValueFields />
+              </GlassPanel>
+            </div>
+
+            {/* 5. DETAILS (Bottom) - 8 cols */}
+            <div className="md:col-span-12 lg:col-span-8">
+              <GlassPanel className="p-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                  <div>
+                    <h3 className="font-bold tracking-wider text-sm uppercase text-slate-500 mb-4">
+                      {t('sections.grading')}
+                    </h3>
+                    <GradingFields />
+                  </div>
+                  <div>
+                    <h3 className="font-bold tracking-wider text-sm uppercase text-slate-500 mb-4">
+                      {t('sections.physical')}
+                    </h3>
+                    <AdvancedDetailsFields />
+                  </div>
+                </div>
+              </GlassPanel>
+            </div>
+          </motion.div>
+        </FormProvider>
       </div>
-
-      <FormProvider {...form}>
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-          {/* LEFT COLUMN: Images & AI Tools (3/12) */}
-          <div className="lg:col-span-3 space-y-6">
-            <div className="space-y-4">
-              <CardImageUpload
-                frontImage={form.watch('frontImage') || form.watch('mainImage') || ''}
-                backImage={form.watch('backImage') || ''}
-                onFrontImageChange={img => form.setValue('frontImage', img, { shouldDirty: true })}
-                onBackImageChange={img => form.setValue('backImage', img, { shouldDirty: true })}
-              />
-
-              {/* AI Feedback Alerts */}
-              {riskWarning && (
-                <Alert variant="destructive" className="py-2">
-                  <AlertDescription className="text-xs">{riskWarning}</AlertDescription>
-                </Alert>
-              )}
-              {imageQualityFeedback && (
-                <Alert className="py-2">
-                  <AlertDescription className="text-xs">{imageQualityFeedback}</AlertDescription>
-                </Alert>
-              )}
-              {authCheckResult === 'SAFE' && (
-                <Alert className="border-green-500 text-green-700 bg-green-50 py-2">
-                  <ShieldCheck className="h-4 w-4 stroke-green-600" />
-                  <AlertDescription className="text-green-700 text-xs font-medium ml-2">
-                    {t('ai.noRisksDetected')}
-                  </AlertDescription>
-                </Alert>
-              )}
-
-              {/* Tools */}
-              <div className="flex flex-col gap-2">
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={handleSmartScan}
-                  disabled={aiScanning || loading}
-                  className="justify-start"
-                >
-                  {aiScanning ? (
-                    <Loader2 className="animate-spin mr-2 h-3 w-3" />
-                  ) : (
-                    <Sparkles className="mr-2 h-3 w-3 text-blue-500" />
-                  )}
-                  {tCards('actions.smartScan')}
-                </Button>
-
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={handleAuthenticityCheck}
-                  disabled={checkingAuthenticity || loading}
-                  className="justify-start"
-                >
-                  {checkingAuthenticity ? (
-                    <Loader2 className="animate-spin mr-2 h-3 w-3" />
-                  ) : (
-                    <ShieldCheck className="mr-2 h-3 w-3 text-green-500" />
-                  )}
-                  {tCards('actions.checkAuthenticity')}
-                </Button>
-
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={handleEstimatePrice}
-                  disabled={estimating || loading}
-                  className="justify-start"
-                >
-                  {estimating ? (
-                    <Loader2 className="animate-spin mr-2 h-3 w-3" />
-                  ) : (
-                    <BarChart3 className="mr-2 h-3 w-3 text-emerald-500" />
-                  )}
-                  {tCards('actions.estimatePrice')}
-                </Button>
-              </div>
-            </div>
-          </div>
-
-          {/* MIDDLE COLUMN: Form Fields (5/12) */}
-          <div className="lg:col-span-5 space-y-6">
-            {/* Player Info */}
-            <PlayerInfoFields />
-
-            {/* Card Details */}
-            <CardDetailsFields />
-
-            {/* Grading */}
-            <GradingFields />
-
-            {/* Value */}
-            <ValueFields />
-
-            {/* Physical & Storage */}
-            <AdvancedDetailsFields />
-          </div>
-
-          {/* RIGHT COLUMN: Analysis (4/12) */}
-          <div className="lg:col-span-4 space-y-6">
-            {/* Always show Analysis Panel Wrapper */}
-            <div className="bg-muted/30 rounded-lg p-1">
-              <div className="p-4 flex items-center justify-between border-b bg-background rounded-t-lg">
-                <h3 className="font-semibold flex items-center gap-2">
-                  <TrendingUp className="w-4 h-4" />
-                  {tCards('analysis.title')}
-                </h3>
-                <Button size="sm" variant="ghost" onClick={handleAnalysis} disabled={analyzing}>
-                  {analyzing ? <Loader2 className="animate-spin w-4 h-4" /> : t('refresh')}
-                </Button>
-              </div>
-
-              <div className="p-0">
-                <AnalysisPanel
-                  data={analysisResult}
-                  loading={analyzing}
-                  cardDetails={{
-                    playerName: form.watch('playerName'),
-                    year: form.watch('year'),
-                    brand: form.watch('brand'),
-                    cardNumber: form.watch('cardNumber') || undefined,
-                    series: form.watch('series') || undefined,
-                    gradingCompany: form.watch('gradingCompany') || undefined,
-                    grade: form.watch('grade') ? Number(form.watch('grade')) : undefined,
-                  }}
-                />
-              </div>
-            </div>
-          </div>
-        </div>
-      </FormProvider>
     </div>
+  );
+}
+
+function TooltipButton({
+  onClick,
+  loading,
+  icon,
+  label,
+}: {
+  onClick: () => void;
+  loading: boolean;
+  icon: React.ReactNode;
+  label: string;
+}) {
+  return (
+    <Button
+      type="button"
+      variant="ghost"
+      onClick={onClick}
+      disabled={loading}
+      className={cn(
+        'h-12 flex flex-col items-center justify-center gap-1 rounded-xl border border-white/5 bg-black/20 hover:bg-white/10 hover:border-white/20 transition-all',
+        loading && 'opacity-50 cursor-not-allowed'
+      )}
+    >
+      {loading ? <Loader2 className="w-4 h-4 animate-spin text-slate-400" /> : icon}
+      <span className="text-[10px] uppercase font-bold text-slate-400">{label}</span>
+    </Button>
   );
 }

@@ -10,8 +10,9 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: var(--font-inter), var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-mono:
+    var(--font-fira-code), var(--font-geist-mono), ui-monospace, SFMono-Regular, monospace;
   /* Design System Font Families */
   --font-heading: 'Archivo', var(--font-geist-sans), sans-serif;
   --font-body: 'Space Grotesk', var(--font-geist-sans), sans-serif;
@@ -80,79 +81,79 @@
   /* Style: Minimal, Spacious, Functional */
 
   /* Background - Light Violet Tint #FAF5FF */
-  --background: #FAF5FF;
-  --foreground: #1E293B;
+  --background: #faf5ff;
+  --foreground: #1e293b;
   /* Dark Slate for text */
 
   /* Card with subtle elevation */
-  --card: #FFFFFF;
-  --card-foreground: #1E293B;
+  --card: #ffffff;
+  --card-foreground: #1e293b;
 
-  --popover: #FFFFFF;
-  --popover-foreground: #1E293B;
+  --popover: #ffffff;
+  --popover-foreground: #1e293b;
 
   /* Primary - Violet #7C3AED */
-  --primary: #7C3AED;
-  --primary-foreground: #FFFFFF;
+  --primary: #7c3aed;
+  --primary-foreground: #ffffff;
 
   /* Secondary - Light Violet #A78BFA with transparency usually */
-  --secondary: #EDE9FE;
-  --secondary-foreground: #5B21B6;
+  --secondary: #ede9fe;
+  --secondary-foreground: #5b21b6;
 
   /* Muted */
-  --muted: #F3F4F6;
-  --muted-foreground: #64748B;
+  --muted: #f3f4f6;
+  --muted-foreground: #64748b;
 
   /* Accent */
-  --accent: #F5F3FF;
-  --accent-foreground: #7C3AED;
+  --accent: #f5f3ff;
+  --accent-foreground: #7c3aed;
 
   /* CTA - Orange #F97316 */
-  --cta: #F97316;
-  --cta-foreground: #FFFFFF;
+  --cta: #f97316;
+  --cta-foreground: #ffffff;
 
   /* Destructive red */
-  --destructive: #EF4444;
-  --destructive-foreground: #FFFFFF;
+  --destructive: #ef4444;
+  --destructive-foreground: #ffffff;
 
   /* Success green */
-  --success: #10B981;
-  --success-foreground: #FFFFFF;
+  --success: #10b981;
+  --success-foreground: #ffffff;
 
   /* Warning orange/amber */
-  --warning: #F59E0B;
-  --warning-foreground: #FFFFFF;
+  --warning: #f59e0b;
+  --warning-foreground: #ffffff;
 
   /* Info blue */
-  --info: #3B82F6;
-  --info-foreground: #FFFFFF;
+  --info: #3b82f6;
+  --info-foreground: #ffffff;
 
   /* Borders and inputs - Light Border #E2E8F0 */
-  --border: #E2E8F0;
-  --input: #E2E8F0;
-  --ring: #7C3AED;
+  --border: #e2e8f0;
+  --input: #e2e8f0;
+  --ring: #7c3aed;
 
   /* Chart colors */
-  --chart-1: #7C3AED;
+  --chart-1: #7c3aed;
   /* Violet */
-  --chart-2: #F97316;
+  --chart-2: #f97316;
   /* Orange */
-  --chart-3: #10B981;
+  --chart-3: #10b981;
   /* Emerald */
-  --chart-4: #F59E0B;
+  --chart-4: #f59e0b;
   /* Amber */
-  --chart-5: #3B82F6;
+  --chart-5: #3b82f6;
   /* Blue */
 
   /* Sidebar */
-  --sidebar: #FFFFFF;
-  --sidebar-foreground: #1E293B;
-  --sidebar-primary: #7C3AED;
-  --sidebar-primary-foreground: #FFFFFF;
-  --sidebar-accent: #F5F3FF;
-  --sidebar-accent-foreground: #7C3AED;
-  --sidebar-border: #E2E8F0;
-  --sidebar-ring: #7C3AED;
+  --sidebar: #ffffff;
+  --sidebar-foreground: #1e293b;
+  --sidebar-primary: #7c3aed;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #f5f3ff;
+  --sidebar-accent-foreground: #7c3aed;
+  --sidebar-border: #e2e8f0;
+  --sidebar-ring: #7c3aed;
 
   /* Spacing Variables */
   --space-xs: 0.25rem;
@@ -181,75 +182,75 @@
   /* ===== UI/UX Pro Max Dark Mode Colors ===== */
   /* Maintains proper contrast while using design system palette */
 
-  --background: #0F172A;
+  --background: #0f172a;
   /* Slate 900 */
-  --foreground: #F8FAFC;
+  --foreground: #f8fafc;
   /* Slate 50 */
 
-  --card: #1E293B;
+  --card: #1e293b;
   /* Slate 800 */
-  --card-foreground: #F8FAFC;
+  --card-foreground: #f8fafc;
 
-  --popover: #1E293B;
-  --popover-foreground: #F8FAFC;
+  --popover: #1e293b;
+  --popover-foreground: #f8fafc;
 
   /* Primary - Violet (lighter for dark mode) */
-  --primary: #8B5CF6;
-  --primary-foreground: #FFFFFF;
+  --primary: #8b5cf6;
+  --primary-foreground: #ffffff;
 
   /* Secondary */
-  --secondary: #1E293B;
-  --secondary-foreground: #A78BFA;
+  --secondary: #1e293b;
+  --secondary-foreground: #a78bfa;
 
   /* Muted */
   --muted: #334155;
-  --muted-foreground: #94A3B8;
+  --muted-foreground: #94a3b8;
 
   /* Accent */
-  --accent: #2E1065;
-  --accent-foreground: #DDD6FE;
+  --accent: #2e1065;
+  --accent-foreground: #ddd6fe;
 
   /* CTA - Orange */
-  --cta: #FB923C;
-  --cta-foreground: #1E293B;
+  --cta: #fb923c;
+  --cta-foreground: #1e293b;
 
   /* Destructive */
-  --destructive: #EF4444;
-  --destructive-foreground: #FFFFFF;
+  --destructive: #ef4444;
+  --destructive-foreground: #ffffff;
 
   /* Success */
-  --success: #22C55E;
-  --success-foreground: #FFFFFF;
+  --success: #22c55e;
+  --success-foreground: #ffffff;
 
   /* Warning */
-  --warning: #FBBF24;
-  --warning-foreground: #1E293B;
+  --warning: #fbbf24;
+  --warning-foreground: #1e293b;
 
   /* Info */
-  --info: #38BDF8;
-  --info-foreground: #1E293B;
+  --info: #38bdf8;
+  --info-foreground: #1e293b;
 
   /* Borders and inputs */
   --border: #334155;
   --input: #475569;
-  --ring: #8B5CF6;
+  --ring: #8b5cf6;
 
   /* Chart colors */
-  --chart-1: #8B5CF6;
-  --chart-2: #FB923C;
-  --chart-3: #22C55E;
-  --chart-4: #FBBF24;
-  --chart-5: #38BDF8;
+  --chart-1: #8b5cf6;
+  --chart-2: #fb923c;
+  --chart-3: #22c55e;
+  --chart-4: #fbbf24;
+  --chart-5: #38bdf8;
 
   /* Sidebar */
-  --sidebar: #1E293B;
-  --sidebar-foreground: #F8FAFC;
-  --sidebar-primary: #8B5CF6;
-  --sidebar-primary-foreground: #FFFFFF;
+  --sidebar: #1e293b;
+  --sidebar-foreground: #f8fafc;
+  --sidebar-primary: #8b5cf6;
+  --sidebar-primary-foreground: #ffffff;
   --sidebar-accent: #334155;
-  --sidebar-accent-foreground: #F8FAFC;
+  --sidebar-accent-foreground: #f8fafc;
   --sidebar-border: #334155;
-  --sidebar-ring: #8B5CF6;
+  --sidebar-ring: #8b5cf6;
 
   /* Shadows (adjusted for dark mode visibility) */
   --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
@@ -287,7 +288,6 @@
 
 /* Respect user's reduced motion preference */
 @media (prefers-reduced-motion: reduce) {
-
   *,
   *::before,
   *::after {
@@ -299,33 +299,32 @@
 }
 
 @layer utilities {
-
   /* ===== Spacing Utilities ===== */
-  .space-xs>*+* {
+  .space-xs > * + * {
     margin-top: 0.25rem;
   }
 
-  .space-sm>*+* {
+  .space-sm > * + * {
     margin-top: 0.5rem;
   }
 
-  .space-md>*+* {
+  .space-md > * + * {
     margin-top: 1rem;
   }
 
-  .space-lg>*+* {
+  .space-lg > * + * {
     margin-top: 1.5rem;
   }
 
-  .space-xl>*+* {
+  .space-xl > * + * {
     margin-top: 2rem;
   }
 
-  .space-2xl>*+* {
+  .space-2xl > * + * {
     margin-top: 3rem;
   }
 
-  .space-3xl>*+* {
+  .space-3xl > * + * {
     margin-top: 4rem;
   }
 
@@ -684,17 +683,18 @@
   }
 
   .animate-shimmer {
-    background: linear-gradient(90deg,
-        var(--muted) 0%,
-        var(--muted-foreground) 50%,
-        var(--muted) 100%);
+    background: linear-gradient(
+      90deg,
+      var(--muted) 0%,
+      var(--muted-foreground) 50%,
+      var(--muted) 100%
+    );
     background-size: 1000px 100%;
     animation: shimmer 2s infinite;
   }
 
   /* Pulse animation */
   @keyframes pulse {
-
     0%,
     100% {
       opacity: 1;

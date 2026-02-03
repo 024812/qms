@@ -19,11 +19,11 @@ import { Button } from '@/components/ui/button';
 import { Loader2, Sparkles, ShieldCheck, TrendingUp, BarChart3 } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { CardImageUpload } from '@/components/cards/CardImageUpload';
-import { PlayerInfoFields } from './form-parts/PlayerInfoFields';
-import { CardDetailsFields } from './form-parts/CardDetailsFields';
-import { GradingFields } from './form-parts/GradingFields';
-import { ValueFields } from './form-parts/ValueFields';
-import { AdvancedDetailsFields } from './form-parts/AdvancedDetailsFields';
+import { SectionValueCost } from './form-parts/SectionValueCost';
+import { SectionPlayerTeam } from './form-parts/SectionPlayerTeam';
+import { SectionGradingCert } from './form-parts/SectionGradingCert';
+import { SectionFeatures } from './form-parts/SectionFeatures';
+import { SectionNotes } from './form-parts/SectionNotes';
 import { useCardForm } from './hooks/useCardForm';
 import type { FormValues } from './form-schema';
 
@@ -204,11 +204,11 @@ export function EditCardForm({ initialData, onSuccess }: EditCardFormProps) {
 
             {/* Form Fields - always shown for edit */}
             <div className="space-y-6">
-              <PlayerInfoFields />
-              <CardDetailsFields />
-              <GradingFields />
-              <ValueFields /> {/* Removed onEstimate prop as button moved */}
-              <AdvancedDetailsFields />
+              <SectionValueCost />
+              <SectionPlayerTeam />
+              <SectionGradingCert />
+              <SectionFeatures />
+              <SectionNotes />
               <div className="flex justify-end gap-2 pt-4">
                 <Button type="submit" disabled={loading}>
                   {loading && <Loader2 className="animate-spin mr-2 h-4 w-4" />}

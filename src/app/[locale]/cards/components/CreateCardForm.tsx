@@ -13,11 +13,11 @@ import { Button } from '@/components/ui/button';
 import { Loader2, Sparkles } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { CardImageUpload } from '@/components/cards/CardImageUpload';
-import { PlayerInfoFields } from './form-parts/PlayerInfoFields';
-import { CardDetailsFields } from './form-parts/CardDetailsFields';
-import { GradingFields } from './form-parts/GradingFields';
-import { ValueFields } from './form-parts/ValueFields';
-import { AdvancedDetailsFields } from './form-parts/AdvancedDetailsFields';
+import { SectionValueCost } from './form-parts/SectionValueCost';
+import { SectionPlayerTeam } from './form-parts/SectionPlayerTeam';
+import { SectionGradingCert } from './form-parts/SectionGradingCert';
+import { SectionFeatures } from './form-parts/SectionFeatures';
+import { SectionNotes } from './form-parts/SectionNotes';
 import { useCardForm } from './hooks/useCardForm';
 
 interface CreateCardFormProps {
@@ -94,11 +94,11 @@ export function CreateCardForm({ onSuccess }: CreateCardFormProps) {
         {/* Form Fields - shown after AI scan or manual toggle */}
         {showDetails && (
           <div className="space-y-6">
-            <PlayerInfoFields />
-            <CardDetailsFields />
-            <GradingFields />
-            <ValueFields onEstimate={handleEstimatePrice} estimating={estimating} />
-            <AdvancedDetailsFields />
+            <SectionValueCost onEstimate={handleEstimatePrice} estimating={estimating} />
+            <SectionPlayerTeam />
+            <SectionGradingCert />
+            <SectionFeatures />
+            <SectionNotes />
 
             <div className="flex justify-end gap-2 pt-4">
               <Button type="submit" disabled={loading}>

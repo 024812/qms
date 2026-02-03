@@ -13,6 +13,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { Badge } from '@/components/ui/badge';
+import { calculateROI } from '@/modules/cards/utils';
 import { FormValues } from '../form-schema';
 
 interface ValueFieldsProps {
@@ -24,6 +26,11 @@ export function ValueFields({ onEstimate, estimating = false }: ValueFieldsProps
   const t = useTranslations('cards.form');
   const tGlobal = useTranslations('cards');
   const form = useFormContext<FormValues>();
+
+  const purchasePrice = form.watch('purchasePrice');
+  const currentValue = form.watch('currentValue');
+  const roi = calculateROI(purchasePrice || undefined, currentValue || undefined);
+  const isPositiveROI = roi.startsWith('+');
 
   return (
     <div className="space-y-4">
@@ -53,7 +60,17 @@ export function ValueFields({ onEstimate, estimating = false }: ValueFieldsProps
           name="currentValue"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>{t('currentValue')}</FormLabel>
+              <FormLabel className="flex justify-between items-center">
+                {t('currentValue')}
+                {roi !== '-' && (
+                  <Badge
+                    variant={isPositiveROI ? 'default' : 'destructive'}
+                    className={`ml-2 px-1.5 py-0 text-[10px] h-5 ${isPositiveROI ? 'bg-green-600 hover:bg-green-700' : 'bg-red-600 hover:bg-red-700'}`}
+                  >
+                    {roi} ROI
+                  </Badge>
+                )}
+              </FormLabel>
               <FormControl>
                 <Input type="number" step="0.01" {...field} value={field.value || ''} />
               </FormControl>

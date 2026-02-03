@@ -620,8 +620,53 @@ export class AICardService {
   }
 
   /**
-   * Generate short investment summary using AI
+
+  /**
+   * Fetch recent news/market sentiment using Perplexity
    */
+  private async fetchPlayerNews(playerName: string, year: number, brand: string): Promise<string> {
+    const perplexityKey = process.env.PERPLEXITY_API_KEY;
+    if (!perplexityKey) return '';
+
+    try {
+      const response = await fetch('https://api.perplexity.ai/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${perplexityKey}`,
+        },
+        body: JSON.stringify({
+          model: 'sonar-pro', // Best for reasoning/search
+          messages: [
+            {
+              role: 'system',
+              content:
+                'You are a sports card news aggregator. Return ONLY the most relevant recent news and market sentiment.',
+            },
+            {
+              role: 'user',
+              content: `Find recent news, injuries, trade rumors, or performance updates for NBA/Sport player "${playerName}". 
+              Also check for specific sales trends for ${year} ${brand} cards if available.
+              Summarize key points in 3 bullet points.`,
+            },
+          ],
+          max_tokens: 500, // Enough for a good summary context
+        }),
+      });
+
+      if (!response.ok) {
+        console.warn(`Perplexity News Fetch Error: ${response.status}`);
+        return '';
+      }
+
+      const data = await response.json();
+      return data.choices?.[0]?.message?.content || '';
+    } catch (error) {
+      console.error('Perplexity Fetch Exception:', error);
+      return '';
+    }
+  }
+
   private async generateInvestmentSummary(
     details: CardDetails,
     price: number,
@@ -634,17 +679,25 @@ export class AICardService {
     const language = locale === 'zh' ? 'Chinese (Simplified)' : 'English';
     const trendText = trend > 0 ? `+${trend.toFixed(1)}%` : `${trend.toFixed(1)}%`;
 
+    // 1. Fetch Real-time Context (if configured)
+    const newsContext = await this.fetchPlayerNews(
+      details.playerName,
+      details.year || 0,
+      details.brand || ''
+    );
+
+    // 2. Analyze with Azure OpenAI
     const response = await client.chat.completions.create({
       model: deployment,
       messages: [
         {
           role: 'system',
           content: `You are a sports card investment advisor. 
-            Based on the provided card data (Player, Price, Trend), provide a **concise 2-3 sentence** summary.
+            Based on the provided card data and real-time news context, provide a **concise 2-3 sentence** summary.
             
             Guidelines:
-            - Focus on the player's potential or current market status.
-            - Mention the price trend if significant.
+            - Incorporate the provided news/context if relevant to value.
+            - Explain the price trend (${trendText}) in relation to the news (e.g., "rising due to recent playoff performance").
             - Be objective but professional.
             - Answer in ${language}.`,
         },
@@ -654,10 +707,13 @@ export class AICardService {
             Current Avg Price: $${price}
             Recent Trend: ${trendText}
             
+            Real-time News Context:
+            ${newsContext || 'No specific recent news available.'}
+            
             Provide investment summary.`,
         },
       ],
-      max_completion_tokens: 200,
+      max_completion_tokens: 300,
     });
 
     return response.choices[0].message.content || '';

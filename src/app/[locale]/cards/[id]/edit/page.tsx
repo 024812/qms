@@ -59,7 +59,7 @@ export default async function EditCardPage({ params }: EditCardPageProps) {
   };
 
   return (
-    <div className="container py-6 max-w-3xl space-y-6">
+    <div className="container py-6 max-w-[95%] space-y-6">
       <div className="flex items-center gap-4">
         <Button variant="ghost" size="sm" asChild>
           <Link href={`/cards/${id}`}>

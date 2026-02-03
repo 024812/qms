@@ -18,6 +18,7 @@ import {
   Search,
   Filter,
   EyeOff,
+  Code,
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -244,9 +245,66 @@ export function MarketAnalysisTab({ data, loading, cardDetails }: MarketAnalysis
       {/* 2. AI Summary */}
       <Card className="shadow-sm">
         <CardHeader className="pb-3 pt-4">
-          <CardTitle className="text-sm flex items-center gap-2 text-indigo-700">
-            ✨ {t('aiInsights')}
-          </CardTitle>
+          <div className="flex justify-between items-center">
+            <CardTitle className="text-sm flex items-center gap-2 text-indigo-700">
+              ✨ {t('aiInsights')}
+            </CardTitle>
+            <Dialog>
+              <DialogTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-6 w-6 text-indigo-300 hover:text-indigo-600"
+                >
+                  <Code className="w-4 h-4" />
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+                <DialogHeader>
+                  <DialogTitle>AI Interaction Debug</DialogTitle>
+                  <DialogDescription>
+                    Raw data sent to and received from the AI model.
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="space-y-4">
+                  <div>
+                    <h4 className="text-sm font-semibold mb-2">Input Context (What AI Sees)</h4>
+                    <div className="bg-slate-950 text-slate-50 p-4 rounded-md text-xs font-mono overflow-auto max-h-60">
+                      <pre>
+                        {JSON.stringify(
+                          {
+                            card: cardDetails,
+                            salesContext: activeData.recentSales.slice(0, 10).map(s => ({
+                              date: s.date,
+                              price: s.price,
+                              title: s.title,
+                            })),
+                          },
+                          null,
+                          2
+                        )}
+                      </pre>
+                    </div>
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-semibold mb-2">AI Output Result</h4>
+                    <div className="bg-slate-950 text-slate-50 p-4 rounded-md text-xs font-mono overflow-auto max-h-60">
+                      <pre>
+                        {JSON.stringify(
+                          {
+                            valuation: activeData.valuation,
+                            summary: activeData.aiSummary,
+                          },
+                          null,
+                          2
+                        )}
+                      </pre>
+                    </div>
+                  </div>
+                </div>
+              </DialogContent>
+            </Dialog>
+          </div>
         </CardHeader>
         <CardContent className="pb-4">
           <div className="text-sm text-gray-700 leading-relaxed">

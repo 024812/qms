@@ -13,7 +13,7 @@
 import { useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { FormProvider } from 'react-hook-form';
-import { useTranslations } from 'next-intl';
+import { useTranslations, useLocale } from 'next-intl';
 import { toast } from 'sonner';
 import {
   Loader2,
@@ -86,7 +86,7 @@ interface AIResultDisplay {
 export function UnifiedCardDashboard({ initialData }: UnifiedCardDashboardProps) {
   const t = useTranslations('cards.form');
   const tCards = useTranslations('cards');
-  const locale = useTranslations()('locale') || 'en';
+  const locale = useLocale();
   const router = useRouter();
 
   // Form Hook

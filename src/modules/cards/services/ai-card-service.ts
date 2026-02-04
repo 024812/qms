@@ -210,7 +210,12 @@ export class AICardService {
               
               Extract: Player, Year, Brand, Series, Card Number, Sport, Team, Position, Grading.
               
-              CRITICAL: Assess IMAGE QUALITY.
+              CRITICAL - PARALLEL/VARIATION DETECTION:
+              - Look closely for "Refractor", "Prizm" text, or specific color variants (Silver, Gold, Blue, Green, etc.).
+              - Identify serial numbers (e.g., "01/99") and include them in the 'parallel' field (e.g., "Gold /99").
+              - Note visual effects like "Holo", "Cracked Ice", "Wave", "Choice" if visible.
+              
+              CRITICAL - IMAGE QUALITY:
               - Is the image too blurry to read text?
               - Is there severe glare obscuring key details?
               

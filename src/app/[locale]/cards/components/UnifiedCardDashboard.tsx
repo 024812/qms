@@ -181,6 +181,10 @@ export function UnifiedCardDashboard({ initialData }: UnifiedCardDashboardProps)
           playerName: values.playerName,
           year: values.year,
           brand: values.brand,
+          series: values.series || undefined,
+          cardNumber: values.cardNumber || undefined,
+          parallel: values.parallel || undefined,
+          isAutographed: values.isAutographed,
           gradingCompany: values.gradingCompany || undefined,
           grade: values.grade || null,
           customQuery: activeQuery,
@@ -406,7 +410,7 @@ export function UnifiedCardDashboard({ initialData }: UnifiedCardDashboardProps)
             className="grid grid-cols-1 lg:grid-cols-10 gap-6 pb-12 items-stretch"
           >
             {/* 1. IMAGE & BUTTONS PANEL (3 cols) */}
-            <div className="lg:col-span-3 flex flex-col">
+            <div className="lg:col-span-2 flex flex-col">
               <GlassPanel className="p-4 flex flex-col flex-1" variant="slab">
                 {/* Grade Badge */}
                 <div className="flex justify-end mb-2">
@@ -468,7 +472,7 @@ export function UnifiedCardDashboard({ initialData }: UnifiedCardDashboardProps)
             </div>
 
             {/* 2. FORM FIELDS PANEL (4 cols) */}
-            <div className="lg:col-span-4 space-y-6 flex flex-col">
+            <div className="lg:col-span-3 space-y-6 flex flex-col">
               {/* Value & Cost Section - Top Priority */}
               <GlassPanel className="p-6 border-t-4 border-t-emerald-500">
                 <SectionValueCost />
@@ -495,7 +499,7 @@ export function UnifiedCardDashboard({ initialData }: UnifiedCardDashboardProps)
             </div>
 
             {/* 3. AI RESULTS PANEL (3 cols) */}
-            <div className="lg:col-span-3 flex flex-col">
+            <div className="lg:col-span-5 flex flex-col">
               <GlassPanel className="flex-1 flex flex-col">
                 <ScrollArea className="flex-1">
                   <div className="p-4">

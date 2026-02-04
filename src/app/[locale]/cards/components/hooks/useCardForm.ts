@@ -299,6 +299,10 @@ export function useCardForm({
         playerName,
         year: typeof year === 'number' ? year : Number(year),
         brand,
+        series: values.series || undefined,
+        cardNumber: values.cardNumber || undefined,
+        parallel: values.parallel || undefined,
+        isAutographed: values.isAutographed,
         gradingCompany: values.gradingCompany,
         grade: gradeValue,
       });

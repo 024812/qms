@@ -214,6 +214,8 @@
       "brandPlaceholder": "例如: Panini Prizm",
       "series": "系列",
       "seriesPlaceholder": "例如: Silver Prizm",
+      "parallel": "平行/折射",
+      "parallelPlaceholder": "例如: Silver, Mojo, Red Wave",
       "cardNumber": "卡号",
       "cardNumberPlaceholder": "例如: #23",
       "gradingCompany": "评级公司",

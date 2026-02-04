@@ -17,8 +17,7 @@ export function SectionFeatures() {
         <span>🔰</span> {t('cardDetails')}
       </h3>
 
-      {/* Row 1: Year, Brand, Series, Card Number */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
         <FormField
           control={form.control}
           name="year"
@@ -67,6 +66,23 @@ export function SectionFeatures() {
               <FormControl>
                 <Input
                   placeholder={t('cardNumberPlaceholder')}
+                  {...field}
+                  value={field.value ?? ''}
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
+          name="parallel"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>{t('parallel')}</FormLabel>
+              <FormControl>
+                <Input
+                  placeholder={t('parallelPlaceholder')}
                   {...field}
                   value={field.value ?? ''}
                 />

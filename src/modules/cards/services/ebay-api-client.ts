@@ -277,21 +277,7 @@ export class eBayApiClient {
       parts.push('auto');
     }
 
-    // NEGATIVE KEYWORDS (Crucial for data cleaning)
-    const negatives = [
-      '-reprint',
-      '-RP',
-      '-facsimile',
-      '-digital',
-      '-lot',
-      '-set',
-      '-box',
-      '-pack',
-      '-case',
-      '-break',
-    ];
-
-    return `${parts.join(' ')} ${negatives.join(' ')}`;
+    return parts.join(' ');
   }
 
   /**

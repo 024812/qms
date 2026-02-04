@@ -144,13 +144,13 @@ export class AICardService {
         defaultHeaders: { 'api-key': apiKey },
       });
 
-      this.deployment = deployment || 'gpt-4o-mini';
+      this.deployment = deployment || 'gpt-5-mini';
       this.lastConfigFetch = now;
 
       return { client: this.client, deployment: this.deployment };
     } catch (clientInitError) {
       console.error('AI Service: failed to init OpenAI client', clientInitError);
-      return { client: null, deployment: 'gpt-4o-mini' };
+      return { client: null, deployment: 'gpt-5-mini' };
     }
   }
 
@@ -260,7 +260,7 @@ export class AICardService {
             ],
           },
         ],
-        max_completion_tokens: 1000,
+        max_completion_tokens: 4000,
         response_format: { type: 'json_object' },
       });
 

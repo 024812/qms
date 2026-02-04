@@ -145,13 +145,14 @@ export class eBayApiClient {
 
       // Build optimal search query
       const q = params.customQuery ? params.customQuery : this.buildSearchQuery(params);
+      console.log('DEBUG: Generated Query:', q);
 
       // Execute Search
       const response = await client.buy.browse.search({
         q: q,
         filter: 'soldItemsOnly:true',
         sort: 'createdDate:DESC',
-        limit: 20,
+        limit: 50,
         fieldgroups: 'ITEM_SUMMARY,PRICE',
       });
 
@@ -221,12 +222,24 @@ export class eBayApiClient {
 
     // Core: Year Player Brand
     if (params.year) parts.push(String(params.year));
-    parts.push(params.playerName);
+
+    // Precise Player Name Matching
+    if (params.playerName.includes(' ')) {
+      parts.push(`"${params.playerName}"`);
+    } else {
+      parts.push(params.playerName);
+    }
+
     if (params.brand) parts.push(params.brand);
     if (params.series) parts.push(params.series);
 
-    // Card Number is very specific
-    if (params.cardNum) parts.push(`#${params.cardNum}`);
+    // Card Number is very specific - handle various formats
+    if (params.cardNum) {
+      // Try specific formats: #10, No.10, /10 or just 10
+      parts.push(
+        `(#${params.cardNum} OR "No.${params.cardNum}" OR "/${params.cardNum}" OR ${params.cardNum})`
+      );
+    }
 
     // Parallel/Variation
     if (params.parallel) parts.push(params.parallel);

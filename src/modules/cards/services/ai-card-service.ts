@@ -88,48 +88,55 @@ export class AICardService {
       return { client: this.client, deployment: this.deployment };
     }
 
+    let apiKey: string | undefined;
+    let endpoint: string | undefined;
+    let deployment: string | undefined;
+
     try {
       // 1. Try Config from DB
       const config = await systemSettingsRepository.getAzureOpenAIConfig();
-      let apiKey = config.apiKey;
-      let endpoint = config.endpoint;
-      let deployment = config.deployment;
+      apiKey = config.apiKey || undefined;
+      endpoint = config.endpoint || undefined;
+      deployment = config.deployment || undefined;
+    } catch {
+      // DB fetch failed, using env fallback
+    }
 
-      // 2. Fallback to Env Vars if DB is missing or invalid (specifically check for bad URL chars like &)
-      const isDbEndpointValid =
-        endpoint &&
-        !endpoint.includes('&') &&
-        (endpoint.startsWith('http') || endpoint.includes('api.azure.com'));
+    // 2. Fallback to Env Vars if DB is missing, invalid, or failed
+    const isDbEndpointValid =
+      endpoint &&
+      !endpoint.includes('&') &&
+      (endpoint.startsWith('http') || endpoint.includes('api.azure.com'));
 
-      if (!apiKey || !isDbEndpointValid) {
-        console.warn('AI Service: DB Settings missing or invalid, checking env vars fallback...');
-        if (process.env.AZURE_OPENAI_API_KEY) apiKey = process.env.AZURE_OPENAI_API_KEY;
-        if (process.env.AZURE_OPENAI_ENDPOINT) endpoint = process.env.AZURE_OPENAI_ENDPOINT;
-        if (process.env.AZURE_OPENAI_DEPLOYMENT) deployment = process.env.AZURE_OPENAI_DEPLOYMENT;
+    if (!apiKey || !isDbEndpointValid) {
+      if (process.env.AZURE_OPENAI_API_KEY) apiKey = process.env.AZURE_OPENAI_API_KEY;
+      if (process.env.AZURE_OPENAI_ENDPOINT) endpoint = process.env.AZURE_OPENAI_ENDPOINT;
+      if (process.env.AZURE_OPENAI_DEPLOYMENT) deployment = process.env.AZURE_OPENAI_DEPLOYMENT;
+    }
+
+    if (!apiKey || !endpoint) {
+      // console.warn('AI Service: No valid config found (checked DB and Env), using mock mode.');
+      return { client: null, deployment: 'gpt-5-mini' };
+    }
+
+    // 3. Strict URL Validation & Normalization
+    let effectiveEndpoint = endpoint;
+    try {
+      // Strip /api/projects... if present
+      if (endpoint.includes('/api/projects')) {
+        const url = new URL(endpoint);
+        effectiveEndpoint = url.origin;
+      } else {
+        // Just validate it parses as URL
+        new URL(endpoint);
       }
+    } catch (e) {
+      console.error(`AI Service: Invalid Endpoint URL: "${endpoint}"`, e);
+      // Fail gracefully to mock instead of crashing
+      return { client: null, deployment: 'gpt-5-mini' };
+    }
 
-      if (!apiKey || !endpoint) {
-        console.warn('AI Service: No valid config found (checked DB and Env), using mock mode.');
-        return { client: null, deployment: 'gpt-5-mini' };
-      }
-
-      // 3. Strict URL Validation & Normalization
-      let effectiveEndpoint = endpoint;
-      try {
-        // Strip /api/projects... if present
-        if (endpoint.includes('/api/projects')) {
-          const url = new URL(endpoint);
-          effectiveEndpoint = url.origin;
-        } else {
-          // Just validate it parses as URL
-          new URL(endpoint);
-        }
-      } catch (e) {
-        console.error(`AI Service: Invalid Endpoint URL: "${endpoint}"`, e);
-        // Fail gracefully to mock instead of crashing
-        return { client: null, deployment: 'gpt-5-mini' };
-      }
-
+    try {
       this.client = new OpenAI({
         apiKey: apiKey,
         baseURL: `${effectiveEndpoint}/openai/deployments/${deployment}`,
@@ -141,8 +148,8 @@ export class AICardService {
       this.lastConfigFetch = now;
 
       return { client: this.client, deployment: this.deployment };
-    } catch (error) {
-      console.error('Failed to load AI config from settings:', error);
+    } catch (clientInitError) {
+      console.error('AI Service: failed to init OpenAI client', clientInitError);
       return { client: null, deployment: 'gpt-5-mini' };
     }
   }
@@ -408,6 +415,10 @@ export class AICardService {
       sales = sales.filter(s => !excludeSet.has(s.url));
     }
 
+    // 1c. AI/Smart Filtering (New Phase 4)
+    // Filter results to ensure they match specific card details (Year, Player, Card #)
+    sales = await this.filterEbaySalesWithAI(cardDetails, sales);
+
     // 2. Data Cleaning: Outlier Detection (IQR)
     const cleanedSales = this.removeOutliers(sales);
 
@@ -548,6 +559,9 @@ export class AICardService {
       // Filter by URL (assuming it's the ID, or extract Item ID if possible. URL is unique too)
       sales = sales.filter(s => !excludeSet.has(s.url));
     }
+
+    // 2c. AI/Smart Filtering
+    sales = await this.filterEbaySalesWithAI(cardDetails, sales);
 
     // Clean data
     const cleanedSales = this.removeOutliers(sales);
@@ -788,8 +802,131 @@ export class AICardService {
         activeListings: activeCount,
         lastChecked: Date.now(),
       },
+
       recommendation,
     };
+  }
+  /**
+   * AI-assisted filtering of eBay sales results
+   * Validates each result against the target card specification
+   */
+  async filterEbaySalesWithAI(
+    targetCard: CardDetails,
+    sales: eBaySalesResult[]
+  ): Promise<eBaySalesResult[]> {
+    if (sales.length === 0) return [];
+
+    const { client, deployment } = await this.getClient();
+    if (!client) {
+      // Fallback: basic title matching without AI
+      return this.basicTitleFilter(targetCard, sales);
+    }
+
+    // Build target card description
+    const targetDesc = [
+      targetCard.year,
+      targetCard.brand,
+      targetCard.playerName,
+      targetCard.series,
+      targetCard.cardNumber ? `#${targetCard.cardNumber}` : null,
+      targetCard.parallel,
+      targetCard.gradingCompany !== 'UNGRADED' ? targetCard.gradingCompany : null,
+      targetCard.grade ? `Grade ${targetCard.grade}` : null,
+    ]
+      .filter(Boolean)
+      .join(' ');
+
+    // Batch process titles - limit to top 50 to fit context window comfortably
+    const salesToVerify = sales.slice(0, 50);
+    const titles = salesToVerify.map((s, i) => `${i + 1}. ${s.title}`).join('\n');
+
+    try {
+      const response = await client.chat.completions.create({
+        model: deployment,
+        messages: [
+          {
+            role: 'system',
+            content: `You are a sports card expert. Identify which eBay listings EXACTLY match the target card.
+A listing matches ONLY if:
+1. Same player name
+2. Same year (mandatory)
+3. Same card number if specified (mandatory)
+4. Same brand
+5. Grading matches if specified.
+
+Return a JSON array of matching listing numbers. Be STRICT - only include exact matches.`,
+          },
+          {
+            role: 'user',
+            content: `Target Card: ${targetDesc}
+
+eBay Listings:
+${titles}
+
+Return JSON: { "matchingIndices": [1, 3, 5] } (numbers of matching listings)`,
+          },
+        ],
+        max_completion_tokens: 500,
+        response_format: { type: 'json_object' },
+      });
+
+      const content = response.choices[0].message.content;
+      if (!content) return sales;
+
+      const parsed = JSON.parse(content);
+      const matches = new Set(parsed.matchingIndices || []);
+
+      // Filter the batch we sent
+      const verifiedBatch = salesToVerify.filter((_, index) => matches.has(index + 1));
+
+      return verifiedBatch;
+    } catch (error) {
+      console.error('AI Filtering Failed, falling back to basic filter:', error);
+      return this.basicTitleFilter(targetCard, sales);
+    }
+  }
+
+  /**
+   * Basic title filter when AI is unavailable
+   */
+  private basicTitleFilter(targetCard: CardDetails, sales: eBaySalesResult[]): eBaySalesResult[] {
+    const normalizedTarget = {
+      year: String(targetCard.year || ''),
+      player: targetCard.playerName.toLowerCase(),
+      cardNum: targetCard.cardNumber ? String(targetCard.cardNumber) : '',
+      brand: (targetCard.brand || '').toLowerCase(),
+    };
+
+    return sales.filter(sale => {
+      const title = sale.title.toLowerCase();
+
+      // Must contain year
+      if (normalizedTarget.year && !title.includes(normalizedTarget.year)) {
+        return false;
+      }
+
+      // Must contain player name (at least last name)
+      const lastName = normalizedTarget.player.split(' ').pop() || '';
+      if (!title.includes(lastName)) {
+        return false;
+      }
+
+      // Must contain card number if specified
+      if (normalizedTarget.cardNum) {
+        const cardNumPatterns = [
+          `#${normalizedTarget.cardNum}`,
+          `no.${normalizedTarget.cardNum}`,
+          `/${normalizedTarget.cardNum}`,
+          ` ${normalizedTarget.cardNum} `, // isolated number
+        ];
+        const matchesnum =
+          cardNumPatterns.some(p => title.includes(p.toLowerCase())) ||
+          title.includes(normalizedTarget.cardNum);
+        if (!matchesnum) return false;
+      }
+
+      return true;
+    });
   }
 }
 

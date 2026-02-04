@@ -84,7 +84,7 @@ export class Web130PointProvider implements IPriceDataProvider {
 export class CachingPriceProvider implements IPriceDataProvider {
   private provider: IPriceDataProvider;
   private cache = new Map<string, { timestamp: number; data: eBaySalesResult[] }>();
-  private readonly TTL = 24 * 60 * 60 * 1000; // 24 hours
+  private readonly TTL = 48 * 60 * 60 * 1000; // 48 hours
 
   constructor(provider: IPriceDataProvider) {
     this.provider = provider;

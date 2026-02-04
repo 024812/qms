@@ -121,6 +121,8 @@ export function UnifiedCardDashboard({ initialData }: UnifiedCardDashboardProps)
   // Market Analysis State
   const [marketAnalyzing, setMarketAnalyzing] = useState(false);
   const [marketData, setMarketData] = useState<QuickAnalysisResult | null>(null);
+  const [customQuery, setCustomQuery] = useState('');
+  const [excludedIds, setExcludedIds] = useState<string[]>([]);
 
   // Grading Analysis State
   const [gradingAnalyzing, setGradingAnalyzing] = useState(false);
@@ -146,15 +148,32 @@ export function UnifiedCardDashboard({ initialData }: UnifiedCardDashboardProps)
   );
 
   // Market Analysis Handler (eBay Search)
-  const handleMarketAnalysis = async () => {
+  const handleMarketAnalysis = async (params?: {
+    newQuery?: string;
+    newExcludedIds?: string[];
+    forceRefresh?: boolean;
+  }) => {
     const values = form.getValues();
     if (!values.playerName || !values.year || !values.brand) {
       toast.error(t('errors.insufficientDataForEstimate'));
       return;
     }
 
+    // Use provided params or fallback to current state
+    const activeQuery = params?.newQuery !== undefined ? params.newQuery : customQuery;
+    const activeExcluded =
+      params?.newExcludedIds !== undefined ? params.newExcludedIds : excludedIds;
+    const isForce = params?.forceRefresh || false;
+
+    // Update state if params provided
+    if (params?.newQuery !== undefined) setCustomQuery(params.newQuery);
+    if (params?.newExcludedIds !== undefined) setExcludedIds(params.newExcludedIds);
+
     setMarketAnalyzing(true);
-    setCurrentResult({ type: 'market', title: tCards('analysis.tabs.market'), loading: true });
+    // Only switch tab if not already there (optional, but good UX)
+    if (currentResult.type !== 'market') {
+      setCurrentResult({ type: 'market', title: tCards('analysis.tabs.market'), loading: true });
+    }
 
     try {
       const result = await analyzeCardQuickAction(
@@ -164,6 +183,9 @@ export function UnifiedCardDashboard({ initialData }: UnifiedCardDashboardProps)
           brand: values.brand,
           gradingCompany: values.gradingCompany || undefined,
           grade: values.grade || null,
+          customQuery: activeQuery,
+          excludedListingIds: activeExcluded,
+          forceRefresh: isForce,
         },
         locale
       );
@@ -177,7 +199,7 @@ export function UnifiedCardDashboard({ initialData }: UnifiedCardDashboardProps)
     } catch (error) {
       console.error(error);
       toast.error(tCards('errors.analysisFailed'));
-      setCurrentResult({ type: 'empty', title: '', loading: false });
+      setCurrentResult(prev => ({ ...prev, loading: false }));
     } finally {
       setMarketAnalyzing(false);
     }
@@ -430,7 +452,7 @@ export function UnifiedCardDashboard({ initialData }: UnifiedCardDashboardProps)
                     label={tCards('actions.estimatePrice')}
                   />
                   <TooltipButton
-                    onClick={handleMarketAnalysis}
+                    onClick={() => handleMarketAnalysis()}
                     loading={marketAnalyzing}
                     icon={<Search className="w-4 h-4 text-blue-500" />}
                     label="eBay"
@@ -532,6 +554,9 @@ export function UnifiedCardDashboard({ initialData }: UnifiedCardDashboardProps)
                         data={marketData}
                         loading={false}
                         cardDetails={getCardDetails()}
+                        customQuery={customQuery}
+                        excludedIds={excludedIds}
+                        onUpdateAnalysis={handleMarketAnalysis}
                       />
                     )}
 

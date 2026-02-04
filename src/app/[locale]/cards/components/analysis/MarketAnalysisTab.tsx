@@ -7,7 +7,7 @@
  * Extracted from AnalysisPanel for better maintainability.
  */
 
-import { useMemo, useState, useEffect } from 'react';
+import { useMemo, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import {
   TrendingUp,
@@ -38,7 +38,7 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 import type { QuickAnalysisResult } from '@/modules/cards/services/ai-card-service';
-import { analyzeCardQuickAction } from '@/app/actions/ai-card-actions';
+
 import Image from 'next/image';
 
 export interface CardDetailsForAnalysis {
@@ -56,69 +56,62 @@ export interface MarketAnalysisTabProps {
   data: QuickAnalysisResult | null;
   loading: boolean;
   cardDetails?: CardDetailsForAnalysis;
+  customQuery?: string;
+  excludedIds?: string[];
+  onUpdateAnalysis?: (params: {
+    newQuery?: string;
+    newExcludedIds?: string[];
+    forceRefresh?: boolean;
+  }) => Promise<void>;
 }
 
-export function MarketAnalysisTab({ data, loading, cardDetails }: MarketAnalysisTabProps) {
+export function MarketAnalysisTab({
+  data,
+  loading,
+  cardDetails,
+  customQuery = '',
+  excludedIds = [],
+  onUpdateAnalysis,
+}: MarketAnalysisTabProps) {
   const t = useTranslations('cards.analysis');
 
-  // Interactive Analysis State
-  const [localAnalysis, setLocalAnalysis] = useState<QuickAnalysisResult | null>(data);
-  const [isRefreshing, setIsRefreshing] = useState(false);
-  const [customQuery, setCustomQuery] = useState('');
-  const [excludedIds, setExcludedIds] = useState<string[]>([]);
+  // Local UI State
   const [isSearchDialogOpen, setIsSearchDialogOpen] = useState(false);
+  const [localQueryInput, setLocalQueryInput] = useState(customQuery);
+  const [isUpdating, setIsUpdating] = useState(false);
 
-  // Sync prop data to local data when prop changes (e.g. first load)
-  useEffect(() => {
-    if (data) {
-      setLocalAnalysis(data);
-    }
-  }, [data]);
+  // State synced via onOpenChange instead of useEffect to avoid linter warning
 
-  const activeData = localAnalysis;
+  const activeData = data;
 
-  const refreshAnalysis = async (
-    newQuery?: string,
-    newExcludedIds?: string[],
-    forceRefresh: boolean = false
-  ) => {
-    if (!cardDetails) return;
-
-    setIsRefreshing(true);
-    try {
-      const result = await analyzeCardQuickAction({
-        ...cardDetails,
-        customQuery: newQuery !== undefined ? newQuery : customQuery,
-        excludedListingIds: newExcludedIds !== undefined ? newExcludedIds : excludedIds,
-        forceRefresh,
-      });
-      setLocalAnalysis(result);
-    } catch (error) {
-      console.error('Analysis refresh failed:', error);
-    } finally {
-      setIsRefreshing(false);
-    }
-  };
-
-  const handleApplySearch = () => {
-    refreshAnalysis(customQuery, excludedIds);
+  const handleApplySearch = async () => {
+    if (!onUpdateAnalysis) return;
+    setIsUpdating(true);
+    await onUpdateAnalysis({ newQuery: localQueryInput });
+    setIsUpdating(false);
     setIsSearchDialogOpen(false);
   };
 
-  const handleForceRefresh = () => {
-    refreshAnalysis(customQuery, excludedIds, true);
+  const handleForceRefresh = async () => {
+    if (!onUpdateAnalysis) return;
+    setIsUpdating(true);
+    await onUpdateAnalysis({ forceRefresh: true });
+    setIsUpdating(false);
   };
 
-  const handleExcludeItem = (url: string) => {
+  const handleExcludeItem = async (url: string) => {
+    if (!onUpdateAnalysis) return;
     const newExcluded = [...excludedIds, url];
-    setExcludedIds(newExcluded);
-    refreshAnalysis(customQuery, newExcluded);
+    setIsUpdating(true);
+    await onUpdateAnalysis({ newExcludedIds: newExcluded });
+    setIsUpdating(false);
   };
 
-  const handleClearFilters = () => {
-    setExcludedIds([]);
-    setCustomQuery('');
-    refreshAnalysis('', []);
+  const handleClearFilters = async () => {
+    if (!onUpdateAnalysis) return;
+    setIsUpdating(true);
+    await onUpdateAnalysis({ newQuery: '', newExcludedIds: [] });
+    setIsUpdating(false);
   };
 
   const trendColor = useMemo(() => {
@@ -132,8 +125,9 @@ export function MarketAnalysisTab({ data, loading, cardDetails }: MarketAnalysis
   }, [activeData]);
 
   const hasActiveFilters = excludedIds.length > 0 || customQuery;
+  const isLoading = loading || isUpdating;
 
-  if (loading) {
+  if (isLoading && !activeData) {
     return (
       <div className="space-y-4">
         <div className="h-24 w-full bg-gray-100 animate-pulse rounded-lg" />
@@ -150,7 +144,7 @@ export function MarketAnalysisTab({ data, loading, cardDetails }: MarketAnalysis
   return (
     <div className="space-y-4 flex flex-col flex-1">
       {/* Refresh Indicator */}
-      {isRefreshing && (
+      {isUpdating && (
         <div className="flex items-center text-xs text-blue-600 justify-end">
           <Loader2 className="w-3 h-3 animate-spin mr-1" />
           Updating...
@@ -213,14 +207,20 @@ export function MarketAnalysisTab({ data, loading, cardDetails }: MarketAnalysis
                 size="icon"
                 className="h-7 w-7 text-slate-400 hover:text-blue-600 hover:bg-blue-50"
                 onClick={handleForceRefresh}
-                disabled={isRefreshing}
+                disabled={isUpdating}
                 title="Force refresh data from eBay"
               >
-                <RefreshCw className={cn('w-3.5 h-3.5', isRefreshing && 'animate-spin')} />
+                <RefreshCw className={cn('w-3.5 h-3.5', isUpdating && 'animate-spin')} />
               </Button>
 
               {/* Edit Search Dialog */}
-              <Dialog open={isSearchDialogOpen} onOpenChange={setIsSearchDialogOpen}>
+              <Dialog
+                open={isSearchDialogOpen}
+                onOpenChange={open => {
+                  if (open) setLocalQueryInput(customQuery);
+                  setIsSearchDialogOpen(open);
+                }}
+              >
                 <DialogTrigger asChild>
                   <Button variant="outline" size="sm" className="h-7 text-xs gap-1">
                     <Search className="w-3 h-3" />
@@ -239,7 +239,7 @@ export function MarketAnalysisTab({ data, loading, cardDetails }: MarketAnalysis
                       <Label htmlFor="query">Search Query</Label>
                       <Input
                         id="query"
-                        value={customQuery}
+                        value={localQueryInput}
                         placeholder={
                           cardDetails
                             ? `${cardDetails.year} ${cardDetails.brand} ${cardDetails.playerName} ${cardDetails.series || ''} ${cardDetails.parallel || ''}`
@@ -247,7 +247,7 @@ export function MarketAnalysisTab({ data, loading, cardDetails }: MarketAnalysis
                                 .trim()
                             : 'Enter search terms'
                         }
-                        onChange={e => setCustomQuery(e.target.value)}
+                        onChange={e => setLocalQueryInput(e.target.value)}
                       />
                       <p className="text-xs text-muted-foreground">
                         Defaults to: {cardDetails?.year} {cardDetails?.brand}{' '}
@@ -259,8 +259,8 @@ export function MarketAnalysisTab({ data, loading, cardDetails }: MarketAnalysis
                     <Button variant="outline" onClick={() => setIsSearchDialogOpen(false)}>
                       Cancel
                     </Button>
-                    <Button onClick={handleApplySearch} disabled={isRefreshing}>
-                      {isRefreshing ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Apply Search'}
+                    <Button onClick={handleApplySearch} disabled={isUpdating}>
+                      {isUpdating ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Apply Search'}
                     </Button>
                   </DialogFooter>
                 </DialogContent>
@@ -295,7 +295,7 @@ export function MarketAnalysisTab({ data, loading, cardDetails }: MarketAnalysis
                 {activeData.recentSales.map(sale => (
                   <div
                     key={sale.url}
-                    className={`p-3 hover:bg-gray-50 transition-colors flex gap-3 group relative ${isRefreshing ? 'opacity-50 pointer-events-none' : ''}`}
+                    className={`p-3 hover:bg-gray-50 transition-colors flex gap-3 group relative ${isUpdating ? 'opacity-50 pointer-events-none' : ''}`}
                   >
                     {/* Image */}
                     <div className="h-12 w-12 relative flex-shrink-0 bg-gray-100 rounded overflow-hidden border">

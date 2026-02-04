@@ -1,30 +1,12 @@
 'use client';
 
-import { useState } from 'react';
-import { Search, LogOut } from 'lucide-react';
+import { Search } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { SidebarTrigger } from '@/components/ui/sidebar';
-import { ThemeToggle } from '@/components/ui/theme-toggle';
-import { useTranslations } from 'next-intl';
 import { Separator } from '@/components/ui/separator';
 import { AppBreadcrumb } from './AppBreadcrumb';
-import { logoutUser } from '@/app/actions/logout';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from '@/components/ui/alert-dialog';
 
 export function AppHeader() {
-  const t = useTranslations();
-  const [isLoggingOut, setIsLoggingOut] = useState(false);
-
   return (
     <header className="sticky top-0 z-40 flex h-16 shrink-0 items-center gap-2 border-b bg-background px-4">
       <SidebarTrigger className="-ml-1" />
@@ -59,49 +41,9 @@ export function AppHeader() {
         </Button>
       </div>
 
-      {/* Right side */}
+      {/* Right side - (Empty now, functionality moved to Sidebar) */}
       <div className="flex items-center gap-2">
-        <ThemeToggle />
-
-        <Separator orientation="vertical" className="h-4" />
-
-        {/* Logout with AlertDialog */}
-        <AlertDialog>
-          <AlertDialogTrigger asChild>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="flex items-center gap-2 text-destructive hover:text-destructive hover:bg-destructive/10"
-              title={t('auth.logout')}
-            >
-              <LogOut className="h-4 w-4" />
-              <span className="hidden sm:inline text-sm">{t('auth.logout')}</span>
-            </Button>
-          </AlertDialogTrigger>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>{t('auth.logout')}</AlertDialogTitle>
-              <AlertDialogDescription>{t('auth.logoutConfirm')}</AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
-              <AlertDialogAction
-                onClick={async () => {
-                  setIsLoggingOut(true);
-                  try {
-                    await logoutUser();
-                  } catch {
-                    setIsLoggingOut(false);
-                  }
-                }}
-                disabled={isLoggingOut}
-                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-              >
-                {isLoggingOut ? '...' : t('common.confirm')}
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
+        {/* Placeholder for future header items if needed */}
       </div>
     </header>
   );

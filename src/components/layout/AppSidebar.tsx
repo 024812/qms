@@ -17,6 +17,7 @@ import {
   Wrench,
   ChevronRight,
   LucideIcon,
+  LogOut,
 } from 'lucide-react';
 import packageJson from '../../../package.json';
 import { getAllModules } from '@/modules/registry';
@@ -37,6 +38,15 @@ import {
   SidebarRail,
 } from '@/components/ui/sidebar';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 
 const moduleIcons: Record<string, LucideIcon> = {
   Bed,
@@ -337,13 +347,78 @@ export function AppSidebar() {
       </SidebarContent>
 
       <SidebarFooter className="border-t border-sidebar-border">
+        {session?.user && (
+          <div className="p-2">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <div className="flex items-center gap-3 p-2 rounded-md hover:bg-sidebar-accent cursor-pointer group-data-[collapsible=icon]:justify-center">
+                  <Avatar className="h-8 w-8 rounded-full border border-border">
+                    <AvatarImage src={session.user.image || ''} alt={session.user.name || ''} />
+                    <AvatarFallback className="text-xs bg-sidebar-primary text-sidebar-primary-foreground">
+                      {session.user.name?.slice(0, 2).toUpperCase() || 'U'}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="flex flex-col text-left group-data-[collapsible=icon]:hidden overflow-hidden">
+                    <span className="text-sm font-medium truncate text-foreground">
+                      {session.user.name || t('common.user')}
+                    </span>
+                    <span className="text-xs text-muted-foreground truncate">
+                      {session.user.email}
+                    </span>
+                  </div>
+                  <ChevronRight className="ml-auto h-4 w-4 text-muted-foreground group-data-[collapsible=icon]:hidden" />
+                </div>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent
+                align="start"
+                side="right"
+                className="w-56"
+                sideOffset={8}
+                alignOffset={-4}
+              >
+                <DropdownMenuLabel className="font-normal">
+                  <div className="flex flex-col space-y-1">
+                    <p className="text-sm font-medium leading-none">{session.user.name}</p>
+                    <p className="text-xs leading-none text-muted-foreground">
+                      {session.user.email}
+                    </p>
+                  </div>
+                </DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem asChild>
+                  <Link href="/settings" className="cursor-pointer">
+                    <Settings className="mr-2 h-4 w-4" />
+                    <span>{t('sidebar.userSettings')}</span>
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem className="text-red-600 focus:text-red-600 cursor-pointer">
+                  <Link href="/api/auth/signout" className="flex items-center w-full">
+                    <LogOut className="mr-2 h-4 w-4" />
+                    <span>{t('auth.signOut')}</span>
+                  </Link>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+        )}
+
         <div className="flex flex-col items-center gap-2 py-2">
+          {!session?.user && (
+            <div className="w-full px-2 mb-2 group-data-[collapsible=icon]:hidden">
+              <Link href="/api/auth/signin">
+                <div className="flex items-center gap-2 p-2 rounded-md bg-primary/10 text-primary hover:bg-primary/20 transition-colors justify-center">
+                  <span className="text-sm font-medium">{t('auth.signIn')}</span>
+                </div>
+              </Link>
+            </div>
+          )}
+
           <span className="text-xs text-muted-foreground group-data-[collapsible=icon]:hidden">
             {t('common.version')} {packageJson.version}
           </span>
           <div className="flex items-center gap-3">
             <a
-              href="https://github.com/ohengcom/qms-app"
+              href="https://github.com/024812/qms"
               target="_blank"
               rel="noopener noreferrer"
               className="text-muted-foreground hover:text-foreground transition-colors"

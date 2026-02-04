@@ -260,7 +260,7 @@ export class AICardService {
             ],
           },
         ],
-        max_completion_tokens: 4000,
+        max_completion_tokens: 10000,
         response_format: { type: 'json_object' },
       });
 
@@ -376,7 +376,7 @@ export class AICardService {
             ],
           },
         ],
-        max_completion_tokens: 4000,
+        max_completion_tokens: 10000,
         response_format: { type: 'json_object' },
       });
 

@@ -2,6 +2,7 @@
   "auth": {
     "login": "登录",
     "logout": "退出登录",
+    "signOut": "退出登录",
     "password": "密码",
     "passwordPlaceholder": "请输入密码",
     "rememberMe": "记住我（30天）",

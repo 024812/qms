@@ -324,30 +324,10 @@ export function AppSidebar() {
             </SidebarGroupContent>
           </SidebarGroup>
         )}
-
-        {/* User Settings - Visible to all users */}
-        <SidebarGroup>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              <SidebarMenuItem>
-                <SidebarMenuButton
-                  asChild
-                  isActive={pathname === '/settings' || pathname === '/modules'}
-                  tooltip={t('sidebar.userSettings')}
-                >
-                  <Link href="/settings" prefetch={false}>
-                    <Settings className="h-4 w-4" />
-                    <span>{t('sidebar.userSettings')}</span>
-                  </Link>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
       </SidebarContent>
 
-      <SidebarFooter className="border-t border-sidebar-border">
-        {session?.user && (
+      <SidebarFooter className="gap-0">
+        {session?.user ? (
           <div className="p-2">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -400,43 +380,54 @@ export function AppSidebar() {
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
-        )}
-
-        <div className="flex flex-col items-center gap-2 py-2">
-          {!session?.user && (
-            <div className="w-full px-2 mb-2 group-data-[collapsible=icon]:hidden">
+        ) : (
+          <div className="p-2">
+            <div className="w-full group-data-[collapsible=icon]:hidden">
               <Link href="/api/auth/signin">
                 <div className="flex items-center gap-2 p-2 rounded-md bg-primary/10 text-primary hover:bg-primary/20 transition-colors justify-center">
                   <span className="text-sm font-medium">{t('auth.signIn')}</span>
                 </div>
               </Link>
             </div>
-          )}
+            {/* Icon only for collapsed state */}
+            <div className="hidden group-data-[collapsible=icon]:flex justify-center">
+              <Link href="/api/auth/signin" title={t('auth.signIn')}>
+                <div className="h-8 w-8 rounded-md bg-primary/10 flex items-center justify-center text-primary">
+                  <LogOut className="h-4 w-4 rotate-180" />
+                </div>
+              </Link>
+            </div>
+          </div>
+        )}
 
-          <span className="text-xs text-muted-foreground group-data-[collapsible=icon]:hidden">
-            {t('common.version')} {packageJson.version}
-          </span>
-          <div className="flex items-center gap-3">
-            <a
-              href="https://github.com/024812/qms"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-muted-foreground hover:text-foreground transition-colors"
-              title={t('common.github')}
-            >
-              <Github className="h-4 w-4" />
-            </a>
-            <a
-              href="https://vercel.com"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-muted-foreground hover:text-foreground transition-colors group-data-[collapsible=icon]:hidden"
-              title={t('common.deployedOnVercel')}
-            >
-              <svg className="h-4 w-4" viewBox="0 0 76 65" fill="currentColor">
-                <path d="M37.5274 0L75.0548 65H0L37.5274 0Z" />
-              </svg>
-            </a>
+        {/* Links & Version - Footer bottom */}
+        <div className="border-t border-sidebar-border px-4 py-3 group-data-[collapsible=icon]:hidden">
+          <div className="flex flex-col items-center gap-2">
+            <div className="flex items-center gap-3">
+              <a
+                href="https://github.com/024812/qms"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-muted-foreground hover:text-foreground transition-colors"
+                title={t('common.github')}
+              >
+                <Github className="h-4 w-4" />
+              </a>
+              <a
+                href="https://vercel.com"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-muted-foreground hover:text-foreground transition-colors"
+                title={t('common.deployedOnVercel')}
+              >
+                <svg className="h-4 w-4" viewBox="0 0 76 65" fill="currentColor">
+                  <path d="M37.5274 0L75.0548 65H0L37.5274 0Z" />
+                </svg>
+              </a>
+            </div>
+            <span className="text-[10px] text-muted-foreground opacity-70">
+              v{packageJson.version}
+            </span>
           </div>
         </div>
       </SidebarFooter>

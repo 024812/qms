@@ -410,7 +410,7 @@ export function UnifiedCardDashboard({ initialData }: UnifiedCardDashboardProps)
             className="grid grid-cols-1 lg:grid-cols-10 gap-6 pb-12 items-stretch"
           >
             {/* 1. IMAGE & BUTTONS PANEL (3 cols) */}
-            <div className="lg:col-span-2 flex flex-col">
+            <div className="lg:col-span-3 flex flex-col">
               <GlassPanel className="p-4 flex flex-col flex-1" variant="slab">
                 {/* Grade Badge */}
                 <div className="flex justify-end mb-2">
@@ -498,8 +498,8 @@ export function UnifiedCardDashboard({ initialData }: UnifiedCardDashboardProps)
               </GlassPanel>
             </div>
 
-            {/* 3. AI RESULTS PANEL (3 cols) */}
-            <div className="lg:col-span-5 flex flex-col">
+            {/* 3. AI RESULTS PANEL (4 cols) */}
+            <div className="lg:col-span-4 flex flex-col">
               <GlassPanel className="flex-1 flex flex-col">
                 <ScrollArea className="flex-1">
                   <div className="p-4">

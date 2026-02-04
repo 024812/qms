@@ -210,6 +210,12 @@ export class AICardService {
               
               Extract: Player, Year, Brand, Series, Card Number, Sport, Team, Position, Grading.
               
+              CRITICAL - DATA SEPARATION:
+              - Separate Brand and Series explicitly. 
+              - Example: "Panini Prizm" -> Brand: "Panini", Series: "Prizm".
+              - Common Series: "Prizm", "Select", "Chrome", "Optic", "Mosaic", "Donruss", "Topps Chrome".
+              - If the card says "Prizm" anywhere, ensure 'series' is set to "Prizm".
+
               CRITICAL - PARALLEL/VARIATION DETECTION:
               - Look closely for "Refractor", "Prizm" text, or specific color variants (Silver, Gold, Blue, Green, etc.).
               - Identify serial numbers (e.g., "01/99") and include them in the 'parallel' field (e.g., "Gold /99").

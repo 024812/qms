@@ -514,43 +514,50 @@ export function UnifiedCardDashboard({ initialData }: UnifiedCardDashboardProps)
                       </div>
                     )}
 
-                    {/* Auth Check Results */}
-                    {!currentResult.loading && !checkingAuthenticity && showAuthResults && (
-                      <div className="space-y-3 mb-4">
-                        {authCheckResult === 'SAFE' && (
-                          <motion.div
-                            initial={{ opacity: 0, y: 10 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            className="bg-emerald-50 text-emerald-700 border border-emerald-200 p-3 rounded-lg flex items-start gap-2"
-                          >
-                            <ShieldCheck className="w-4 h-4 mt-0.5 flex-shrink-0" />
-                            <span className="text-xs leading-relaxed">
-                              {t('ai.noRisksDetected')}
-                            </span>
-                          </motion.div>
-                        )}
-                        {riskWarning && (
-                          <motion.div
-                            initial={{ opacity: 0, y: 10 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            className="bg-red-50 text-red-700 border border-red-200 p-3 rounded-lg flex items-start gap-2"
-                          >
-                            <AlertTriangle className="w-4 h-4 mt-0.5 flex-shrink-0" />
-                            <span className="text-xs leading-relaxed">{riskWarning}</span>
-                          </motion.div>
-                        )}
-                        {imageQualityFeedback && (
-                          <motion.div
-                            initial={{ opacity: 0, y: 10 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            className="bg-amber-50 text-amber-700 border border-amber-200 p-3 rounded-lg flex items-start gap-2"
-                          >
-                            <AlertTriangle className="w-4 h-4 mt-0.5 flex-shrink-0" />
-                            <span className="text-xs leading-relaxed">{imageQualityFeedback}</span>
-                          </motion.div>
-                        )}
-                      </div>
-                    )}
+                    {/* Auth Check Results - ONLY show if explicitly in authenticity tab */}
+                    {!currentResult.loading &&
+                      !checkingAuthenticity &&
+                      currentResult.type === 'authenticity' &&
+                      showAuthResults && (
+                        <div className="space-y-3 mb-4">
+                          {authCheckResult === 'SAFE' && (
+                            <motion.div
+                              initial={{ opacity: 0, y: 10 }}
+                              animate={{ opacity: 1, y: 0 }}
+                              className="bg-emerald-50 text-emerald-700 border border-emerald-200 p-3 rounded-lg flex items-start gap-2"
+                            >
+                              <ShieldCheck className="w-4 h-4 mt-0.5 flex-shrink-0" />
+                              <span className="text-xs leading-relaxed">
+                                {t('ai.noRisksDetected')}
+                              </span>
+                            </motion.div>
+                          )}
+                          {riskWarning && (
+                            <motion.div
+                              initial={{ opacity: 0, y: 10 }}
+                              animate={{ opacity: 1, y: 0 }}
+                              className="bg-red-50 text-red-700 border border-red-200 p-3 rounded-lg flex items-start gap-2"
+                            >
+                              <AlertTriangle className="w-4 h-4 mt-0.5 flex-shrink-0" />
+                              <span className="text-xs leading-relaxed whitespace-pre-wrap">
+                                {riskWarning}
+                              </span>
+                            </motion.div>
+                          )}
+                          {imageQualityFeedback && (
+                            <motion.div
+                              initial={{ opacity: 0, y: 10 }}
+                              animate={{ opacity: 1, y: 0 }}
+                              className="bg-amber-50 text-amber-700 border border-amber-200 p-3 rounded-lg flex items-start gap-2"
+                            >
+                              <AlertTriangle className="w-4 h-4 mt-0.5 flex-shrink-0" />
+                              <span className="text-xs leading-relaxed">
+                                {imageQualityFeedback}
+                              </span>
+                            </motion.div>
+                          )}
+                        </div>
+                      )}
 
                     {/* Market Analysis Results */}
                     {!marketAnalyzing && marketData && currentResult.type === 'market' && (
@@ -566,7 +573,7 @@ export function UnifiedCardDashboard({ initialData }: UnifiedCardDashboardProps)
 
                     {/* Grading Analysis Results */}
                     {!gradingAnalyzing && gradingData && currentResult.type === 'grading' && (
-                      <GradingAnalysisTab cardDetails={getCardDetails()} />
+                      <GradingAnalysisTab cardDetails={getCardDetails()} data={gradingData} />
                     )}
 
                     {/* Empty State */}

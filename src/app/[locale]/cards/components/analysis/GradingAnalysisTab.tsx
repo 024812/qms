@@ -19,17 +19,29 @@ import type { CardDetailsForAnalysis } from './MarketAnalysisTab';
 
 export interface GradingAnalysisTabProps {
   cardDetails?: CardDetailsForAnalysis;
+  data?: GradingAnalysisResult | null;
 }
 
-export function GradingAnalysisTab({ cardDetails }: GradingAnalysisTabProps) {
+export function GradingAnalysisTab({ cardDetails, data }: GradingAnalysisTabProps) {
   const t = useTranslations('cards.analysis');
 
-  const [gradingData, setGradingData] = useState<GradingAnalysisResult | null>(null);
+  // If data is provided via props (controlled mode), use it. otherwise local state.
+  const [internalData, setInternalData] = useState<GradingAnalysisResult | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const effectiveData = data || internalData; // Use prop data if available
+
   const fetchGradingAnalysis = useCallback(async () => {
     if (!cardDetails) return;
+
+    // If parent is handling data fetching (data prop is provided but null),
+    // we shouldn't fetch here unless we are in fully uncontrolled mode,
+    // but the dashboard pattern suggests we should let the parent handle it.
+    // However, if this component is used standalone, it needs this.
+    // For now, if 'data' prop is undefined, we act uncontrolled.
+    // If 'data' is passed (even null), we assume parent controls it?
+    // Actually, simpler: this fetch is for the "Retry" or "Load" button if local state is null.
 
     setLoading(true);
     setError(null);
@@ -40,7 +52,7 @@ export function GradingAnalysisTab({ cardDetails }: GradingAnalysisTabProps) {
         brand: cardDetails.brand,
         cardNumber: cardDetails.cardNumber,
       });
-      setGradingData(result);
+      setInternalData(result);
     } catch (e) {
       console.error('Grading analysis failed:', e);
       setError('Failed to load grading analysis');
@@ -48,13 +60,6 @@ export function GradingAnalysisTab({ cardDetails }: GradingAnalysisTabProps) {
       setLoading(false);
     }
   }, [cardDetails]);
-
-  // Auto-fetch on mount if cardDetails available
-  // useEffect(() => {
-  //   if (cardDetails && !gradingData && !loading) {
-  //     fetchGradingAnalysis();
-  //   }
-  // }, [cardDetails, gradingData, loading, fetchGradingAnalysis]);
 
   if (loading) {
     return (
@@ -74,7 +79,7 @@ export function GradingAnalysisTab({ cardDetails }: GradingAnalysisTabProps) {
     );
   }
 
-  if (!gradingData) {
+  if (!effectiveData) {
     return (
       <div className="text-center p-6 text-muted-foreground">
         <p className="mb-4 text-sm">{t('grading.clickToLoad')}</p>
@@ -87,7 +92,7 @@ export function GradingAnalysisTab({ cardDetails }: GradingAnalysisTabProps) {
 
   // Check for empty data (all zeros)
   const noDataAvailable =
-    gradingData.rawPrice === 0 && gradingData.psa9Price === 0 && gradingData.psa10Price === 0;
+    effectiveData.rawPrice === 0 && effectiveData.psa9Price === 0 && effectiveData.psa10Price === 0;
 
   if (noDataAvailable) {
     return (
@@ -109,9 +114,9 @@ export function GradingAnalysisTab({ cardDetails }: GradingAnalysisTabProps) {
       {/* 1. Recommendation Hero */}
       <Card
         className={`border-l-4 shadow-sm ${
-          gradingData.recommendation === 'GRADE'
+          effectiveData.recommendation === 'GRADE'
             ? 'border-l-green-500 bg-green-50/10'
-            : gradingData.recommendation === 'HOLD'
+            : effectiveData.recommendation === 'HOLD'
               ? 'border-l-yellow-500'
               : 'border-l-gray-400'
         }`}
@@ -121,12 +126,12 @@ export function GradingAnalysisTab({ cardDetails }: GradingAnalysisTabProps) {
             <div>
               <p className="text-sm text-gray-500 font-medium">{t('grading.recommendation')}</p>
               <h3 className="text-2xl font-bold mt-1 text-gray-900">
-                {t(`grading.actions.${gradingData.recommendation}`)}
+                {t(`grading.actions.${effectiveData.recommendation}`)}
               </h3>
             </div>
             <Gauge
               className={`w-8 h-8 ${
-                gradingData.recommendation === 'GRADE' ? 'text-green-500' : 'text-gray-400'
+                effectiveData.recommendation === 'GRADE' ? 'text-green-500' : 'text-gray-400'
               }`}
             />
           </div>
@@ -143,7 +148,7 @@ export function GradingAnalysisTab({ cardDetails }: GradingAnalysisTabProps) {
           <div>
             <div className="flex justify-between text-sm mb-1">
               <span className="font-medium text-gray-600">{t('grading.raw')}</span>
-              <span className="font-bold">{formatPrice(gradingData.rawPrice)}</span>
+              <span className="font-bold">{formatPrice(effectiveData.rawPrice)}</span>
             </div>
             <Progress value={100} className="h-2 bg-gray-100" />
           </div>
@@ -153,19 +158,19 @@ export function GradingAnalysisTab({ cardDetails }: GradingAnalysisTabProps) {
             <div className="flex justify-between text-sm mb-1">
               <span className="font-medium text-indigo-600">{t('grading.psa9')}</span>
               <div className="text-right">
-                <span className="font-bold block">{formatPrice(gradingData.psa9Price)}</span>
+                <span className="font-bold block">{formatPrice(effectiveData.psa9Price)}</span>
                 <span
-                  className={`text-xs ${gradingData.psa9Roi > 0 ? 'text-green-600' : 'text-red-500'}`}
+                  className={`text-xs ${effectiveData.psa9Roi > 0 ? 'text-green-600' : 'text-red-500'}`}
                 >
-                  ROI: {gradingData.psa9Roi > 0 ? '+' : ''}
-                  {gradingData.psa9Roi}%
+                  ROI: {effectiveData.psa9Roi > 0 ? '+' : ''}
+                  {effectiveData.psa9Roi}%
                 </span>
               </div>
             </div>
             <Progress
               value={Math.min(
                 100,
-                Math.max(0, (gradingData.psa9Price / (gradingData.psa10Price || 1)) * 100)
+                Math.max(0, (effectiveData.psa9Price / (effectiveData.psa10Price || 1)) * 100)
               )}
               className="h-2 [&>div]:bg-indigo-500"
             />
@@ -176,12 +181,12 @@ export function GradingAnalysisTab({ cardDetails }: GradingAnalysisTabProps) {
             <div className="flex justify-between text-sm mb-1">
               <span className="font-medium text-green-600">{t('grading.psa10')}</span>
               <div className="text-right">
-                <span className="font-bold block">{formatPrice(gradingData.psa10Price)}</span>
+                <span className="font-bold block">{formatPrice(effectiveData.psa10Price)}</span>
                 <span
-                  className={`text-xs ${gradingData.psa10Roi > 0 ? 'text-green-600' : 'text-red-500'}`}
+                  className={`text-xs ${effectiveData.psa10Roi > 0 ? 'text-green-600' : 'text-red-500'}`}
                 >
-                  ROI: {gradingData.psa10Roi > 0 ? '+' : ''}
-                  {gradingData.psa10Roi}%
+                  ROI: {effectiveData.psa10Roi > 0 ? '+' : ''}
+                  {effectiveData.psa10Roi}%
                 </span>
               </div>
             </div>
@@ -202,7 +207,7 @@ export function GradingAnalysisTab({ cardDetails }: GradingAnalysisTabProps) {
             <div>
               <p className="text-sm text-gray-500 font-medium">{t('grading.marketDepth')}</p>
               <p className="text-xl font-bold">
-                {gradingData.marketDepth.activeListings} {t('grading.activeListings')}
+                {effectiveData.marketDepth.activeListings} {t('grading.activeListings')}
               </p>
             </div>
           </div>

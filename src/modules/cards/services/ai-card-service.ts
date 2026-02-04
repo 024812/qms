@@ -144,13 +144,13 @@ export class AICardService {
         defaultHeaders: { 'api-key': apiKey },
       });
 
-      this.deployment = deployment || 'gpt-5-mini';
+      this.deployment = deployment || 'gpt-4o-mini';
       this.lastConfigFetch = now;
 
       return { client: this.client, deployment: this.deployment };
     } catch (clientInitError) {
       console.error('AI Service: failed to init OpenAI client', clientInitError);
-      return { client: null, deployment: 'gpt-5-mini' };
+      return { client: null, deployment: 'gpt-4o-mini' };
     }
   }
 
@@ -265,7 +265,30 @@ export class AICardService {
       });
 
       const content = response.choices[0].message.content;
-      if (!content) throw new Error('No content from AI');
+
+      if (!content) {
+        console.error('AI Identification Error: Empty content received', {
+          finish_reason: response.choices[0].finish_reason,
+          id: response.id,
+          model: response.model,
+        });
+
+        // Handle Content Filter specifically
+        if (response.choices[0].finish_reason === 'content_filter') {
+          return {
+            playerName: 'Unknown - Content Filter Triggered',
+            brand: 'Unknown',
+            year: new Date().getFullYear(),
+            confidence: 'LOW',
+            imageQualityFeedback:
+              locale === 'zh'
+                ? '无法识别：图片内容触发了安全过滤器，请尝试更换背景或角度。'
+                : 'Identification failed: Image triggered content safety filters. Please try a different angle.',
+          } as CardRecognitionResult;
+        }
+
+        throw new Error(`No content from AI. Finish reason: ${response.choices[0].finish_reason}`);
+      }
 
       // Parse and validate with Zod
       const parsed = JSON.parse(content);
@@ -333,8 +356,9 @@ export class AICardService {
   
               Return VALID JSON ONLY. Do not include markdown formatting like \`\`\`json.
               
-              IMPORTANT: Provide a detailed explanation in ${language}.
-  
+              IMPORTANT: Provide a detailed explanation in ${language}. 
+              Use bullet points (-) and newlines for readability. Do not output a single large block of text.
+
               Format:
               {
                 "riskWarning": "string (null if no risks found, otherwise detailed explanation)",

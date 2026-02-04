@@ -143,26 +143,53 @@ export class eBayApiClient {
     try {
       const client = await this.getClient();
 
-      // Build optimal search query
-      const q = params.customQuery ? params.customQuery : this.buildSearchQuery(params);
-      console.warn('DEBUG: Generated Query:', q);
+      // Helper to perform search
+      const performSearch = async (currentParams: eBaySearchParams): Promise<any[]> => {
+        const q = currentParams.customQuery
+          ? currentParams.customQuery
+          : this.buildSearchQuery(currentParams);
+        console.warn('DEBUG: Generated Query:', q);
 
-      // Execute Search
-      const response = await client.buy.browse.search({
-        q: q,
-        filter: 'soldItemsOnly:true',
-        sort: 'createdDate:DESC',
-        limit: 50,
-        fieldgroups: 'ITEM_SUMMARY,PRICE',
-      });
+        const response = await client.buy.browse.search({
+          q: q,
+          filter: 'soldItemsOnly:true',
+          sort: 'createdDate:DESC',
+          limit: 50,
+          fieldgroups: 'ITEM_SUMMARY,PRICE',
+        });
 
-      if (!response.itemSummaries) {
+        return response.itemSummaries || [];
+      };
+
+      // 1. Attempt 1: Full Criteria
+      let itemSummaries = await performSearch(params);
+
+      // 2. Attempt 2: If no results, retry WITHOUT YEAR (Common mismatch source, e.g. 2023 vs 2024 cards)
+      if (itemSummaries.length === 0 && params.year && !params.customQuery) {
+        console.warn('DEBUG: No results found. Retrying without YEAR...');
+        const paramsNoYear = { ...params };
+        delete paramsNoYear.year;
+        itemSummaries = await performSearch(paramsNoYear);
+      }
+
+      // 3. Attempt 3: If still no results, retry WITHOUT SERIES (Some listings omit "Prizm" or put it elsewhere)
+      // Only if we haven't already stripped it (unlikely) and if series exists
+      // 3. Attempt 3: If still no results, retry WITHOUT SERIES (Some listings omit "Prizm" or put it elsewhere)
+      if (itemSummaries.length === 0 && params.series && !params.customQuery) {
+        console.warn('DEBUG: No results found. Retrying without SERIES...');
+        // Try removing Series from the ORIGINAL params (assuming Year was correct)
+        const paramsNoSeries = { ...params };
+        delete paramsNoSeries.series;
+        itemSummaries = await performSearch(paramsNoSeries);
+      }
+
+      // 4. Transform results
+      if (itemSummaries.length === 0) {
         return [];
       }
 
-      // Transform results
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      return response.itemSummaries.map((item: any) => {
+      return itemSummaries.map((item: any) => {
         const priceValue = parseFloat(item.price?.value || '0');
         const priceCurrency = item.price?.currency || 'USD';
         const normalizedPrice = this.normalizeCurrency(priceValue, priceCurrency);

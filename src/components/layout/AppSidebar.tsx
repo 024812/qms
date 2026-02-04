@@ -336,12 +336,7 @@ export function AppSidebar() {
                       </AvatarFallback>
                     </Avatar>
                     <div className="grid flex-1 text-left text-sm leading-tight group-data-[collapsible=icon]:hidden">
-                      <span className="truncate font-semibold">
-                        {session.user.name || t('common.user')}
-                      </span>
-                      <span className="truncate text-xs text-muted-foreground">
-                        {session.user.email}
-                      </span>
+                      <span className="truncate font-semibold">{session.user.email}</span>
                     </div>
                     <ChevronRight className="ml-auto h-4 w-4 transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
                   </SidebarMenuButton>

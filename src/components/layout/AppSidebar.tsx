@@ -39,14 +39,6 @@ import {
 } from '@/components/ui/sidebar';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
 
 const moduleIcons: Record<string, LucideIcon> = {
   Bed,
@@ -328,58 +320,58 @@ export function AppSidebar() {
 
       <SidebarFooter className="gap-0">
         {session?.user ? (
-          <div className="p-2">
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <div className="flex items-center gap-3 p-2 rounded-md hover:bg-sidebar-accent cursor-pointer group-data-[collapsible=icon]:justify-center">
-                  <Avatar className="h-8 w-8 rounded-full border border-border">
-                    <AvatarImage src={session.user.image || ''} alt={session.user.name || ''} />
-                    <AvatarFallback className="text-xs bg-sidebar-primary text-sidebar-primary-foreground">
-                      {session.user.name?.slice(0, 2).toUpperCase() || 'U'}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div className="flex flex-col text-left group-data-[collapsible=icon]:hidden overflow-hidden">
-                    <span className="text-sm font-medium truncate text-foreground">
-                      {session.user.name || t('common.user')}
-                    </span>
-                    <span className="text-xs text-muted-foreground truncate">
-                      {session.user.email}
-                    </span>
-                  </div>
-                  <ChevronRight className="ml-auto h-4 w-4 text-muted-foreground group-data-[collapsible=icon]:hidden" />
-                </div>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent
-                align="start"
-                side="right"
-                className="w-56"
-                sideOffset={8}
-                alignOffset={-4}
-              >
-                <DropdownMenuLabel className="font-normal">
-                  <div className="flex flex-col space-y-1">
-                    <p className="text-sm font-medium leading-none">{session.user.name}</p>
-                    <p className="text-xs leading-none text-muted-foreground">
-                      {session.user.email}
-                    </p>
-                  </div>
-                </DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem asChild>
-                  <Link href="/settings" className="cursor-pointer">
-                    <Settings className="mr-2 h-4 w-4" />
-                    <span>{t('sidebar.userSettings')}</span>
-                  </Link>
-                </DropdownMenuItem>
-                <DropdownMenuItem className="text-red-600 focus:text-red-600 cursor-pointer">
-                  <Link href="/api/auth/signout" className="flex items-center w-full">
-                    <LogOut className="mr-2 h-4 w-4" />
-                    <span>{t('auth.signOut')}</span>
-                  </Link>
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
+          <SidebarMenu>
+            <Collapsible className="group/collapsible">
+              <SidebarMenuItem>
+                <CollapsibleTrigger asChild>
+                  <SidebarMenuButton
+                    size="lg"
+                    className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
+                    tooltip={session.user.name || t('common.user')}
+                  >
+                    <Avatar className="h-8 w-8 rounded-lg border border-border">
+                      <AvatarImage src={session.user.image || ''} alt={session.user.name || ''} />
+                      <AvatarFallback className="text-xs bg-sidebar-primary text-sidebar-primary-foreground rounded-lg">
+                        {session.user.name?.slice(0, 2).toUpperCase() || 'U'}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="grid flex-1 text-left text-sm leading-tight group-data-[collapsible=icon]:hidden">
+                      <span className="truncate font-semibold">
+                        {session.user.name || t('common.user')}
+                      </span>
+                      <span className="truncate text-xs text-muted-foreground">
+                        {session.user.email}
+                      </span>
+                    </div>
+                    <ChevronRight className="ml-auto h-4 w-4 transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
+                  </SidebarMenuButton>
+                </CollapsibleTrigger>
+                <CollapsibleContent>
+                  <SidebarMenuSub>
+                    <SidebarMenuSubItem>
+                      <SidebarMenuSubButton asChild>
+                        <Link href="/settings" prefetch={false}>
+                          <Settings className="h-4 w-4" />
+                          <span>{t('sidebar.userSettings')}</span>
+                        </Link>
+                      </SidebarMenuSubButton>
+                    </SidebarMenuSubItem>
+                    <SidebarMenuSubItem>
+                      <SidebarMenuSubButton
+                        asChild
+                        className="text-red-600 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/20"
+                      >
+                        <Link href="/api/auth/signout" prefetch={false}>
+                          <LogOut className="h-4 w-4" />
+                          <span>{t('auth.signOut')}</span>
+                        </Link>
+                      </SidebarMenuSubButton>
+                    </SidebarMenuSubItem>
+                  </SidebarMenuSub>
+                </CollapsibleContent>
+              </SidebarMenuItem>
+            </Collapsible>
+          </SidebarMenu>
         ) : (
           <div className="p-2">
             <div className="w-full group-data-[collapsible=icon]:hidden">

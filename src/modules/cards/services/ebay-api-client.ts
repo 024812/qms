@@ -188,8 +188,41 @@ export class eBayApiClient {
         return [];
       }
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      return itemSummaries.map((item: any) => {
+      // 5. Post-Process & Filter (Client-side filtering is safer than API exclusion)
+      // We filter out reprints, digital cards, etc. here instead of in the API query
+      // to avoid "zero results" due to aggressive keyword matching.
+      const filteredSummaries = itemSummaries.filter((item: any) => {
+        const title = (item.title || '').toLowerCase();
+
+        // Negative keywords (Junk filter)
+        const negatives = [
+          'reprint',
+          'rp',
+          'facsimile',
+          'digital',
+          'lot',
+          'set',
+          'box',
+          'pack',
+          'case',
+          'break',
+        ];
+        const hasNegative = negatives.some(neg => title.includes(neg));
+
+        // We could also check item.condition or category here if needed
+        return !hasNegative;
+      });
+
+      console.warn(
+        `DEBUG: Unfiltered count: ${itemSummaries.length}, Filtered count: ${filteredSummaries.length}`
+      );
+
+      if (filteredSummaries.length === 0 && itemSummaries.length > 0) {
+        console.warn('DEBUG: All results were filtered out as junk. Returning empty.');
+        return [];
+      }
+
+      return filteredSummaries.map((item: any) => {
         const priceValue = parseFloat(item.price?.value || '0');
         const priceCurrency = item.price?.currency || 'USD';
         const normalizedPrice = this.normalizeCurrency(priceValue, priceCurrency);

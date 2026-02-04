@@ -12,6 +12,7 @@ export interface CardDetails {
   grade?: number;
   isAutographed?: boolean;
   customQuery?: string;
+  forceRefresh?: boolean;
 }
 
 export interface IPriceDataProvider {
@@ -98,7 +99,7 @@ export class CachingPriceProvider implements IPriceDataProvider {
     const key = this.generateCacheKey(details);
     const cached = this.cache.get(key);
 
-    if (cached && Date.now() - cached.timestamp < this.TTL) {
+    if (!details.forceRefresh && cached && Date.now() - cached.timestamp < this.TTL) {
       // console.log(`Returning cached results for ${this.provider.name}`);
       return cached.data;
     }

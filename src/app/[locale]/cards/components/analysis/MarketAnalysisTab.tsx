@@ -19,6 +19,7 @@ import {
   Filter,
   EyeOff,
   Code,
+  RefreshCw,
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -26,6 +27,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { cn } from '@/lib/utils';
 import {
   Dialog,
   DialogContent,
@@ -75,7 +77,11 @@ export function MarketAnalysisTab({ data, loading, cardDetails }: MarketAnalysis
 
   const activeData = localAnalysis;
 
-  const refreshAnalysis = async (newQuery?: string, newExcludedIds?: string[]) => {
+  const refreshAnalysis = async (
+    newQuery?: string,
+    newExcludedIds?: string[],
+    forceRefresh: boolean = false
+  ) => {
     if (!cardDetails) return;
 
     setIsRefreshing(true);
@@ -84,6 +90,7 @@ export function MarketAnalysisTab({ data, loading, cardDetails }: MarketAnalysis
         ...cardDetails,
         customQuery: newQuery !== undefined ? newQuery : customQuery,
         excludedListingIds: newExcludedIds !== undefined ? newExcludedIds : excludedIds,
+        forceRefresh,
       });
       setLocalAnalysis(result);
     } catch (error) {
@@ -96,6 +103,10 @@ export function MarketAnalysisTab({ data, loading, cardDetails }: MarketAnalysis
   const handleApplySearch = () => {
     refreshAnalysis(customQuery, excludedIds);
     setIsSearchDialogOpen(false);
+  };
+
+  const handleForceRefresh = () => {
+    refreshAnalysis(customQuery, excludedIds, true);
   };
 
   const handleExcludeItem = (url: string) => {
@@ -195,52 +206,66 @@ export function MarketAnalysisTab({ data, loading, cardDetails }: MarketAnalysis
               </Badge>
             </div>
 
-            {/* Edit Search Dialog */}
-            <Dialog open={isSearchDialogOpen} onOpenChange={setIsSearchDialogOpen}>
-              <DialogTrigger asChild>
-                <Button variant="outline" size="sm" className="h-7 text-xs gap-1">
-                  <Search className="w-3 h-3" />
-                  Edit Search
-                </Button>
-              </DialogTrigger>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>Edit Search Query</DialogTitle>
-                  <DialogDescription>
-                    Modify the search query used to find recent sales data on eBay.
-                  </DialogDescription>
-                </DialogHeader>
-                <div className="grid gap-4 py-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="query">Search Query</Label>
-                    <Input
-                      id="query"
-                      value={customQuery}
-                      placeholder={
-                        cardDetails
-                          ? `${cardDetails.year} ${cardDetails.brand} ${cardDetails.playerName} ${cardDetails.series || ''} ${cardDetails.parallel || ''}`
-                              .replace(/\s+/g, ' ')
-                              .trim()
-                          : 'Enter search terms'
-                      }
-                      onChange={e => setCustomQuery(e.target.value)}
-                    />
-                    <p className="text-xs text-muted-foreground">
-                      Defaults to: {cardDetails?.year} {cardDetails?.brand}{' '}
-                      {cardDetails?.playerName} {cardDetails?.cardNumber} {cardDetails?.parallel}
-                    </p>
+            <div className="flex gap-1">
+              {/* Force Refresh Button */}
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7 text-slate-400 hover:text-blue-600 hover:bg-blue-50"
+                onClick={handleForceRefresh}
+                disabled={isRefreshing}
+                title="Force refresh data from eBay"
+              >
+                <RefreshCw className={cn('w-3.5 h-3.5', isRefreshing && 'animate-spin')} />
+              </Button>
+
+              {/* Edit Search Dialog */}
+              <Dialog open={isSearchDialogOpen} onOpenChange={setIsSearchDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button variant="outline" size="sm" className="h-7 text-xs gap-1">
+                    <Search className="w-3 h-3" />
+                    Edit Search
+                  </Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Edit Search Query</DialogTitle>
+                    <DialogDescription>
+                      Modify the search query used to find recent sales data on eBay.
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="grid gap-4 py-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="query">Search Query</Label>
+                      <Input
+                        id="query"
+                        value={customQuery}
+                        placeholder={
+                          cardDetails
+                            ? `${cardDetails.year} ${cardDetails.brand} ${cardDetails.playerName} ${cardDetails.series || ''} ${cardDetails.parallel || ''}`
+                                .replace(/\s+/g, ' ')
+                                .trim()
+                            : 'Enter search terms'
+                        }
+                        onChange={e => setCustomQuery(e.target.value)}
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        Defaults to: {cardDetails?.year} {cardDetails?.brand}{' '}
+                        {cardDetails?.playerName} {cardDetails?.cardNumber} {cardDetails?.parallel}
+                      </p>
+                    </div>
                   </div>
-                </div>
-                <DialogFooter>
-                  <Button variant="outline" onClick={() => setIsSearchDialogOpen(false)}>
-                    Cancel
-                  </Button>
-                  <Button onClick={handleApplySearch} disabled={isRefreshing}>
-                    {isRefreshing ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Apply Search'}
-                  </Button>
-                </DialogFooter>
-              </DialogContent>
-            </Dialog>
+                  <DialogFooter>
+                    <Button variant="outline" onClick={() => setIsSearchDialogOpen(false)}>
+                      Cancel
+                    </Button>
+                    <Button onClick={handleApplySearch} disabled={isRefreshing}>
+                      {isRefreshing ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Apply Search'}
+                    </Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
+            </div>
           </div>
         </CardContent>
       </Card>

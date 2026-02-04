@@ -530,23 +530,30 @@ export class AICardService {
    * - AI Summary
    */
   async analyzeCardQuick(
-    cardDetails: CardDetails & { customQuery?: string; excludedListingIds?: string[] },
+    cardDetails: CardDetails & {
+      customQuery?: string;
+      excludedListingIds?: string[];
+      forceRefresh?: boolean;
+    },
     locale: string = 'en'
   ): Promise<QuickAnalysisResult> {
     const cacheKey = this.generateAnalysisCacheKey(cardDetails);
 
     // 1. Check Cache - try memory first, then persistent storage
-    const memoryCached = this.analysisCache.get(cacheKey);
-    if (memoryCached && Date.now() - memoryCached.lastUpdated < this.CACHE_TTL) {
-      return memoryCached;
-    }
+    // Skip if forceRefresh is true
+    if (!cardDetails.forceRefresh) {
+      const memoryCached = this.analysisCache.get(cacheKey);
+      if (memoryCached && Date.now() - memoryCached.lastUpdated < this.CACHE_TTL) {
+        return memoryCached;
+      }
 
-    // Try persistent cache (survives server restarts)
-    const dbCached = await analysisCacheService.get<QuickAnalysisResult>(cacheKey);
-    if (dbCached && Date.now() - dbCached.lastUpdated < this.CACHE_TTL) {
-      // Populate memory cache for faster subsequent access
-      this.analysisCache.set(cacheKey, dbCached);
-      return dbCached;
+      // Try persistent cache (survives server restarts)
+      const dbCached = await analysisCacheService.get<QuickAnalysisResult>(cacheKey);
+      if (dbCached && Date.now() - dbCached.lastUpdated < this.CACHE_TTL) {
+        // Populate memory cache for faster subsequent access
+        this.analysisCache.set(cacheKey, dbCached);
+        return dbCached;
+      }
     }
 
     // 2. Fetch Data (eBay)
@@ -850,11 +857,14 @@ export class AICardService {
 A listing matches ONLY if:
 1. Same player name
 2. Same year (mandatory)
-3. Same card number if specified (mandatory)
-4. Same brand
+3. Same card number if specified in Target (mandatory). If Target has no number, ignore listing number.
+4. Same Brand AND Series/Set. 
+   - Example: If Target is "Panini Prizm", "Panini Select" is a MISMATCH.
+   - Example: If Target is "Panini Prizm", "Panini Prizm Draft Picks" is a MISMATCH.
+   - Example: If Target is just "Panini" (generic), accept "Panini Prizm", "Panini Select" etc. (Generic matches specific).
 5. Grading matches if specified.
 
-Return a JSON array of matching listing numbers. Be STRICT - only include exact matches.`,
+Return a JSON array of matching listing numbers. Be STRICT.`,
           },
           {
             role: 'user',

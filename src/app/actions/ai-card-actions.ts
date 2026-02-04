@@ -44,6 +44,7 @@ interface EstimateParams {
   isAutographed?: boolean;
   customQuery?: string;
   excludedListingIds?: string[];
+  forceRefresh?: boolean;
 }
 
 export async function estimatePriceAction(details: EstimateParams) {

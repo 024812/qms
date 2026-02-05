@@ -90,6 +90,11 @@ export async function getCards({
 
   const conditions: SQL[] = [eq(cards.userId, session.user.id)];
 
+  // Default behavior: Exclude SOLD cards unless explicitly filtered for
+  if (!filter?.status) {
+    conditions.push(sql`${cards.status} != 'SOLD'`);
+  }
+
   if (search) {
     conditions.push(ilike(cards.playerName, `%${search}%`));
   }

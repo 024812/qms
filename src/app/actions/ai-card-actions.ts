@@ -98,3 +98,15 @@ export async function analyzeCardGradingAction(details: EstimateParams) {
     throw new Error('Failed to assess grading potential');
   }
 }
+
+export async function analyzePlayerStatsAction(playerName: string, sport: string = 'BASKETBALL') {
+  try {
+    return await aiCardService.analyzePlayerStats(playerName, sport);
+  } catch (error) {
+    console.error('Player Stats Analysis Error:', error);
+    if (error instanceof Error) {
+      throw new Error(`Stats Analysis Failed: ${error.message}`);
+    }
+    throw new Error('Failed to analyze player stats');
+  }
+}

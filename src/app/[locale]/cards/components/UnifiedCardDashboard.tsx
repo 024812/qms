@@ -26,6 +26,7 @@ import {
   AlertTriangle,
   Search,
   Gauge,
+  Activity,
 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
@@ -56,12 +57,17 @@ import { SectionNotes } from './form-parts/SectionNotes';
 import { MarketAnalysisTab, GradingAnalysisTab } from './analysis';
 
 import { useCardForm } from './hooks/useCardForm';
-import { analyzeCardQuickAction, analyzeCardGradingAction } from '@/app/actions/ai-card-actions';
+import {
+  analyzeCardQuickAction,
+  analyzeCardGradingAction,
+  analyzePlayerStatsAction,
+} from '@/app/actions/ai-card-actions';
 import { deleteCard } from '@/app/actions/card-actions';
 import type { FormValues } from './form-schema';
 import type {
   QuickAnalysisResult,
   GradingAnalysisResult,
+  PlayerStatsAnalysisResult,
 } from '@/modules/cards/services/ai-card-service';
 import { Link } from '@/i18n/routing';
 
@@ -70,7 +76,7 @@ interface UnifiedCardDashboardProps {
 }
 
 // Types for AI results displayed in the right panel
-type ResultType = 'authenticity' | 'market' | 'grading' | 'empty';
+type ResultType = 'authenticity' | 'market' | 'grading' | 'player_stats' | 'empty';
 
 interface AIResultDisplay {
   type: ResultType;
@@ -78,6 +84,7 @@ interface AIResultDisplay {
   loading: boolean;
   marketData?: QuickAnalysisResult | null;
   gradingData?: GradingAnalysisResult | null;
+  playerStatsData?: PlayerStatsAnalysisResult | null;
   authResult?: 'SAFE' | 'WARNING' | null;
   riskWarning?: string;
   imageQualityFeedback?: string;
@@ -127,6 +134,10 @@ export function UnifiedCardDashboard({ initialData }: UnifiedCardDashboardProps)
   // Grading Analysis State
   const [gradingAnalyzing, setGradingAnalyzing] = useState(false);
   const [gradingData, setGradingData] = useState<GradingAnalysisResult | null>(null);
+
+  // Player Stats Analysis State
+  const [playerStatsAnalyzing, setPlayerStatsAnalyzing] = useState(false);
+  const [playerStatsData, setPlayerStatsData] = useState<PlayerStatsAnalysisResult | null>(null);
 
   // Delete dialog state
   const [deleteOpen, setDeleteOpen] = useState(false);
@@ -240,6 +251,38 @@ export function UnifiedCardDashboard({ initialData }: UnifiedCardDashboardProps)
       setCurrentResult({ type: 'empty', title: '', loading: false });
     } finally {
       setGradingAnalyzing(false);
+    }
+  };
+
+  // Player Stats Analysis Handler
+  const handlePlayerStatsAnalysis = async () => {
+    const cardDetails = getCardDetails();
+    if (!cardDetails.playerName) {
+      toast.error(t('errors.insufficientDataForEstimate'));
+      return;
+    }
+
+    setPlayerStatsAnalyzing(true);
+    setCurrentResult({ type: 'player_stats', title: 'Player Bio/Stats', loading: true });
+
+    try {
+      const result = await analyzePlayerStatsAction(
+        cardDetails.playerName,
+        'BASKETBALL' // Defaulting to NBA for now
+      );
+      setPlayerStatsData(result);
+      setCurrentResult({
+        type: 'player_stats',
+        title: 'Player Bio/Stats',
+        loading: false,
+        playerStatsData: result,
+      });
+    } catch (error) {
+      console.error(error);
+      toast.error(tCards('errors.analysisFailed'));
+      setCurrentResult({ type: 'empty', title: '', loading: false });
+    } finally {
+      setPlayerStatsAnalyzing(false);
     }
   };
 
@@ -467,6 +510,12 @@ export function UnifiedCardDashboard({ initialData }: UnifiedCardDashboardProps)
                     icon={<Gauge className="w-4 h-4 text-indigo-500" />}
                     label={tCards('analysis.tabs.grading')}
                   />
+                  <TooltipButton
+                    onClick={handlePlayerStatsAnalysis}
+                    loading={playerStatsAnalyzing}
+                    icon={<Activity className="w-4 h-4 text-amber-500" />}
+                    label="Bio/Stats"
+                  />
                 </div>
               </GlassPanel>
             </div>
@@ -507,6 +556,7 @@ export function UnifiedCardDashboard({ initialData }: UnifiedCardDashboardProps)
                     {(currentResult.loading ||
                       marketAnalyzing ||
                       gradingAnalyzing ||
+                      playerStatsAnalyzing ||
                       checkingAuthenticity) && (
                       <div className="flex flex-col items-center justify-center py-12 text-slate-500">
                         <Loader2 className="w-8 h-8 animate-spin mb-3 text-violet-500" />
@@ -576,10 +626,119 @@ export function UnifiedCardDashboard({ initialData }: UnifiedCardDashboardProps)
                       <GradingAnalysisTab cardDetails={getCardDetails()} data={gradingData} />
                     )}
 
+                    {/* Player Stats Results */}
+                    {!playerStatsAnalyzing &&
+                      playerStatsData &&
+                      currentResult.type === 'player_stats' && (
+                        <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-500">
+                          {/* AI Analysis Summary */}
+                          <div className="bg-amber-50/50 p-4 rounded-lg border border-amber-100">
+                            <h4 className="text-sm font-semibold text-amber-800 mb-2 flex items-center gap-2">
+                              <Sparkles className="w-4 h-4" /> AI Performance Analysis
+                            </h4>
+                            <p className="text-sm text-slate-700 leading-relaxed whitespace-pre-line">
+                              {playerStatsData.aiAnalysis}
+                            </p>
+                          </div>
+
+                          {/* Season Averages */}
+                          {playerStatsData.stats && (
+                            <div className="grid grid-cols-3 gap-2">
+                              <div className="bg-white p-3 rounded-lg border border-slate-100 shadow-sm text-center">
+                                <div className="text-xs text-slate-500 uppercase tracking-wider">
+                                  PTS
+                                </div>
+                                <div className="text-lg font-bold text-slate-900">
+                                  {playerStatsData.stats.points.toFixed(1)}
+                                </div>
+                              </div>
+                              <div className="bg-white p-3 rounded-lg border border-slate-100 shadow-sm text-center">
+                                <div className="text-xs text-slate-500 uppercase tracking-wider">
+                                  REB
+                                </div>
+                                <div className="text-lg font-bold text-slate-900">
+                                  {playerStatsData.stats.rebounds.toFixed(1)}
+                                </div>
+                              </div>
+                              <div className="bg-white p-3 rounded-lg border border-slate-100 shadow-sm text-center">
+                                <div className="text-xs text-slate-500 uppercase tracking-wider">
+                                  AST
+                                </div>
+                                <div className="text-lg font-bold text-slate-900">
+                                  {playerStatsData.stats.assists.toFixed(1)}
+                                </div>
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Recent Games */}
+                          {playerStatsData.stats?.last5Games?.length ? (
+                            <div className="bg-white rounded-lg border border-slate-100 overflow-hidden">
+                              <div className="bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-700 border-b border-slate-100">
+                                Last 5 Games
+                              </div>
+                              <div className="divide-y divide-slate-50">
+                                {playerStatsData.stats.last5Games.map((game, i) => (
+                                  <div
+                                    key={i}
+                                    className="flex items-center justify-between p-3 text-sm hover:bg-slate-50 transition-colors"
+                                  >
+                                    <div className="flex flex-col">
+                                      <span className="font-medium text-slate-900">
+                                        vs {game.opponent}
+                                      </span>
+                                      <span className="text-xs text-slate-400">
+                                        {new Date(game.date).toLocaleDateString()}
+                                      </span>
+                                    </div>
+                                    <div className="flex gap-4 font-mono text-xs">
+                                      <div className="flex flex-col items-center w-8">
+                                        <span className="text-slate-400 mb-0.5">PTS</span>
+                                        <span
+                                          className={cn(
+                                            'font-bold',
+                                            game.points >= 30
+                                              ? 'text-emerald-600'
+                                              : 'text-slate-700'
+                                          )}
+                                        >
+                                          {game.points}
+                                        </span>
+                                      </div>
+                                      <div className="flex flex-col items-center w-8">
+                                        <span className="text-slate-400 mb-0.5">REB</span>
+                                        <span className="text-slate-700 font-bold">
+                                          {game.rebounds}
+                                        </span>
+                                      </div>
+                                      <div className="flex flex-col items-center w-8">
+                                        <span className="text-slate-400 mb-0.5">AST</span>
+                                        <span className="text-slate-700 font-bold">
+                                          {game.assists}
+                                        </span>
+                                      </div>
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="text-center py-4 text-slate-400 text-sm">
+                              No recent game data available.
+                            </div>
+                          )}
+
+                          <div className="text-xs text-right text-slate-400 mt-2">
+                            Source: {playerStatsData.source}
+                          </div>
+                        </div>
+                      )}
+
                     {/* Empty State */}
                     {!currentResult.loading &&
                       !marketAnalyzing &&
                       !gradingAnalyzing &&
+                      !playerStatsAnalyzing &&
                       !checkingAuthenticity &&
                       !showAuthResults &&
                       currentResult.type === 'empty' && (

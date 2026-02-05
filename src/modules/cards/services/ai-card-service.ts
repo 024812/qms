@@ -792,7 +792,6 @@ export class AICardService {
       isAutographed: cardDetails.isAutographed,
     };
 
-    // Parallel Fetching
     const [rawSales, psa9Sales, psa10Sales, activeCount] = await Promise.all([
       ebayProvider.getRecentSales({ ...baseDetails, gradingCompany: 'UNGRADED' }),
       ebayProvider.getRecentSales({ ...baseDetails, gradingCompany: 'PSA', grade: 9 }),
@@ -800,7 +799,6 @@ export class AICardService {
       ebayProvider.getActiveListingCount(baseDetails),
     ]);
 
-    // Calculate Averages
     const calcAvg = (sales: eBaySalesResult[]) => {
       const cleaned = this.removeOutliers(sales);
       if (cleaned.length === 0) return 0;
@@ -811,22 +809,16 @@ export class AICardService {
     const psa9Price = calcAvg(psa9Sales);
     const psa10Price = calcAvg(psa10Sales);
 
-    // ROI Calculation Assumptions
-    // Cost basis = Raw Price
-    // Grading Cost = $25 (PSA Value Bulk/Standard avg estimate) + Shipping/Ins ($5)
-    const GRADING_COST_ESTIMATE = 30;
-
-    const calculateRoi = (targetPrice: number) => {
-      if (rawPrice === 0 || targetPrice === 0) return 0;
-      const totalCost = rawPrice + GRADING_COST_ESTIMATE;
-      const profit = targetPrice - totalCost; // eBay fees excluded for simplicity or add 13% later
-      return (profit / totalCost) * 100;
+    const GRADING_COST = 30; // Approx PSA cost + shipping
+    const calcRoi = (target: number) => {
+      if (rawPrice === 0 || target === 0) return 0;
+      const totalCost = rawPrice + GRADING_COST;
+      return ((target - totalCost) / totalCost) * 100;
     };
 
-    const psa9Roi = calculateRoi(psa9Price);
-    const psa10Roi = calculateRoi(psa10Price);
+    const psa9Roi = calcRoi(psa9Price);
+    const psa10Roi = calcRoi(psa10Price);
 
-    // Recommendation Logic
     let recommendation: 'GRADE' | 'HOLD' | 'SELL_RAW' = 'SELL_RAW';
     if (psa10Roi > 100 || (psa9Roi > 20 && psa10Roi > 50)) {
       recommendation = 'GRADE';
@@ -844,9 +836,121 @@ export class AICardService {
         activeListings: activeCount,
         lastChecked: Date.now(),
       },
-
       recommendation,
     };
+  }
+
+  /**
+   * Phase 3: Player Stats & Performance Analysis
+   */
+  async analyzePlayerStats(
+    playerName: string,
+    sport: string = 'BASKETBALL'
+  ): Promise<PlayerStatsAnalysisResult> {
+    let statsData = null;
+    let source = 'Unknown';
+
+    if (sport.toUpperCase() === 'BASKETBALL' || sport.toUpperCase() === 'NBA') {
+      try {
+        statsData = await this.fetchNBAStats(playerName);
+        source = 'Balldontlie API';
+      } catch (e) {
+        console.warn('Failed to fetch NBA stats:', e);
+      }
+    }
+
+    const aiAnalysis = await this.generatePlayerAnalysis(playerName, statsData);
+
+    return {
+      stats: statsData,
+      aiAnalysis,
+      source,
+    };
+  }
+
+  private async fetchNBAStats(playerName: string) {
+    const apiKey = process.env.BALLDONTLIE_API_KEY || 'bed1ba1a-9640-4bd2-9844-486927977469'; // Using a public/demo key if env missing
+    const headers = { Authorization: apiKey };
+
+    // 1. Search Player
+    const searchRes = await fetch(
+      `https://api.balldontlie.io/v1/players?search=${encodeURIComponent(playerName)}`,
+      { headers }
+    );
+    const searchData = await searchRes.json();
+    if (!searchData.data || searchData.data.length === 0) return null;
+
+    const player = searchData.data[0];
+
+    // 2. Get Last 5 Games Stats (2024 season)
+    const statsRes = await fetch(
+      `https://api.balldontlie.io/v1/stats?player_ids[]=${player.id}&seasons[]=2024&per_page=5`,
+      { headers }
+    );
+    const statsData = await statsRes.json();
+    const last5 = statsData.data || [];
+
+    // 3. Get Season Averages
+    const avgRes = await fetch(
+      `https://api.balldontlie.io/v1/season_averages?season=2024&player_ids[]=${player.id}`,
+      { headers }
+    );
+    const avgData = await avgRes.json();
+    const averages = avgData.data && avgData.data.length > 0 ? avgData.data[0] : null;
+
+    return {
+      last5Games: last5.map((g: any) => ({
+        date: g.game.date,
+        points: g.pts,
+        rebounds: g.reb,
+        assists: g.ast,
+        opponent:
+          g.game.visitor_team_id === player.team.id
+            ? g.game.home_team.abbreviation
+            : g.game.visitor_team_id,
+      })),
+      seasonAverages: averages,
+      points: averages?.pts || 0,
+      rebounds: averages?.reb || 0,
+      assists: averages?.ast || 0,
+    };
+  }
+
+  private async generatePlayerAnalysis(playerName: string, stats: any): Promise<string> {
+    const { client, deployment } = await this.getClient();
+    if (!client) return 'AI Analysis Unavailable.';
+
+    const statsContext = stats
+      ? `
+      Season Averages (2024-25): ${stats.points} PPG, ${stats.rebounds} RPG, ${stats.assists} APG.
+      Last 5 Games Trend: ${JSON.stringify(stats.last5Games)}
+      `
+      : 'No specific recent stats data available.';
+
+    const response = await client.chat.completions.create({
+      model: deployment,
+      messages: [
+        {
+          role: 'system',
+          content: `You are a sports card market analyst. 
+            Analyze the player's recent performance and its potential impact on their card values.
+            
+            Stats Context:
+            ${statsContext}
+            
+            Guidelines:
+            - If stats are great, mention "Buy/Hold" sentiment.
+            - If slumping, mention "Sell/Wait" sentiment.
+            - Provide a concise 3-sentence summary in Chinese (Simplified).`,
+        },
+        {
+          role: 'user',
+          content: `Analyze card value potential for: ${playerName}`,
+        },
+      ],
+    });
+
+    return response.choices[0].message.content || 'Analysis failed.';
   }
   /**
    * AI-assisted filtering of eBay sales results
@@ -1010,22 +1114,14 @@ export interface GradingAnalysisResult {
   recommendation: 'GRADE' | 'HOLD' | 'SELL_RAW';
 }
 
-export interface GradingAnalysisResult {
-  rawPrice: number;
-  psa9Price: number;
-  psa10Price: number;
-  psa9Roi: number; // Percentage
-  psa10Roi: number; // Percentage
-  marketDepth: {
-    activeListings: number;
-    lastChecked: number;
-  };
-  recommendation: 'GRADE' | 'HOLD' | 'SELL_RAW';
+export interface PlayerStatsAnalysisResult {
+  stats: {
+    points: number;
+    rebounds: number;
+    assists: number;
+    last5Games: any[];
+    seasonAverages?: any;
+  } | null;
+  aiAnalysis: string;
+  source: string;
 }
-
-export class AICardServiceExtended extends AICardService {
-  // Extending purely for organization in this thought process, but better to add to main class.
-  // Merging into main class below via tool.
-}
-
-// ... actually just appending to the class via replace_file_content targeting end of class

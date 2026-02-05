@@ -91,7 +91,24 @@ export function SectionValueCost({ onEstimate, estimating }: SectionValueCostPro
           render={({ field }) => (
             <FormItem>
               <FormLabel>{t('status')}</FormLabel>
-              <Select onValueChange={field.onChange} defaultValue={field.value}>
+              <Select
+                onValueChange={value => {
+                  field.onChange(value);
+                  // Smart logic: Auto-fill sold date if marking as sold
+                  if (value === 'SOLD') {
+                    const currentSoldDate = form.getValues('soldDate');
+                    if (!currentSoldDate) {
+                      form.setValue('soldDate', new Date().toISOString().split('T')[0]);
+                    }
+                  }
+                  // Smart logic: Clear sold data if moving away from sold
+                  else if (field.value === 'SOLD' && value !== 'SOLD') {
+                    form.setValue('soldPrice', undefined);
+                    form.setValue('soldDate', '');
+                  }
+                }}
+                defaultValue={field.value}
+              >
                 <FormControl>
                   <SelectTrigger>
                     <SelectValue />
@@ -164,12 +181,7 @@ export function SectionValueCost({ onEstimate, estimating }: SectionValueCostPro
               <FormItem>
                 <FormLabel>{t('soldDate')}</FormLabel>
                 <FormControl>
-                  <Input
-                    type="date"
-                    {...field}
-                    value={field.value ? new Date(field.value).toISOString().split('T')[0] : ''}
-                    onChange={e => field.onChange(e.target.value ? new Date(e.target.value) : null)}
-                  />
+                  <Input type="date" {...field} value={field.value ?? ''} />
                 </FormControl>
                 <FormMessage />
               </FormItem>

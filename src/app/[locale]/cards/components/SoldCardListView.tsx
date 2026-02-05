@@ -112,7 +112,7 @@ export function SoldCardListView({ items, onCardsChange, searchTerm = '' }: Sold
               <TableHead>{t('list.grade')}</TableHead>
               <TableHead>{t('list.purchasePrice')}</TableHead>
               <TableHead>{t('list.purchaseDate')}</TableHead>
-              <TableHead className="font-bold text-primary">{t('list.soldPrice')}</TableHead>
+              <TableHead>{t('list.soldPrice')}</TableHead>
               <TableHead>{t('list.soldDate')}</TableHead>
               <TableHead>{t('list.profit')}</TableHead>
               {/* <TableHead>{t('list.profitROI')}</TableHead> */}
@@ -177,14 +177,10 @@ export function SoldCardListView({ items, onCardsChange, searchTerm = '' }: Sold
                     </TableCell>
 
                     <TableCell>{formatCurrency(card.purchasePrice)}</TableCell>
-                    <TableCell className="text-muted-foreground text-xs">
-                      {formatDate(card.purchaseDate)}
-                    </TableCell>
+                    <TableCell>{formatDate(card.purchaseDate)}</TableCell>
 
-                    <TableCell className="font-bold">{formatCurrency(card.soldPrice)}</TableCell>
-                    <TableCell className="text-muted-foreground text-xs">
-                      {formatDate(card.soldDate)}
-                    </TableCell>
+                    <TableCell>{formatCurrency(card.soldPrice)}</TableCell>
+                    <TableCell>{formatDate(card.soldDate)}</TableCell>
 
                     {/* Profit Column */}
                     <TableCell>

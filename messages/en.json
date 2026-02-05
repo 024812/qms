@@ -302,6 +302,63 @@
         "CGC": "CGC"
       }
     },
+    "analysis": {
+      "analyzing": "Analyzing...",
+      "estimatedValue": "Estimated Value",
+      "trend30d": "30-Day Trend",
+      "confidence": "Confidence",
+      "source": "Source",
+      "aiInsights": "AI Insights",
+      "noSummary": "No analysis summary available",
+      "recentSales": "Recent Sales",
+      "noSalesFound": "No sales found",
+      "tabs": {
+        "market": "Market Analysis",
+        "grading": "Grading Lab",
+        "playerStats": "Bio/Stats"
+      },
+      "playerStats": {
+        "title": "AI Performance Analysis",
+        "vs": "vs",
+        "last5Games": "Last 5 Games",
+        "noData": "No recent game data available.",
+        "source": "Source: {source}"
+      },
+      "title": "Comprehensive Analysis",
+      "confidenceLevels": {
+        "high": "High",
+        "medium": "Medium",
+        "low": "Low",
+        "HIGH": "High",
+        "MEDIUM": "Medium",
+        "LOW": "Low"
+      },
+      "grading": {
+        "title": "Grading Analysis",
+        "clickToLoad": "Click to load grading analysis data",
+        "loadData": "Load Analysis",
+        "recommendation": "Recommendation",
+        "roi": "ROI Analysis",
+        "raw": "Raw Price",
+        "psa9": "PSA 9 Est.",
+        "psa10": "PSA 10 Est.",
+        "marketDepth": "Market Depth",
+        "activeListings": "active listings in this grade",
+        "disclaimer": "* Valuation for reference only, based on recent sales",
+        "noGradingData": "No grading price data found, possibly due to insufficient sales records.",
+        "noPriceData": "N/A",
+        "retry": "Retry",
+        "actions": {
+          "GRADE": "Suggestion: GRADE",
+          "HOLD": "Suggestion: HOLD",
+          "SELL": "Suggestion: SELL",
+          "SELL_RAW": "Sell Raw",
+          "SELL_GRADED": "Sell Graded",
+          "DONT_GRADE": "Don't Grade",
+          "KEEP": "Keep"
+        }
+      }
+    },
     "settings": {
       "title": "Card Management Settings",
       "subtitle": "Configure card module AI services (Admin only)",

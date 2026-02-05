@@ -363,7 +363,15 @@
       "noSalesFound": "未找到相关成交记录",
       "tabs": {
         "market": "市场分析",
-        "grading": "评级实验室"
+        "grading": "评级实验室",
+        "playerStats": "球员数据"
+      },
+      "playerStats": {
+        "title": "AI 表现分析",
+        "vs": "对阵",
+        "last5Games": "最近5场比赛",
+        "noData": "暂无近期比赛数据。",
+        "source": "数据来源: {source}"
       },
       "title": "全面分析",
       "confidenceLevels": {

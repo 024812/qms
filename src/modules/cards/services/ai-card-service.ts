@@ -845,7 +845,8 @@ export class AICardService {
    */
   async analyzePlayerStats(
     playerName: string,
-    sport: string = 'BASKETBALL'
+    sport: string = 'BASKETBALL',
+    locale: string = 'en'
   ): Promise<PlayerStatsAnalysisResult> {
     let statsData = null;
     let source = 'Unknown';
@@ -859,7 +860,7 @@ export class AICardService {
       }
     }
 
-    const aiAnalysis = await this.generatePlayerAnalysis(playerName, statsData);
+    const aiAnalysis = await this.generatePlayerAnalysis(playerName, statsData, locale);
 
     return {
       stats: statsData,
@@ -916,9 +917,15 @@ export class AICardService {
     };
   }
 
-  private async generatePlayerAnalysis(playerName: string, stats: any): Promise<string> {
+  private async generatePlayerAnalysis(
+    playerName: string,
+    stats: any,
+    locale: string = 'en'
+  ): Promise<string> {
     const { client, deployment } = await this.getClient();
-    if (!client) return 'AI Analysis Unavailable.';
+    if (!client) {
+      return locale === 'zh' ? '无法生成AI分析。' : 'AI Analysis Unavailable.';
+    }
 
     const statsContext = stats
       ? `
@@ -926,6 +933,8 @@ export class AICardService {
       Last 5 Games Trend: ${JSON.stringify(stats.last5Games)}
       `
       : 'No specific recent stats data available.';
+
+    const language = locale === 'zh' ? 'Chinese (Simplified)' : 'English';
 
     const response = await client.chat.completions.create({
       model: deployment,
@@ -941,7 +950,7 @@ export class AICardService {
             Guidelines:
             - If stats are great, mention "Buy/Hold" sentiment.
             - If slumping, mention "Sell/Wait" sentiment.
-            - Provide a concise 3-sentence summary in Chinese (Simplified).`,
+            - Provide a concise 3-sentence summary in ${language}.`,
         },
         {
           role: 'user',
@@ -950,7 +959,9 @@ export class AICardService {
       ],
     });
 
-    return response.choices[0].message.content || 'Analysis failed.';
+    return (
+      response.choices[0].message.content || (locale === 'zh' ? '分析失败。' : 'Analysis failed.')
+    );
   }
   /**
    * AI-assisted filtering of eBay sales results

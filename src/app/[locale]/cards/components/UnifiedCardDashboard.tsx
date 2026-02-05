@@ -268,12 +268,13 @@ export function UnifiedCardDashboard({ initialData }: UnifiedCardDashboardProps)
     try {
       const result = await analyzePlayerStatsAction(
         cardDetails.playerName,
-        'BASKETBALL' // Defaulting to NBA for now
+        'BASKETBALL', // Defaulting to NBA for now
+        locale
       );
       setPlayerStatsData(result);
       setCurrentResult({
         type: 'player_stats',
-        title: 'Player Bio/Stats',
+        title: tCards('analysis.tabs.playerStats'),
         loading: false,
         playerStatsData: result,
       });
@@ -514,7 +515,7 @@ export function UnifiedCardDashboard({ initialData }: UnifiedCardDashboardProps)
                     onClick={handlePlayerStatsAnalysis}
                     loading={playerStatsAnalyzing}
                     icon={<Activity className="w-4 h-4 text-amber-500" />}
-                    label="Bio/Stats"
+                    label={tCards('analysis.tabs.playerStats')}
                   />
                 </div>
               </GlassPanel>
@@ -634,7 +635,8 @@ export function UnifiedCardDashboard({ initialData }: UnifiedCardDashboardProps)
                           {/* AI Analysis Summary */}
                           <div className="bg-amber-50/50 p-4 rounded-lg border border-amber-100">
                             <h4 className="text-sm font-semibold text-amber-800 mb-2 flex items-center gap-2">
-                              <Sparkles className="w-4 h-4" /> AI Performance Analysis
+                              <Sparkles className="w-4 h-4" />{' '}
+                              {tCards('analysis.playerStats.title')}
                             </h4>
                             <p className="text-sm text-slate-700 leading-relaxed whitespace-pre-line">
                               {playerStatsData.aiAnalysis}
@@ -675,17 +677,17 @@ export function UnifiedCardDashboard({ initialData }: UnifiedCardDashboardProps)
                           {playerStatsData.stats?.last5Games?.length ? (
                             <div className="bg-white rounded-lg border border-slate-100 overflow-hidden">
                               <div className="bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-700 border-b border-slate-100">
-                                Last 5 Games
+                                {tCards('analysis.playerStats.last5Games')}
                               </div>
                               <div className="divide-y divide-slate-50">
-                                {playerStatsData.stats.last5Games.map((game, i) => (
+                                {playerStatsData.stats.last5Games.map(game => (
                                   <div
-                                    key={i}
+                                    key={`${game.date}-${game.opponent}`}
                                     className="flex items-center justify-between p-3 text-sm hover:bg-slate-50 transition-colors"
                                   >
                                     <div className="flex flex-col">
                                       <span className="font-medium text-slate-900">
-                                        vs {game.opponent}
+                                        {tCards('analysis.playerStats.vs')} {game.opponent}
                                       </span>
                                       <span className="text-xs text-slate-400">
                                         {new Date(game.date).toLocaleDateString()}
@@ -724,12 +726,14 @@ export function UnifiedCardDashboard({ initialData }: UnifiedCardDashboardProps)
                             </div>
                           ) : (
                             <div className="text-center py-4 text-slate-400 text-sm">
-                              No recent game data available.
+                              {tCards('analysis.playerStats.noData')}
                             </div>
                           )}
 
                           <div className="text-xs text-right text-slate-400 mt-2">
-                            Source: {playerStatsData.source}
+                            {tCards('analysis.playerStats.source', {
+                              source: playerStatsData.source,
+                            })}
                           </div>
                         </div>
                       )}

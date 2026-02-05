@@ -17,11 +17,12 @@ const updateCardSettingsSchema = z.object({
   ebayAppId: z.string().optional(),
   ebayCertId: z.string().optional(),
   ebayDevId: z.string().optional(),
+  rapidApiKey: z.string().optional(),
 });
 
 /**
  * GET /api/cards/settings
- * Get card module settings (Azure OpenAI & eBay config)
+ * Get card module settings (Azure OpenAI & eBay config & Rapid API)
  * Admin only.
  */
 export async function GET() {
@@ -31,9 +32,10 @@ export async function GET() {
       return createUnauthorizedResponse('Requires admin privileges');
     }
 
-    const [azureConfig, ebayConfig] = await Promise.all([
+    const [azureConfig, ebayConfig, rapidApiKey] = await Promise.all([
       systemSettingsRepository.getAzureOpenAIConfig(),
       systemSettingsRepository.getEbayApiConfig(),
+      systemSettingsRepository.getRapidApiKey(),
     ]);
 
     return createSuccessResponse({
@@ -44,6 +46,7 @@ export async function GET() {
         ebayAppId: ebayConfig.appId || '',
         ebayCertId: ebayConfig.certId ? '********' : '', // Mask Secret
         ebayDevId: ebayConfig.devId || '',
+        rapidApiKey: rapidApiKey ? '********' : '', // Mask Rapid API Key
       },
     });
   } catch (error) {
@@ -105,6 +108,15 @@ export async function PUT(request: NextRequest) {
       certId: newEbayCertId,
       devId: input.ebayDevId || currentEbayConfig.devId || '',
     });
+
+    // 3. Update Rapid API Key
+    const currentRapidKey = await systemSettingsRepository.getRapidApiKey();
+    const newRapidKey =
+      input.rapidApiKey && input.rapidApiKey !== '********'
+        ? input.rapidApiKey
+        : currentRapidKey || '';
+
+    await systemSettingsRepository.updateRapidApiKey(newRapidKey);
 
     return createSuccessResponse({
       updated: true,

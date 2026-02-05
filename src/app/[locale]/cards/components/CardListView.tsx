@@ -27,21 +27,14 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import { HighlightText } from '@/components/ui/highlight-text';
 import type { CardItem } from '@/modules/cards/schema';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import Image from 'next/image';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
-import { MoreHorizontal, Edit, Copy, Trash, Eye } from 'lucide-react';
-import { deleteCard, saveCard } from '@/app/actions/card-actions';
+import { Edit, Trash } from 'lucide-react';
+import { deleteCard } from '@/app/actions/card-actions';
 import { toast } from 'sonner';
 import {
   getSportBadgeColor,
@@ -53,9 +46,10 @@ import {
 interface CardListViewProps {
   items: CardItem[];
   onCardsChange?: () => void;
+  searchTerm?: string;
 }
 
-export function CardListView({ items, onCardsChange }: CardListViewProps) {
+export function CardListView({ items, onCardsChange, searchTerm = '' }: CardListViewProps) {
   const router = useRouter();
   const t = useTranslations('cards');
 
@@ -84,23 +78,6 @@ export function CardListView({ items, onCardsChange }: CardListViewProps) {
       setIsDeleting(false);
       setDeleteDialogOpen(false);
       setCardToDelete(null);
-    }
-  };
-
-  const handleClone = async (item: CardItem, e: React.MouseEvent) => {
-    e.stopPropagation();
-    try {
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      const { id, createdAt, updatedAt, itemNumber, ...cloneData } = item;
-      await saveCard({
-        ...cloneData,
-        playerName: `${item.playerName} (Copy)`,
-      });
-      toast.success(t('form.success'));
-      onCardsChange?.();
-      router.refresh();
-    } catch {
-      toast.error(t('form.error'));
     }
   };
 
@@ -163,7 +140,9 @@ export function CardListView({ items, onCardsChange }: CardListViewProps) {
                   </TableCell>
 
                   <TableCell className="font-mono text-xs">#{card.itemNumber}</TableCell>
-                  <TableCell className="font-medium">{card.playerName}</TableCell>
+                  <TableCell className="font-medium">
+                    <HighlightText text={card.playerName} searchTerm={searchTerm} />
+                  </TableCell>
                   <TableCell>{card.year}</TableCell>
                   <TableCell className="text-muted-foreground">{card.brand}</TableCell>
 
@@ -197,37 +176,26 @@ export function CardListView({ items, onCardsChange }: CardListViewProps) {
                   </TableCell>
 
                   <TableCell>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" className="h-8 w-8 p-0">
-                          <span className="sr-only">Open menu</span>
-                          <MoreHorizontal className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuLabel>{t('list.actions')}</DropdownMenuLabel>
-                        <DropdownMenuItem onClick={() => router.push(`/cards/${card.id}`)}>
-                          <Eye className="mr-2 h-4 w-4" />
-                          {t('actions.viewDetails')}
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={e => handleEdit(card.id, e)}>
-                          <Edit className="mr-2 h-4 w-4" />
-                          {t('actions.edit')}
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={e => handleClone(card, e)}>
-                          <Copy className="mr-2 h-4 w-4" />
-                          {t('actions.clone')}
-                        </DropdownMenuItem>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem
-                          onClick={e => handleDeleteClick(card.id, e)}
-                          className="text-red-600 focus:text-red-500"
-                        >
-                          <Trash className="mr-2 h-4 w-4" />
-                          {t('actions.delete')}
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
+                    <div className="flex items-center justify-center gap-1">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 text-muted-foreground hover:text-primary"
+                        onClick={e => handleEdit(card.id, e)}
+                        title={t('actions.edit')}
+                      >
+                        <Edit className="w-4 h-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                        onClick={e => handleDeleteClick(card.id, e)}
+                        title={t('actions.delete')}
+                      >
+                        <Trash className="w-4 h-4" />
+                      </Button>
+                    </div>
                   </TableCell>
                 </TableRow>
               ))

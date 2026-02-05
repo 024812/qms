@@ -95,6 +95,8 @@
       "purchaseDate": "买入时间",
       "soldPrice": "售出价格",
       "soldDate": "售出时间",
+      "profit": "利润",
+      "profitROI": "回报率",
       "status": "状态",
       "actions": "操作"
     },

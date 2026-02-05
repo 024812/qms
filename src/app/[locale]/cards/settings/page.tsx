@@ -29,6 +29,7 @@ export default function CardSettingsPage() {
     ebayAppId: '',
     ebayCertId: '',
     ebayDevId: '',
+    rapidApiKey: '',
   });
 
   // Load data into form when fetched
@@ -42,6 +43,7 @@ export default function CardSettingsPage() {
         ebayAppId: settings.ebayAppId || '',
         ebayCertId: settings.ebayCertId || '',
         ebayDevId: settings.ebayDevId || '',
+        rapidApiKey: settings.rapidApiKey || '',
       });
     }
   }, [settings]);
@@ -110,6 +112,42 @@ export default function CardSettingsPage() {
               : 'Configure card module API integrations and behavior (Admin only)'}
           </p>
         </div>
+
+        {/* API-NBA Configuration */}
+        <Card>
+          <CardHeader>
+            <CardTitle>API-NBA (RapidAPI)</CardTitle>
+            <CardDescription>
+              {isZh
+                ? '配置 RapidAPI Key 以获取最新的球员数据（新秀支持更好）'
+                : 'Configure RapidAPI Key for latest player stats (better rookie support)'}
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="rapidApiKey">RapidAPI Key</Label>
+              <Input
+                id="rapidApiKey"
+                name="rapidApiKey"
+                type="password"
+                value={formData.rapidApiKey}
+                onChange={handleChange}
+                placeholder={settings?.rapidApiKey ? '********' : 'Enter Rapid API Key'}
+              />
+            </div>
+            <div className="text-sm text-muted-foreground pt-2">
+              <a
+                href="https://rapidapi.com/api-sports/api/api-nba"
+                target="_blank"
+                rel="noreferrer"
+                className="flex items-center gap-1 hover:text-primary transition-colors"
+              >
+                <ExternalLink className="w-3 h-3" />
+                {isZh ? '获取 RapidAPI Key' : 'Get RapidAPI Key'}
+              </a>
+            </div>
+          </CardContent>
+        </Card>
 
         {/* eBay Configuration */}
         <Card>

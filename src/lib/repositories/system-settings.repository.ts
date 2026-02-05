@@ -298,6 +298,20 @@ export class SystemSettingsRepository extends BaseRepositoryImpl<SystemSettingRo
 
     await Promise.all(promises);
   }
+
+  /**
+   * Get Rapid API Key
+   */
+  async getRapidApiKey(tx?: Tx): Promise<string | null> {
+    return this.getSetting('rapid_api_key', tx);
+  }
+
+  /**
+   * Update Rapid API Key
+   */
+  async updateRapidApiKey(key: string, tx?: Tx): Promise<void> {
+    return this.setSetting('rapid_api_key', key, 'Rapid API Key for API-NBA', tx);
+  }
 }
 
 // Export singleton instance

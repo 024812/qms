@@ -119,7 +119,7 @@ export default function CardsPage() {
           }}
         />
       ) : viewMode === 'list' ? (
-        <CardListView items={cards} />
+        <CardListView items={cards} searchTerm={searchTerm} />
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-6">
           {cards.map(card => (

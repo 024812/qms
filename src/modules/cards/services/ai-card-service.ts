@@ -2,6 +2,7 @@ import OpenAI from 'openai';
 import { z } from 'zod';
 import { ebayProvider, web130Provider, CardDetails, eBaySalesResult } from './price-data-providers';
 import { analysisCacheService } from './analysis-cache-service';
+import { systemSettingsRepository } from '@/lib/repositories/system-settings.repository';
 
 // Zod schema for validating AI response
 const CardRecognitionSchema = z.object({
@@ -71,7 +72,6 @@ async function withRetry<T>(
  * Service to handle AI operations for cards
  * Uses Azure OpenAI (GPT-5-mini) for vision tasks
  */
-import { systemSettingsRepository } from '@/lib/repositories/system-settings.repository';
 
 export class AICardService {
   private client: OpenAI | null = null;
@@ -843,6 +843,7 @@ export class AICardService {
   /**
    * Phase 3: Player Stats & Performance Analysis
    */
+
   async analyzePlayerStats(
     playerName: string,
     sport: string = 'BASKETBALL',
@@ -851,12 +852,33 @@ export class AICardService {
     let statsData = null;
     let source = 'Unknown';
 
+    // Check environment variable first, then database setting
+    let rapidApiKey = process.env.RAPID_API_KEY;
+    if (!rapidApiKey) {
+      rapidApiKey = (await systemSettingsRepository.getRapidApiKey()) || undefined;
+    }
+
     if (sport.toUpperCase() === 'BASKETBALL' || sport.toUpperCase() === 'NBA') {
-      try {
-        statsData = await this.fetchNBAStats(playerName);
-        source = 'Balldontlie API';
-      } catch (e) {
-        console.warn('Failed to fetch NBA stats:', e);
+      // 1. Try API-NBA (RapidAPI) if key exists - Better for recent rookies
+      if (rapidApiKey) {
+        try {
+          statsData = await this.fetchApiNbaStats(playerName, rapidApiKey);
+          source = 'API-NBA';
+        } catch (e) {
+          console.warn('API-NBA fetch failed, falling back to Balldontlie:', e);
+        }
+      }
+
+      // 2. Fallback to Balldontlie (Free)
+      if (!statsData) {
+        try {
+          statsData = await this.fetchNBAStats(playerName);
+          if (statsData) {
+            source = 'Balldontlie API';
+          }
+        } catch (e) {
+          console.warn('Failed to fetch NBA stats:', e);
+        }
       }
     }
 
@@ -866,6 +888,77 @@ export class AICardService {
       stats: statsData,
       aiAnalysis,
       source,
+    };
+  }
+
+  /**
+   * Fetch from API-NBA (RapidAPI)
+   */
+  private async fetchApiNbaStats(playerName: string, apiKey: string) {
+    const headers = {
+      'x-rapidapi-host': 'api-nba-v1.p.rapidapi.com',
+      'x-rapidapi-key': apiKey,
+    };
+
+    // 1. Search Player
+    const searchRes = await fetch(
+      `https://api-nba-v1.p.rapidapi.com/players?search=${encodeURIComponent(playerName)}`,
+      { headers }
+    );
+    const searchData = await searchRes.json();
+
+    // API-NBA response structure: { response: [...] }
+    if (!searchData.response || searchData.response.length === 0) return null;
+
+    const player = searchData.response[0];
+    const playerId = player.id;
+
+    // 2. Get Statistics (Simplified to Season Stats which usually aggregates)
+    // For specific games, we'd query /games/statistics. For now, try to get seasonal data if available or recent games.
+    // Endpoint: /players/statistics?id=...&season=2024
+    const statsRes = await fetch(
+      `https://api-nba-v1.p.rapidapi.com/players/statistics?id=${playerId}&season=2024`,
+      { headers }
+    );
+    const statsData = await statsRes.json();
+    const games = statsData.response || [];
+
+    if (games.length === 0) return null;
+
+    // Sort by game date (descending)
+    /* eslint-disable @typescript-eslint/no-explicit-any */
+    const sortedGames = games.sort((a: any, b: any) => {
+      // game.date.start is ISO string
+      return new Date(b.game.date.start).getTime() - new Date(a.game.date.start).getTime();
+    });
+
+    const last5 = sortedGames.slice(0, 5);
+
+    // Calculate averages from available games
+    let totalPts = 0,
+      totalReb = 0,
+      totalAst = 0;
+    const count = games.length;
+
+    games.forEach((g: any) => {
+      totalPts += g.points || 0;
+      totalReb += g.totReb || 0;
+      totalAst += g.assists || 0;
+    });
+
+    return {
+      last5Games: last5.map((g: any) => ({
+        date: g.game.date.start,
+        points: g.points,
+        rebounds: g.totReb,
+        assists: g.assists,
+        opponent:
+          g.team.id === g.game.homeTeam.id ? g.game.visitorsTeam.code : g.game.homeTeam.code,
+      })),
+      seasonAverages: { season: 2024 }, // Marker object
+      points: count ? Number((totalPts / count).toFixed(1)) : 0,
+      rebounds: count ? Number((totalReb / count).toFixed(1)) : 0,
+      assists: count ? Number((totalAst / count).toFixed(1)) : 0,
     };
   }
 
@@ -948,9 +1041,10 @@ export class AICardService {
             ${statsContext}
             
             Guidelines:
-            - If stats are great, mention "Buy/Hold" sentiment.
-            - If slumping, mention "Sell/Wait" sentiment.
-            - Provide a concise 3-sentence summary in ${language}.`,
+            - Response Language: STRICTLY ${language} ONLY. Do not use English unless it's a proper noun.
+            - Structure: Start with a Sentiment (e.g. Buy/Hold) in ${language}, followed by a concise analysis.
+            - If stats are missing, rely on general knowledge (rookie status, potential).
+            - Keep it under 150 words.`,
         },
         {
           role: 'user',

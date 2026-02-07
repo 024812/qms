@@ -1,8 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextResponse } from 'next/server';
 
-export const dynamic = 'force-dynamic'; // Prevent caching of the route itself
-
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const playerId = searchParams.get('playerId'); // e.g., 1642258 for Risacher

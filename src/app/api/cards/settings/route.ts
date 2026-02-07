@@ -18,11 +18,12 @@ const updateCardSettingsSchema = z.object({
   ebayCertId: z.string().optional(),
   ebayDevId: z.string().optional(),
   rapidApiKey: z.string().optional(),
+  balldontlieApiKey: z.string().optional(),
 });
 
 /**
  * GET /api/cards/settings
- * Get card module settings (Azure OpenAI & eBay config & Rapid API)
+ * Get card module settings (Azure OpenAI & eBay config & Rapid API & Balldontlie)
  * Admin only.
  */
 export async function GET() {
@@ -32,10 +33,11 @@ export async function GET() {
       return createUnauthorizedResponse('Requires admin privileges');
     }
 
-    const [azureConfig, ebayConfig, rapidApiKey] = await Promise.all([
+    const [azureConfig, ebayConfig, rapidApiKey, balldontlieApiKey] = await Promise.all([
       systemSettingsRepository.getAzureOpenAIConfig(),
       systemSettingsRepository.getEbayApiConfig(),
       systemSettingsRepository.getRapidApiKey(),
+      systemSettingsRepository.getBalldontlieApiKey(),
     ]);
 
     return createSuccessResponse({
@@ -47,6 +49,7 @@ export async function GET() {
         ebayCertId: ebayConfig.certId ? '********' : '', // Mask Secret
         ebayDevId: ebayConfig.devId || '',
         rapidApiKey: rapidApiKey ? '********' : '', // Mask Rapid API Key
+        balldontlieApiKey: balldontlieApiKey ? '********' : '', // Mask Balldontlie API Key
       },
     });
   } catch (error) {
@@ -117,6 +120,15 @@ export async function PUT(request: NextRequest) {
         : currentRapidKey || '';
 
     await systemSettingsRepository.updateRapidApiKey(newRapidKey);
+
+    // 4. Update Balldontlie API Key
+    const currentBalldontlieKey = await systemSettingsRepository.getBalldontlieApiKey();
+    const newBalldontlieKey =
+      input.balldontlieApiKey && input.balldontlieApiKey !== '********'
+        ? input.balldontlieApiKey
+        : currentBalldontlieKey || '';
+
+    await systemSettingsRepository.updateBalldontlieApiKey(newBalldontlieKey);
 
     return createSuccessResponse({
       updated: true,

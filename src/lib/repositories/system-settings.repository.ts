@@ -312,6 +312,20 @@ export class SystemSettingsRepository extends BaseRepositoryImpl<SystemSettingRo
   async updateRapidApiKey(key: string, tx?: Tx): Promise<void> {
     return this.setSetting('rapid_api_key', key, 'Rapid API Key for API-NBA', tx);
   }
+
+  /**
+   * Get Balldontlie API Key
+   */
+  async getBalldontlieApiKey(tx?: Tx): Promise<string | null> {
+    return this.getSetting('balldontlie_api_key', tx);
+  }
+
+  /**
+   * Update Balldontlie API Key
+   */
+  async updateBalldontlieApiKey(key: string, tx?: Tx): Promise<void> {
+    return this.setSetting('balldontlie_api_key', key, 'Balldontlie API Key for Player Stats', tx);
+  }
 }
 
 // Export singleton instance

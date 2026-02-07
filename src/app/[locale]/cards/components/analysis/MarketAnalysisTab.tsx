@@ -20,6 +20,8 @@ import {
   EyeOff,
   Code,
   RefreshCw,
+  Gavel,
+  ShoppingCart,
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -37,6 +39,11 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
+import {
+  getEbaySoldSearchUrl,
+  getEbayActiveSearchUrl,
+  generateCardSearchQuery,
+} from '@/lib/services/card-market';
 import type { QuickAnalysisResult } from '@/modules/cards/services/ai-card-service';
 
 import Image from 'next/image';
@@ -83,6 +90,18 @@ export function MarketAnalysisTab({
   // State synced via onOpenChange instead of useEffect to avoid linter warning
 
   const activeData = data;
+
+  // Safe card details for generating links
+  const activeCardDetails = {
+    playerName: cardDetails?.playerName || '',
+    year: cardDetails?.year || new Date().getFullYear(),
+    brand: cardDetails?.brand || '',
+    series: cardDetails?.series,
+    cardNumber: cardDetails?.cardNumber,
+    parallel: cardDetails?.parallel,
+    gradingCompany: cardDetails?.gradingCompany,
+    grade: cardDetails?.grade,
+  };
 
   const handleApplySearch = async () => {
     if (!onUpdateAnalysis) return;
@@ -195,9 +214,33 @@ export function MarketAnalysisTab({
               <Badge variant="secondary" className="text-xs">
                 {t('confidence')}: {t(`confidenceLevels.${activeData.valuation.confidence}`)}
               </Badge>
-              <Badge variant="outline" className="text-xs">
-                {t('source')}: eBay
-              </Badge>
+              <div className="flex gap-2">
+                {/* eBay Links */}
+                <a
+                  href={getEbaySoldSearchUrl(
+                    customQuery || (cardDetails ? generateCardSearchQuery(activeCardDetails) : '')
+                  )}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200 transition-colors"
+                  title="View Sold Listings on eBay"
+                >
+                  <Gavel className="w-3 h-3" />
+                  eBay Sold
+                </a>
+                <a
+                  href={getEbayActiveSearchUrl(
+                    customQuery || (cardDetails ? generateCardSearchQuery(activeCardDetails) : '')
+                  )}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-50 text-blue-700 hover:bg-blue-100 border border-blue-200 transition-colors"
+                  title="View Active Listings on eBay"
+                >
+                  <ShoppingCart className="w-3 h-3" />
+                  eBay Active
+                </a>
+              </div>
             </div>
 
             <div className="flex gap-1">

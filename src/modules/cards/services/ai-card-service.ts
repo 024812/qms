@@ -1,6 +1,7 @@
 import OpenAI from 'openai';
 import { z } from 'zod';
 import { ebayProvider, web130Provider, CardDetails, eBaySalesResult } from './price-data-providers';
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { analysisCacheService } from './analysis-cache-service';
 import { systemSettingsRepository } from '@/lib/repositories/system-settings.repository';
 
@@ -40,6 +41,64 @@ export interface PriceEstimateResult {
   sources: string[];
   salesCount: number;
   lastSaleDate?: string;
+}
+
+export interface PlayerStatsAnalysisResult {
+  stats: {
+    games_played: number;
+    ppg: number;
+    rpg: number;
+    apg: number;
+    mpg: number;
+    efficiency: number;
+  };
+  meta: {
+    season: string;
+    source: string;
+    last_updated: string;
+  };
+  game_log: {
+    date: string;
+    opponent: string;
+    points: number;
+    rebounds: number;
+    assists: number;
+    minutes: string;
+    fg_pct: number;
+    three_pct: number;
+    ft_pct: number;
+  }[];
+  aiAnalysis?: string;
+}
+
+export interface GradingAnalysisResult {
+  rawPrice: number;
+  psa9Price: number;
+  psa10Price: number;
+  psa9Roi: number;
+  psa10Roi: number;
+  marketDepth: {
+    activeListings: number;
+    lastChecked: number;
+  };
+  recommendation: 'GRADE' | 'HOLD' | 'SELL_RAW';
+}
+
+export interface QuickAnalysisResult {
+  valuation: {
+    value: number;
+    trend30d: number;
+    confidence: 'HIGH' | 'MEDIUM' | 'LOW';
+  };
+  recentSales: {
+    date: string;
+    price: number;
+    title: string;
+    url: string;
+    image?: string;
+  }[];
+  aiSummary: string;
+  lastUpdated: number;
 }
 
 /**
@@ -169,7 +228,7 @@ export class AICardService {
 
     // 1. Mock Mode (if no key)
     if (!client) {
-      console.warn('AI Service: No Azure Key found in System Settings, using mock response.');
+      // console.warn('AI Service: No Azure Key found in System Settings, using mock response.');
       await new Promise(resolve => setTimeout(resolve, 2000)); // Simulate delay
       return this.getMockRecognitionResult();
     }
@@ -844,57 +903,182 @@ export class AICardService {
    * Phase 3: Player Stats & Performance Analysis
    */
 
-  async analyzePlayerStats(
-    playerName: string,
-    sport: string = 'BASKETBALL',
-    locale: string = 'en'
-  ): Promise<PlayerStatsAnalysisResult> {
-    let statsData = null;
-    let source = 'Unknown';
+  async analyzePlayerStats(playerName: string): Promise<PlayerStatsAnalysisResult> {
+    const cached = await this.getCachedStats(playerName);
+    if (cached) return cached;
 
-    // Check environment variable first, then database setting
-    let rapidApiKey = process.env.RAPID_API_KEY;
-    if (!rapidApiKey) {
-      rapidApiKey = (await systemSettingsRepository.getRapidApiKey()) || undefined;
+    let statsData: PlayerStatsAnalysisResult | null = null;
+
+    // 1. Try NBA Official (stats.nba.com) - Best Data, Free, but may be IP blocked
+    try {
+      statsData = await this.fetchNbaOfficialStats(playerName);
+    } catch (e) {
+      console.warn('NBA Official fetch failed (likely IP block), trying next source.', e);
     }
 
-    if (sport.toUpperCase() === 'BASKETBALL' || sport.toUpperCase() === 'NBA') {
-      // 1. Try API-NBA (RapidAPI) if key exists - Better for recent rookies
+    // 2. Try API-NBA (RapidAPI) - Reliable if configured
+    if (!statsData) {
+      const rapidApiKey =
+        (await systemSettingsRepository.getRapidApiKey()) || process.env.RAPID_API_KEY;
       if (rapidApiKey) {
         try {
           statsData = await this.fetchApiNbaStats(playerName, rapidApiKey);
-          source = 'API-NBA';
         } catch (e) {
-          console.warn('API-NBA fetch failed, falling back to Balldontlie:', e);
-        }
-      }
-
-      // 2. Fallback to Balldontlie (Free)
-      if (!statsData) {
-        try {
-          statsData = await this.fetchNBAStats(playerName);
-          if (statsData) {
-            source = 'Balldontlie API';
-          }
-        } catch (e) {
-          console.warn('Failed to fetch NBA stats:', e);
+          console.warn('API-NBA fetch failed:', e);
         }
       }
     }
 
-    const aiAnalysis = await this.generatePlayerAnalysis(playerName, statsData, locale);
+    // 3. Try Balldontlie (Fallback) - Free, but limited to basics/teams often
+    if (!statsData) {
+      try {
+        statsData = await this.fetchNBAStats(playerName);
+      } catch (e) {
+        console.warn('Balldontlie fetch failed:', e);
+      }
+    }
 
-    return {
-      stats: statsData,
-      aiAnalysis,
-      source,
+    // If still no data, return empty
+    const result = statsData || {
+      stats: { games_played: 0, ppg: 0, rpg: 0, apg: 0, mpg: 0, efficiency: 0 },
+      meta: { season: '2025-26', source: 'None', last_updated: new Date().toISOString() },
+      game_log: [],
     };
+
+    if (statsData) {
+      await this.cacheStats(playerName, result);
+    }
+
+    return result;
+  }
+
+  private async getCachedStats(playerName: string): Promise<PlayerStatsAnalysisResult | null> {
+    return analysisCacheService.get<PlayerStatsAnalysisResult>(`stats|${playerName}|2025`);
+  }
+
+  private async cacheStats(playerName: string, data: PlayerStatsAnalysisResult): Promise<void> {
+    await analysisCacheService.set(
+      `stats|${playerName}|2025`,
+      data as unknown as Record<string, unknown>,
+      3600 * 1000
+    );
+  }
+
+  /**
+   * Fetch stats from NBA Official Website (stats.nba.com)
+   */
+  async fetchNbaOfficialStats(playerName: string): Promise<PlayerStatsAnalysisResult | null> {
+    try {
+      const headers = {
+        'User-Agent':
+          'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        Referer: 'https://www.nba.com/',
+        Origin: 'https://www.nba.com',
+        Accept: 'application/json, text/plain, */*',
+        'Accept-Language': 'en-US,en;q=0.9',
+        'x-nba-stats-origin': 'stats',
+        'x-nba-stats-token': 'true',
+      };
+
+      // 1. Find Player ID (Current Season)
+      const rosterUrl =
+        'https://stats.nba.com/stats/commonallplayers?IsOnlyCurrentSeason=1&LeagueID=00&Season=2025-26';
+      const rosterRes = await fetch(rosterUrl, { headers, next: { revalidate: 86400 } });
+
+      if (!rosterRes.ok) throw new Error(`NBA.com Roster Error: ${rosterRes.status}`);
+
+      const rosterData = await rosterRes.json();
+      const rosterHeaders = rosterData.resultSets[0].headers;
+      const rosterRows = rosterData.resultSets[0].rowSet;
+
+      const idIdx = rosterHeaders.indexOf('PERSON_ID');
+      const nameIdx = rosterHeaders.indexOf('DISPLAY_FIRST_LAST');
+
+      const playerRow = rosterRows.find((row: any[]) =>
+        row[nameIdx].toLowerCase().includes(playerName.toLowerCase())
+      );
+
+      if (!playerRow) return null;
+
+      const playerId = playerRow[idIdx];
+
+      // 2. Fetch Game Log
+      const statsUrl = `https://stats.nba.com/stats/playergamelog?PlayerID=${playerId}&Season=2025-26&SeasonType=Regular%20Season`;
+      const statsRes = await fetch(statsUrl, { headers, next: { revalidate: 3600 } });
+
+      if (!statsRes.ok) throw new Error(`NBA.com Stats Error: ${statsRes.status}`);
+
+      const statsData = await statsRes.json();
+      const logHeaders = statsData.resultSets[0].headers;
+      const logRows = statsData.resultSets[0].rowSet;
+
+      // Take last 5 games
+      const recentGames = logRows.slice(0, 5).map((row: any[]) => {
+        const game: any = {};
+        logHeaders.forEach((header: string, i: number) => {
+          game[header] = row[i];
+        });
+        return game;
+      });
+
+      const stats = {
+        ppg: 0,
+        rpg: 0,
+        apg: 0,
+        games_played: recentGames.length,
+        mpg: 0,
+        efficiency: 0,
+      };
+
+      if (recentGames.length > 0) {
+        stats.ppg =
+          recentGames.reduce((acc: number, g: any) => acc + (g.PTS || 0), 0) / recentGames.length;
+        stats.rpg =
+          recentGames.reduce((acc: number, g: any) => acc + (g.REB || 0), 0) / recentGames.length;
+        stats.apg =
+          recentGames.reduce((acc: number, g: any) => acc + (g.AST || 0), 0) / recentGames.length;
+        stats.mpg =
+          recentGames.reduce((acc: number, g: any) => acc + (parseFloat(g.MIN) || 0), 0) /
+          recentGames.length;
+      }
+
+      const gameLog = recentGames.map((g: any) => ({
+        date: g.GAME_DATE,
+        opponent: g.MATCHUP,
+        points: g.PTS,
+        rebounds: g.REB,
+        assists: g.AST,
+        minutes: g.MIN,
+        fg_pct: g.FG_PCT,
+        three_pct: g.FG3_PCT,
+        ft_pct: g.FT_PCT,
+      }));
+
+      return {
+        stats,
+        meta: {
+          last_updated: new Date().toISOString(),
+          season: '2025-26',
+          source: 'NBA.com',
+        },
+        game_log: gameLog,
+      };
+    } catch (error) {
+      console.warn('NBA Official fetch failed:', error);
+      return null;
+    }
   }
 
   /**
    * Fetch from API-NBA (RapidAPI)
    */
-  private async fetchApiNbaStats(playerName: string, apiKey: string) {
+  /**
+   * Fetch from API-NBA (RapidAPI)
+   */
+  private async fetchApiNbaStats(
+    playerName: string,
+    apiKey: string
+  ): Promise<PlayerStatsAnalysisResult | null> {
     const headers = {
       'x-rapidapi-host': 'api-nba-v1.p.rapidapi.com',
       'x-rapidapi-key': apiKey,
@@ -907,15 +1091,12 @@ export class AICardService {
     );
     const searchData = await searchRes.json();
 
-    // API-NBA response structure: { response: [...] }
     if (!searchData.response || searchData.response.length === 0) return null;
 
     const player = searchData.response[0];
     const playerId = player.id;
 
-    // 2. Get Statistics (Simplified to Season Stats which usually aggregates)
-    // For specific games, we'd query /games/statistics. For now, try to get seasonal data if available or recent games.
-    // Endpoint: /players/statistics?id=...&season=2024
+    // 2. Get Statistics
     const statsRes = await fetch(
       `https://api-nba-v1.p.rapidapi.com/players/statistics?id=${playerId}&season=2024`,
       { headers }
@@ -937,33 +1118,56 @@ export class AICardService {
     // Calculate averages from available games
     let totalPts = 0,
       totalReb = 0,
-      totalAst = 0;
+      totalAst = 0,
+      totalMin = 0;
     const count = games.length;
 
     games.forEach((g: any) => {
       totalPts += g.points || 0;
       totalReb += g.totReb || 0;
       totalAst += g.assists || 0;
+      totalMin += g.min ? parseFloat(g.min) : 0;
     });
 
     return {
-      last5Games: last5.map((g: any) => ({
+      stats: {
+        games_played: count,
+        ppg: count ? Number((totalPts / count).toFixed(1)) : 0,
+        rpg: count ? Number((totalReb / count).toFixed(1)) : 0,
+        apg: count ? Number((totalAst / count).toFixed(1)) : 0,
+        mpg: count ? Number((totalMin / count).toFixed(1)) : 0,
+        efficiency: 0,
+      },
+      meta: {
+        season: '2024',
+        source: 'API-NBA',
+        last_updated: new Date().toISOString(),
+      },
+      game_log: last5.map((g: any) => ({
         date: g.game.date.start,
         points: g.points,
         rebounds: g.totReb,
         assists: g.assists,
+        minutes: g.min,
         opponent:
           g.team.id === g.game.homeTeam.id ? g.game.visitorsTeam.code : g.game.homeTeam.code,
+        fg_pct: g.fgp ? parseFloat(g.fgp) : 0,
+        three_pct: g.tpp ? parseFloat(g.tpp) : 0,
+        ft_pct: g.ftp ? parseFloat(g.ftp) : 0,
       })),
-      seasonAverages: { season: 2024 }, // Marker object
-      points: count ? Number((totalPts / count).toFixed(1)) : 0,
-      rebounds: count ? Number((totalReb / count).toFixed(1)) : 0,
-      assists: count ? Number((totalAst / count).toFixed(1)) : 0,
     };
   }
 
-  private async fetchNBAStats(playerName: string) {
-    const apiKey = process.env.BALLDONTLIE_API_KEY || 'bed1ba1a-9640-4bd2-9844-486927977469'; // Using a public/demo key if env missing
+  private async fetchNBAStats(playerName: string): Promise<PlayerStatsAnalysisResult | null> {
+    let apiKey = process.env.BALLDONTLIE_API_KEY;
+    if (!apiKey) {
+      apiKey = (await systemSettingsRepository.getBalldontlieApiKey()) || undefined;
+    }
+    // Fallback default key if still missing
+    if (!apiKey) {
+      apiKey = 'bed1ba1a-9640-4bd2-9844-486927977469';
+    }
+
     const headers = { Authorization: apiKey };
 
     // 1. Search Player
@@ -992,21 +1196,36 @@ export class AICardService {
     const avgData = await avgRes.json();
     const averages = avgData.data && avgData.data.length > 0 ? avgData.data[0] : null;
 
+    const gameLog = last5.map((g: any) => ({
+      date: g.game.date,
+      points: g.pts,
+      rebounds: g.reb,
+      assists: g.ast,
+      minutes: g.min,
+      opponent:
+        g.game.visitor_team_id === player.team.id
+          ? g.game.home_team.abbreviation
+          : g.game.visitor_team_id,
+      fg_pct: g.fg_pct,
+      three_pct: g.fg3_pct,
+      ft_pct: g.ft_pct,
+    }));
+
     return {
-      last5Games: last5.map((g: any) => ({
-        date: g.game.date,
-        points: g.pts,
-        rebounds: g.reb,
-        assists: g.ast,
-        opponent:
-          g.game.visitor_team_id === player.team.id
-            ? g.game.home_team.abbreviation
-            : g.game.visitor_team_id,
-      })),
-      seasonAverages: averages,
-      points: averages?.pts || 0,
-      rebounds: averages?.reb || 0,
-      assists: averages?.ast || 0,
+      stats: {
+        games_played: averages?.games_played || 0,
+        ppg: averages?.pts || 0,
+        rpg: averages?.reb || 0,
+        apg: averages?.ast || 0,
+        mpg: averages ? parseFloat(averages.min) : 0,
+        efficiency: 0,
+      },
+      meta: {
+        season: '2024',
+        source: 'Balldontlie',
+        last_updated: new Date().toISOString(),
+      },
+      game_log: gameLog,
     };
   }
 
@@ -1185,48 +1404,3 @@ Return JSON: { "matchingIndices": [1, 3, 5] } (numbers of matching listings)`,
 }
 
 export const aiCardService = new AICardService();
-
-/**
- * Quick analysis result interface
- */
-export interface QuickAnalysisResult {
-  valuation: {
-    value: number;
-    trend30d: number; // Percentage
-    confidence: 'HIGH' | 'MEDIUM' | 'LOW';
-  };
-  recentSales: {
-    date: string;
-    price: number;
-    title: string;
-    url: string;
-    image?: string;
-  }[];
-  aiSummary: string;
-  lastUpdated: number; // Timestamp
-}
-
-export interface GradingAnalysisResult {
-  rawPrice: number;
-  psa9Price: number;
-  psa10Price: number;
-  psa9Roi: number; // Percentage
-  psa10Roi: number; // Percentage
-  marketDepth: {
-    activeListings: number;
-    lastChecked: number;
-  };
-  recommendation: 'GRADE' | 'HOLD' | 'SELL_RAW';
-}
-
-export interface PlayerStatsAnalysisResult {
-  stats: {
-    points: number;
-    rebounds: number;
-    assists: number;
-    last5Games: any[];
-    seasonAverages?: any;
-  } | null;
-  aiAnalysis: string;
-  source: string;
-}

@@ -266,11 +266,7 @@ export function UnifiedCardDashboard({ initialData }: UnifiedCardDashboardProps)
     setCurrentResult({ type: 'player_stats', title: 'Player Bio/Stats', loading: true });
 
     try {
-      const result = await analyzePlayerStatsAction(
-        cardDetails.playerName,
-        'BASKETBALL', // Defaulting to NBA for now
-        locale
-      );
+      const result = await analyzePlayerStatsAction(cardDetails.playerName);
       setPlayerStatsData(result);
       setCurrentResult({
         type: 'player_stats',
@@ -651,7 +647,7 @@ export function UnifiedCardDashboard({ initialData }: UnifiedCardDashboardProps)
                                   PTS
                                 </div>
                                 <div className="text-lg font-bold text-slate-900">
-                                  {playerStatsData.stats.points.toFixed(1)}
+                                  {playerStatsData.stats.ppg.toFixed(1)}
                                 </div>
                               </div>
                               <div className="bg-white p-3 rounded-lg border border-slate-100 shadow-sm text-center">
@@ -659,7 +655,7 @@ export function UnifiedCardDashboard({ initialData }: UnifiedCardDashboardProps)
                                   REB
                                 </div>
                                 <div className="text-lg font-bold text-slate-900">
-                                  {playerStatsData.stats.rebounds.toFixed(1)}
+                                  {playerStatsData.stats.rpg.toFixed(1)}
                                 </div>
                               </div>
                               <div className="bg-white p-3 rounded-lg border border-slate-100 shadow-sm text-center">
@@ -667,20 +663,20 @@ export function UnifiedCardDashboard({ initialData }: UnifiedCardDashboardProps)
                                   AST
                                 </div>
                                 <div className="text-lg font-bold text-slate-900">
-                                  {playerStatsData.stats.assists.toFixed(1)}
+                                  {playerStatsData.stats.apg.toFixed(1)}
                                 </div>
                               </div>
                             </div>
                           )}
 
                           {/* Recent Games */}
-                          {playerStatsData.stats?.last5Games?.length ? (
+                          {playerStatsData.game_log?.length ? (
                             <div className="bg-white rounded-lg border border-slate-100 overflow-hidden">
                               <div className="bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-700 border-b border-slate-100">
                                 {tCards('analysis.playerStats.last5Games')}
                               </div>
                               <div className="divide-y divide-slate-50">
-                                {playerStatsData.stats.last5Games.map(game => (
+                                {playerStatsData.game_log.map(game => (
                                   <div
                                     key={`${game.date}-${game.opponent}`}
                                     className="flex items-center justify-between p-3 text-sm hover:bg-slate-50 transition-colors"
@@ -732,7 +728,7 @@ export function UnifiedCardDashboard({ initialData }: UnifiedCardDashboardProps)
 
                           <div className="text-xs text-right text-slate-400 mt-2">
                             {tCards('analysis.playerStats.source', {
-                              source: playerStatsData.source,
+                              source: playerStatsData.meta.source,
                             })}
                           </div>
                         </div>

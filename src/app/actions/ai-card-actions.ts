@@ -99,13 +99,9 @@ export async function analyzeCardGradingAction(details: EstimateParams) {
   }
 }
 
-export async function analyzePlayerStatsAction(
-  playerName: string,
-  sport: string = 'BASKETBALL',
-  locale: string = 'en'
-) {
+export async function analyzePlayerStatsAction(playerName: string) {
   try {
-    return await aiCardService.analyzePlayerStats(playerName, sport, locale);
+    return await aiCardService.analyzePlayerStats(playerName);
   } catch (error) {
     console.error('Player Stats Analysis Error:', error);
     if (error instanceof Error) {

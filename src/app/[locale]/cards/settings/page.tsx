@@ -30,6 +30,7 @@ export default function CardSettingsPage() {
     ebayCertId: '',
     ebayDevId: '',
     rapidApiKey: '',
+    balldontlieApiKey: '',
   });
 
   // Load data into form when fetched
@@ -44,6 +45,7 @@ export default function CardSettingsPage() {
         ebayCertId: settings.ebayCertId || '',
         ebayDevId: settings.ebayDevId || '',
         rapidApiKey: settings.rapidApiKey || '',
+        balldontlieApiKey: settings.balldontlieApiKey || '',
       });
     }
   }, [settings]);
@@ -144,6 +146,42 @@ export default function CardSettingsPage() {
               >
                 <ExternalLink className="w-3 h-3" />
                 {isZh ? '获取 RapidAPI Key' : 'Get RapidAPI Key'}
+              </a>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Balldontlie Configuration */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Balldontlie API (Fallback)</CardTitle>
+            <CardDescription>
+              {isZh
+                ? '配置 Balldontlie API Key 作为备用数据源'
+                : 'Configure Balldontlie API Key as fallback data source'}
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="balldontlieApiKey">Balldontlie API Key</Label>
+              <Input
+                id="balldontlieApiKey"
+                name="balldontlieApiKey"
+                type="password"
+                value={formData.balldontlieApiKey}
+                onChange={handleChange}
+                placeholder={settings?.balldontlieApiKey ? '********' : 'Enter Balldontlie API Key'}
+              />
+            </div>
+            <div className="text-sm text-muted-foreground pt-2">
+              <a
+                href="https://balldontlie.io"
+                target="_blank"
+                rel="noreferrer"
+                className="flex items-center gap-1 hover:text-primary transition-colors"
+              >
+                <ExternalLink className="w-3 h-3" />
+                {isZh ? '获取 Balldontlie API Key' : 'Get Balldontlie API Key'}
               </a>
             </div>
           </CardContent>

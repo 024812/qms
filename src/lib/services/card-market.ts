@@ -51,17 +51,36 @@ export function generateCardSearchQuery(card: {
 }
 
 /**
- * Get eBay search URL for card
+ * Get eBay SOLD search URL (Completed Sales)
  */
-export function getEbaySearchUrl(searchQuery: string): string {
+export function getEbaySoldSearchUrl(searchQuery: string): string {
   const params = new URLSearchParams({
     _nkw: searchQuery,
-    _sop: '13', // Sort by price + shipping: lowest first
     LH_Sold: '1', // Sold listings
     LH_Complete: '1', // Completed listings
   });
 
   return `https://www.ebay.com/sch/i.html?${params.toString()}`;
+}
+
+/**
+ * Get eBay ACTIVE search URL (Current Listings)
+ */
+export function getEbayActiveSearchUrl(searchQuery: string): string {
+  const params = new URLSearchParams({
+    _nkw: searchQuery,
+    // No Sold/Complete flags = Active by default
+    // _sop: '12' // Optional: Sort by "Best Match" (12) or "Time: ending soonest" (1)
+  });
+
+  return `https://www.ebay.com/sch/i.html?${params.toString()}`;
+}
+
+/**
+ * @deprecated Use getEbaySoldSearchUrl or getEbayActiveSearchUrl instead
+ */
+export function getEbaySearchUrl(searchQuery: string): string {
+  return getEbaySoldSearchUrl(searchQuery);
 }
 
 /**

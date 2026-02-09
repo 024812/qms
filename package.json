@@ -64,7 +64,7 @@
     "diagnose-auth": "tsx scripts/diagnose-vercel-auth.ts"
   },
   "dependencies": {
-    "@auth/core": "^0.41.0",
+    "@auth/core": "^0.41.1",
     "@auth/drizzle-adapter": "^1.11.1",
     "@hendt/ebay-api": "^6.0.1",
     "@hookform/resolvers": "^5.2.2",
@@ -116,7 +116,7 @@
     "ws": "^8.19.0",
     "xlsx": "^0.18.5",
     "zod": "^4.3.5",
-    "zustand": "^5.0.8"
+    "zustand": "^5.0.11"
   },
   "lint-staged": {
     "*.{js,jsx,ts,tsx}": [

@@ -4,14 +4,13 @@
  * Card Server Actions
  *
  * Server-side actions for card CRUD operations with proper Zod validation.
+ * Updated: Family-shared data model (no userId isolation)
  */
 
-import { db } from '@/db';
-import { cards } from '@/db/schema';
-import { eq, and, ilike, desc, sql, type SQL } from 'drizzle-orm';
 import { auth } from '@/auth';
-import { revalidatePath } from 'next/cache';
+import { revalidateTag } from 'next/cache';
 import { z } from 'zod';
+import { cardRepository, type CardFilters } from '@/lib/repositories/card.repository';
 
 // ========== Input Schemas ==========
 
@@ -72,7 +71,7 @@ function cleanNumericToString(value: unknown): string | null {
 // ========== Actions ==========
 
 /**
- * Get cards with filtering and pagination
+ * Get cards with filtering and pagination (family-shared)
  */
 export async function getCards({
   search,
@@ -88,44 +87,31 @@ export async function getCards({
   const session = await auth();
   if (!session?.user?.id) throw new Error('Unauthorized');
 
-  const conditions: SQL[] = [eq(cards.userId, session.user.id)];
-
-  // Default behavior: Exclude SOLD cards unless explicitly filtered for
-  if (!filter?.status) {
-    conditions.push(sql`${cards.status} != 'SOLD'`);
-  }
-
-  if (search) {
-    conditions.push(ilike(cards.playerName, `%${search}%`));
-  }
+  // Build filters for repository (no userId needed)
+  const filters: CardFilters = {
+    search,
+    excludeSold: !filter?.status, // Default: exclude SOLD unless requested
+    limit: pageSize,
+    offset: (page - 1) * pageSize,
+  };
 
   if (filter) {
     const validatedFilter = filterSchema.safeParse(filter);
     if (validatedFilter.success) {
       const f = validatedFilter.data;
-      if (f.sport) conditions.push(eq(cards.sport, f.sport));
-      if (f.gradingCompany) conditions.push(eq(cards.gradingCompany, f.gradingCompany));
-      if (f.status) conditions.push(eq(cards.status, f.status));
+      if (f.sport) filters.sport = f.sport;
+      if (f.gradingCompany) filters.gradingCompany = f.gradingCompany;
+      if (f.status) {
+        filters.status = f.status;
+        filters.excludeSold = false;
+      }
     }
   }
 
-  const offset = (page - 1) * pageSize;
-
-  const [items, countResult] = await Promise.all([
-    db
-      .select()
-      .from(cards)
-      .where(and(...conditions))
-      .orderBy(desc(cards.itemNumber))
-      .limit(pageSize)
-      .offset(offset),
-    db
-      .select({ count: sql<number>`count(*)` })
-      .from(cards)
-      .where(and(...conditions)),
+  const [items, total] = await Promise.all([
+    cardRepository.findAll(filters),
+    cardRepository.count(filters),
   ]);
-
-  const total = Number(countResult[0]?.count || 0);
 
   return {
     items,
@@ -137,7 +123,7 @@ export async function getCards({
 }
 
 /**
- * Get a single card by ID
+ * Get a single card by ID (family-shared)
  */
 export async function getCard(id: string) {
   const session = await auth();
@@ -147,17 +133,11 @@ export async function getCard(id: string) {
     throw new Error('Invalid card ID');
   }
 
-  const result = await db
-    .select()
-    .from(cards)
-    .where(and(eq(cards.id, id), eq(cards.userId, session.user.id)))
-    .limit(1);
-
-  return result[0] || null;
+  return cardRepository.findById(id);
 }
 
 /**
- * Create or update a card with proper validation
+ * Create or update a card with proper validation (family-shared)
  */
 export async function saveCard(data: unknown) {
   const session = await auth();
@@ -175,7 +155,6 @@ export async function saveCard(data: unknown) {
 
   // Prepare clean data for database - convert numbers to strings for numeric columns
   const cleanData = {
-    userId: session.user.id,
     playerName: input.playerName,
     sport: input.sport,
     team: input.team || null,
@@ -204,37 +183,23 @@ export async function saveCard(data: unknown) {
     notes: input.notes || null,
     mainImage: input.mainImage || input.frontImage || null,
     attachmentImages: input.attachmentImages || (input.backImage ? [input.backImage] : null),
-    updatedAt: new Date(),
   };
 
   if (input.id) {
     // Update existing card
-    await db
-      .update(cards)
-      .set(cleanData)
-      .where(and(eq(cards.id, input.id), eq(cards.userId, session.user.id)));
+    await cardRepository.update(input.id, cleanData);
   } else {
-    // Create new card - get next item number
-    const maxResult = await db
-      .select({ max: sql<number>`COALESCE(MAX(item_number), 0)` })
-      .from(cards)
-      .where(eq(cards.userId, session.user.id));
-
-    const nextItemNumber = (maxResult[0]?.max || 0) + 1;
-
-    await db.insert(cards).values({
-      ...cleanData,
-      itemNumber: nextItemNumber,
-      createdAt: new Date(),
-    });
+    // Create new card
+    await cardRepository.create(cleanData);
   }
 
-  revalidatePath('/', 'layout');
+  // Use revalidateTag for targeted cache invalidation
+  revalidateTag('cards', 'max');
   return { success: true };
 }
 
 /**
- * Delete a card by ID
+ * Delete a card by ID (family-shared)
  */
 export async function deleteCard(id: string) {
   const session = await auth();
@@ -244,8 +209,9 @@ export async function deleteCard(id: string) {
     throw new Error('Invalid card ID');
   }
 
-  await db.delete(cards).where(and(eq(cards.id, id), eq(cards.userId, session.user.id)));
+  await cardRepository.delete(id);
 
-  revalidatePath('/', 'layout');
+  // Use revalidateTag for targeted cache invalidation
+  revalidateTag('cards', 'max');
   return { success: true };
 }

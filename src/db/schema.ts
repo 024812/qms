@@ -238,9 +238,7 @@ export const cards = pgTable(
   {
     // Primary identification
     id: uuid('id').defaultRandom().primaryKey(),
-    userId: text('user_id')
-      .notNull()
-      .references(() => users.id, { onDelete: 'cascade' }),
+    userId: text('user_id').references(() => users.id, { onDelete: 'set null' }),
     itemNumber: serial('item_number').notNull().unique(),
 
     // Player information

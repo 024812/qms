@@ -95,6 +95,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
   callbacks: {
     /**
      * JWT callback - extends JWT token with user data
+     * Types are extended in src/types/next-auth.d.ts
      */
     async jwt({ token, user, trigger }) {
       if (user) {
@@ -105,11 +106,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
 
       // On update trigger, refresh user data from database
       if (trigger === 'update' && token.id) {
-        const [updatedUser] = await db
-          .select()
-          .from(users)
-          .where(eq(users.id, token.id as string))
-          .limit(1);
+        const [updatedUser] = await db.select().from(users).where(eq(users.id, token.id)).limit(1);
 
         if (updatedUser) {
           token.role = updatedUser.preferences?.role || 'member';
@@ -121,14 +118,13 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
     },
     /**
      * Session callback - extends session with user data from JWT
-     * Uses token data to avoid database query on every session access.
-     * Call useSession().update() to trigger jwt callback and refresh from database.
+     * Types are properly extended via module augmentation in src/types/next-auth.d.ts
      */
     async session({ session, token }) {
       if (token && session.user) {
-        session.user.id = token.id as string;
-        session.user.role = token.role as string;
-        session.user.activeModules = token.activeModules as string[];
+        session.user.id = token.id;
+        session.user.role = token.role;
+        session.user.activeModules = token.activeModules;
       }
       return session;
     },

@@ -84,6 +84,7 @@ export abstract class BaseRepositoryImpl<TRow, TModel> implements BaseRepository
   protected getTableDisplayName(): string {
     const tableNameMap: Record<string, string> = {
       quilts: '被子',
+      cards: '球星卡',
       usage_records: '使用记录',
       notifications: '通知',
       system_settings: '系统设置',
@@ -104,17 +105,17 @@ export abstract class BaseRepositoryImpl<TRow, TModel> implements BaseRepository
   async delete(_id: string, _tx?: Tx): Promise<boolean> {
     throw new Error('delete must be implemented in child class');
   }
-  
+
   async findAll(_filters?: Record<string, unknown>, _tx?: Tx): Promise<TModel[]> {
-      throw new Error('findAll must be implemented in child class');
+    throw new Error('findAll must be implemented in child class');
   }
 
   async create(_data: Partial<TModel>, _tx?: Tx): Promise<TModel> {
-      throw new Error('create must be implemented in child class');
+    throw new Error('create must be implemented in child class');
   }
 
   async update(_id: string, _data: Partial<TModel>, _tx?: Tx): Promise<TModel | null> {
-      throw new Error('update must be implemented in child class');
+    throw new Error('update must be implemented in child class');
   }
 
   async exists(_id: string, _tx?: Tx): Promise<boolean> {

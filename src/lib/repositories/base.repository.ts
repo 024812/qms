@@ -38,9 +38,14 @@ export abstract class BaseRepositoryImpl<TRow, TModel> implements BaseRepository
       return result;
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
+      const pgError = error as any; // Cast to access Postgres error properties
 
       dbLogger.error(`${operation} failed`, error as Error, {
         table: this.tableName,
+        pgCode: pgError.code,
+        pgDetail: pgError.detail,
+        pgConstraint: pgError.constraint,
+        pgHint: pgError.hint,
         ...context,
       });
 
@@ -64,15 +69,23 @@ export abstract class BaseRepositoryImpl<TRow, TModel> implements BaseRepository
         userMessage = `${this.getTableDisplayName()}不存在`;
       }
       // Check for validation/constraint errors
-      else if (errorMessage.includes('constraint') || errorMessage.includes('violates')) {
+      else if (
+        ['23505', '23503', '23502'].includes(pgError.code) ||
+        errorMessage.includes('constraint') ||
+        errorMessage.includes('violates')
+      ) {
         errorCode = ErrorCodes.VALIDATION_FAILED;
         userMessage = '数据验证失败，请检查输入';
+        if (pgError.code === '23505') userMessage = `${this.getTableDisplayName()}已存在`;
+        if (pgError.constraint) userMessage += ` (${pgError.constraint})`;
       }
 
       throw createError(errorCode, userMessage, {
         operation,
         table: this.tableName,
         originalError: errorMessage,
+        pgCode: pgError.code,
+        pgDetail: pgError.detail,
         ...context,
       });
     }

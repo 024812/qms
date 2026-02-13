@@ -222,12 +222,16 @@ export class CardRepository extends BaseRepositoryImpl<Card, Card> {
 
     return this.executeQuery(
       async () => {
+        // Manually calculate item number to avoid sequence sync issues with legacy data
+        const itemNumber = await this.getNextItemNumber(tx);
+
         // Sanitize data before use
         const sanitizedData = this.sanitizeCardData(data);
 
         // Omit itemNumber to let database generate it via serial/sequence
         const insertData = {
           ...sanitizedData,
+          itemNumber,
           gradingCompany: data.gradingCompany || 'UNGRADED',
           status: data.status || 'COLLECTION',
           // Explicitly set grade to null if it strictly equals empty string or undefined/null after sanitization

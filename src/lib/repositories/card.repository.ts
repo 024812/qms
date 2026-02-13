@@ -222,14 +222,12 @@ export class CardRepository extends BaseRepositoryImpl<Card, Card> {
 
     return this.executeQuery(
       async () => {
-        const itemNumber = await this.getNextItemNumber(tx);
-
         // Sanitize data before use
         const sanitizedData = this.sanitizeCardData(data);
 
+        // Omit itemNumber to let database generate it via serial/sequence
         const insertData = {
           ...sanitizedData,
-          itemNumber,
           gradingCompany: data.gradingCompany || 'UNGRADED',
           status: data.status || 'COLLECTION',
           // Explicitly set grade to null if it strictly equals empty string or undefined/null after sanitization
@@ -246,7 +244,7 @@ export class CardRepository extends BaseRepositoryImpl<Card, Card> {
           .values(insertData as NewCard)
           .returning();
 
-        dbLogger.info('Card created', { id: result[0].id, itemNumber });
+        dbLogger.info('Card created', { id: result[0].id, itemNumber: result[0].itemNumber });
         return result[0];
       },
       'create',

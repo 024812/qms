@@ -155,6 +155,7 @@ export async function saveCard(data: unknown) {
 
   // Prepare clean data for database - convert numbers to strings for numeric columns
   const cleanData = {
+    userId: session.user.id,
     playerName: input.playerName,
     sport: input.sport,
     team: input.team || null,

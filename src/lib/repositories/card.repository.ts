@@ -179,6 +179,42 @@ export class CardRepository extends BaseRepositoryImpl<Card, Card> {
   }
 
   /**
+   * Helper to sanitize card data
+   * Converts empty strings to null for numeric/date fields
+   */
+  private sanitizeCardData(data: Partial<Card> | CreateCardData): Partial<Card> {
+    const cleanData: any = { ...data };
+    const numericFields = [
+      'grade',
+      'year',
+      'purchasePrice',
+      'currentValue',
+      'estimatedValue',
+      'soldPrice',
+    ];
+    const dateFields = ['purchaseDate', 'soldDate', 'valuationDate'];
+
+    // Sanitize numeric fields
+    numericFields.forEach(field => {
+      if (cleanData[field] === '') {
+        cleanData[field] = null;
+      } else if (typeof cleanData[field] === 'string' && !isNaN(Number(cleanData[field]))) {
+        // Drizzle numeric types are often strings in JS, but ensure valid number string
+        // cleanData[field] = cleanData[field];
+      }
+    });
+
+    // Sanitize date fields
+    dateFields.forEach(field => {
+      if (cleanData[field] === '') {
+        cleanData[field] = null;
+      }
+    });
+
+    return cleanData;
+  }
+
+  /**
    * Create a new card
    */
   async create(data: Partial<Card>, tx?: Tx): Promise<Card> {
@@ -188,11 +224,16 @@ export class CardRepository extends BaseRepositoryImpl<Card, Card> {
       async () => {
         const itemNumber = await this.getNextItemNumber(tx);
 
+        // Sanitize data before use
+        const sanitizedData = this.sanitizeCardData(data);
+
         const insertData = {
-          ...data,
+          ...sanitizedData,
           itemNumber,
           gradingCompany: data.gradingCompany || 'UNGRADED',
           status: data.status || 'COLLECTION',
+          // Explicitly set grade to null if it strictly equals empty string or undefined/null after sanitization
+          grade: sanitizedData.grade ?? null,
           isAutographed: data.isAutographed ?? false,
           hasMemorabilia: data.hasMemorabilia ?? false,
           attachmentImages: data.attachmentImages || [],
@@ -221,8 +262,9 @@ export class CardRepository extends BaseRepositoryImpl<Card, Card> {
 
     return this.executeQuery(
       async () => {
+        // Sanitize data before use
         const updateData = {
-          ...data,
+          ...this.sanitizeCardData(data),
           updatedAt: new Date(),
         };
 

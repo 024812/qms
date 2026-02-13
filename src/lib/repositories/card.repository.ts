@@ -11,7 +11,7 @@ import { db, Tx } from '@/db';
 import { cards, type Card, type NewCard } from '@/db/schema';
 import { dbLogger } from '@/lib/logger';
 import { BaseRepositoryImpl } from './base.repository';
-import { eq, and, or, ilike, count, max, desc, asc, sql, type SQL } from 'drizzle-orm';
+import { eq, and, or, ilike, count, desc, asc, sql, type SQL } from 'drizzle-orm';
 
 // Valid sort fields
 type CardSortField =
@@ -170,15 +170,6 @@ export class CardRepository extends BaseRepositoryImpl<Card, Card> {
   }
 
   /**
-   * Get next item number
-   */
-  async getNextItemNumber(tx?: Tx): Promise<number> {
-    const database = tx ?? db;
-    const result = await database.select({ maxNumber: max(cards.itemNumber) }).from(cards);
-    return (result[0]?.maxNumber ?? 0) + 1;
-  }
-
-  /**
    * Helper to sanitize card data
    * Converts empty strings to null for numeric/date fields
    */
@@ -222,16 +213,12 @@ export class CardRepository extends BaseRepositoryImpl<Card, Card> {
 
     return this.executeQuery(
       async () => {
-        // Manually calculate item number to avoid sequence sync issues with legacy data
-        const itemNumber = await this.getNextItemNumber(tx);
-
         // Sanitize data before use
         const sanitizedData = this.sanitizeCardData(data);
 
         // Omit itemNumber to let database generate it via serial/sequence
         const insertData = {
           ...sanitizedData,
-          itemNumber,
           gradingCompany: data.gradingCompany || 'UNGRADED',
           status: data.status || 'COLLECTION',
           // Explicitly set grade to null if it strictly equals empty string or undefined/null after sanitization

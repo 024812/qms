@@ -919,14 +919,23 @@ export class AICardService {
 
     let statsData: PlayerStatsAnalysisResult | null = null;
 
-    // 1. Try NBA Official (stats.nba.com) - Best Data, Free, but may be IP blocked
+    // 1. Try Perplexity API (Primary) - Web search + AI, works for active & retired players
     try {
-      statsData = await this.fetchNbaOfficialStats(playerName);
+      statsData = await this.fetchPlayerStatsViaPerplexity(playerName);
     } catch (e) {
-      console.warn('NBA Official fetch failed (likely IP block), trying next source.', e);
+      console.warn('Perplexity player stats fetch failed:', e);
     }
 
-    // 2. Try API-NBA (RapidAPI) - Reliable if configured
+    // 2. Try NBA Official (stats.nba.com) - Fallback, may be IP blocked
+    if (!statsData) {
+      try {
+        statsData = await this.fetchNbaOfficialStats(playerName);
+      } catch (e) {
+        console.warn('NBA Official fetch failed (likely IP block):', e);
+      }
+    }
+
+    // 3. Try API-NBA (RapidAPI) - Fallback if configured
     if (!statsData) {
       const rapidApiKey =
         (await systemSettingsRepository.getRapidApiKey()) || process.env.RAPID_API_KEY;
@@ -939,7 +948,7 @@ export class AICardService {
       }
     }
 
-    // 3. Try Balldontlie (Fallback) - Free, but limited to basics/teams often
+    // 4. Try Balldontlie (Final fallback)
     if (!statsData) {
       try {
         statsData = await this.fetchNBAStats(playerName);
@@ -948,12 +957,21 @@ export class AICardService {
       }
     }
 
-    // If still no data, return empty
+    // Build result
     const result = statsData || {
       stats: { games_played: 0, ppg: 0, rpg: 0, apg: 0, mpg: 0, efficiency: 0 },
       meta: { season: '2025-26', source: 'None', last_updated: new Date().toISOString() },
       game_log: [],
     };
+
+    // If we got stats from a non-Perplexity source but no aiAnalysis, generate it
+    if (statsData && !result.aiAnalysis) {
+      try {
+        result.aiAnalysis = await this.generatePlayerAnalysis(playerName, result.stats, 'zh');
+      } catch (e) {
+        console.warn('AI analysis generation failed:', e);
+      }
+    }
 
     if (statsData) {
       await this.cacheStats(playerName, result);
@@ -972,6 +990,120 @@ export class AICardService {
       data as unknown as Record<string, unknown>,
       3600 * 1000
     );
+  }
+
+  /**
+   * Fetch player stats via Perplexity API (web search + AI)
+   * Works for both active and retired players
+   */
+  private async fetchPlayerStatsViaPerplexity(
+    playerName: string
+  ): Promise<PlayerStatsAnalysisResult | null> {
+    const perplexityKey = process.env.PERPLEXITY_API_KEY;
+    if (!perplexityKey) return null;
+
+    try {
+      const response = await fetch('https://api.perplexity.ai/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${perplexityKey}`,
+        },
+        body: JSON.stringify({
+          model: 'sonar-pro',
+          messages: [
+            {
+              role: 'system',
+              content: `You are a sports data analyst. Search for the player's stats and return ONLY valid JSON (no markdown, no code fences).
+The JSON must follow this exact schema:
+{
+  "stats": {
+    "games_played": <number>,
+    "ppg": <number>,
+    "rpg": <number>,
+    "apg": <number>,
+    "mpg": <number>,
+    "efficiency": <number>
+  },
+  "game_log": [
+    {
+      "date": "<YYYY-MM-DD>",
+      "opponent": "<team abbreviation>",
+      "points": <number>,
+      "rebounds": <number>,
+      "assists": <number>,
+      "minutes": "<string>",
+      "fg_pct": <number 0-1>,
+      "three_pct": <number 0-1>,
+      "ft_pct": <number 0-1>
+    }
+  ],
+  "season": "<season string>",
+  "aiAnalysis": "<Chinese language analysis of the player's performance, card value impact, and investment recommendation. 150 words max.>"
+}
+
+Rules:
+- For ACTIVE players: use current 2024-25 season stats and last 5 games.
+- For RETIRED players: use their career averages and last season played. game_log can be empty [].
+- aiAnalysis MUST be in Chinese (Simplified). Include: performance summary, card value trend, buy/hold/sell recommendation.
+- Return ONLY the JSON object, nothing else.`,
+            },
+            {
+              role: 'user',
+              content: `Search the web for the latest stats and performance data for NBA/sports player: "${playerName}". Include their most recent game log if they are currently active.`,
+            },
+          ],
+          max_tokens: 1500,
+        }),
+      });
+
+      if (!response.ok) {
+        console.warn(`Perplexity Stats API Error: ${response.status}`);
+        return null;
+      }
+
+      const data = await response.json();
+      const content = data.choices?.[0]?.message?.content;
+      if (!content) return null;
+
+      // Parse JSON from the response (strip code fences if any)
+      const jsonStr = content
+        .replace(/```json?\s*/g, '')
+        .replace(/```\s*/g, '')
+        .trim();
+      const parsed = JSON.parse(jsonStr);
+
+      return {
+        stats: {
+          games_played: parsed.stats?.games_played || 0,
+          ppg: parsed.stats?.ppg || 0,
+          rpg: parsed.stats?.rpg || 0,
+          apg: parsed.stats?.apg || 0,
+          mpg: parsed.stats?.mpg || 0,
+          efficiency: parsed.stats?.efficiency || 0,
+        },
+        meta: {
+          season: parsed.season || '2024-25',
+          source: 'Perplexity',
+          last_updated: new Date().toISOString(),
+        },
+        game_log: (parsed.game_log || []).map((g: any) => ({
+          date: g.date || '',
+          opponent: g.opponent || '',
+          points: g.points || 0,
+          rebounds: g.rebounds || 0,
+          assists: g.assists || 0,
+          minutes: String(g.minutes || '0'),
+          fg_pct: g.fg_pct || 0,
+          three_pct: g.three_pct || 0,
+          ft_pct: g.ft_pct || 0,
+        })),
+        aiAnalysis: parsed.aiAnalysis || undefined,
+      };
+    } catch (error) {
+      console.error('Perplexity Stats Exception:', error);
+      return null;
+    }
   }
 
   /**

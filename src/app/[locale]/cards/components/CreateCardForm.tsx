@@ -96,8 +96,8 @@ export function CreateCardForm({ onSuccess }: CreateCardFormProps) {
           <div className="space-y-6">
             <SectionValueCost onEstimate={handleEstimatePrice} estimating={estimating} />
             <SectionPlayerTeam />
-            <SectionGradingCert />
             <SectionFeatures />
+            <SectionGradingCert />
             <SectionNotes />
 
             <div className="flex justify-end gap-2 pt-4">

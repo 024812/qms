@@ -206,8 +206,8 @@ export function EditCardForm({ initialData, onSuccess }: EditCardFormProps) {
             <div className="space-y-6">
               <SectionValueCost />
               <SectionPlayerTeam />
-              <SectionGradingCert />
               <SectionFeatures />
+              <SectionGradingCert />
               <SectionNotes />
               <div className="flex justify-end gap-2 pt-4">
                 <Button type="submit" disabled={loading}>

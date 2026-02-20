@@ -529,11 +529,6 @@ export function UnifiedCardDashboard({ initialData }: UnifiedCardDashboardProps)
                 <SectionPlayerTeam />
               </GlassPanel>
 
-              {/* Grading & Certification Section */}
-              <GlassPanel className="p-6 border-t-4 border-t-indigo-500">
-                <SectionGradingCert />
-              </GlassPanel>
-
               {/* Features & Notes Section */}
               <GlassPanel className="p-6">
                 <div className="space-y-6">
@@ -541,6 +536,11 @@ export function UnifiedCardDashboard({ initialData }: UnifiedCardDashboardProps)
                   <div className="h-px bg-slate-200" />
                   <SectionNotes />
                 </div>
+              </GlassPanel>
+
+              {/* Grading & Certification Section */}
+              <GlassPanel className="p-6 border-t-4 border-t-indigo-500">
+                <SectionGradingCert />
               </GlassPanel>
             </div>
 

@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react';
-import { Camera, Upload, X, RefreshCw } from 'lucide-react';
+import { Camera, Upload, X, RefreshCw, Eye } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { toast } from 'sonner';
 import { motion } from 'framer-motion';
@@ -7,6 +7,7 @@ import { motion } from 'framer-motion';
 import { compressAndEncodeImage, validateImageFile } from '@/lib/image-utils';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
+import { ImageViewerDialog } from './ImageViewerDialog';
 
 export interface CardImageUploadProps {
   frontImage: string;
@@ -24,6 +25,8 @@ export function CardImageUpload({
   const t = useTranslations('cards.upload');
   const [isUploadingFront, setIsUploadingFront] = useState(false);
   const [isUploadingBack, setIsUploadingBack] = useState(false);
+  const [viewerOpen, setViewerOpen] = useState(false);
+  const [viewerImage, setViewerImage] = useState('');
 
   const frontInputRef = useRef<HTMLInputElement>(null);
   const backInputRef = useRef<HTMLInputElement>(null);
@@ -88,6 +91,19 @@ export function CardImageUpload({
 
             {/* Hover Actions Overlay */}
             <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-2 backdrop-blur-sm">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  setViewerImage(image);
+                  setViewerOpen(true);
+                }}
+                className="bg-transparent border-white/20 text-white hover:bg-white/20"
+              >
+                <Eye className="w-4 h-4 mr-2" />
+                {t('view')}
+              </Button>
               <Button
                 type="button"
                 variant="outline"
@@ -204,6 +220,13 @@ export function CardImageUpload({
           Drag & Drop
         </p>
       </div>
+
+      <ImageViewerDialog
+        open={viewerOpen}
+        onOpenChange={setViewerOpen}
+        imageSrc={viewerImage}
+        alt="Card Image"
+      />
     </div>
   );
 }

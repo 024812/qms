@@ -123,7 +123,8 @@
       "success": "图片处理成功",
       "error": "图片处理失败",
       "change": "更换图片",
-      "remove": "删除图片"
+      "remove": "删除图片",
+      "view": "查看图片"
     },
     "fields": {
       "playerName": "球员姓名",

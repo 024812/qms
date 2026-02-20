@@ -107,7 +107,10 @@
       "desktopHint": "Drag and drop or paste images",
       "validationError": "Validation Error",
       "success": "Image Processed Successfully",
-      "error": "Image Processing Failed"
+      "error": "Image Processing Failed",
+      "change": "Change Image",
+      "remove": "Delete Image",
+      "view": "View Image"
     },
     "fields": {
       "playerName": "Player Name",

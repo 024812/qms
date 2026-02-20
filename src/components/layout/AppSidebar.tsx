@@ -21,6 +21,7 @@ import {
 } from 'lucide-react';
 import packageJson from '../../../package.json';
 import { getAllModules } from '@/modules/registry';
+import { logoutUser } from '@/app/actions/logout';
 
 import {
   Sidebar,
@@ -356,10 +357,10 @@ export function AppSidebar() {
                         asChild
                         className="text-red-600 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/20"
                       >
-                        <Link href="/api/auth/signout" prefetch={false}>
+                        <button type="button" onClick={() => logoutUser()}>
                           <LogOut className="h-4 w-4" />
                           <span>{t('auth.signOut')}</span>
-                        </Link>
+                        </button>
                       </SidebarMenuSubButton>
                     </SidebarMenuSubItem>
                   </SidebarMenuSub>

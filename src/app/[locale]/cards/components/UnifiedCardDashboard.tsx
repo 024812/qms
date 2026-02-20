@@ -530,7 +530,7 @@ export function UnifiedCardDashboard({ initialData }: UnifiedCardDashboardProps)
               </GlassPanel>
 
               {/* Features & Notes Section */}
-              <GlassPanel className="p-6">
+              <GlassPanel className="p-6 border-t-4 border-t-amber-500">
                 <div className="space-y-6">
                   <SectionFeatures />
                   <div className="h-px bg-slate-200" />

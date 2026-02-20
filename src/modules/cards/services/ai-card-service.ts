@@ -19,6 +19,7 @@ const CardRecognitionSchema = z.object({
   gradingCompany: z.string().nullable().optional(),
   grade: z.number().nullable().optional(),
   isAutographed: z.boolean().nullable().optional(),
+  serialNumber: z.string().nullable().optional(),
   riskWarning: z.string().nullable().optional(),
   imageQualityFeedback: z.string().nullable().optional(),
   confidence: z.enum(['HIGH', 'MEDIUM', 'LOW']).nullable().optional(),
@@ -277,8 +278,15 @@ export class AICardService {
 
               CRITICAL - PARALLEL/VARIATION DETECTION:
               - Look closely for "Refractor", "Prizm" text, or specific color variants (Silver, Gold, Blue, Green, etc.).
-              - Identify serial numbers (e.g., "01/99") and include them in the 'parallel' field (e.g., "Gold /99").
+              - Put the color/variant name in 'parallel' (e.g., "Gold", "Silver Prizm"). Do NOT include serial numbers in the parallel field.
               - Note visual effects like "Holo", "Cracked Ice", "Wave", "Choice" if visible.
+
+              CRITICAL - SERIAL / NUMBERED DETECTION:
+              - Look for any numbered notation on the card, typically in format "X/Y" (e.g., "1/5", "23/99", "100/199").
+              - This represents the card's limited edition number and total print run.
+              - Put the FULL notation (e.g., "1/5") into the 'serialNumber' field.
+              - Common locations: front surface, back surface, edges, or within the card design.
+              - If no serial number is visible, set serialNumber to null.
               
               CRITICAL - IMAGE QUALITY:
               - Is the image too blurry to read text?
@@ -304,6 +312,7 @@ export class AICardService {
                 "gradingCompany": "PSA" | "BGS" | "SGC" | "CGC" | "UNGRADED",
                 "grade": number (optional),
                 "isAutographed": boolean,
+                "serialNumber": "string (optional, e.g. '1/5', '23/99')",
                 "imageQualityFeedback": "string (optional)",
                 "confidence": "HIGH" | "MEDIUM" | "LOW"
               }`,
@@ -612,6 +621,7 @@ export class AICardService {
       gradingCompany: 'PSA',
       grade: 9,
       isAutographed: false,
+      serialNumber: '57/99',
     };
   }
   private analysisCache = new Map<string, QuickAnalysisResult>();

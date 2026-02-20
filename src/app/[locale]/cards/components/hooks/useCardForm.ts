@@ -220,6 +220,8 @@ export function useCardForm({
       if (result.isAutographed !== undefined && result.isAutographed !== null) {
         form.setValue('isAutographed', result.isAutographed);
       }
+      if (result.parallel) form.setValue('parallel', result.parallel);
+      if (result.serialNumber) form.setValue('serialNumber', result.serialNumber);
 
       dispatch({
         type: 'SCAN_SUCCESS',

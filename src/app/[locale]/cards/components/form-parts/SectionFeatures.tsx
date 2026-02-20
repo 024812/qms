@@ -17,6 +17,7 @@ export function SectionFeatures() {
         <span>🔰</span> {t('cardDetails')}
       </h3>
 
+      {/* Row 1: Year, Brand, Series */}
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
         <FormField
           control={form.control}
@@ -52,6 +53,27 @@ export function SectionFeatures() {
               <FormLabel>{t('series')}</FormLabel>
               <FormControl>
                 <Input placeholder={t('seriesPlaceholder')} {...field} value={field.value ?? ''} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+      </div>
+
+      {/* Row 2: Serial Number, Card Number, Parallel */}
+      <div className="grid grid-cols-3 gap-4">
+        <FormField
+          control={form.control}
+          name="serialNumber"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>{t('serialNumber')}</FormLabel>
+              <FormControl>
+                <Input
+                  placeholder={t('serialNumberPlaceholder')}
+                  {...field}
+                  value={field.value ?? ''}
+                />
               </FormControl>
               <FormMessage />
             </FormItem>

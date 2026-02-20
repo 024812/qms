@@ -71,25 +71,8 @@ export function SectionGradingCert() {
         />
       </div>
 
-      {/* Row 2: Serial & Cert Number */}
+      {/* Row 2: Cert Number */}
       <div className="grid grid-cols-2 gap-4">
-        <FormField
-          control={form.control}
-          name="serialNumber"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>{t('serialNumber')}</FormLabel>
-              <FormControl>
-                <Input
-                  placeholder={t('serialNumberPlaceholder')}
-                  {...field}
-                  value={field.value ?? ''}
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
         <FormField
           control={form.control}
           name="certificationNumber"

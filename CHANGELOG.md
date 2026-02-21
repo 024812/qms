@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2026.02.21] - 2026-02-21
+
+### 🔄 Project Rebranding & Version Bump
+
+- **Rebranding**
+  - ✅ Updated browser tab title from "QMS - 家庭被子管理系统" to "QMS - 家庭物品管理系统"
+  - ✅ Updated README.md and README_zh.md with new version and title
+- **Version**
+  - ✅ Bumped version to `2026.02.21` in package.json
+
 ## [2026.02.09] - 2026-02-09
 
 ### 🏗️ Cards Module Refactoring & Project Cleanup

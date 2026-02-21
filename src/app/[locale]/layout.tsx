@@ -19,14 +19,12 @@ const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
 const firaCode = Fira_Code({ subsets: ['latin'], variable: '--font-fira-code' });
 
 export const metadata: Metadata = {
-  title: 'QMS - 家庭被子管理系统',
-  description: '家庭被子库存和使用追踪系统',
-  icons: {
-    icon: [
-      { url: '/icons/icon-192x192.svg', sizes: '192x192', type: 'image/svg+xml' },
-      { url: '/icons/icon-512x512.svg', sizes: '512x512', type: 'image/svg+xml' },
-    ],
-  },
+  title: 'QMS - 家庭物品管理系统',
+  description: 'A modern Next.js application for family item management',
+  icons: [
+    { url: '/icons/icon-192x192.svg', sizes: '192x192', type: 'image/svg+xml' },
+    { url: '/icons/icon-512x512.svg', sizes: '512x512', type: 'image/svg+xml' },
+  ],
 };
 
 export const viewport: Viewport = {

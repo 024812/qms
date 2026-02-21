@@ -1,6 +1,6 @@
 {
   "name": "qms-app",
-  "version": "2026.02.09",
+  "version": "2026.2.21",
   "private": true,
   "scripts": {
     "dev": "next dev",

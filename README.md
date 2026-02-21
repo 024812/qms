@@ -489,8 +489,8 @@ For questions or issues, please open an issue on GitHub.
 
 ---
 
-**Version**: 2026.01.21  
+**Version**: 2026.02.21  
 **Status**: ✅ Production Ready  
-**Last Updated**: 2026-01-22
+**Last Updated**: 2026-02-21
 
 Made with ❤️ for better home organization

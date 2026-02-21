@@ -919,11 +919,11 @@ export class AICardService {
 
     let statsData: PlayerStatsAnalysisResult | null = null;
 
-    // 1. Try Perplexity API (Primary) - Web search + AI, works for active & retired players
+    // 1. Try Tavily Search + Azure OpenAI (Primary) - Web search + AI, works for active & retired players
     try {
-      statsData = await this.fetchPlayerStatsViaPerplexity(playerName);
+      statsData = await this.fetchPlayerStatsViaTavily(playerName);
     } catch (e) {
-      console.warn('Perplexity player stats fetch failed:', e);
+      console.warn('Tavily player stats fetch failed:', e);
     }
 
     // 2. Try NBA API Free Data (RapidAPI) - Fallback
@@ -976,28 +976,51 @@ export class AICardService {
   }
 
   /**
-   * Fetch player stats via Perplexity API (web search + AI)
+   * Fetch player stats via Tavily Search + Azure OpenAI
    * Works for both active and retired players
    */
-  private async fetchPlayerStatsViaPerplexity(
+  private async fetchPlayerStatsViaTavily(
     playerName: string
   ): Promise<PlayerStatsAnalysisResult | null> {
-    const perplexityKey = await systemSettingsRepository.getPerplexityApiKey();
-    if (!perplexityKey) return null;
+    const tavilyKey = await systemSettingsRepository.getTavilyApiKey();
+    if (!tavilyKey) return null;
 
     try {
-      const response = await fetch('https://api.perplexity.ai/chat/completions', {
+      // 1. Search the web using Tavily
+      const searchRes = await fetch('https://api.tavily.com/search', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${perplexityKey}`,
+          Authorization: `Bearer ${tavilyKey}`,
         },
         body: JSON.stringify({
-          model: 'sonar-pro',
-          messages: [
-            {
-              role: 'system',
-              content: `You are a sports data analyst. Search for the player's stats and return ONLY valid JSON (no markdown, no code fences).
+          query: `${playerName} NBA player recent stats game log career stats`,
+          search_depth: 'advanced', // 'basic' is faster, 'advanced' is deeper
+          include_raw_content: false,
+          max_results: 5,
+        }),
+      });
+
+      if (!searchRes.ok) {
+        console.warn(`Tavily Search API Error: ${searchRes.status}`);
+        return null;
+      }
+
+      const searchData = await searchRes.json();
+      const searchContext = (searchData.results || []).map((r: any) => r.content).join('\n---\n');
+
+      if (!searchContext.trim()) return null;
+
+      // 2. Extract structured data using Azure OpenAI
+      const { client, deployment } = await this.getClient();
+      if (!client) return null;
+
+      const aiResponse = await client.chat.completions.create({
+        model: deployment,
+        messages: [
+          {
+            role: 'system',
+            content: `You are a sports data analyst. Extract the player's stats from the provided search context and return ONLY valid JSON.
 The JSON must follow this exact schema:
 {
   "stats": {
@@ -1022,39 +1045,27 @@ The JSON must follow this exact schema:
     }
   ],
   "season": "<season string>",
-  "aiAnalysis": "<Chinese language analysis of the player's performance, card value impact, and investment recommendation. 150 words max.>"
+  "aiAnalysis": "<Chinese (Simplified) analysis of the player's performance, card value trend, and investment recommendation. 150 words max.>"
 }
 
 Rules:
-- For ACTIVE players: use current 2024-25 season stats and last 5 games.
+- For ACTIVE players: extract current 2024-25 season stats and last 5 games from context.
 - For RETIRED players: use their career averages and last season played. game_log can be empty [].
-- aiAnalysis MUST be in Chinese (Simplified). Include: performance summary, card value trend, buy/hold/sell recommendation.
-- Return ONLY the JSON object, nothing else.`,
-            },
-            {
-              role: 'user',
-              content: `Search the web for the latest stats and performance data for NBA/sports player: "${playerName}". Include their most recent game log if they are currently active.`,
-            },
-          ],
-          max_tokens: 1500,
-        }),
+- aiAnalysis MUST be in Chinese (Simplified).
+- Return ONLY the JSON object.`,
+          },
+          {
+            role: 'user',
+            content: `Player Name: "${playerName}"\n\nSearch Context:\n${searchContext}`,
+          },
+        ],
+        response_format: { type: 'json_object' },
       });
 
-      if (!response.ok) {
-        console.warn(`Perplexity Stats API Error: ${response.status}`);
-        return null;
-      }
-
-      const data = await response.json();
-      const content = data.choices?.[0]?.message?.content;
+      const content = aiResponse.choices[0].message.content;
       if (!content) return null;
 
-      // Parse JSON from the response (strip code fences if any)
-      const jsonStr = content
-        .replace(/```json?\s*/g, '')
-        .replace(/```\s*/g, '')
-        .trim();
-      const parsed = JSON.parse(jsonStr);
+      const parsed = JSON.parse(content);
 
       return {
         stats: {
@@ -1067,7 +1078,7 @@ Rules:
         },
         meta: {
           season: parsed.season || '2024-25',
-          source: 'Perplexity',
+          source: 'Tavily + Azure OpenAI',
           last_updated: new Date().toISOString(),
         },
         game_log: (parsed.game_log || []).map((g: any) => ({
@@ -1084,7 +1095,7 @@ Rules:
         aiAnalysis: parsed.aiAnalysis || undefined,
       };
     } catch (error) {
-      console.error('Perplexity Stats Exception:', error);
+      console.error('Tavily + Azure OpenAI Stats Exception:', error);
       return null;
     }
   }

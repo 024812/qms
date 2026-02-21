@@ -314,17 +314,17 @@ export class SystemSettingsRepository extends BaseRepositoryImpl<SystemSettingRo
   }
 
   /**
-   * Get Perplexity API Key
+   * Get Tavily API Key
    */
-  async getPerplexityApiKey(tx?: Tx): Promise<string | null> {
-    return this.getSetting('perplexity_api_key', tx);
+  async getTavilyApiKey(tx?: Tx): Promise<string | null> {
+    return this.getSetting('tavily_api_key', tx);
   }
 
   /**
-   * Update Perplexity API Key
+   * Update Tavily API Key
    */
-  async updatePerplexityApiKey(key: string, tx?: Tx): Promise<void> {
-    return this.setSetting('perplexity_api_key', key, 'Perplexity API Key for Player Stats AI', tx);
+  async updateTavilyApiKey(key: string, tx?: Tx): Promise<void> {
+    return this.setSetting('tavily_api_key', key, 'Tavily API Key for Player Stats AI', tx);
   }
 }
 

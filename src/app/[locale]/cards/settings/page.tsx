@@ -30,7 +30,7 @@ export default function CardSettingsPage() {
     ebayCertId: '',
     ebayDevId: '',
     rapidApiKey: '',
-    perplexityApiKey: '',
+    tavilyApiKey: '',
   });
 
   // Load data into form when fetched
@@ -45,7 +45,7 @@ export default function CardSettingsPage() {
         ebayCertId: settings.ebayCertId || '',
         ebayDevId: settings.ebayDevId || '',
         rapidApiKey: settings.rapidApiKey || '',
-        perplexityApiKey: settings.perplexityApiKey || '',
+        tavilyApiKey: settings.tavilyApiKey || '',
       });
     }
   }, [settings]);
@@ -151,37 +151,37 @@ export default function CardSettingsPage() {
           </CardContent>
         </Card>
 
-        {/* Perplexity AI Configuration */}
+        {/* Tavily Search API Configuration */}
         <Card>
           <CardHeader>
-            <CardTitle>Perplexity AI</CardTitle>
+            <CardTitle>Tavily Search API</CardTitle>
             <CardDescription>
               {isZh
-                ? '配置 Perplexity API Key 作为球员数据的主要来源（支持现役和退役球员）'
-                : 'Configure Perplexity API Key as primary player stats source (supports active & retired players)'}
+                ? '配置 Tavily API Key 作为搜索数据源（对接 Azure OpenAI 生成分析）'
+                : 'Configure Tavily API Key for stats search (combined with Azure OpenAI)'}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="perplexityApiKey">Perplexity API Key</Label>
+              <Label htmlFor="tavilyApiKey">Tavily API Key</Label>
               <Input
-                id="perplexityApiKey"
-                name="perplexityApiKey"
+                id="tavilyApiKey"
+                name="tavilyApiKey"
                 type="password"
-                value={formData.perplexityApiKey}
+                value={formData.tavilyApiKey}
                 onChange={handleChange}
-                placeholder={settings?.perplexityApiKey ? '********' : 'Enter Perplexity API Key'}
+                placeholder={settings?.tavilyApiKey ? '********' : 'tvly-...'}
               />
             </div>
             <div className="text-sm text-muted-foreground pt-2">
               <a
-                href="https://docs.perplexity.ai/"
+                href="https://tavily.com/"
                 target="_blank"
                 rel="noreferrer"
                 className="flex items-center gap-1 hover:text-primary transition-colors"
               >
                 <ExternalLink className="w-3 h-3" />
-                {isZh ? '获取 Perplexity API Key' : 'Get Perplexity API Key'}
+                {isZh ? '获取 Tavily API Key' : 'Get Tavily API Key'}
               </a>
             </div>
           </CardContent>

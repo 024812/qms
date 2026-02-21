@@ -18,7 +18,7 @@ const updateCardSettingsSchema = z.object({
   ebayCertId: z.string().optional(),
   ebayDevId: z.string().optional(),
   rapidApiKey: z.string().optional(),
-  perplexityApiKey: z.string().optional(),
+  tavilyApiKey: z.string().optional(),
 });
 
 /**
@@ -33,11 +33,11 @@ export async function GET() {
       return createUnauthorizedResponse('Requires admin privileges');
     }
 
-    const [azureConfig, ebayConfig, rapidApiKey, perplexityApiKey] = await Promise.all([
+    const [azureConfig, ebayConfig, rapidApiKey, tavilyApiKey] = await Promise.all([
       systemSettingsRepository.getAzureOpenAIConfig(),
       systemSettingsRepository.getEbayApiConfig(),
       systemSettingsRepository.getRapidApiKey(),
-      systemSettingsRepository.getPerplexityApiKey(),
+      systemSettingsRepository.getTavilyApiKey(),
     ]);
 
     return createSuccessResponse({
@@ -49,7 +49,7 @@ export async function GET() {
         ebayCertId: ebayConfig.certId ? '********' : '', // Mask Secret
         ebayDevId: ebayConfig.devId || '',
         rapidApiKey: rapidApiKey ? '********' : '', // Mask Rapid API Key
-        perplexityApiKey: perplexityApiKey ? '********' : '', // Mask Perplexity API Key
+        tavilyApiKey: tavilyApiKey ? '********' : '', // Mask Tavily API Key
       },
     });
   } catch (error) {
@@ -121,14 +121,14 @@ export async function PUT(request: NextRequest) {
 
     await systemSettingsRepository.updateRapidApiKey(newRapidKey);
 
-    // 4. Update Perplexity API Key
-    const currentPerplexityKey = await systemSettingsRepository.getPerplexityApiKey();
-    const newPerplexityKey =
-      input.perplexityApiKey && input.perplexityApiKey !== '********'
-        ? input.perplexityApiKey
-        : currentPerplexityKey || '';
+    // 4. Update Tavily API Key
+    const currentTavilyKey = await systemSettingsRepository.getTavilyApiKey();
+    const newTavilyKey =
+      input.tavilyApiKey && input.tavilyApiKey !== '********'
+        ? input.tavilyApiKey
+        : currentTavilyKey || '';
 
-    await systemSettingsRepository.updatePerplexityApiKey(newPerplexityKey);
+    await systemSettingsRepository.updateTavilyApiKey(newTavilyKey);
 
     return createSuccessResponse({
       updated: true,

@@ -32,6 +32,7 @@ export async function getCardStats(userId: string): Promise<CardStats> {
       // Sold Stats
       if (isSold) {
         acc.totalSold += soldPrice;
+        acc.totalProfit += soldPrice - purchasePrice;
       }
 
       acc.totalCards++;
@@ -45,9 +46,6 @@ export async function getCardStats(userId: string): Promise<CardStats> {
       totalProfit: 0,
     }
   );
-
-  // New P&L Logic: Total Sales - Total Spend
-  stats.totalProfit = stats.totalSold - stats.totalSpend;
 
   return stats;
 }

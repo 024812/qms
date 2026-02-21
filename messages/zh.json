@@ -302,7 +302,7 @@
       "totalSales": "总销售额",
       "totalSalesDesc": "已售出卡片的总收入",
       "realizedPnL": "历史盈亏",
-      "realizedPnLDesc": "总销售额 - 总投入",
+      "realizedPnLDesc": "总销售额 - 已售成本",
       "portfolioDistribution": "持仓分布",
       "recentActivity": "近期动态",
       "chartPlaceholder": "图表区域 (品牌/年份/运动)",

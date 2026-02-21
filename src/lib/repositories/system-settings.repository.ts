@@ -310,21 +310,21 @@ export class SystemSettingsRepository extends BaseRepositoryImpl<SystemSettingRo
    * Update Rapid API Key
    */
   async updateRapidApiKey(key: string, tx?: Tx): Promise<void> {
-    return this.setSetting('rapid_api_key', key, 'Rapid API Key for API-NBA', tx);
+    return this.setSetting('rapid_api_key', key, 'Rapid API Key for NBA API Free Data', tx);
   }
 
   /**
-   * Get Balldontlie API Key
+   * Get Perplexity API Key
    */
-  async getBalldontlieApiKey(tx?: Tx): Promise<string | null> {
-    return this.getSetting('balldontlie_api_key', tx);
+  async getPerplexityApiKey(tx?: Tx): Promise<string | null> {
+    return this.getSetting('perplexity_api_key', tx);
   }
 
   /**
-   * Update Balldontlie API Key
+   * Update Perplexity API Key
    */
-  async updateBalldontlieApiKey(key: string, tx?: Tx): Promise<void> {
-    return this.setSetting('balldontlie_api_key', key, 'Balldontlie API Key for Player Stats', tx);
+  async updatePerplexityApiKey(key: string, tx?: Tx): Promise<void> {
+    return this.setSetting('perplexity_api_key', key, 'Perplexity API Key for Player Stats AI', tx);
   }
 }
 

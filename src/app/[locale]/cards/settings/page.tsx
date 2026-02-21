@@ -30,7 +30,7 @@ export default function CardSettingsPage() {
     ebayCertId: '',
     ebayDevId: '',
     rapidApiKey: '',
-    balldontlieApiKey: '',
+    perplexityApiKey: '',
   });
 
   // Load data into form when fetched
@@ -45,7 +45,7 @@ export default function CardSettingsPage() {
         ebayCertId: settings.ebayCertId || '',
         ebayDevId: settings.ebayDevId || '',
         rapidApiKey: settings.rapidApiKey || '',
-        balldontlieApiKey: settings.balldontlieApiKey || '',
+        perplexityApiKey: settings.perplexityApiKey || '',
       });
     }
   }, [settings]);
@@ -118,11 +118,11 @@ export default function CardSettingsPage() {
         {/* API-NBA Configuration */}
         <Card>
           <CardHeader>
-            <CardTitle>API-NBA (RapidAPI)</CardTitle>
+            <CardTitle>NBA API Free Data (RapidAPI)</CardTitle>
             <CardDescription>
               {isZh
-                ? '配置 RapidAPI Key 以获取最新的球员数据（新秀支持更好）'
-                : 'Configure RapidAPI Key for latest player stats (better rookie support)'}
+                ? '配置 RapidAPI Key 以获取最新的球员数据（NBA API Free Data）'
+                : 'Configure RapidAPI Key for latest player stats (NBA API Free Data)'}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -139,7 +139,7 @@ export default function CardSettingsPage() {
             </div>
             <div className="text-sm text-muted-foreground pt-2">
               <a
-                href="https://rapidapi.com/api-sports/api/api-nba"
+                href="https://rapidapi.com/flfranceschi/api/nba-api-free-data"
                 target="_blank"
                 rel="noreferrer"
                 className="flex items-center gap-1 hover:text-primary transition-colors"
@@ -151,37 +151,37 @@ export default function CardSettingsPage() {
           </CardContent>
         </Card>
 
-        {/* Balldontlie Configuration */}
+        {/* Perplexity AI Configuration */}
         <Card>
           <CardHeader>
-            <CardTitle>Balldontlie API (Fallback)</CardTitle>
+            <CardTitle>Perplexity AI</CardTitle>
             <CardDescription>
               {isZh
-                ? '配置 Balldontlie API Key 作为备用数据源'
-                : 'Configure Balldontlie API Key as fallback data source'}
+                ? '配置 Perplexity API Key 作为球员数据的主要来源（支持现役和退役球员）'
+                : 'Configure Perplexity API Key as primary player stats source (supports active & retired players)'}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="balldontlieApiKey">Balldontlie API Key</Label>
+              <Label htmlFor="perplexityApiKey">Perplexity API Key</Label>
               <Input
-                id="balldontlieApiKey"
-                name="balldontlieApiKey"
+                id="perplexityApiKey"
+                name="perplexityApiKey"
                 type="password"
-                value={formData.balldontlieApiKey}
+                value={formData.perplexityApiKey}
                 onChange={handleChange}
-                placeholder={settings?.balldontlieApiKey ? '********' : 'Enter Balldontlie API Key'}
+                placeholder={settings?.perplexityApiKey ? '********' : 'Enter Perplexity API Key'}
               />
             </div>
             <div className="text-sm text-muted-foreground pt-2">
               <a
-                href="https://balldontlie.io"
+                href="https://docs.perplexity.ai/"
                 target="_blank"
                 rel="noreferrer"
                 className="flex items-center gap-1 hover:text-primary transition-colors"
               >
                 <ExternalLink className="w-3 h-3" />
-                {isZh ? '获取 Balldontlie API Key' : 'Get Balldontlie API Key'}
+                {isZh ? '获取 Perplexity API Key' : 'Get Perplexity API Key'}
               </a>
             </div>
           </CardContent>

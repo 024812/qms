@@ -926,50 +926,33 @@ export class AICardService {
       console.warn('Perplexity player stats fetch failed:', e);
     }
 
-    // 2. Try NBA Official (stats.nba.com) - Fallback, may be IP blocked
-    if (!statsData) {
-      try {
-        statsData = await this.fetchNbaOfficialStats(playerName);
-      } catch (e) {
-        console.warn('NBA Official fetch failed (likely IP block):', e);
-      }
-    }
-
-    // 3. Try API-NBA (RapidAPI) - Fallback if configured
+    // 2. Try NBA API Free Data (RapidAPI) - Fallback
     if (!statsData) {
       const rapidApiKey =
         (await systemSettingsRepository.getRapidApiKey()) || process.env.RAPID_API_KEY;
       if (rapidApiKey) {
         try {
-          statsData = await this.fetchApiNbaStats(playerName, rapidApiKey);
+          statsData = await this.fetchNbaApiFreeData(playerName, rapidApiKey);
         } catch (e) {
-          console.warn('API-NBA fetch failed:', e);
+          console.warn('NBA API Free Data fetch failed:', e);
         }
-      }
-    }
-
-    // 4. Try Balldontlie (Final fallback)
-    if (!statsData) {
-      try {
-        statsData = await this.fetchNBAStats(playerName);
-      } catch (e) {
-        console.warn('Balldontlie fetch failed:', e);
       }
     }
 
     // Build result
     const result = statsData || {
       stats: { games_played: 0, ppg: 0, rpg: 0, apg: 0, mpg: 0, efficiency: 0 },
-      meta: { season: '2025-26', source: 'None', last_updated: new Date().toISOString() },
+      meta: { season: '2024-25', source: 'None', last_updated: new Date().toISOString() },
       game_log: [],
     };
 
-    // If we got stats from a non-Perplexity source but no aiAnalysis, generate it
-    if (statsData && !result.aiAnalysis) {
+    // Always try to generate AI analysis if missing (even when all API sources fail)
+    if (!result.aiAnalysis) {
       try {
         result.aiAnalysis = await this.generatePlayerAnalysis(playerName, result.stats, 'zh');
       } catch (e) {
         console.warn('AI analysis generation failed:', e);
+        result.aiAnalysis = '暂无法生成AI分析，请检查Azure OpenAI配置。';
       }
     }
 
@@ -999,7 +982,7 @@ export class AICardService {
   private async fetchPlayerStatsViaPerplexity(
     playerName: string
   ): Promise<PlayerStatsAnalysisResult | null> {
-    const perplexityKey = process.env.PERPLEXITY_API_KEY;
+    const perplexityKey = await systemSettingsRepository.getPerplexityApiKey();
     if (!perplexityKey) return null;
 
     try {
@@ -1107,268 +1090,127 @@ Rules:
   }
 
   /**
-   * Fetch stats from NBA Official Website (stats.nba.com)
+   * Fetch player stats via NBA API Free Data (RapidAPI)
+   * Uses nba-api-free-data.p.rapidapi.com
    */
-  async fetchNbaOfficialStats(playerName: string): Promise<PlayerStatsAnalysisResult | null> {
-    try {
-      const headers = {
-        'User-Agent':
-          'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-        Referer: 'https://www.nba.com/',
-        Origin: 'https://www.nba.com',
-        Accept: 'application/json, text/plain, */*',
-        'Accept-Language': 'en-US,en;q=0.9',
-        'x-nba-stats-origin': 'stats',
-        'x-nba-stats-token': 'true',
-      };
-
-      // 1. Find Player ID (Current Season)
-      const rosterUrl =
-        'https://stats.nba.com/stats/commonallplayers?IsOnlyCurrentSeason=1&LeagueID=00&Season=2025-26';
-      const rosterRes = await fetch(rosterUrl, { headers, next: { revalidate: 86400 } });
-
-      if (!rosterRes.ok) throw new Error(`NBA.com Roster Error: ${rosterRes.status}`);
-
-      const rosterData = await rosterRes.json();
-      const rosterHeaders = rosterData.resultSets[0].headers;
-      const rosterRows = rosterData.resultSets[0].rowSet;
-
-      const idIdx = rosterHeaders.indexOf('PERSON_ID');
-      const nameIdx = rosterHeaders.indexOf('DISPLAY_FIRST_LAST');
-
-      const playerRow = rosterRows.find((row: any[]) =>
-        row[nameIdx].toLowerCase().includes(playerName.toLowerCase())
-      );
-
-      if (!playerRow) return null;
-
-      const playerId = playerRow[idIdx];
-
-      // 2. Fetch Game Log
-      const statsUrl = `https://stats.nba.com/stats/playergamelog?PlayerID=${playerId}&Season=2025-26&SeasonType=Regular%20Season`;
-      const statsRes = await fetch(statsUrl, { headers, next: { revalidate: 3600 } });
-
-      if (!statsRes.ok) throw new Error(`NBA.com Stats Error: ${statsRes.status}`);
-
-      const statsData = await statsRes.json();
-      const logHeaders = statsData.resultSets[0].headers;
-      const logRows = statsData.resultSets[0].rowSet;
-
-      // Take last 5 games
-      const recentGames = logRows.slice(0, 5).map((row: any[]) => {
-        const game: any = {};
-        logHeaders.forEach((header: string, i: number) => {
-          game[header] = row[i];
-        });
-        return game;
-      });
-
-      const stats = {
-        ppg: 0,
-        rpg: 0,
-        apg: 0,
-        games_played: recentGames.length,
-        mpg: 0,
-        efficiency: 0,
-      };
-
-      if (recentGames.length > 0) {
-        stats.ppg =
-          recentGames.reduce((acc: number, g: any) => acc + (g.PTS || 0), 0) / recentGames.length;
-        stats.rpg =
-          recentGames.reduce((acc: number, g: any) => acc + (g.REB || 0), 0) / recentGames.length;
-        stats.apg =
-          recentGames.reduce((acc: number, g: any) => acc + (g.AST || 0), 0) / recentGames.length;
-        stats.mpg =
-          recentGames.reduce((acc: number, g: any) => acc + (parseFloat(g.MIN) || 0), 0) /
-          recentGames.length;
-      }
-
-      const gameLog = recentGames.map((g: any) => ({
-        date: g.GAME_DATE,
-        opponent: g.MATCHUP,
-        points: g.PTS,
-        rebounds: g.REB,
-        assists: g.AST,
-        minutes: g.MIN,
-        fg_pct: g.FG_PCT,
-        three_pct: g.FG3_PCT,
-        ft_pct: g.FT_PCT,
-      }));
-
-      return {
-        stats,
-        meta: {
-          last_updated: new Date().toISOString(),
-          season: '2025-26',
-          source: 'NBA.com',
-        },
-        game_log: gameLog,
-      };
-    } catch (error) {
-      console.warn('NBA Official fetch failed:', error);
-      return null;
-    }
-  }
-
-  /**
-   * Fetch from API-NBA (RapidAPI)
-   */
-  /**
-   * Fetch from API-NBA (RapidAPI)
-   */
-  private async fetchApiNbaStats(
+  private async fetchNbaApiFreeData(
     playerName: string,
     apiKey: string
   ): Promise<PlayerStatsAnalysisResult | null> {
     const headers = {
-      'x-rapidapi-host': 'api-nba-v1.p.rapidapi.com',
+      'x-rapidapi-host': 'nba-api-free-data.p.rapidapi.com',
       'x-rapidapi-key': apiKey,
     };
 
-    // 1. Search Player
-    const searchRes = await fetch(
-      `https://api-nba-v1.p.rapidapi.com/players?search=${encodeURIComponent(playerName)}`,
-      { headers }
-    );
-    const searchData = await searchRes.json();
+    try {
+      // 1. Search Player by name
+      const searchRes = await fetch(
+        `https://nba-api-free-data.p.rapidapi.com/nba-player-listing/v1/data?search=${encodeURIComponent(playerName)}`,
+        { headers }
+      );
+      if (!searchRes.ok) {
+        console.warn(`NBA API Free Data search error: ${searchRes.status}`);
+        return null;
+      }
+      const searchData = await searchRes.json();
 
-    if (!searchData.response || searchData.response.length === 0) return null;
+      // Find matching player from response (handle various response shapes)
+      const players = searchData?.data || searchData?.response || searchData;
+      if (!players || (Array.isArray(players) && players.length === 0)) return null;
 
-    const player = searchData.response[0];
-    const playerId = player.id;
+      // Take the best match
+      const playerList = Array.isArray(players) ? players : [players];
+      const player =
+        playerList.find((p: any) => {
+          const fullName = `${p.first_name || p.firstName || ''} ${p.last_name || p.lastName || ''}`
+            .trim()
+            .toLowerCase();
+          const displayName = (p.name || p.display_name || fullName).toLowerCase();
+          return (
+            displayName.includes(playerName.toLowerCase()) ||
+            playerName.toLowerCase().includes(displayName)
+          );
+        }) || playerList[0];
 
-    // 2. Get Statistics
-    const statsRes = await fetch(
-      `https://api-nba-v1.p.rapidapi.com/players/statistics?id=${playerId}&season=2024`,
-      { headers }
-    );
-    const statsData = await statsRes.json();
-    const games = statsData.response || [];
+      if (!player) return null;
 
-    if (games.length === 0) return null;
+      const playerId = player.id || player.player_id || player.playerId;
+      if (!playerId) return null;
 
-    // Sort by game date (descending)
-    /* eslint-disable @typescript-eslint/no-explicit-any */
-    const sortedGames = games.sort((a: any, b: any) => {
-      // game.date.start is ISO string
-      return new Date(b.game.date.start).getTime() - new Date(a.game.date.start).getTime();
-    });
+      // 2. Get Player Statistics
+      const statsRes = await fetch(
+        `https://nba-api-free-data.p.rapidapi.com/nba-player-statistics/v1/data?player_id=${playerId}&season=2024`,
+        { headers }
+      );
 
-    const last5 = sortedGames.slice(0, 5);
+      if (!statsRes.ok) {
+        console.warn(`NBA API Free Data stats error: ${statsRes.status}`);
+        return null;
+      }
 
-    // Calculate averages from available games
-    let totalPts = 0,
-      totalReb = 0,
-      totalAst = 0,
-      totalMin = 0;
-    const count = games.length;
+      const statsData = await statsRes.json();
+      const games = statsData?.data || statsData?.response || statsData || [];
+      const gameList = Array.isArray(games) ? games : [];
 
-    games.forEach((g: any) => {
-      totalPts += g.points || 0;
-      totalReb += g.totReb || 0;
-      totalAst += g.assists || 0;
-      totalMin += g.min ? parseFloat(g.min) : 0;
-    });
+      if (gameList.length === 0) return null;
 
-    return {
-      stats: {
-        games_played: count,
-        ppg: count ? Number((totalPts / count).toFixed(1)) : 0,
-        rpg: count ? Number((totalReb / count).toFixed(1)) : 0,
-        apg: count ? Number((totalAst / count).toFixed(1)) : 0,
-        mpg: count ? Number((totalMin / count).toFixed(1)) : 0,
-        efficiency: 0,
-      },
-      meta: {
-        season: '2024',
-        source: 'API-NBA',
-        last_updated: new Date().toISOString(),
-      },
-      game_log: last5.map((g: any) => ({
-        date: g.game.date.start,
-        points: g.points,
-        rebounds: g.totReb,
-        assists: g.assists,
-        minutes: g.min,
-        opponent:
-          g.team.id === g.game.homeTeam.id ? g.game.visitorsTeam.code : g.game.homeTeam.code,
-        fg_pct: g.fgp ? parseFloat(g.fgp) : 0,
-        three_pct: g.tpp ? parseFloat(g.tpp) : 0,
-        ft_pct: g.ftp ? parseFloat(g.ftp) : 0,
-      })),
-    };
-  }
+      // Sort by date (descending) and take last 5 games
+      const sortedGames = [...gameList].sort((a: any, b: any) => {
+        const dateA = a.date || a.game?.date || a.game_date || '';
+        const dateB = b.date || b.game?.date || b.game_date || '';
+        return new Date(dateB).getTime() - new Date(dateA).getTime();
+      });
 
-  private async fetchNBAStats(playerName: string): Promise<PlayerStatsAnalysisResult | null> {
-    let apiKey = process.env.BALLDONTLIE_API_KEY;
-    if (!apiKey) {
-      apiKey = (await systemSettingsRepository.getBalldontlieApiKey()) || undefined;
+      const last5 = sortedGames.slice(0, 5);
+
+      // Calculate averages
+      let totalPts = 0,
+        totalReb = 0,
+        totalAst = 0,
+        totalMin = 0;
+      const count = gameList.length;
+
+      gameList.forEach((g: any) => {
+        totalPts += g.points || g.pts || 0;
+        totalReb += g.rebounds || g.totReb || g.reb || g.total_rebounds || 0;
+        totalAst += g.assists || g.ast || 0;
+        totalMin += g.minutes
+          ? parseFloat(String(g.minutes))
+          : g.min
+            ? parseFloat(String(g.min))
+            : 0;
+      });
+
+      return {
+        stats: {
+          games_played: count,
+          ppg: count ? Number((totalPts / count).toFixed(1)) : 0,
+          rpg: count ? Number((totalReb / count).toFixed(1)) : 0,
+          apg: count ? Number((totalAst / count).toFixed(1)) : 0,
+          mpg: count ? Number((totalMin / count).toFixed(1)) : 0,
+          efficiency: 0,
+        },
+        meta: {
+          season: '2024-25',
+          source: 'NBA API Free Data',
+          last_updated: new Date().toISOString(),
+        },
+        game_log: last5.map((g: any) => ({
+          date: g.date || g.game?.date || g.game_date || '',
+          opponent: g.opponent || g.matchup || g.game?.opponent || '',
+          points: g.points || g.pts || 0,
+          rebounds: g.rebounds || g.totReb || g.reb || g.total_rebounds || 0,
+          assists: g.assists || g.ast || 0,
+          minutes: String(g.minutes || g.min || '0'),
+          fg_pct: g.fg_pct || g.fgp || 0,
+          three_pct: g.three_pct || g.fg3_pct || g.tpp || 0,
+          ft_pct: g.ft_pct || g.ftp || 0,
+        })),
+      };
+    } catch (error) {
+      console.warn('NBA API Free Data fetch exception:', error);
+      return null;
     }
-    // Fallback default key if still missing
-    if (!apiKey) {
-      apiKey = 'bed1ba1a-9640-4bd2-9844-486927977469';
-    }
-
-    const headers = { Authorization: apiKey };
-
-    // 1. Search Player
-    const searchRes = await fetch(
-      `https://api.balldontlie.io/v1/players?search=${encodeURIComponent(playerName)}`,
-      { headers }
-    );
-    const searchData = await searchRes.json();
-    if (!searchData.data || searchData.data.length === 0) return null;
-
-    const player = searchData.data[0];
-
-    // 2. Get Last 5 Games Stats (2024 season)
-    const statsRes = await fetch(
-      `https://api.balldontlie.io/v1/stats?player_ids[]=${player.id}&seasons[]=2024&per_page=5`,
-      { headers }
-    );
-    const statsData = await statsRes.json();
-    const last5 = statsData.data || [];
-
-    // 3. Get Season Averages
-    const avgRes = await fetch(
-      `https://api.balldontlie.io/v1/season_averages?season=2024&player_ids[]=${player.id}`,
-      { headers }
-    );
-    const avgData = await avgRes.json();
-    const averages = avgData.data && avgData.data.length > 0 ? avgData.data[0] : null;
-
-    const gameLog = last5.map((g: any) => ({
-      date: g.game.date,
-      points: g.pts,
-      rebounds: g.reb,
-      assists: g.ast,
-      minutes: g.min,
-      opponent:
-        g.game.visitor_team_id === player.team.id
-          ? g.game.home_team.abbreviation
-          : g.game.visitor_team_id,
-      fg_pct: g.fg_pct,
-      three_pct: g.fg3_pct,
-      ft_pct: g.ft_pct,
-    }));
-
-    return {
-      stats: {
-        games_played: averages?.games_played || 0,
-        ppg: averages?.pts || 0,
-        rpg: averages?.reb || 0,
-        apg: averages?.ast || 0,
-        mpg: averages ? parseFloat(averages.min) : 0,
-        efficiency: 0,
-      },
-      meta: {
-        season: '2024',
-        source: 'Balldontlie',
-        last_updated: new Date().toISOString(),
-      },
-      game_log: gameLog,
-    };
   }
 
   private async generatePlayerAnalysis(

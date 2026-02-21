@@ -18,12 +18,12 @@ const updateCardSettingsSchema = z.object({
   ebayCertId: z.string().optional(),
   ebayDevId: z.string().optional(),
   rapidApiKey: z.string().optional(),
-  balldontlieApiKey: z.string().optional(),
+  perplexityApiKey: z.string().optional(),
 });
 
 /**
  * GET /api/cards/settings
- * Get card module settings (Azure OpenAI & eBay config & Rapid API & Balldontlie)
+ * Get card module settings (Azure OpenAI & eBay config & Rapid API & Perplexity)
  * Admin only.
  */
 export async function GET() {
@@ -33,11 +33,11 @@ export async function GET() {
       return createUnauthorizedResponse('Requires admin privileges');
     }
 
-    const [azureConfig, ebayConfig, rapidApiKey, balldontlieApiKey] = await Promise.all([
+    const [azureConfig, ebayConfig, rapidApiKey, perplexityApiKey] = await Promise.all([
       systemSettingsRepository.getAzureOpenAIConfig(),
       systemSettingsRepository.getEbayApiConfig(),
       systemSettingsRepository.getRapidApiKey(),
-      systemSettingsRepository.getBalldontlieApiKey(),
+      systemSettingsRepository.getPerplexityApiKey(),
     ]);
 
     return createSuccessResponse({
@@ -49,7 +49,7 @@ export async function GET() {
         ebayCertId: ebayConfig.certId ? '********' : '', // Mask Secret
         ebayDevId: ebayConfig.devId || '',
         rapidApiKey: rapidApiKey ? '********' : '', // Mask Rapid API Key
-        balldontlieApiKey: balldontlieApiKey ? '********' : '', // Mask Balldontlie API Key
+        perplexityApiKey: perplexityApiKey ? '********' : '', // Mask Perplexity API Key
       },
     });
   } catch (error) {
@@ -121,14 +121,14 @@ export async function PUT(request: NextRequest) {
 
     await systemSettingsRepository.updateRapidApiKey(newRapidKey);
 
-    // 4. Update Balldontlie API Key
-    const currentBalldontlieKey = await systemSettingsRepository.getBalldontlieApiKey();
-    const newBalldontlieKey =
-      input.balldontlieApiKey && input.balldontlieApiKey !== '********'
-        ? input.balldontlieApiKey
-        : currentBalldontlieKey || '';
+    // 4. Update Perplexity API Key
+    const currentPerplexityKey = await systemSettingsRepository.getPerplexityApiKey();
+    const newPerplexityKey =
+      input.perplexityApiKey && input.perplexityApiKey !== '********'
+        ? input.perplexityApiKey
+        : currentPerplexityKey || '';
 
-    await systemSettingsRepository.updateBalldontlieApiKey(newBalldontlieKey);
+    await systemSettingsRepository.updatePerplexityApiKey(newPerplexityKey);
 
     return createSuccessResponse({
       updated: true,

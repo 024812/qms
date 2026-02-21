@@ -12,7 +12,7 @@ export interface CardSettings {
   ebayCertId?: string;
   ebayDevId?: string;
   rapidApiKey?: string;
-  balldontlieApiKey?: string;
+  perplexityApiKey?: string;
 }
 
 export interface UpdateCardSettingsInput {
@@ -23,7 +23,7 @@ export interface UpdateCardSettingsInput {
   ebayCertId?: string;
   ebayDevId?: string;
   rapidApiKey?: string;
-  balldontlieApiKey?: string;
+  perplexityApiKey?: string;
 }
 
 async function fetchCardSettings(): Promise<CardSettings> {

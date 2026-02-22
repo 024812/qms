@@ -303,10 +303,14 @@
       "totalSalesDesc": "已售出卡片的总收入",
       "realizedPnL": "历史盈亏",
       "realizedPnLDesc": "总销售额 - 已售成本",
-      "portfolioDistribution": "持仓分布",
+      "monthlyBuySell": "月度买卖概览",
+      "bought": "买入",
+      "sold": "卖出",
+      "noChartData": "暂无交易数据",
       "recentActivity": "近期动态",
-      "chartPlaceholder": "图表区域 (品牌/年份/运动)",
-      "listPlaceholder": "列表区域 (近期添加/出售)"
+      "addedLabel": "新增",
+      "soldLabel": "售出",
+      "noActivity": "暂无动态记录"
     },
     "dialogs": {
       "addTitle": "添加新卡片",

@@ -1,8 +1,11 @@
 import { getCardStats } from '@/app/actions/card-stats';
+import { getMonthlyBuySellData, getRecentActivity } from '@/app/actions/card-overview-data';
 import { auth } from '@/auth';
 import { CreditCard, DollarSign, TrendingUp, ShoppingCart } from 'lucide-react';
 import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { redirect } from 'next/navigation';
+import { MonthlyChart } from '@/components/cards/MonthlyChart';
+import { RecentActivityList } from '@/components/cards/RecentActivityList';
 
 type Props = {
   params: Promise<{ locale: string }>;
@@ -23,7 +26,11 @@ export default async function CardOverviewPage({ params }: Props) {
   const session = await auth();
   if (!session?.user?.id) return redirect('/api/auth/signin');
 
-  const stats = await getCardStats();
+  const [stats, monthlyData, recentActivities] = await Promise.all([
+    getCardStats(),
+    getMonthlyBuySellData(),
+    getRecentActivity(10),
+  ]);
 
   return (
     <div className="space-y-6">
@@ -86,19 +93,15 @@ export default async function CardOverviewPage({ params }: Props) {
         </div>
       </div>
 
-      {/* Suggestions for Future Content */}
+      {/* Monthly Chart & Recent Activity */}
       <div className="grid gap-4 md:grid-cols-2">
         <div className="rounded-xl border bg-card p-6">
-          <h3 className="font-semibold mb-4">{t('portfolioDistribution')}</h3>
-          <div className="h-[200px] flex items-center justify-center text-muted-foreground bg-muted/20 rounded-lg">
-            {t('chartPlaceholder')}
-          </div>
+          <h3 className="font-semibold mb-4">{t('monthlyBuySell')}</h3>
+          <MonthlyChart data={monthlyData} />
         </div>
         <div className="rounded-xl border bg-card p-6">
           <h3 className="font-semibold mb-4">{t('recentActivity')}</h3>
-          <div className="h-[200px] flex items-center justify-center text-muted-foreground bg-muted/20 rounded-lg">
-            {t('listPlaceholder')}
-          </div>
+          <RecentActivityList activities={recentActivities} />
         </div>
       </div>
     </div>

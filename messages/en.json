@@ -257,10 +257,14 @@
       "totalSalesDesc": "Total revenue from sold cards",
       "realizedPnL": "Realized P&L",
       "realizedPnLDesc": "Total Sales - Cost of Sold",
-      "portfolioDistribution": "Portfolio Distribution",
+      "monthlyBuySell": "Monthly Buy & Sell",
+      "bought": "Bought",
+      "sold": "Sold",
+      "noChartData": "No transaction data",
       "recentActivity": "Recent Activity",
-      "chartPlaceholder": "Chart Placeholder (Brand/Year/Sport)",
-      "listPlaceholder": "List Placeholder (Recent Adds/Sales)"
+      "addedLabel": "Added",
+      "soldLabel": "Sold",
+      "noActivity": "No recent activity"
     },
     "dialogs": {
       "addTitle": "Add New Card",

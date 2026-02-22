@@ -138,6 +138,22 @@ export function SoldCardListView({ items, onCardsChange, searchTerm = '' }: Sold
     } else {
       aValue = a[key as keyof CardItem];
       bValue = b[key as keyof CardItem];
+
+      // Convert string representations to numbers for proper numeric sorting
+      if (
+        [
+          'purchasePrice',
+          'currentValue',
+          'estimatedValue',
+          'soldPrice',
+          'itemNumber',
+          'year',
+          'grade',
+        ].includes(key as string)
+      ) {
+        if (aValue !== null && aValue !== undefined) aValue = Number(aValue);
+        if (bValue !== null && bValue !== undefined) bValue = Number(bValue);
+      }
     }
 
     if (aValue === null || aValue === undefined) return 1;

@@ -116,8 +116,24 @@ export function CardListView({ items, onCardsChange, searchTerm = '' }: CardList
     if (!sortConfig) return 0;
 
     const { key, direction } = sortConfig;
-    const aValue = a[key];
-    const bValue = b[key];
+    let aValue: any = a[key];
+    let bValue: any = b[key];
+
+    // Convert string representations to numbers for proper numeric sorting
+    if (
+      [
+        'purchasePrice',
+        'currentValue',
+        'estimatedValue',
+        'soldPrice',
+        'itemNumber',
+        'year',
+        'grade',
+      ].includes(key as string)
+    ) {
+      if (aValue !== null && aValue !== undefined) aValue = Number(aValue);
+      if (bValue !== null && bValue !== undefined) bValue = Number(bValue);
+    }
 
     if (aValue === null || aValue === undefined) return 1;
     if (bValue === null || bValue === undefined) return -1;

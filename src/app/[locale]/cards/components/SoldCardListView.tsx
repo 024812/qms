@@ -32,7 +32,7 @@ import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
-import { Edit, Trash } from 'lucide-react';
+import { Edit, Trash, ArrowUpDown, ChevronUp, ChevronDown } from 'lucide-react';
 import { deleteCard } from '@/app/actions/card-actions';
 import { toast } from 'sonner';
 import { formatCurrency, formatDate } from '@/modules/cards/utils';
@@ -43,6 +43,8 @@ interface SoldCardListViewProps {
   searchTerm?: string;
 }
 
+type SortKey = keyof CardItem | 'profit';
+
 export function SoldCardListView({ items, onCardsChange, searchTerm = '' }: SoldCardListViewProps) {
   const router = useRouter();
   const t = useTranslations('cards');
@@ -51,6 +53,11 @@ export function SoldCardListView({ items, onCardsChange, searchTerm = '' }: Sold
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [cardToDelete, setCardToDelete] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+
+  // Sorting state
+  const [sortConfig, setSortConfig] = useState<{ key: SortKey; direction: 'asc' | 'desc' } | null>(
+    null
+  );
 
   const handleDeleteClick = (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -98,6 +105,53 @@ export function SoldCardListView({ items, onCardsChange, searchTerm = '' }: Sold
     return { profit, roi };
   };
 
+  const handleSort = (key: SortKey) => {
+    let direction: 'asc' | 'desc' = 'asc';
+    if (sortConfig && sortConfig.key === key && sortConfig.direction === 'asc') {
+      direction = 'desc';
+    }
+    setSortConfig({ key, direction });
+  };
+
+  const renderSortIcon = (key: SortKey) => {
+    if (sortConfig?.key !== key) {
+      return <ArrowUpDown className="ml-1 h-3 w-3 opacity-50" />;
+    }
+    return sortConfig.direction === 'asc' ? (
+      <ChevronUp className="ml-1 h-4 w-4" />
+    ) : (
+      <ChevronDown className="ml-1 h-4 w-4" />
+    );
+  };
+
+  const sortedItems = [...items].sort((a, b) => {
+    if (!sortConfig) return 0;
+
+    const { key, direction } = sortConfig;
+
+    let aValue: any;
+    let bValue: any;
+
+    if (key === 'profit') {
+      aValue = calculateProfit(a.soldPrice, a.purchasePrice).profit;
+      bValue = calculateProfit(b.soldPrice, b.purchasePrice).profit;
+    } else {
+      aValue = a[key as keyof CardItem];
+      bValue = b[key as keyof CardItem];
+    }
+
+    if (aValue === null || aValue === undefined) return 1;
+    if (bValue === null || bValue === undefined) return -1;
+
+    if (aValue < bValue) {
+      return direction === 'asc' ? -1 : 1;
+    }
+    if (aValue > bValue) {
+      return direction === 'asc' ? 1 : -1;
+    }
+    return 0;
+  });
+
   return (
     <>
       <div className="rounded-md border">
@@ -105,29 +159,108 @@ export function SoldCardListView({ items, onCardsChange, searchTerm = '' }: Sold
           <TableHeader>
             <TableRow>
               <TableHead className="w-[60px]">{t('list.image')}</TableHead>
-              <TableHead className="w-[80px]">{t('list.itemNumber')}</TableHead>
-              <TableHead>{t('list.player')}</TableHead>
-              <TableHead>{t('list.year')}</TableHead>
-              <TableHead>{t('list.brand')}</TableHead>
-              <TableHead>{t('list.grade')}</TableHead>
-              <TableHead>{t('list.purchasePrice')}</TableHead>
-              <TableHead>{t('list.purchaseDate')}</TableHead>
-              <TableHead>{t('list.soldPrice')}</TableHead>
-              <TableHead>{t('list.soldDate')}</TableHead>
-              <TableHead>{t('list.profit')}</TableHead>
-              {/* <TableHead>{t('list.profitROI')}</TableHead> */}
+              <TableHead
+                className="w-[80px] cursor-pointer hover:bg-muted/50 transition-colors"
+                onClick={() => handleSort('itemNumber')}
+              >
+                <div className="flex items-center">
+                  {t('list.itemNumber')}
+                  {renderSortIcon('itemNumber')}
+                </div>
+              </TableHead>
+              <TableHead
+                className="cursor-pointer hover:bg-muted/50 transition-colors"
+                onClick={() => handleSort('playerName')}
+              >
+                <div className="flex items-center">
+                  {t('list.player')}
+                  {renderSortIcon('playerName')}
+                </div>
+              </TableHead>
+              <TableHead
+                className="cursor-pointer hover:bg-muted/50 transition-colors"
+                onClick={() => handleSort('year')}
+              >
+                <div className="flex items-center">
+                  {t('list.year')}
+                  {renderSortIcon('year')}
+                </div>
+              </TableHead>
+              <TableHead
+                className="cursor-pointer hover:bg-muted/50 transition-colors"
+                onClick={() => handleSort('brand')}
+              >
+                <div className="flex items-center">
+                  {t('list.brand')}
+                  {renderSortIcon('brand')}
+                </div>
+              </TableHead>
+              <TableHead
+                className="cursor-pointer hover:bg-muted/50 transition-colors"
+                onClick={() => handleSort('grade')}
+              >
+                <div className="flex items-center">
+                  {t('list.grade')}
+                  {renderSortIcon('grade')}
+                </div>
+              </TableHead>
+              <TableHead
+                className="cursor-pointer hover:bg-muted/50 transition-colors"
+                onClick={() => handleSort('purchasePrice')}
+              >
+                <div className="flex items-center">
+                  {t('list.purchasePrice')}
+                  {renderSortIcon('purchasePrice')}
+                </div>
+              </TableHead>
+              <TableHead
+                className="cursor-pointer hover:bg-muted/50 transition-colors"
+                onClick={() => handleSort('purchaseDate')}
+              >
+                <div className="flex items-center">
+                  {t('list.purchaseDate')}
+                  {renderSortIcon('purchaseDate')}
+                </div>
+              </TableHead>
+              <TableHead
+                className="cursor-pointer hover:bg-muted/50 transition-colors"
+                onClick={() => handleSort('soldPrice')}
+              >
+                <div className="flex items-center">
+                  {t('list.soldPrice')}
+                  {renderSortIcon('soldPrice')}
+                </div>
+              </TableHead>
+              <TableHead
+                className="cursor-pointer hover:bg-muted/50 transition-colors"
+                onClick={() => handleSort('soldDate')}
+              >
+                <div className="flex items-center">
+                  {t('list.soldDate')}
+                  {renderSortIcon('soldDate')}
+                </div>
+              </TableHead>
+              <TableHead
+                className="cursor-pointer hover:bg-muted/50 transition-colors"
+                onClick={() => handleSort('profit')}
+              >
+                <div className="flex items-center">
+                  {t('list.profit')}
+                  {renderSortIcon('profit')}
+                </div>
+              </TableHead>
               <TableHead className="w-[50px]">{t('list.actions')}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {items.length === 0 ? (
+            {sortedItems.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={11} className="h-24 text-center">
                   {t('messages.noCardsFound')}
                 </TableCell>
               </TableRow>
             ) : (
-              items.map(card => {
+              sortedItems.map(card => {
                 const { profit, roi } = calculateProfit(card.soldPrice, card.purchasePrice);
                 const isProfitable = profit >= 0;
 

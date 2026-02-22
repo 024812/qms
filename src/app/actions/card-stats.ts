@@ -2,7 +2,6 @@
 
 import { db } from '@/db';
 import { cards } from '@/db/schema';
-import { eq } from 'drizzle-orm';
 
 export interface CardStats {
   totalCards: number;
@@ -12,8 +11,8 @@ export interface CardStats {
   totalProfit: number;
 }
 
-export async function getCardStats(userId: string): Promise<CardStats> {
-  const allCards = await db.select().from(cards).where(eq(cards.userId, userId));
+export async function getCardStats(): Promise<CardStats> {
+  const allCards = await db.select().from(cards);
 
   const stats = allCards.reduce(
     (acc, card) => {

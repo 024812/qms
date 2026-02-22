@@ -23,7 +23,7 @@ export default async function CardOverviewPage({ params }: Props) {
   const session = await auth();
   if (!session?.user?.id) return redirect('/api/auth/signin');
 
-  const stats = await getCardStats(session.user.id);
+  const stats = await getCardStats();
 
   return (
     <div className="space-y-6">

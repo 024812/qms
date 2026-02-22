@@ -1,6 +1,6 @@
 /**
  * Cards API Route
- * 
+ *
  * Handles CRUD operations for sports cards
  */
 
@@ -8,20 +8,15 @@ import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import { db } from '@/db';
 import { cards } from '@/db/schema';
-import { eq } from 'drizzle-orm';
 
-export async function GET(request: NextRequest) {
+export async function GET(_request: NextRequest) {
   try {
     const session = await auth();
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const userCards = await db
-      .select()
-      .from(cards)
-      .where(eq(cards.userId, session.user.id))
-      .orderBy(cards.createdAt);
+    const userCards = await db.select().from(cards).orderBy(cards.createdAt);
 
     return NextResponse.json({ cards: userCards });
   } catch (error) {

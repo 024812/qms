@@ -255,7 +255,7 @@ export async function updateItem(
 
       const { db } = await import('@/db');
       const { cards } = await import('@/db/schema');
-      const { eq, and } = await import('drizzle-orm');
+      const { eq } = await import('drizzle-orm');
 
       const cleanData: any = { ...data };
       ['grade', 'year', 'purchasePrice', 'currentValue', 'estimatedValue'].forEach(key => {
@@ -313,9 +313,9 @@ export async function deleteItem(
 
       const { db } = await import('@/db');
       const { cards } = await import('@/db/schema');
-      const { eq, and } = await import('drizzle-orm');
+      const { eq } = await import('drizzle-orm');
 
-      await db.delete(cards).where(and(eq(cards.id, id), eq(cards.userId, session.user.id)));
+      await db.delete(cards).where(eq(cards.id, id));
     }
     return { success: true, data: { deleted: true } };
   } catch (error: any) {

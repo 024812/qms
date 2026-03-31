@@ -20,10 +20,11 @@
  * Requirements: 2.1-2.6, 3.1-3.6 from Next.js 16 Best Practices Migration spec
  */
 
+import { cache } from 'react';
 import { cacheLife, cacheTag } from 'next/cache';
 import { db } from '@/db';
 import { quilts, usageRecords } from '@/db/schema';
-import { sql, eq, desc, and, isNull } from 'drizzle-orm';
+import { sql, eq, desc, isNull } from 'drizzle-orm';
 
 // ============================================================================
 // Types

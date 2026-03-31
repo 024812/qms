@@ -16,6 +16,7 @@
  * - Tags: 'usage', 'usage-{id}', 'usage-quilt-{quiltId}'
  */
 
+import { cache } from 'react';
 import { cacheLife, cacheTag, revalidateTag } from 'next/cache';
 import { db } from '@/db';
 import { usageRecords, quilts } from '@/db/schema';

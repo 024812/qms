@@ -146,15 +146,6 @@ const loginSchema = z.object({
   password: z.string().min(6, 'Password must be at least 6 characters'),
 });
 
-/**
- * Login result type
- */
-type LoginResult = {
-  success: boolean;
-  message: string;
-  error?: string;
-};
-
 import { redirect } from 'next/navigation';
 
 /**
@@ -169,14 +160,14 @@ import { redirect } from 'next/navigation';
  * @param formData - Form data containing email, password, and optional callbackUrl
  */
 export async function loginUser(prevState: any, formData: FormData) {
+  const callbackUrl = (formData.get('callbackUrl') as string) || '/';
+
   try {
     // Extract form data
     const rawData = {
       email: formData.get('email') as string,
       password: formData.get('password') as string,
     };
-
-    const callbackUrl = (formData.get('callbackUrl') as string) || '/';
 
     // Validate input
     const validationResult = loginSchema.safeParse(rawData);
@@ -202,7 +193,7 @@ export async function loginUser(prevState: any, formData: FormData) {
         redirect: false,
       });
       // NOTE: Success will continue below
-    } catch (error) {
+    } catch {
       // Re-throw if it's not a credentials error (should usually be caught by signIn internal check)
       return {
         success: false,
@@ -230,5 +221,5 @@ export async function loginUser(prevState: any, formData: FormData) {
   }
 
   // Redirect must be outside the try-catch block or re-thrown
-  redirect((formData.get('callbackUrl') as string) || '/');
+  redirect(callbackUrl);
 }

@@ -9,7 +9,6 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -20,7 +19,6 @@ import { Loader2, Check, Plus } from 'lucide-react';
 import * as LucideIcons from 'lucide-react';
 
 export function ModuleSelector() {
-  const router = useRouter();
   const { success, error: showError } = useToast();
   const [activeModules, setActiveModules] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);

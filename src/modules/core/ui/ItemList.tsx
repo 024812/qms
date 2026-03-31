@@ -9,16 +9,6 @@
 
 'use client';
 
-// Generic Item type for list display
- 
-interface Item {
-  id: string;
-  name: string;
-  createdAt: Date;
-  type?: string;
-  status?: string;
-  [key: string]: any; // Allow other properties for Quilt/Card types
-}
 import { ItemCard } from './ItemCard';
 import { useRouter } from 'next/navigation';
 import { getModule } from '@/modules/registry';
@@ -40,7 +30,7 @@ interface ItemListProps {
  */
 export function ItemList({ items, moduleType }: ItemListProps) {
   const router = useRouter();
-  const module = getModule(moduleType);
+  const moduleDef = getModule(moduleType);
 
   // Handle empty state
   if (items.length === 0) {
@@ -64,10 +54,10 @@ export function ItemList({ items, moduleType }: ItemListProps) {
         </div>
         <h3 className="text-lg font-semibold mb-2">暂无数据</h3>
         <p className="text-sm text-muted-foreground mb-4">
-          {module ? `还没有添加任何${module.name}` : '还没有添加任何物品'}
+          {moduleDef ? `还没有添加任何${moduleDef.name}` : '还没有添加任何物品'}
         </p>
         <p className="text-xs text-muted-foreground">
-          点击右上角的"添加"按钮创建第一个物品
+          点击右上角的“添加”按钮创建第一个物品
         </p>
       </div>
     );

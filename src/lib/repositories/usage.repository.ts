@@ -16,7 +16,7 @@ import {
 } from '@/lib/database/types';
 import { UsageType } from '@/lib/validations/quilt';
 import { eq, and, desc, isNull, sql, count, max } from 'drizzle-orm';
-import { updateTag } from 'next/cache';
+import { revalidateTag } from 'next/cache';
 
 export interface CreateUsageRecordData {
   quiltId: string;
@@ -189,10 +189,10 @@ export class UsageRepository extends BaseRepositoryImpl<UsageRecordRow, UsageRec
         
         // Invalidate cache tags
         if (!tx) {
-            updateTag('usage');
-            updateTag('usage-list');
-            updateTag(`usage-quilt-${data.quiltId}`);
-            updateTag('stats');
+            revalidateTag('usage', 'max');
+            revalidateTag('usage-list', 'max');
+            revalidateTag(`usage-quilt-${data.quiltId}`, 'max');
+            revalidateTag('stats', 'max');
         }
         
         return this.rowToModel(rows[0] as unknown as UsageRecordRow);
@@ -236,11 +236,11 @@ export class UsageRepository extends BaseRepositoryImpl<UsageRecordRow, UsageRec
         
         // Invalidate cache tags
         if (!tx) {
-            updateTag('usage');
-            updateTag('usage-list');
-            updateTag(`usage-${rows[0].id}`);
-            updateTag(`usage-quilt-${quiltId}`);
-            updateTag('stats');
+            revalidateTag('usage', 'max');
+            revalidateTag('usage-list', 'max');
+            revalidateTag(`usage-${rows[0].id}`, 'max');
+            revalidateTag(`usage-quilt-${quiltId}`, 'max');
+            revalidateTag('stats', 'max');
         }
 
         return this.rowToModel(rows[0] as unknown as UsageRecordRow);
@@ -279,11 +279,11 @@ export class UsageRepository extends BaseRepositoryImpl<UsageRecordRow, UsageRec
         
         // Invalidate cache tags
         if (!tx) {
-            updateTag('usage');
-            updateTag('usage-list');
-            updateTag(`usage-${id}`);
-            updateTag(`usage-quilt-${rows[0].quiltId}`);
-            updateTag('stats');
+            revalidateTag('usage', 'max');
+            revalidateTag('usage-list', 'max');
+            revalidateTag(`usage-${id}`, 'max');
+            revalidateTag(`usage-quilt-${rows[0].quiltId}`, 'max');
+            revalidateTag('stats', 'max');
         }
 
         return this.rowToModel(rows[0] as unknown as UsageRecordRow);
@@ -378,13 +378,13 @@ export class UsageRepository extends BaseRepositoryImpl<UsageRecordRow, UsageRec
           dbLogger.info('Usage record deleted successfully', { id });
           
           if (!tx) {
-             updateTag('usage');
-             updateTag('usage-list');
-             updateTag(`usage-${id}`);
+             revalidateTag('usage', 'max');
+             revalidateTag('usage-list', 'max');
+             revalidateTag(`usage-${id}`, 'max');
              if (quiltId) {
-                 updateTag(`usage-quilt-${quiltId}`);
+                 revalidateTag(`usage-quilt-${quiltId}`, 'max');
              }
-             updateTag('stats');
+             revalidateTag('stats', 'max');
           }
         }
         return success;

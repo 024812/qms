@@ -9,7 +9,7 @@
  * - 'use cache' directive for persistent caching
  * - React cache() for request-level deduplication
  * - Serializable data only (no class instances, no undefined)
- * - Cache invalidation with updateTag()
+ * - Cache invalidation with revalidateTag(, 'max')
  *
  * Cache Strategy:
  * - Individual items: 5 minutes
@@ -19,11 +19,10 @@
  * Requirements: 2.1-2.6, 3.1-3.6 from Next.js 16 Best Practices Migration spec
  */
 
-import { cache } from 'react';
 import {
   cacheLife,
   cacheTag,
-  updateTag,
+  revalidateTag,
 } from 'next/cache';
 
 import { db, Tx } from '@/db';
@@ -345,10 +344,10 @@ export async function createQuilt(data: CreateQuiltData): Promise<Quilt> {
     const quilt = result[0] as unknown as Quilt;
 
     // Invalidate cache tags
-    updateTag('quilts');
-    updateTag('quilts-list');
-    updateTag(`quilts-status-${quilt.currentStatus}`);
-    updateTag(`quilts-season-${quilt.season}`);
+    revalidateTag('quilts', 'max');
+    revalidateTag('quilts-list', 'max');
+    revalidateTag(`quilts-status-${quilt.currentStatus}`, 'max');
+    revalidateTag(`quilts-season-${quilt.season}`, 'max');
 
     dbLogger.info('Quilt created successfully', { id: quilt.id, itemNumber });
     return quilt;
@@ -391,18 +390,18 @@ export async function updateQuilt(
     const updated = result[0] as unknown as Quilt;
 
     // Invalidate cache tags
-    updateTag('quilts');
-    updateTag('quilts-list');
-    updateTag(`quilts-${id}`);
+    revalidateTag('quilts', 'max');
+    revalidateTag('quilts-list', 'max');
+    revalidateTag(`quilts-${id}`, 'max');
 
     // Invalidate old and new status/season tags if they changed
     if (current.currentStatus !== updated.currentStatus) {
-      updateTag(`quilts-status-${current.currentStatus}`);
-      updateTag(`quilts-status-${updated.currentStatus}`);
+      revalidateTag(`quilts-status-${current.currentStatus}`, 'max');
+      revalidateTag(`quilts-status-${updated.currentStatus}`, 'max');
     }
     if (current.season !== updated.season) {
-      updateTag(`quilts-season-${current.season}`);
-      updateTag(`quilts-season-${updated.season}`);
+      revalidateTag(`quilts-season-${current.season}`, 'max');
+      revalidateTag(`quilts-season-${updated.season}`, 'max');
     }
 
     dbLogger.info('Quilt updated successfully', { id });
@@ -436,13 +435,13 @@ export async function updateQuiltStatus(id: string, status: QuiltStatus): Promis
     const updated = result[0] as unknown as Quilt;
 
     // Invalidate cache tags
-    updateTag('quilts');
-    updateTag('quilts-list');
-    updateTag(`quilts-${id}`);
+    revalidateTag('quilts', 'max');
+    revalidateTag('quilts-list', 'max');
+    revalidateTag(`quilts-${id}`, 'max');
     if (oldStatus) {
-      updateTag(`quilts-status-${oldStatus}`);
+      revalidateTag(`quilts-status-${oldStatus}`, 'max');
     }
-    updateTag(`quilts-status-${status}`);
+    revalidateTag(`quilts-status-${status}`, 'max');
 
     dbLogger.info('Quilt status updated', { id, status });
     return updated;
@@ -545,11 +544,11 @@ export async function updateQuiltStatusWithUsageRecord(
        const updatedQuilt = updatedRows[0] as unknown as Quilt;
 
        // Invalidate cache tags
-      updateTag('quilts');
-      updateTag('quilts-list');
-      updateTag(`quilts-${id}`);
-      updateTag(`quilts-status-${previousStatus}`);
-      updateTag(`quilts-status-${newStatus}`);
+      revalidateTag('quilts', 'max');
+      revalidateTag('quilts-list', 'max');
+      revalidateTag(`quilts-${id}`, 'max');
+      revalidateTag(`quilts-status-${previousStatus}`, 'max');
+      revalidateTag(`quilts-status-${newStatus}`, 'max');
 
        return { quilt: updatedQuilt, usageRecord: usageRecordData };
     });
@@ -579,12 +578,12 @@ export async function deleteQuilt(id: string): Promise<boolean> {
     });
 
     // Invalidate
-    updateTag('quilts');
-    updateTag('quilts-list');
-    updateTag(`quilts-${id}`);
+    revalidateTag('quilts', 'max');
+    revalidateTag('quilts-list', 'max');
+    revalidateTag(`quilts-${id}`, 'max');
     if (quilt) {
-        updateTag(`quilts-status-${quilt.currentStatus}`);
-        updateTag(`quilts-season-${quilt.season}`);
+        revalidateTag(`quilts-status-${quilt.currentStatus}`, 'max');
+        revalidateTag(`quilts-season-${quilt.season}`, 'max');
     }
 
     dbLogger.info('Quilt deleted successfully', { id });

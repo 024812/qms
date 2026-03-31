@@ -31,12 +31,9 @@ interface WeatherForecastProps {
 export function WeatherForecastWidget({ className }: WeatherForecastProps) {
   const locale = useLocale();
   const t = useTranslations();
-  const language = locale; // Adapter for existing logic if strictly needed, though logic below uses locale directly or language checks
   const [forecast, setForecast] = useState<WeatherForecast[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-
-  const apiLocale = locale === 'zh' ? 'zh-CN' : 'en-US';
 
   const fetchForecast = async () => {
     try {

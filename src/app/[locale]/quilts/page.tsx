@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { useLocale, useTranslations } from 'next-intl';
+import { useTranslations } from 'next-intl';
 import { PackageOpen, SearchX } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { EmptyState } from '@/components/ui/empty-state';
@@ -48,7 +48,6 @@ export default function QuiltsPage() {
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
 
   const t = useTranslations();
-  const locale = useLocale();
 
   // Data fetching
   const { data: quiltsData, isLoading } = useQuilts();

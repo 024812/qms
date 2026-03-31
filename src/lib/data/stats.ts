@@ -9,7 +9,7 @@
  * - 'use cache' directive for persistent caching
  * - React cache() for request-level deduplication
  * - Serializable data only (no class instances, no undefined)
- * - Cache invalidation with updateTag()
+ * - Cache invalidation with revalidateTag(, 'max')
  *
  * Cache Strategy:
  * - Dashboard stats: 1 minute (60 seconds)
@@ -20,7 +20,6 @@
  * Requirements: 2.1-2.6, 3.1-3.6 from Next.js 16 Best Practices Migration spec
  */
 
-import { cache } from 'react';
 import { cacheLife, cacheTag } from 'next/cache';
 import { db } from '@/db';
 import { quilts, usageRecords } from '@/db/schema';

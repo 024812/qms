@@ -11,6 +11,7 @@ import { redirect } from 'next/navigation';
 import { auth } from '@/auth';
 import { LoginForm } from './LoginForm';
 import { connection } from 'next/server';
+import Link from 'next/link';
 
 
 export default async function LoginPage() {
@@ -48,12 +49,12 @@ export default async function LoginPage() {
           </h2>
           <p className="mt-2 text-sm text-muted-foreground">
             或者{' '}
-            <a
+            <Link
               href="/register"
               className="font-medium text-primary hover:text-primary/80"
             >
               创建新账户
-            </a>
+            </Link>
           </p>
         </div>
         <LoginForm />

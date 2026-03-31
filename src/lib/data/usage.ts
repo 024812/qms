@@ -8,7 +8,7 @@
  * - Standalone async functions
  * - 'use cache' for persistent caching
  * - React cache() for request deduplication
- * - Cache invalidation with updateTag()
+ * - Cache invalidation with revalidateTag(, 'max')
  *
  * Cache Strategy:
  * - Individual records: 5 minutes
@@ -16,8 +16,7 @@
  * - Tags: 'usage', 'usage-{id}', 'usage-quilt-{quiltId}'
  */
 
-import { cache } from 'react';
-import { cacheLife, cacheTag, updateTag } from 'next/cache';
+import { cacheLife, cacheTag, revalidateTag } from 'next/cache';
 import { db } from '@/db';
 import { usageRecords, quilts } from '@/db/schema';
 import { eq, desc, and, isNull, sql } from 'drizzle-orm';
@@ -321,11 +320,11 @@ export async function createUsageRecord(data: CreateUsageRecordData): Promise<Us
 
     const record = result[0] as unknown as UsageRecord;
 
-    updateTag('usage');
-    updateTag(`usage-quilt-${data.quiltId}`);
+    revalidateTag('usage', 'max');
+    revalidateTag(`usage-quilt-${data.quiltId}`, 'max');
 
     // Also invalidate stats as they change
-    updateTag('stats');
+    revalidateTag('stats', 'max');
 
     dbLogger.info('Usage record created', { id: record.id });
     return record;
@@ -365,10 +364,10 @@ export async function updateUsageRecord(
     if (result.length === 0) return null;
     const updated = result[0] as unknown as UsageRecord;
 
-    updateTag('usage');
-    updateTag(`usage-${id}`);
-    updateTag(`usage-quilt-${current.quiltId}`);
-    updateTag('stats');
+    revalidateTag('usage', 'max');
+    revalidateTag(`usage-${id}`, 'max');
+    revalidateTag(`usage-quilt-${current.quiltId}`, 'max');
+    revalidateTag('stats', 'max');
 
     dbLogger.info('Usage record updated', { id });
     return updated;
@@ -403,10 +402,10 @@ export async function endUsageRecord(
     if (result.length === 0) return null;
     const updated = result[0] as unknown as UsageRecord;
 
-    updateTag('usage');
-    updateTag(`usage-${id}`);
-    updateTag(`usage-quilt-${current.quiltId}`);
-    updateTag('stats');
+    revalidateTag('usage', 'max');
+    revalidateTag(`usage-${id}`, 'max');
+    revalidateTag(`usage-quilt-${current.quiltId}`, 'max');
+    revalidateTag('stats', 'max');
 
     dbLogger.info('Usage record ended', { id });
     return updated;
@@ -428,10 +427,10 @@ export async function deleteUsageRecord(id: string): Promise<boolean> {
 
     await db.delete(usageRecords).where(eq(usageRecords.id, id));
 
-    updateTag('usage');
-    updateTag(`usage-${id}`);
-    updateTag(`usage-quilt-${current.quiltId}`);
-    updateTag('stats');
+    revalidateTag('usage', 'max');
+    revalidateTag(`usage-${id}`, 'max');
+    revalidateTag(`usage-quilt-${current.quiltId}`, 'max');
+    revalidateTag('stats', 'max');
 
     return true;
   } catch (error) {

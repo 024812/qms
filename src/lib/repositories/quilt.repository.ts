@@ -12,7 +12,7 @@ import {
   UsageRecordRow,
 } from '@/lib/database/types';
 import { QuiltStatus, Season, UsageType } from '@/lib/validations/quilt';
-import { updateTag } from 'next/cache';
+import { revalidateTag } from 'next/cache';
 import { eq, and, or, ilike, count, max, desc, asc, isNull, sql, SQL } from 'drizzle-orm';
 
 // Valid sort fields that map to database columns
@@ -247,10 +247,10 @@ export class QuiltRepository extends BaseRepositoryImpl<QuiltRow, Quilt> {
         const quilt = rows[0] as unknown as Quilt;
 
         // Invalidate cache tags
-        updateTag('quilts');
-        updateTag('quilts-list');
-        updateTag(`quilts-status-${quilt.currentStatus}`);
-        updateTag(`quilts-season-${quilt.season}`);
+        revalidateTag('quilts', 'max');
+        revalidateTag('quilts-list', 'max');
+        revalidateTag(`quilts-status-${quilt.currentStatus}`, 'max');
+        revalidateTag(`quilts-season-${quilt.season}`, 'max');
 
         return quilt;
       },
@@ -304,16 +304,16 @@ export class QuiltRepository extends BaseRepositoryImpl<QuiltRow, Quilt> {
         const updated = rows[0] as unknown as Quilt;
 
         // Invalidate tags
-        updateTag('quilts');
-        updateTag('quilts-list');
-        updateTag(`quilts-${id}`);
+        revalidateTag('quilts', 'max');
+        revalidateTag('quilts-list', 'max');
+        revalidateTag(`quilts-${id}`, 'max');
         if (current.currentStatus !== updated.currentStatus) {
-            updateTag(`quilts-status-${current.currentStatus}`);
-            updateTag(`quilts-status-${updated.currentStatus}`);
+            revalidateTag(`quilts-status-${current.currentStatus}`, 'max');
+            revalidateTag(`quilts-status-${updated.currentStatus}`, 'max');
         }
         if (current.season !== updated.season) {
-            updateTag(`quilts-season-${current.season}`);
-            updateTag(`quilts-season-${updated.season}`);
+            revalidateTag(`quilts-season-${current.season}`, 'max');
+            revalidateTag(`quilts-season-${updated.season}`, 'max');
         }
 
         return updated;
@@ -409,13 +409,13 @@ export class QuiltRepository extends BaseRepositoryImpl<QuiltRow, Quilt> {
            // Note: this.update already invalidates 'quilts' and related quilt tags.
            // We need to invalidate 'usage' tags because we manually modified usageRecords table above.
            if (usageRecord || (previousStatus === 'IN_USE' && newStatus !== 'IN_USE')) {
-               updateTag('usage');
-               updateTag('usage-list');
-               updateTag(`usage-quilt-${id}`);
+               revalidateTag('usage', 'max');
+               revalidateTag('usage-list', 'max');
+               revalidateTag(`usage-quilt-${id}`, 'max');
                if (usageRecord) {
-                   updateTag(`usage-${usageRecord.id}`);
+                   revalidateTag(`usage-${usageRecord.id}`, 'max');
                }
-               updateTag('stats');
+               revalidateTag('stats', 'max');
            }
 
            return { quilt: updated, usageRecord };
@@ -457,12 +457,12 @@ export class QuiltRepository extends BaseRepositoryImpl<QuiltRow, Quilt> {
                
                const success = res.length > 0;
                if (success) {
-                   updateTag('quilts');
-                   updateTag('quilts-list');
-                   updateTag(`quilts-${id}`);
+                   revalidateTag('quilts', 'max');
+                   revalidateTag('quilts-list', 'max');
+                   revalidateTag(`quilts-${id}`, 'max');
                    if (quilt) {
-                       updateTag(`quilts-status-${quilt.currentStatus}`);
-                       updateTag(`quilts-season-${quilt.season}`);
+                       revalidateTag(`quilts-status-${quilt.currentStatus}`, 'max');
+                       revalidateTag(`quilts-season-${quilt.season}`, 'max');
                    }
                }
                return success;

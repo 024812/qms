@@ -1,15 +1,12 @@
-import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, Edit } from 'lucide-react';
 import Link from 'next/link';
 import { StatusBadge } from '@/modules/core/ui/StatusBadge';
 
-import { setRequestLocale } from 'next-intl/server';
-import { useTranslations } from 'next-intl';
+import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { notFound } from 'next/navigation';
 import { getModule } from '@/modules/registry';
-import { use } from 'react';
 import { getItemById } from '@/app/actions/items';
 
 // We rely on dynamic rendering for items as the list is indefinite.
@@ -24,16 +21,16 @@ interface PageProps {
   }>;
 }
 
-export default function ItemDetail({ params }: PageProps) {
-  const { locale, category, id } = use(params);
+export default async function ItemDetail({ params }: PageProps) {
+  const { locale, category, id } = await params;
   
   // Enable static rendering
   setRequestLocale(locale);
-  const t = useTranslations();
+  const t = await getTranslations('common');
 
-  const module = getModule(category);
+  const moduleDef = getModule(category);
 
-  if (!module) {
+  if (!moduleDef) {
     notFound();
   }
 
@@ -45,7 +42,7 @@ export default function ItemDetail({ params }: PageProps) {
           className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground transition-colors"
         >
           <ArrowLeft className="w-4 h-4 mr-1" />
-          {t('common.back')}
+          {t('back')}
         </Link>
       </div>
 
@@ -55,39 +52,54 @@ export default function ItemDetail({ params }: PageProps) {
 }
 
 async function ItemDetailContent({ category, id }: { category: string; id: string }) {
-  const t = useTranslations();
-  
+  const tCommon = await getTranslations('common');
+
+  let item: Awaited<ReturnType<typeof getItemById>> | null = null;
+  let fetchError: unknown = null;
+
   try {
-    const item = await getItemById(category, id);
+    item = await getItemById(category, id);
+  } catch (err) {
+    fetchError = err;
+  }
 
-    if (!item) {
-        return (
-            <div className="text-center py-12">
-                <h2 className="text-xl font-semibold">{t('common.error')}</h2>
-                <p className="text-muted-foreground">Item not found</p>
-            </div>
-        )
-    }
-
-    // Handle different item types for name display
-    let itemName = '';
-    let itemStatus: string | undefined | null = '';
-    let itemDescription: string | undefined | null = '';
-
-    if ('playerName' in item) {
-        // It's a Card
-        itemName = `${item.year} ${item.brand} ${item.playerName}`;
-        itemStatus = item.status;
-        itemDescription = item.notes; // Cards use notes, not description
-    } else {
-        // It's a Quilt (or has name)
-        itemName = (item as any).name || 'Unknown Item';
-        itemStatus = (item as any).currentStatus || (item as any).status;
-        itemDescription = (item as any).notes || (item as any).description;
-    }
-
+  if (fetchError) {
+    console.error(fetchError);
     return (
-        <Card>
+      <div className="text-center py-12">
+        <h2 className="text-xl font-semibold">{tCommon('error')}</h2>
+      </div>
+    );
+  }
+
+  if (!item) {
+    return (
+      <div className="text-center py-12">
+        <h2 className="text-xl font-semibold">{tCommon('error')}</h2>
+        <p className="text-muted-foreground">Item not found</p>
+      </div>
+    );
+  }
+
+  // Handle different item types for name display
+  let itemName = '';
+  let itemStatus: string | undefined | null = '';
+  let itemDescription: string | undefined | null = '';
+
+  if ('playerName' in item) {
+    // It's a Card
+    itemName = `${item.year} ${item.brand} ${item.playerName}`;
+    itemStatus = item.status;
+    itemDescription = item.notes; // Cards use notes, not description
+  } else {
+    // It's a Quilt (or has name)
+    itemName = (item as any).name || 'Unknown Item';
+    itemStatus = (item as any).currentStatus || (item as any).status;
+    itemDescription = (item as any).notes || (item as any).description;
+  }
+
+  return (
+      <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <div className="space-y-1">
             <CardTitle className="text-2xl font-bold">{itemName}</CardTitle>
@@ -100,7 +112,7 @@ async function ItemDetailContent({ category, id }: { category: string; id: strin
           <Button variant="outline" size="sm" asChild>
             <Link href={`/${category}/${id}/edit`}>
               <Edit className="w-4 h-4 mr-2" />
-              {t('common.edit')}
+              {tCommon('edit')}
             </Link>
           </Button>
         </CardHeader>
@@ -133,14 +145,5 @@ async function ItemDetailContent({ category, id }: { category: string; id: strin
           </div>
         </CardContent>
       </Card>
-    );
-
-  } catch (err) {
-      console.error(err);
-      return (
-        <div className="text-center py-12">
-            <h2 className="text-xl font-semibold">{t('common.error')}</h2>
-        </div>
-      )
-  }
+  );
 }

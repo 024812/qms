@@ -47,9 +47,9 @@ export default function ModulePage({ params, searchParams }: PageProps) {
   setRequestLocale(locale);
   const t = useTranslations();
 
-  const module = getModule(category);
+  const moduleDef = getModule(category);
 
-  if (!module) {
+  if (!moduleDef) {
     notFound();
   }
 
@@ -58,10 +58,10 @@ export default function ModulePage({ params, searchParams }: PageProps) {
       <div className="flex justify-between items-center mb-6">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">
-             {t(`users.modules.${module.id}`) || module.name}
+             {t(`users.modules.${moduleDef.id}`) || moduleDef.name}
           </h1>
           <p className="text-muted-foreground mt-1">
-             {module.description}
+             {moduleDef.description}
           </p>
         </div>
         <Button asChild>

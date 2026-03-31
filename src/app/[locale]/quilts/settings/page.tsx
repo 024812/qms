@@ -1,6 +1,6 @@
 'use client';
 
-import { useLocale, useTranslations } from 'next-intl';
+import { useLocale } from 'next-intl';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -17,7 +17,6 @@ import { useAppSettings, useUpdateAppSettings } from '@/hooks/useSettings';
 import { useSession } from 'next-auth/react';
 
 export default function QuiltSettingsPage() {
-    const t = useTranslations();
     const locale = useLocale();
     const language = locale;
     const { data: session, status } = useSession();

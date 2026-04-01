@@ -19,20 +19,13 @@
  * Requirements: 2.1-2.6, 3.1-3.6 from Next.js 16 Best Practices Migration spec
  */
 
-import {
-  cacheLife,
-  cacheTag,
-  revalidateTag,
-} from 'next/cache';
+import { cacheLife, cacheTag, revalidateTag } from 'next/cache';
 
 import { db, Tx } from '@/db';
-import { quilts, usageRecords, maintenanceRecords } from '@/db/schema';
+import { quilts, usageRecords } from '@/db/schema';
 import { eq, sql, desc, and, isNull, like, or } from 'drizzle-orm';
 import { dbLogger } from '@/lib/logger';
-import {
-  type Quilt,
-  type UsageRecord,
-} from '@/lib/database/types';
+import { type Quilt } from '@/lib/database/types';
 import { QuiltStatus, Season, UsageType } from '@/lib/validations/quilt';
 
 // ============================================================================
@@ -82,6 +75,18 @@ export interface CreateQuiltData {
   attachmentImages?: string[] | null;
 }
 
+function logQuiltDataError(message: string, error: unknown, meta?: Record<string, unknown>) {
+  if (error instanceof Error) {
+    dbLogger.error(message, error, meta);
+    return;
+  }
+
+  dbLogger.error(message, undefined, {
+    ...meta,
+    ...(error !== undefined ? { error } : {}),
+  });
+}
+
 // ============================================================================
 // Helper Functions
 // ============================================================================
@@ -109,9 +114,11 @@ function generateQuiltName(data: CreateQuiltData): string {
  */
 async function getNextItemNumber(tx?: Tx): Promise<number> {
   const connection = tx || db;
-  const result = await connection.select({ 
-    next_number: sql<number>`COALESCE(MAX(${quilts.itemNumber}), 0) + 1` 
-  }).from(quilts);
+  const result = await connection
+    .select({
+      next_number: sql<number>`COALESCE(MAX(${quilts.itemNumber}), 0) + 1`,
+    })
+    .from(quilts);
   return result[0]?.next_number || 1;
 }
 
@@ -172,30 +179,34 @@ export async function getQuilts(filters: QuiltFilters = {}): Promise<Quilt[]> {
     const conditions = [];
     if (season) conditions.push(eq(quilts.season, season));
     if (status) conditions.push(eq(quilts.currentStatus, status));
-    if (location) conditions.push(like(sql`LOWER(${quilts.location})`, `%${location.toLowerCase()}%`));
+    if (location)
+      conditions.push(like(sql`LOWER(${quilts.location})`, `%${location.toLowerCase()}%`));
     if (brand) conditions.push(like(sql`LOWER(${quilts.brand})`, `%${brand.toLowerCase()}%`));
-    
+
     if (search) {
       const searchLower = `%${search.toLowerCase()}%`;
-      conditions.push(or(
-        like(sql`LOWER(${quilts.name})`, searchLower),
-        like(sql`LOWER(${quilts.color})`, searchLower),
-        like(sql`LOWER(${quilts.fillMaterial})`, searchLower),
-        like(sql`LOWER(${quilts.notes})`, searchLower)
-      ));
+      conditions.push(
+        or(
+          like(sql`LOWER(${quilts.name})`, searchLower),
+          like(sql`LOWER(${quilts.color})`, searchLower),
+          like(sql`LOWER(${quilts.fillMaterial})`, searchLower),
+          like(sql`LOWER(${quilts.notes})`, searchLower)
+        )
+      );
     }
 
     const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
-    
+
     // Sort mapping
-    const sortColumn = {
-      itemNumber: quilts.itemNumber,
-      name: quilts.name,
-      season: quilts.season,
-      weightGrams: quilts.weightGrams,
-      createdAt: quilts.createdAt,
-      updatedAt: quilts.updatedAt,
-    }[sortBy] || quilts.createdAt;
+    const sortColumn =
+      {
+        itemNumber: quilts.itemNumber,
+        name: quilts.name,
+        season: quilts.season,
+        weightGrams: quilts.weightGrams,
+        createdAt: quilts.createdAt,
+        updatedAt: quilts.updatedAt,
+      }[sortBy] || quilts.createdAt;
 
     const result = await db
       .select()
@@ -273,17 +284,20 @@ export async function countQuilts(filters: QuiltFilters = {}): Promise<number> {
     const conditions = [];
     if (season) conditions.push(eq(quilts.season, season));
     if (status) conditions.push(eq(quilts.currentStatus, status));
-    if (location) conditions.push(like(sql`LOWER(${quilts.location})`, `%${location.toLowerCase()}%`));
+    if (location)
+      conditions.push(like(sql`LOWER(${quilts.location})`, `%${location.toLowerCase()}%`));
     if (brand) conditions.push(like(sql`LOWER(${quilts.brand})`, `%${brand.toLowerCase()}%`));
-    
+
     if (search) {
       const searchLower = `%${search.toLowerCase()}%`;
-      conditions.push(or(
-        like(sql`LOWER(${quilts.name})`, searchLower),
-        like(sql`LOWER(${quilts.color})`, searchLower),
-        like(sql`LOWER(${quilts.fillMaterial})`, searchLower),
-        like(sql`LOWER(${quilts.notes})`, searchLower)
-      ));
+      conditions.push(
+        or(
+          like(sql`LOWER(${quilts.name})`, searchLower),
+          like(sql`LOWER(${quilts.color})`, searchLower),
+          like(sql`LOWER(${quilts.fillMaterial})`, searchLower),
+          like(sql`LOWER(${quilts.notes})`, searchLower)
+        )
+      );
     }
 
     const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
@@ -318,28 +332,31 @@ export async function createQuilt(data: CreateQuiltData): Promise<Quilt> {
 
     dbLogger.info('Creating quilt', { itemNumber, name });
 
-    const result = await db.insert(quilts).values({
-      // id will be auto-generated
-      itemNumber,
-      name,
-      season: data.season,
-      lengthCm: data.lengthCm,
-      widthCm: data.widthCm,
-      weightGrams: data.weightGrams,
-      fillMaterial: data.fillMaterial,
-      materialDetails: data.materialDetails,
-      color: data.color,
-      brand: data.brand,
-      purchaseDate: data.purchaseDate ?? null,
-      location: data.location,
-      packagingInfo: data.packagingInfo,
-      currentStatus: data.currentStatus || 'STORAGE',
-      notes: data.notes,
-      imageUrl: data.imageUrl,
-      thumbnailUrl: data.thumbnailUrl,
-      mainImage: data.mainImage,
-      attachmentImages: data.attachmentImages as any, // Cast JSON array
-    }).returning();
+    const result = await db
+      .insert(quilts)
+      .values({
+        // id will be auto-generated
+        itemNumber,
+        name,
+        season: data.season,
+        lengthCm: data.lengthCm,
+        widthCm: data.widthCm,
+        weightGrams: data.weightGrams,
+        fillMaterial: data.fillMaterial,
+        materialDetails: data.materialDetails,
+        color: data.color,
+        brand: data.brand,
+        purchaseDate: data.purchaseDate ?? null,
+        location: data.location,
+        packagingInfo: data.packagingInfo,
+        currentStatus: data.currentStatus || 'STORAGE',
+        notes: data.notes,
+        imageUrl: data.imageUrl,
+        thumbnailUrl: data.thumbnailUrl,
+        mainImage: data.mainImage,
+        attachmentImages: data.attachmentImages as any, // Cast JSON array
+      })
+      .returning();
 
     const quilt = result[0] as unknown as Quilt;
 
@@ -352,7 +369,7 @@ export async function createQuilt(data: CreateQuiltData): Promise<Quilt> {
     dbLogger.info('Quilt created successfully', { id: quilt.id, itemNumber });
     return quilt;
   } catch (error) {
-    dbLogger.error('Error creating quilt', { data, error });
+    logQuiltDataError('Error creating quilt', error, { data });
     throw error;
   }
 }
@@ -376,12 +393,33 @@ export async function updateQuilt(
 
     dbLogger.info('Updating quilt', { id });
 
-    const result = await db.update(quilts)
-      .set({
-        ...data,
-        updatedAt: new Date(),
-        // Handle image updates carefully if needed, but Drizzle partial update is safe
-      })
+    // Explicitly whitelist updatable columns so schema-only fields don't leak into SQL.
+    const updateValues: Record<string, unknown> = {
+      updatedAt: new Date(),
+    };
+
+    if (data.name !== undefined) updateValues.name = data.name;
+    if (data.season !== undefined) updateValues.season = data.season;
+    if (data.lengthCm !== undefined) updateValues.lengthCm = data.lengthCm;
+    if (data.widthCm !== undefined) updateValues.widthCm = data.widthCm;
+    if (data.weightGrams !== undefined) updateValues.weightGrams = data.weightGrams;
+    if (data.fillMaterial !== undefined) updateValues.fillMaterial = data.fillMaterial;
+    if (data.materialDetails !== undefined) updateValues.materialDetails = data.materialDetails;
+    if (data.color !== undefined) updateValues.color = data.color;
+    if (data.brand !== undefined) updateValues.brand = data.brand;
+    if (data.purchaseDate !== undefined) updateValues.purchaseDate = data.purchaseDate ?? null;
+    if (data.location !== undefined) updateValues.location = data.location;
+    if (data.packagingInfo !== undefined) updateValues.packagingInfo = data.packagingInfo;
+    if (data.currentStatus !== undefined) updateValues.currentStatus = data.currentStatus;
+    if (data.notes !== undefined) updateValues.notes = data.notes;
+    if (data.imageUrl !== undefined) updateValues.imageUrl = data.imageUrl;
+    if (data.thumbnailUrl !== undefined) updateValues.thumbnailUrl = data.thumbnailUrl;
+    if (data.mainImage !== undefined) updateValues.mainImage = data.mainImage;
+    if (data.attachmentImages !== undefined) updateValues.attachmentImages = data.attachmentImages;
+
+    const result = await db
+      .update(quilts)
+      .set(updateValues as any)
       .where(eq(quilts.id, id))
       .returning();
 
@@ -407,7 +445,7 @@ export async function updateQuilt(
     dbLogger.info('Quilt updated successfully', { id });
     return updated;
   } catch (error) {
-    dbLogger.error('Error updating quilt', { id, data, error });
+    logQuiltDataError('Error updating quilt', error, { id, data });
     throw error;
   }
 }
@@ -422,7 +460,8 @@ export async function updateQuiltStatus(id: string, status: QuiltStatus): Promis
     const current = await getQuiltById(id);
     const oldStatus = current?.currentStatus;
 
-    const result = await db.update(quilts)
+    const result = await db
+      .update(quilts)
       .set({
         currentStatus: status,
         updatedAt: new Date(),
@@ -446,7 +485,7 @@ export async function updateQuiltStatus(id: string, status: QuiltStatus): Promis
     dbLogger.info('Quilt status updated', { id, status });
     return updated;
   } catch (error) {
-    dbLogger.error('Error updating quilt status', { id, status, error });
+    logQuiltDataError('Error updating quilt status', error, { id, status });
     throw error;
   }
 }
@@ -466,11 +505,11 @@ export async function updateQuiltStatusWithUsageRecord(
   usageRecord?: { id: string; quiltId: string; startDate: Date; endDate: Date | null };
 }> {
   try {
-    return await db.transaction(async (tx) => {
+    return await db.transaction(async tx => {
       // Get current quilt
       const currentRows = await tx.select().from(quilts).where(eq(quilts.id, id));
       if (currentRows.length === 0) throw new Error('Quilt not found');
-      
+
       const currentQuilt = currentRows[0] as unknown as Quilt;
       const previousStatus = currentQuilt.currentStatus;
 
@@ -482,15 +521,13 @@ export async function updateQuiltStatusWithUsageRecord(
 
       // FROM IN_USE -> End usage record
       if (previousStatus === 'IN_USE' && newStatus !== 'IN_USE') {
-        const endedRows = await tx.update(usageRecords)
+        const endedRows = await tx
+          .update(usageRecords)
           .set({
             endDate: new Date(),
             updatedAt: new Date(),
           })
-          .where(and(
-            eq(usageRecords.quiltId, id),
-            isNull(usageRecords.endDate)
-          ))
+          .where(and(eq(usageRecords.quiltId, id), isNull(usageRecords.endDate)))
           .returning();
 
         if (endedRows.length > 0) {
@@ -506,20 +543,24 @@ export async function updateQuiltStatusWithUsageRecord(
       // TO IN_USE -> Create usage record
       if (newStatus === 'IN_USE' && previousStatus !== 'IN_USE') {
         // Check active
-        const activeCount = await tx.select({ count: sql<number>`count(*)` })
+        const activeCount = await tx
+          .select({ count: sql<number>`count(*)` })
           .from(usageRecords)
           .where(and(eq(usageRecords.quiltId, id), isNull(usageRecords.endDate)));
-          
+
         if (Number(activeCount[0].count) > 0) {
           throw new Error('Quilt already has an active usage record');
         }
 
-        const createdRows = await tx.insert(usageRecords).values({
-          quiltId: id,
-          startDate: new Date(),
-          usageType: usageType,
-          notes: notes,
-        }).returning();
+        const createdRows = await tx
+          .insert(usageRecords)
+          .values({
+            quiltId: id,
+            startDate: new Date(),
+            usageType: usageType,
+            notes: notes,
+          })
+          .returning();
 
         if (createdRows.length > 0) {
           usageRecordData = {
@@ -532,7 +573,8 @@ export async function updateQuiltStatusWithUsageRecord(
       }
 
       // Update Quilt Status
-      const updatedRows = await tx.update(quilts)
+      const updatedRows = await tx
+        .update(quilts)
         .set({
           currentStatus: newStatus,
           updatedAt: new Date(),
@@ -540,20 +582,20 @@ export async function updateQuiltStatusWithUsageRecord(
         .where(eq(quilts.id, id))
         .returning();
 
-       if (updatedRows.length === 0) throw new Error('Failed to update quilt status');
-       const updatedQuilt = updatedRows[0] as unknown as Quilt;
+      if (updatedRows.length === 0) throw new Error('Failed to update quilt status');
+      const updatedQuilt = updatedRows[0] as unknown as Quilt;
 
-       // Invalidate cache tags
+      // Invalidate cache tags
       revalidateTag('quilts', 'max');
       revalidateTag('quilts-list', 'max');
       revalidateTag(`quilts-${id}`, 'max');
       revalidateTag(`quilts-status-${previousStatus}`, 'max');
       revalidateTag(`quilts-status-${newStatus}`, 'max');
 
-       return { quilt: updatedQuilt, usageRecord: usageRecordData };
+      return { quilt: updatedQuilt, usageRecord: usageRecordData };
     });
   } catch (error) {
-    dbLogger.error('Error updating quilt status with usage record', { id, newStatus, error });
+    logQuiltDataError('Error updating quilt status with usage record', error, { id, newStatus });
     throw error;
   }
 }
@@ -568,13 +610,13 @@ export async function deleteQuilt(id: string): Promise<boolean> {
     const quilt = await getQuiltById(id);
 
     // Using transaction for cascade delete safety, though constraints handle it usually.
-    await db.transaction(async (tx) => {
-        // Manual delete if cascade not set or just to be safe
-        await tx.delete(usageRecords).where(eq(usageRecords.quiltId, id));
-        // Maintenance records not imported but assumed
-        // await tx.delete(maintenanceRecords).where(eq(maintenanceRecords.quiltId, id));
-        
-        await tx.delete(quilts).where(eq(quilts.id, id));
+    await db.transaction(async tx => {
+      // Manual delete if cascade not set or just to be safe
+      await tx.delete(usageRecords).where(eq(usageRecords.quiltId, id));
+      // Maintenance records not imported but assumed
+      // await tx.delete(maintenanceRecords).where(eq(maintenanceRecords.quiltId, id));
+
+      await tx.delete(quilts).where(eq(quilts.id, id));
     });
 
     // Invalidate
@@ -582,14 +624,14 @@ export async function deleteQuilt(id: string): Promise<boolean> {
     revalidateTag('quilts-list', 'max');
     revalidateTag(`quilts-${id}`, 'max');
     if (quilt) {
-        revalidateTag(`quilts-status-${quilt.currentStatus}`, 'max');
-        revalidateTag(`quilts-season-${quilt.season}`, 'max');
+      revalidateTag(`quilts-status-${quilt.currentStatus}`, 'max');
+      revalidateTag(`quilts-season-${quilt.season}`, 'max');
     }
 
     dbLogger.info('Quilt deleted successfully', { id });
     return true;
   } catch (error) {
-    dbLogger.error('Error deleting quilt', { id, error });
+    logQuiltDataError('Error deleting quilt', error, { id });
     throw error;
   }
 }

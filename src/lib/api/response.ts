@@ -172,7 +172,14 @@ export function createInternalErrorResponse(
 
   // Log the error for debugging (only in runtime, not during build)
   if (error && !isBuildPhase) {
-    dbLogger.error(message, { error, ...context });
+    if (error instanceof Error) {
+      dbLogger.error(message, error, context);
+    } else {
+      dbLogger.error(message, undefined, {
+        ...context,
+        error,
+      });
+    }
   }
 
   return createErrorResponse(ErrorCodes.INTERNAL_ERROR, message, undefined, 500);

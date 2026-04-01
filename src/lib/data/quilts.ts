@@ -87,6 +87,37 @@ function logQuiltDataError(message: string, error: unknown, meta?: Record<string
   });
 }
 
+function summarizeImageForLog(image?: string | null) {
+  if (image === undefined) {
+    return undefined;
+  }
+
+  if (image === null) {
+    return null;
+  }
+
+  return {
+    length: image.length,
+    isDataUrl: image.startsWith('data:'),
+  };
+}
+
+function summarizeQuiltWriteData(data: Partial<CreateQuiltData>) {
+  const summary: Record<string, unknown> = { ...data };
+
+  if ('mainImage' in data) {
+    summary.mainImage = summarizeImageForLog(data.mainImage);
+  }
+
+  if ('attachmentImages' in data) {
+    summary.attachmentImages = Array.isArray(data.attachmentImages)
+      ? data.attachmentImages.map(image => summarizeImageForLog(image))
+      : data.attachmentImages;
+  }
+
+  return summary;
+}
+
 // ============================================================================
 // Helper Functions
 // ============================================================================
@@ -141,7 +172,7 @@ export async function getQuiltById(id: string): Promise<Quilt | null> {
     const result = await db.select().from(quilts).where(eq(quilts.id, id));
     return result[0] ? (result[0] as unknown as Quilt) : null;
   } catch (error) {
-    dbLogger.error('Error fetching quilt by ID', { id, error });
+    logQuiltDataError('Error fetching quilt by ID', error, { id });
     throw error;
   }
 }
@@ -218,7 +249,7 @@ export async function getQuilts(filters: QuiltFilters = {}): Promise<Quilt[]> {
 
     return result as unknown as Quilt[];
   } catch (error) {
-    dbLogger.error('Error fetching quilts', { filters, error });
+    logQuiltDataError('Error fetching quilts', error, { filters });
     throw error;
   }
 }
@@ -243,7 +274,7 @@ export async function getQuiltsByStatus(status: QuiltStatus): Promise<Quilt[]> {
 
     return result as unknown as Quilt[];
   } catch (error) {
-    dbLogger.error('Error fetching quilts by status', { status, error });
+    logQuiltDataError('Error fetching quilts by status', error, { status });
     throw error;
   }
 }
@@ -268,7 +299,7 @@ export async function getQuiltsBySeason(season: Season): Promise<Quilt[]> {
 
     return result as unknown as Quilt[];
   } catch (error) {
-    dbLogger.error('Error fetching quilts by season', { season, error });
+    logQuiltDataError('Error fetching quilts by season', error, { season });
     throw error;
   }
 }
@@ -309,7 +340,7 @@ export async function countQuilts(filters: QuiltFilters = {}): Promise<number> {
 
     return Number(result[0]?.count || 0);
   } catch (error) {
-    dbLogger.error('Error counting quilts', { filters, error });
+    logQuiltDataError('Error counting quilts', error, { filters });
     throw error;
   }
 }
@@ -369,7 +400,9 @@ export async function createQuilt(data: CreateQuiltData): Promise<Quilt> {
     dbLogger.info('Quilt created successfully', { id: quilt.id, itemNumber });
     return quilt;
   } catch (error) {
-    logQuiltDataError('Error creating quilt', error, { data });
+    logQuiltDataError('Error creating quilt', error, {
+      data: summarizeQuiltWriteData(data),
+    });
     throw error;
   }
 }
@@ -445,7 +478,10 @@ export async function updateQuilt(
     dbLogger.info('Quilt updated successfully', { id });
     return updated;
   } catch (error) {
-    logQuiltDataError('Error updating quilt', error, { id, data });
+    logQuiltDataError('Error updating quilt', error, {
+      id,
+      data: summarizeQuiltWriteData(data),
+    });
     throw error;
   }
 }
@@ -648,7 +684,7 @@ export async function getActiveUsageRecordCount(quiltId: string): Promise<number
 
     return Number(result[0]?.count || 0);
   } catch (error) {
-    dbLogger.error('Error getting active usage record count', { quiltId, error });
+    logQuiltDataError('Error getting active usage record count', error, { quiltId });
     throw error;
   }
 }

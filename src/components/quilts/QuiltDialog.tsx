@@ -26,6 +26,11 @@ import { Textarea } from '@/components/ui/textarea';
 import { Loader2 } from 'lucide-react';
 
 import { Quilt, QuiltFormData } from '@/types/quilt';
+import {
+  areQuiltImageListsEqual,
+  getQuiltImageList,
+  getQuiltImagePayload,
+} from '@/lib/quilts/images';
 
 interface QuiltDialogProps {
   open: boolean;
@@ -54,6 +59,7 @@ export function QuiltDialog({ open, onOpenChange, quilt, onSave }: QuiltDialogPr
     notes: '',
   });
   const [images, setImages] = useState<string[]>([]);
+  const [originalImages, setOriginalImages] = useState<string[]>([]);
 
   // Dynamically import ImageUpload to avoid SSR issues
   const ImageUpload = dynamic(
@@ -108,23 +114,9 @@ export function QuiltDialog({ open, onOpenChange, quilt, onSave }: QuiltDialogPr
           currentStatus: quilt.currentStatus || 'MAINTENANCE',
           notes: quilt.notes || '',
         });
-        // Load existing images
-        const existingImages: string[] = [];
-        if (quilt.mainImage) {
-          // Check if mainImage starts with data: prefix
-          const imageData = quilt.mainImage.startsWith('data:')
-            ? quilt.mainImage
-            : `data:image/jpeg;base64,${quilt.mainImage}`;
-          existingImages.push(imageData);
-        }
-        if (quilt.attachmentImages && Array.isArray(quilt.attachmentImages)) {
-          // Ensure all attachment images have data: prefix
-          const attachments = quilt.attachmentImages.map((img: string) =>
-            img.startsWith('data:') ? img : `data:image/jpeg;base64,${img}`
-          );
-          existingImages.push(...attachments);
-        }
+        const existingImages = getQuiltImageList(quilt);
         setImages(existingImages);
+        setOriginalImages(existingImages);
       } else {
         // Add mode - reset to defaults with STORAGE status
         setFormData({
@@ -143,6 +135,7 @@ export function QuiltDialog({ open, onOpenChange, quilt, onSave }: QuiltDialogPr
           notes: '',
         });
         setImages([]);
+        setOriginalImages([]);
       }
     }
   }, [open, quilt]);
@@ -162,14 +155,12 @@ export function QuiltDialog({ open, onOpenChange, quilt, onSave }: QuiltDialogPr
         purchaseDate: formData.purchaseDate ? new Date(formData.purchaseDate) : undefined,
       };
 
-      // Always include image fields to handle deletion
-      if (images.length > 0) {
-        data.mainImage = images[0];
-        data.attachmentImages = images.length > 1 ? images.slice(1) : [];
-      } else {
-        // Explicitly set to null to clear images from database
-        data.mainImage = null;
-        data.attachmentImages = [];
+      const imagesChanged = !areQuiltImageListsEqual(images, originalImages);
+
+      if (!quilt || imagesChanged) {
+        const imagePayload = getQuiltImagePayload(images);
+        data.mainImage = imagePayload.mainImage;
+        data.attachmentImages = imagePayload.attachmentImages;
       }
 
       if (quilt) {

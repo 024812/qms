@@ -47,6 +47,12 @@ interface QuiltsResponse {
   hasMore: boolean;
 }
 
+interface UpdateQuiltImagesInput {
+  id: string;
+  mainImage?: string | null;
+  attachmentImages?: string[] | null;
+}
+
 // Helper function to build query string from search params
 function buildQueryString(searchParams?: QuiltSearchInput): string {
   if (!searchParams) return '';
@@ -155,6 +161,28 @@ async function updateQuilt(data: UpdateQuiltInput): Promise<Quilt> {
   const result = await response.json();
 
   // Handle new unified API response format
+  if (result.success && result.data) {
+    return result.data.quilt || result.data;
+  }
+
+  return result;
+}
+
+async function updateQuiltImages(data: UpdateQuiltImagesInput): Promise<Quilt> {
+  const { id, ...imageData } = data;
+  const response = await fetch(`/api/quilts/${id}/images`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(imageData),
+  });
+
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({ error: '更新被子图片失败' }));
+    throw new Error(error.error?.message || error.error || '更新被子图片失败');
+  }
+
+  const result = await response.json();
+
   if (result.success && result.data) {
     return result.data.quilt || result.data;
   }
@@ -357,6 +385,21 @@ export function useUpdateQuilt() {
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: QUILTS_KEY });
       queryClient.invalidateQueries({ queryKey: USAGE_KEY });
+      queryClient.invalidateQueries({ queryKey: DASHBOARD_KEY });
+    },
+  });
+}
+
+/**
+ * Hook to update quilt images separately from metadata
+ */
+export function useUpdateQuiltImages() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: updateQuiltImages,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: QUILTS_KEY });
       queryClient.invalidateQueries({ queryKey: DASHBOARD_KEY });
     },
   });

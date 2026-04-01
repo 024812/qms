@@ -17,6 +17,7 @@ import {
   useQuilts,
   useCreateQuilt,
   useUpdateQuilt,
+  useUpdateQuiltImages,
   useDeleteQuilt,
   useUpdateQuiltStatus,
 } from '@/hooks/useQuilts';
@@ -54,6 +55,7 @@ export default function QuiltsPage() {
   const { data: appSettings } = useAppSettings();
   const createQuiltMutation = useCreateQuilt();
   const updateQuiltMutation = useUpdateQuilt();
+  const updateQuiltImagesMutation = useUpdateQuiltImages();
   const deleteQuiltMutation = useDeleteQuilt();
   const updateQuiltStatusMutation = useUpdateQuiltStatus();
 
@@ -194,20 +196,14 @@ export default function QuiltsPage() {
       toast.success(t('toasts.quiltDeleted'));
     } catch (error: unknown) {
       const errorMessage =
-        error instanceof Error
-          ? error.message
-          : t('quilts.dialogs.unknownError');
+        error instanceof Error ? error.message : t('quilts.dialogs.unknownError');
       toast.error(t('quilts.dialogs.deleteFailed'), errorMessage);
     }
   };
 
   const handleBatchDelete = async () => {
     if (selectedIds.size === 0) return;
-    if (
-      !window.confirm(
-        t('quilts.dialogs.confirmBatchDelete', { count: selectedIds.size })
-      )
-    )
+    if (!window.confirm(t('quilts.dialogs.confirmBatchDelete', { count: selectedIds.size })))
       return;
 
     try {
@@ -217,9 +213,7 @@ export default function QuiltsPage() {
       toast.success(t('toasts.quiltDeleted'));
     } catch (error: unknown) {
       const errorMessage =
-        error instanceof Error
-          ? error.message
-          : t('quilts.dialogs.unknownError');
+        error instanceof Error ? error.message : t('quilts.dialogs.unknownError');
       toast.error(t('quilts.dialogs.deleteFailed'), errorMessage);
     }
   };
@@ -274,7 +268,18 @@ export default function QuiltsPage() {
       };
 
       if (selectedQuilt) {
-        await updateQuiltMutation.mutateAsync({ id: selectedQuilt.id, ...processedData });
+        const { mainImage, attachmentImages, ...metadataData } = processedData;
+        const hasImageUpdate = mainImage !== undefined || attachmentImages !== undefined;
+
+        if (hasImageUpdate) {
+          await updateQuiltImagesMutation.mutateAsync({
+            id: selectedQuilt.id,
+            mainImage: mainImage ?? null,
+            attachmentImages: attachmentImages ?? [],
+          });
+        }
+
+        await updateQuiltMutation.mutateAsync({ id: selectedQuilt.id, ...metadataData });
         toast.success(t('toasts.quiltUpdated'));
       } else {
         await createQuiltMutation.mutateAsync(processedData);
@@ -284,9 +289,7 @@ export default function QuiltsPage() {
     } catch (error: unknown) {
       // Extract error message from API error
       const errorMessage =
-        error instanceof Error
-          ? error.message
-          : t('quilts.dialogs.unknownError');
+        error instanceof Error ? error.message : t('quilts.dialogs.unknownError');
       toast.error(t('quilts.dialogs.saveConfig.error'), errorMessage);
     }
   };
@@ -311,13 +314,8 @@ export default function QuiltsPage() {
       setStatusDialogOpen(false);
     } catch (error: unknown) {
       const errorMessage =
-        error instanceof Error
-          ? error.message
-          : t('quilts.dialogs.unknownError');
-      toast.error(
-        t('quilts.dialogs.statusUpdateFailed'),
-        errorMessage
-      );
+        error instanceof Error ? error.message : t('quilts.dialogs.unknownError');
+      toast.error(t('quilts.dialogs.statusUpdateFailed'), errorMessage);
     }
   };
 

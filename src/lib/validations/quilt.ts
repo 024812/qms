@@ -143,6 +143,8 @@ export const updateQuiltSchema = baseQuiltSchemaObject.partial().extend({
   id: z.string().min(1, 'Quilt ID is required'),
 });
 
+const recordIdSchema = z.string().min(1, 'ID is required');
+
 // ============================================================================
 // Complete Quilt Schema - Single Source of Truth for Quilt Type
 // ============================================================================
@@ -152,7 +154,7 @@ export const updateQuiltSchema = baseQuiltSchemaObject.partial().extend({
  * This is the single source of truth for the Quilt type.
  */
 export const QuiltSchema = z.object({
-  id: z.uuid(),
+  id: recordIdSchema,
   itemNumber: z.number().int().positive(),
   groupId: z.number().int().positive().nullable(),
   name: z.string(),
@@ -186,8 +188,8 @@ export type Quilt = z.infer<typeof QuiltSchema>;
  * UsageRecord Schema representing a usage record from the database.
  */
 export const UsageRecordSchema = z.object({
-  id: z.uuid(),
-  quiltId: z.uuid(),
+  id: recordIdSchema,
+  quiltId: recordIdSchema,
   startDate: z.date(),
   endDate: z.date().nullable(),
   usageType: UsageTypeSchema,
@@ -205,8 +207,8 @@ export type UsageRecord = z.infer<typeof UsageRecordSchema>;
  * MaintenanceRecord Schema representing a maintenance record from the database.
  */
 export const MaintenanceRecordSchema = z.object({
-  id: z.uuid(),
-  quiltId: z.uuid(),
+  id: recordIdSchema,
+  quiltId: recordIdSchema,
   maintenanceType: z.string(),
   description: z.string(),
   performedAt: z.date(),

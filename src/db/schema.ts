@@ -129,7 +129,10 @@ export const users = pgTable(
 export const quilts = pgTable(
   'quilts',
   {
-    id: uuid('id').defaultRandom().primaryKey(),
+    // Production quilts use text IDs, not UUID-typed columns.
+    id: text('id')
+      .primaryKey()
+      .$defaultFn(() => crypto.randomUUID()),
     itemNumber: serial('item_number').notNull().unique(),
 
     // Core details
@@ -180,8 +183,10 @@ export const quilts = pgTable(
 export const usageRecords = pgTable(
   'usage_records',
   {
-    id: uuid('id').defaultRandom().primaryKey(),
-    quiltId: uuid('quilt_id')
+    id: text('id')
+      .primaryKey()
+      .$defaultFn(() => crypto.randomUUID()),
+    quiltId: text('quilt_id')
       .notNull()
       .references(() => quilts.id, { onDelete: 'cascade' }),
 
@@ -208,8 +213,10 @@ export const usageRecords = pgTable(
 export const maintenanceRecords = pgTable(
   'maintenance_records',
   {
-    id: uuid('id').defaultRandom().primaryKey(),
-    quiltId: uuid('quilt_id')
+    id: text('id')
+      .primaryKey()
+      .$defaultFn(() => crypto.randomUUID()),
+    quiltId: text('quilt_id')
       .notNull()
       .references(() => quilts.id, { onDelete: 'cascade' }),
 

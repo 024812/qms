@@ -25,7 +25,7 @@ import {
 
 // Input validation schemas
 const createUsageRecordSchema = z.object({
-  quiltId: z.string().uuid('无效的被子ID'),
+  quiltId: z.string().trim().min(1, '无效的被子ID'),
   startDate: z.string().transform(val => new Date(val)),
   endDate: z
     .string()

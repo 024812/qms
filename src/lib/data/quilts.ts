@@ -356,8 +356,7 @@ export async function countQuilts(filters: QuiltFilters = {}): Promise<number> {
  */
 export async function createQuilt(data: CreateQuiltData): Promise<Quilt> {
   try {
-    // We let Drizzle generate UUID if not provided, but here we can't easily.
-    // Drizzle defaultRandom() works on db level.
+    // Quilt IDs are stored as text in production; the schema generates them at runtime.
     const itemNumber = await getNextItemNumber();
     const name = data.name || generateQuiltName(data);
 

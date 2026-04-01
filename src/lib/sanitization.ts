@@ -15,6 +15,19 @@ const HTML_ENTITIES: Record<string, string> = {
   '=': '&#x3D;',
 };
 
+const IMAGE_DATA_URL_REGEX = /^data:image\/[a-z0-9.+-]+;base64,/i;
+
+function normalizeStringInput(input: unknown): string {
+  if (input === null || input === undefined) {
+    return '';
+  }
+
+  const str = String(input).trim();
+
+  // Remove null bytes
+  return str.replace(/\0/g, '');
+}
+
 /**
  * Escape HTML entities to prevent XSS attacks
  */
@@ -75,16 +88,24 @@ export function sanitizeHtml(input: string): string {
  * Sanitize string input for database operations
  */
 export function sanitizeString(input: unknown): string {
-  if (input === null || input === undefined) {
-    return '';
-  }
-
-  const str = String(input).trim();
-
-  // Remove null bytes
-  const sanitized = str.replace(/\0/g, '');
+  const sanitized = normalizeStringInput(input);
 
   // Escape HTML entities
+  return escapeHtml(sanitized);
+}
+
+function sanitizeApiStringValue(input: unknown): string {
+  const sanitized = normalizeStringInput(input);
+
+  if (!sanitized) {
+    return sanitized;
+  }
+
+  // Preserve safe URLs and image data URLs so API payloads are not corrupted
+  if (IMAGE_DATA_URL_REGEX.test(sanitized) || sanitizeUrl(sanitized) !== null) {
+    return sanitized;
+  }
+
   return escapeHtml(sanitized);
 }
 
@@ -327,14 +348,14 @@ export function sanitizeRequestBody(body: unknown): Record<string, unknown> {
 
     // Sanitize value based on type
     if (typeof value === 'string') {
-      sanitized[sanitizedKey] = sanitizeString(value);
+      sanitized[sanitizedKey] = sanitizeApiStringValue(value);
     } else if (typeof value === 'number') {
       sanitized[sanitizedKey] = sanitizeNumber(value);
     } else if (typeof value === 'boolean') {
       sanitized[sanitizedKey] = value;
     } else if (Array.isArray(value)) {
       sanitized[sanitizedKey] = value.map(item =>
-        typeof item === 'string' ? sanitizeString(item) : item
+        typeof item === 'string' ? sanitizeApiStringValue(item) : item
       );
     } else if (value && typeof value === 'object') {
       sanitized[sanitizedKey] = sanitizeRequestBody(value);
@@ -354,11 +375,12 @@ export function sanitizeApiInput<T extends Record<string, unknown>>(input: T): T
 
   for (const [key, value] of Object.entries(result)) {
     if (typeof value === 'string') {
-      // Sanitize string values to prevent XSS
-      result[key] = sanitizeString(value);
+      // Preserve safe URLs and image data URLs; escape other strings to prevent XSS
+      result[key] = sanitizeApiStringValue(value);
     } else if (Array.isArray(value)) {
-      // Sanitize string items in arrays
-      result[key] = value.map(item => (typeof item === 'string' ? sanitizeString(item) : item));
+      result[key] = value.map(item =>
+        typeof item === 'string' ? sanitizeApiStringValue(item) : item
+      );
     } else if (value && typeof value === 'object' && !(value instanceof Date)) {
       // Recursively sanitize nested objects (but not Date objects)
       result[key] = sanitizeApiInput(value as Record<string, unknown>);

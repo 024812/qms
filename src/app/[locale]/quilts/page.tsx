@@ -256,42 +256,36 @@ export default function QuiltsPage() {
   };
 
   const handleSaveQuilt = async (data: QuiltFormData) => {
-    try {
-      // Convert purchaseDate string to Date if needed
-      const processedData = {
-        ...data,
-        purchaseDate: data.purchaseDate
-          ? typeof data.purchaseDate === 'string'
-            ? new Date(data.purchaseDate)
-            : data.purchaseDate
-          : undefined,
-      };
+    // Convert purchaseDate string to Date if needed
+    const processedData = {
+      ...data,
+      purchaseDate: data.purchaseDate
+        ? typeof data.purchaseDate === 'string'
+          ? new Date(data.purchaseDate)
+          : data.purchaseDate
+        : undefined,
+    };
 
-      if (selectedQuilt) {
-        const { mainImage, attachmentImages, ...metadataData } = processedData;
-        const hasImageUpdate = mainImage !== undefined || attachmentImages !== undefined;
+    if (selectedQuilt) {
+      const { mainImage, attachmentImages, ...metadataData } = processedData;
+      const hasImageUpdate = mainImage !== undefined || attachmentImages !== undefined;
 
-        if (hasImageUpdate) {
-          await updateQuiltImagesMutation.mutateAsync({
-            id: selectedQuilt.id,
-            mainImage: mainImage ?? null,
-            attachmentImages: attachmentImages ?? [],
-          });
-        }
-
-        await updateQuiltMutation.mutateAsync({ id: selectedQuilt.id, ...metadataData });
-        toast.success(t('toasts.quiltUpdated'));
-      } else {
-        await createQuiltMutation.mutateAsync(processedData);
-        toast.success(t('toasts.quiltAdded'));
+      if (hasImageUpdate) {
+        await updateQuiltImagesMutation.mutateAsync({
+          id: selectedQuilt.id,
+          mainImage: mainImage ?? null,
+          attachmentImages: attachmentImages ?? [],
+        });
       }
-      setQuiltDialogOpen(false);
-    } catch (error: unknown) {
-      // Extract error message from API error
-      const errorMessage =
-        error instanceof Error ? error.message : t('quilts.dialogs.unknownError');
-      toast.error(t('quilts.dialogs.saveConfig.error'), errorMessage);
+
+      await updateQuiltMutation.mutateAsync({ id: selectedQuilt.id, ...metadataData });
+      toast.success(t('toasts.quiltUpdated'));
+    } else {
+      await createQuiltMutation.mutateAsync(processedData);
+      toast.success(t('toasts.quiltAdded'));
     }
+
+    setQuiltDialogOpen(false);
   };
 
   const handleStatusChangeConfirm = async (

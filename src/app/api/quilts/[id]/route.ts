@@ -71,10 +71,20 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
       return createBadRequestResponse('被子 ID 是必需的');
     }
 
-    const rawBody = await request.json();
+    let rawBody: unknown;
+
+    try {
+      rawBody = await request.json();
+    } catch {
+      return createBadRequestResponse('Invalid JSON request body');
+    }
+
+    if (!rawBody || typeof rawBody !== 'object' || Array.isArray(rawBody)) {
+      return createBadRequestResponse('Request body must be a JSON object');
+    }
 
     // Sanitize input to prevent XSS (Requirements: 11.1)
-    const body = sanitizeApiInput(rawBody);
+    const body = sanitizeApiInput(rawBody as Record<string, unknown>);
 
     // Handle purchaseDate conversion if it's a string
     if (body.purchaseDate && typeof body.purchaseDate === 'string') {

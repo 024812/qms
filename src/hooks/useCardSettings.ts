@@ -1,72 +1,57 @@
 'use client';
 
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+
+import {
+  getCardSettingsAction,
+  updateCardSettingsAction,
+  type CardSettings,
+  type UpdateCardSettingsInput,
+} from '@/app/actions/cards';
 
 const CARD_SETTINGS_KEY = ['card-settings'] as const;
 
-export interface CardSettings {
-  azureOpenAIApiKey: string;
-  azureOpenAIEndpoint: string;
-  azureOpenAIDeployment: string;
-  ebayAppId?: string;
-  ebayCertId?: string;
-  ebayDevId?: string;
-  rapidApiKey?: string;
-  tavilyApiKey?: string;
-}
-
-export interface UpdateCardSettingsInput {
-  azureOpenAIApiKey?: string;
-  azureOpenAIEndpoint?: string;
-  azureOpenAIDeployment?: string;
-  ebayAppId?: string;
-  ebayCertId?: string;
-  ebayDevId?: string;
-  rapidApiKey?: string;
-  tavilyApiKey?: string;
-}
-
-async function fetchCardSettings(): Promise<CardSettings> {
-  const response = await fetch('/api/cards/settings');
-
-  if (!response.ok) {
-    const error = await response.json().catch(() => ({ error: 'Failed to fetch card settings' }));
-    throw new Error(error.error?.message || error.error || 'Failed to fetch card settings');
+function unwrapActionResult<T>(
+  result:
+    | {
+        success: true;
+        data: T;
+      }
+    | {
+        success: false;
+        error: {
+          message: string;
+        };
+      }
+): T {
+  if (!result.success) {
+    throw new Error(result.error.message);
   }
 
-  const result = await response.json();
-  return result.data.settings;
+  return result.data;
 }
 
-async function updateCardSettings(data: UpdateCardSettingsInput) {
-  const response = await fetch('/api/cards/settings', {
-    method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(data),
-  });
+export type { CardSettings, UpdateCardSettingsInput };
 
-  if (!response.ok) {
-    const error = await response.json().catch(() => ({ error: 'Failed to update card settings' }));
-    throw new Error(error.error?.message || error.error || 'Failed to update card settings');
-  }
-
-  return response.json();
-}
-
-export function useCardSettings() {
+export function useCardSettings(options?: { initialData?: CardSettings; enabled?: boolean }) {
   return useQuery({
     queryKey: CARD_SETTINGS_KEY,
-    queryFn: fetchCardSettings,
-    staleTime: 60000, // 1 minute
+    queryFn: async () => unwrapActionResult(await getCardSettingsAction()),
+    ...(options?.initialData ? { initialData: options.initialData } : {}),
+    enabled: options?.enabled ?? true,
+    staleTime: 60000,
     retry: 1,
   });
 }
 
 export function useUpdateCardSettings() {
   const queryClient = useQueryClient();
+
   return useMutation({
-    mutationFn: updateCardSettings,
-    onSuccess: () => {
+    mutationFn: async (data: UpdateCardSettingsInput) =>
+      unwrapActionResult(await updateCardSettingsAction(data)),
+    onSuccess: settings => {
+      queryClient.setQueryData(CARD_SETTINGS_KEY, settings);
       queryClient.invalidateQueries({ queryKey: CARD_SETTINGS_KEY });
     },
   });

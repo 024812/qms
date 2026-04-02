@@ -19,6 +19,7 @@ January 19, 2025
 The component displays all quilt fields organized into logical sections:
 
 #### Basic Information
+
 - Item number (with icon)
 - Name
 - Season (with color-coded badge)
@@ -26,23 +27,27 @@ The component displays all quilt fields organized into logical sections:
 - Group ID (if applicable)
 
 #### Dimensions and Physical Properties
+
 - Length (in centimeters)
 - Width (in centimeters)
 - Weight (in grams and kilograms)
 - Total dimensions display
 
 #### Material Information
+
 - Fill material
 - Material details (comprehensive description)
 - Color
 - Brand
 
 #### Purchase and Storage
+
 - Purchase date (formatted in Chinese locale)
 - Storage location
 - Packaging information
 
 #### Additional Information
+
 - Notes (with whitespace preservation)
 - Created timestamp
 - Updated timestamp
@@ -53,7 +58,7 @@ The component includes a sophisticated image gallery:
 
 - **Main Image**: Displayed with a "主图" (Main Image) badge
 - **Attachment Images**: All additional images displayed in a grid
-- **Responsive Layout**: 
+- **Responsive Layout**:
   - 1 column on mobile
   - 2 columns on tablets
   - 3 columns on desktop
@@ -160,6 +165,7 @@ The component passes TypeScript type checking with no errors.
 ### 1. Card-Based Layout
 
 Each section is wrapped in a Card component for:
+
 - Visual separation
 - Consistent styling
 - Better readability
@@ -168,6 +174,7 @@ Each section is wrapped in a Card component for:
 ### 2. Icon Usage
 
 Icons are used sparingly to:
+
 - Enhance visual hierarchy
 - Provide quick visual cues
 - Maintain clean design
@@ -176,6 +183,7 @@ Icons are used sparingly to:
 ### 3. Grid Layout
 
 Two-column grid for information fields:
+
 - Efficient use of space
 - Easy scanning
 - Responsive behavior
@@ -184,6 +192,7 @@ Two-column grid for information fields:
 ### 4. Color-Coded Badges
 
 Status and season badges use color coding:
+
 - **Winter**: Blue (cold)
 - **Summer**: Orange (warm)
 - **Spring/Autumn**: Green (mild)
@@ -194,6 +203,7 @@ Status and season badges use color coding:
 ### 5. Image Gallery First
 
 Images are displayed at the top because:
+
 - Visual information is processed faster
 - Users expect to see images first
 - Better user experience
@@ -204,15 +214,17 @@ Images are displayed at the top because:
 ### Existing System
 
 The component is fully compatible with:
+
 - Existing quilt schema (24+ fields)
 - Current database structure
-- Existing repository layer
+- Current DAL/actions architecture
 - Usage tracking system
 - Image management system
 
 ### Module System
 
 The component works seamlessly with:
+
 - Module registry
 - Dynamic routing
 - Type system
@@ -253,11 +265,13 @@ This implementation satisfies the following requirements:
 To verify the implementation:
 
 1. **Run Tests**:
+
    ```bash
    npx vitest run src/modules/quilts/ui/__tests__/QuiltDetail.test.tsx
    ```
 
 2. **Type Check**:
+
    ```bash
    npx tsc --noEmit
    ```

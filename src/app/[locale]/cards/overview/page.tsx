@@ -1,5 +1,8 @@
-import { getCardStats } from '@/app/actions/card-stats';
-import { getMonthlyBuySellData, getRecentActivity } from '@/app/actions/card-overview-data';
+import {
+  getCardStatsAction,
+  getMonthlyBuySellDataAction,
+  getRecentActivityAction,
+} from '@/app/actions/cards';
 import { auth } from '@/auth';
 import { CreditCard, DollarSign, TrendingUp, ShoppingCart } from 'lucide-react';
 import { getTranslations, setRequestLocale } from 'next-intl/server';
@@ -26,11 +29,27 @@ export default async function CardOverviewPage({ params }: Props) {
   const session = await auth();
   if (!session?.user?.id) return redirect('/api/auth/signin');
 
-  const [stats, monthlyData, recentActivities] = await Promise.all([
-    getCardStats(),
-    getMonthlyBuySellData(),
-    getRecentActivity(10),
+  const [statsResult, monthlyDataResult, recentActivitiesResult] = await Promise.all([
+    getCardStatsAction(),
+    getMonthlyBuySellDataAction(),
+    getRecentActivityAction(10),
   ]);
+
+  if (!statsResult.success) {
+    throw new Error(statsResult.error.message);
+  }
+
+  if (!monthlyDataResult.success) {
+    throw new Error(monthlyDataResult.error.message);
+  }
+
+  if (!recentActivitiesResult.success) {
+    throw new Error(recentActivitiesResult.error.message);
+  }
+
+  const stats = statsResult.data;
+  const monthlyData = monthlyDataResult.data;
+  const recentActivities = recentActivitiesResult.data;
 
   return (
     <div className="space-y-6">

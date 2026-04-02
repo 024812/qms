@@ -10,8 +10,9 @@ import {
   Tooltip,
   Legend,
   ResponsiveContainer,
+  type TooltipProps,
 } from 'recharts';
-import type { MonthlyBuySellData } from '@/app/actions/card-overview-data';
+import type { MonthlyBuySellData } from '@/lib/data/cards';
 
 interface MonthlyChartProps {
   data: MonthlyBuySellData[];
@@ -19,6 +20,10 @@ interface MonthlyChartProps {
 
 export function MonthlyChart({ data }: MonthlyChartProps) {
   const t = useTranslations('cards.overview');
+  const tooltipFormatter: TooltipProps<number, string>['formatter'] = (value, name) => {
+    const numericValue = typeof value === 'number' ? value : 0;
+    return [`$${numericValue.toFixed(2)}`, name === 'bought' ? t('bought') : t('sold')];
+  };
 
   // Format month label to short form: "2025-03" -> "Mar"
   const formatMonth = (month: string) => {
@@ -54,12 +59,7 @@ export function MonthlyChart({ data }: MonthlyChartProps) {
             tickFormatter={value => `$${value}`}
           />
           <Tooltip
-            formatter={
-              ((value: number, name: string) => [
-                `$${value.toFixed(2)}`,
-                name === 'bought' ? t('bought') : t('sold'),
-              ]) as any
-            }
+            formatter={tooltipFormatter}
             labelFormatter={label => label}
             contentStyle={{
               backgroundColor: 'hsl(var(--card))',

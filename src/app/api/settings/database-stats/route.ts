@@ -7,6 +7,8 @@
  * Requirements: 5.3 - Consistent API response format
  */
 
+import { connection } from 'next/server';
+
 import { countQuilts } from '@/lib/data/quilts';
 import { getSimpleUsageStats } from '@/lib/data/stats';
 import { createSuccessResponse, createInternalErrorResponse } from '@/lib/api/response';
@@ -22,10 +24,9 @@ import { createSuccessResponse, createInternalErrorResponse } from '@/lib/api/re
  */
 export async function GET() {
   try {
-    const [quiltCount, usageStats] = await Promise.all([
-      countQuilts(),
-      getSimpleUsageStats(),
-    ]);
+    await connection();
+
+    const [quiltCount, usageStats] = await Promise.all([countQuilts(), getSimpleUsageStats()]);
 
     return createSuccessResponse({
       stats: {

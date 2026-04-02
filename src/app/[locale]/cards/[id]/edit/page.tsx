@@ -1,11 +1,11 @@
 import { notFound } from 'next/navigation';
-import { getCard } from '@/app/actions/card-actions';
+import { getCardAction } from '@/app/actions/cards';
 import { EditCardForm } from '../../components/EditCardForm';
 import { getTranslations } from 'next-intl/server';
 import { Button } from '@/components/ui/button';
 import { Link } from '@/i18n/routing';
 import { ChevronLeft } from 'lucide-react';
-import { parseBackImage } from '@/modules/cards/utils';
+import { formatDateForInput, parseBackImage } from '@/modules/cards/utils';
 
 interface EditCardPageProps {
   params: Promise<{
@@ -16,8 +16,14 @@ interface EditCardPageProps {
 
 export default async function EditCardPage({ params }: EditCardPageProps) {
   const { id } = await params;
-  const card = await getCard(id);
+  const result = await getCardAction(id);
   const t = await getTranslations('cards.form');
+
+  if (!result.success) {
+    throw new Error(result.error.message);
+  }
+
+  const card = result.data;
 
   if (!card) {
     notFound();
@@ -39,11 +45,12 @@ export default async function EditCardPage({ params }: EditCardPageProps) {
     grade: card.grade ? Number(card.grade) : undefined,
     certificationNumber: card.certificationNumber ?? undefined,
     purchasePrice: card.purchasePrice ? Number(card.purchasePrice) : undefined,
-    purchaseDate: card.purchaseDate ?? undefined,
+    purchaseDate: formatDateForInput(card.purchaseDate),
     currentValue: card.currentValue ? Number(card.currentValue) : undefined,
     estimatedValue: card.estimatedValue ? Number(card.estimatedValue) : undefined,
     soldPrice: card.soldPrice ? Number(card.soldPrice) : undefined,
-    soldDate: card.soldDate ?? undefined,
+    soldDate: formatDateForInput(card.soldDate),
+    valuationDate: formatDateForInput(card.lastValueUpdate),
     isAutographed: card.isAutographed,
     hasMemorabilia: card.hasMemorabilia,
     memorabiliaType: card.memorabiliaType ?? undefined,
@@ -51,6 +58,7 @@ export default async function EditCardPage({ params }: EditCardPageProps) {
     serialNumber: card.serialNumber ?? undefined,
     status: card.status,
     location: card.location ?? undefined,
+    storageType: card.storageType ?? undefined,
     condition: card.condition ?? undefined,
     notes: card.notes ?? undefined,
     frontImage: card.mainImage ?? undefined,

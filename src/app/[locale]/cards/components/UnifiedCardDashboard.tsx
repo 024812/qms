@@ -62,7 +62,7 @@ import {
   analyzeCardGradingAction,
   analyzePlayerStatsAction,
 } from '@/app/actions/ai-card-actions';
-import { deleteCard } from '@/app/actions/card-actions';
+import { deleteCardAction } from '@/app/actions/cards';
 import type { FormValues } from './form-schema';
 import type {
   QuickAnalysisResult,
@@ -302,7 +302,12 @@ export function UnifiedCardDashboard({ initialData }: UnifiedCardDashboardProps)
   const handleDelete = async () => {
     setIsDeleting(true);
     try {
-      await deleteCard(initialData.id);
+      const result = await deleteCardAction(initialData.id);
+
+      if (!result.success) {
+        throw new Error(result.error.message);
+      }
+
       toast.success(tCards('success.deleted'));
       router.push('/cards');
     } catch (err) {

@@ -99,7 +99,7 @@ export function QuiltFilters({
     return () => clearTimeout(timer);
   }, [localFilters, onFiltersChange]);
 
-  const updateFilter = (key: keyof QuiltFiltersInput, value: any) => {
+  const updateFilter = <K extends keyof QuiltFiltersInput>(key: K, value: QuiltFiltersInput[K]) => {
     setLocalFilters(prev => ({
       ...prev,
       [key]: value || undefined,
@@ -372,9 +372,7 @@ export function QuiltFilters({
       {totalCount !== undefined && (
         <div className="text-sm text-muted-foreground">
           {filteredCount !== undefined && filteredCount !== totalCount ? (
-            <>
-              {t('showingFiltered', { filtered: filteredCount, total: totalCount })}
-            </>
+            <>{t('showingFiltered', { filtered: filteredCount, total: totalCount })}</>
           ) : (
             <>{t('showingTotal', { total: totalCount })}</>
           )}

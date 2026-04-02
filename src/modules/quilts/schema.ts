@@ -1,21 +1,22 @@
 /**
  * Quilt Module Schema
  *
- * This module schema wraps and adapts the existing comprehensive quilt management system
- * to work with the extensible item management framework.
+ * This module schema adapts the existing quilt validation/types layer
+ * to the extensible item management framework.
  *
  * IMPORTANT: This schema PRESERVES all existing functionality and data structures.
  * It does NOT migrate to a simplified schema - it uses the existing comprehensive one.
  *
- * The existing system includes:
+ * The current quilt module includes:
  * - Complete `quilts` table with detailed fields (item_number, season, dimensions, materials, images, etc.)
- * - Full repository layer (src/lib/repositories/quilt.repository.ts)
+ * - Canonical DAL in `src/lib/data/quilts.ts`
+ * - Canonical mutations in `src/app/actions/quilts.ts`
  * - Usage tracking with `usage_records` table
  * - Image management (main_image, attachment_images)
  * - Complete Zod validation schemas in src/lib/validations/quilt.ts
  *
  * This schema acts as an adapter layer between the framework's module system
- * and the existing quilt management implementation.
+ * and the current quilt module implementation.
  */
 
 // ============================================================================
@@ -170,7 +171,7 @@ export function quiltToQuiltItem(quilt: import('@/lib/validations/quilt').Quilt)
 
 /**
  * Helper function to convert QuiltItem back to Quilt format
- * This is used when interfacing with the existing repository layer
+ * This is used when interfacing with the module registry system.
  * Note: Nullable dimension fields are passed through as-is, the Quilt type
  * may need validation before use if strict non-null values are required.
  */
@@ -214,9 +215,8 @@ export function quiltItemToQuilt(item: QuiltItem): import('@/lib/validations/qui
  * 1. Re-export all existing types and schemas for backward compatibility
  * 2. Provide adapter functions to convert between framework and existing formats
  * 3. Preserve all existing validation rules and business logic
- * 4. Maintain compatibility with existing repository layer
- * 5. Support existing usage tracking and maintenance record systems
+ * 4. Support existing usage tracking and maintenance record systems
  *
- * The existing system should continue to work exactly as before, with this
+ * The existing module should continue to work exactly as before, with this
  * module schema serving as a bridge to the new framework capabilities.
  */

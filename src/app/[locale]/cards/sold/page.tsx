@@ -1,9 +1,8 @@
 import { getTranslations, setRequestLocale } from 'next-intl/server';
-import { getCards } from '@/app/actions/card-actions';
+import { getCardsAction } from '@/app/actions/cards';
 import { SoldCardListView } from '../components/SoldCardListView';
 import { Suspense } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
-import type { CardItem } from '@/modules/cards/schema';
 
 type Props = {
   params: Promise<{ locale: string }>;
@@ -21,28 +20,18 @@ export default async function SoldCardsPage({ params, searchParams }: Props) {
   const query = (resolvedSearchParams?.query as string) || '';
   const pageSize = 50;
 
-  const { items: rawItems, total } = await getCards({
+  const result = await getCardsAction({
     page,
     pageSize,
     filter: { status: 'SOLD' },
     search: query,
   });
 
-  const items: CardItem[] = rawItems.map(item => ({
-    ...item,
-    type: 'card' as const,
-    tags: null,
-    grade: item.grade ? Number(item.grade) : null,
-    gradingCompany: item.gradingCompany || 'UNGRADED',
-    purchasePrice: item.purchasePrice ? Number(item.purchasePrice) : null,
-    purchaseDate: item.purchaseDate ? new Date(item.purchaseDate) : null,
-    currentValue: item.currentValue ? Number(item.currentValue) : null,
-    estimatedValue: item.estimatedValue ? Number(item.estimatedValue) : null,
-    soldPrice: item.soldPrice ? Number(item.soldPrice) : null,
-    soldDate: item.soldDate ? new Date(item.soldDate) : null,
-    lastValueUpdate: item.valuationDate || null,
-    attachmentImages: item.attachmentImages as string[] | null,
-  }));
+  if (!result.success) {
+    throw new Error(result.error.message);
+  }
+
+  const { items, total } = result.data;
 
   return (
     <div className="w-full p-6 space-y-8 bg-background min-h-screen">

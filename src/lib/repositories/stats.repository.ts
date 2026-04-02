@@ -11,7 +11,7 @@
 import { db, Tx } from '@/db';
 import { quilts, usageRecords } from '@/db/schema';
 import { BaseRepositoryImpl } from './base.repository';
-import { eq, sql, desc, count, sum, avg, and, isNull } from 'drizzle-orm';
+import { eq, sql, desc, count, and, isNull } from 'drizzle-orm';
 
 // Types for dashboard statistics
 export interface StatusCounts {
@@ -185,11 +185,13 @@ export class StatsRepository extends BaseRepositoryImpl<never, never> {
   async getStatusCounts(tx?: Tx): Promise<StatusCounts> {
     return this.executeQuery(async () => {
       const d = tx || db;
-      const result = await d.select({
+      const result = await d
+        .select({
           currentStatus: quilts.currentStatus,
-          count: count()
-      }).from(quilts)
-      .groupBy(quilts.currentStatus);
+          count: count(),
+        })
+        .from(quilts)
+        .groupBy(quilts.currentStatus);
 
       const counts: StatusCounts = { inUse: 0, storage: 0, maintenance: 0, total: 0 };
       result.forEach(row => {
@@ -209,11 +211,13 @@ export class StatsRepository extends BaseRepositoryImpl<never, never> {
   async getSeasonalCounts(tx?: Tx): Promise<SeasonalCounts> {
     return this.executeQuery(async () => {
       const d = tx || db;
-      const result = await d.select({
+      const result = await d
+        .select({
           season: quilts.season,
-          count: count()
-      }).from(quilts)
-      .groupBy(quilts.season);
+          count: count(),
+        })
+        .from(quilts)
+        .groupBy(quilts.season);
 
       const counts: SeasonalCounts = { WINTER: 0, SPRING_AUTUMN: 0, SUMMER: 0 };
       result.forEach(row => {
@@ -231,16 +235,19 @@ export class StatsRepository extends BaseRepositoryImpl<never, never> {
    */
   async getInUseQuilts(tx?: Tx): Promise<InUseQuilt[]> {
     return this.executeQuery(async () => {
-        const d = tx || db;
-        const result = await d.select({
+      const d = tx || db;
+      const result = await d
+        .select({
           id: quilts.id,
           name: quilts.name,
           itemNumber: quilts.itemNumber,
           season: quilts.season,
           fillMaterial: quilts.fillMaterial,
           weightGrams: quilts.weightGrams,
-          location: quilts.location
-        }).from(quilts).where(eq(quilts.currentStatus, 'IN_USE'));
+          location: quilts.location,
+        })
+        .from(quilts)
+        .where(eq(quilts.currentStatus, 'IN_USE'));
 
       return result.map(q => ({
         id: q.id,
@@ -257,7 +264,11 @@ export class StatsRepository extends BaseRepositoryImpl<never, never> {
   /**
    * Get historical usage data for this day in previous years
    */
-  async getHistoricalUsage(currentMonth: number, currentDay: number, tx?: Tx): Promise<HistoricalUsage[]> {
+  async getHistoricalUsage(
+    currentMonth: number,
+    currentDay: number,
+    tx?: Tx
+  ): Promise<HistoricalUsage[]> {
     return this.executeQuery(
       async () => {
         const d = tx || db;
@@ -293,16 +304,16 @@ export class StatsRepository extends BaseRepositoryImpl<never, never> {
            ORDER BY ur.start_date DESC
            LIMIT 20
         `;
-        
+
         const result = await d.execute(query);
         // Neon/Drizzle result format: result.rows is array of objects
-        
+
         // Note: Drizzle's `execute` returns `QueryResult`.
         // If using Neon HTTP, it returns `QueryResultHKT`.
         // Let's assume standard PG result structure or just rows.
         // Actually, drizzle `execute` with template literal usually returns rows directly or standard object.
         // But types might be loose.
-        
+
         return (result.rows as any[]).map(row => ({
           id: row.id,
           quiltId: row.quilt_id,
@@ -356,8 +367,9 @@ export class StatsRepository extends BaseRepositoryImpl<never, never> {
   async getUsageStats(tx?: Tx): Promise<UsageStats> {
     return this.executeQuery(async () => {
       const d = tx || db;
-      
-      const result = await d.select({
+
+      const result = await d
+        .select({
           totalPeriods: count(),
           totalDays: sql<number>`
             COALESCE(SUM(
@@ -376,8 +388,9 @@ export class StatsRepository extends BaseRepositoryImpl<never, never> {
                 ELSE NULL
               END
             ), 0)::int
-          `
-      }).from(usageRecords);
+          `,
+        })
+        .from(usageRecords);
 
       return {
         totalPeriods: result[0]?.totalPeriods || 0,
@@ -393,10 +406,12 @@ export class StatsRepository extends BaseRepositoryImpl<never, never> {
   async getUsageBySeason(tx?: Tx): Promise<SeasonalCounts> {
     return this.executeQuery(async () => {
       const d = tx || db;
-      const result = await d.select({
+      const result = await d
+        .select({
           season: quilts.season,
-          count: count()
-      }).from(usageRecords)
+          count: count(),
+        })
+        .from(usageRecords)
         .leftJoin(quilts, eq(usageRecords.quiltId, quilts.id))
         .groupBy(quilts.season);
 
@@ -418,8 +433,9 @@ export class StatsRepository extends BaseRepositoryImpl<never, never> {
     return this.executeQuery(
       async () => {
         const d = tx || db;
-        
-        const result = await d.select({
+
+        const result = await d
+          .select({
             quiltId: usageRecords.quiltId,
             name: quilts.name,
             usageCount: count(),
@@ -431,8 +447,9 @@ export class StatsRepository extends BaseRepositoryImpl<never, never> {
                     ELSE 0
                   END
                 ), 0)::int
-            `
-        }).from(usageRecords)
+            `,
+          })
+          .from(usageRecords)
           .leftJoin(quilts, eq(usageRecords.quiltId, quilts.id))
           .groupBy(usageRecords.quiltId, quilts.name)
           .orderBy(desc(count()))
@@ -457,12 +474,14 @@ export class StatsRepository extends BaseRepositoryImpl<never, never> {
   async getUsageByYear(tx?: Tx): Promise<UsageByPeriod[]> {
     return this.executeQuery(async () => {
       const d = tx || db;
-      const result = await d.select({
+      const result = await d
+        .select({
           year: sql<number>`EXTRACT(YEAR FROM ${usageRecords.startDate})::int`,
-          count: count()
-      }).from(usageRecords)
-      .groupBy(sql`EXTRACT(YEAR FROM ${usageRecords.startDate})`)
-      .orderBy(sql`EXTRACT(YEAR FROM ${usageRecords.startDate})`);
+          count: count(),
+        })
+        .from(usageRecords)
+        .groupBy(sql`EXTRACT(YEAR FROM ${usageRecords.startDate})`)
+        .orderBy(sql`EXTRACT(YEAR FROM ${usageRecords.startDate})`);
 
       return result.map(row => ({
         period: String(row.year),
@@ -477,14 +496,18 @@ export class StatsRepository extends BaseRepositoryImpl<never, never> {
   async getUsageByMonth(tx?: Tx): Promise<UsageByPeriod[]> {
     return this.executeQuery(async () => {
       const d = tx || db;
-      
-      const result = await d.select({
+
+      const result = await d
+        .select({
           month: sql<string>`TO_CHAR(${usageRecords.startDate}, 'YYYY-MM')`,
-          count: count()
-      }).from(usageRecords)
-      .where(sql`${usageRecords.startDate} >= DATE_TRUNC('month', CURRENT_DATE - INTERVAL '11 months')`)
-      .groupBy(sql`TO_CHAR(${usageRecords.startDate}, 'YYYY-MM')`)
-      .orderBy(sql`TO_CHAR(${usageRecords.startDate}, 'YYYY-MM')`);
+          count: count(),
+        })
+        .from(usageRecords)
+        .where(
+          sql`${usageRecords.startDate} >= DATE_TRUNC('month', CURRENT_DATE - INTERVAL '11 months')`
+        )
+        .groupBy(sql`TO_CHAR(${usageRecords.startDate}, 'YYYY-MM')`)
+        .orderBy(sql`TO_CHAR(${usageRecords.startDate}, 'YYYY-MM')`);
 
       // Build complete 12-month map with zeros for missing months
       const usageByMonthMap: { [key: string]: number } = {};
@@ -513,9 +536,10 @@ export class StatsRepository extends BaseRepositoryImpl<never, never> {
   async getCurrentUsageCount(tx?: Tx): Promise<number> {
     return this.executeQuery(async () => {
       const d = tx || db;
-      const result = await d.select({ count: count() })
-          .from(usageRecords)
-          .where(isNull(usageRecords.endDate));
+      const result = await d
+        .select({ count: count() })
+        .from(usageRecords)
+        .where(isNull(usageRecords.endDate));
 
       return result[0]?.count || 0;
     }, 'getCurrentUsageCount');
@@ -570,25 +594,25 @@ export class StatsRepository extends BaseRepositoryImpl<never, never> {
   async getInventoryReport(tx?: Tx): Promise<InventoryReport> {
     return this.executeQuery(async () => {
       const d = tx || db;
-      
+
       const [quiltsList, statusCounts, seasonCounts] = await Promise.all([
         d.select().from(quilts).orderBy(quilts.itemNumber),
         this.getStatusCounts(tx),
-        this.getSeasonalCounts(tx)
+        this.getSeasonalCounts(tx),
       ]);
 
       // Parse status counts
-      const byStatus = { 
-          inUse: statusCounts.inUse, 
-          storage: statusCounts.storage, 
-          maintenance: statusCounts.maintenance 
+      const byStatus = {
+        inUse: statusCounts.inUse,
+        storage: statusCounts.storage,
+        maintenance: statusCounts.maintenance,
       };
 
       // Parse season counts
-      const bySeason = { 
-          winter: seasonCounts.WINTER, 
-          springAutumn: seasonCounts.SPRING_AUTUMN, 
-          summer: seasonCounts.SUMMER 
+      const bySeason = {
+        winter: seasonCounts.WINTER,
+        springAutumn: seasonCounts.SPRING_AUTUMN,
+        summer: seasonCounts.SUMMER,
       };
 
       return {
@@ -622,9 +646,10 @@ export class StatsRepository extends BaseRepositoryImpl<never, never> {
   async getUsageReport(tx?: Tx): Promise<UsageReport> {
     return this.executeQuery(async () => {
       const d = tx || db;
-      
+
       const [records, usageStats] = await Promise.all([
-        d.select({
+        d
+          .select({
             id: usageRecords.id,
             usageType: usageRecords.usageType,
             startDate: usageRecords.startDate,
@@ -639,12 +664,13 @@ export class StatsRepository extends BaseRepositoryImpl<never, never> {
                     EXTRACT(DAY FROM (${usageRecords.endDate}::timestamp - ${usageRecords.startDate}::timestamp))
                   ELSE NULL
                 END
-            `
-        }).from(usageRecords)
-        .leftJoin(quilts, eq(usageRecords.quiltId, quilts.id))
-        .orderBy(desc(usageRecords.startDate)),
-        
-        this.getUsageStats(tx)
+            `,
+          })
+          .from(usageRecords)
+          .leftJoin(quilts, eq(usageRecords.quiltId, quilts.id))
+          .orderBy(desc(usageRecords.startDate)),
+
+        this.getUsageStats(tx),
       ]);
 
       // Separate active and completed records
@@ -742,26 +768,31 @@ export class StatsRepository extends BaseRepositoryImpl<never, never> {
     return this.executeQuery(async () => {
       const d = tx || db;
       const [quiltsList, statusCounts] = await Promise.all([
-        d.select({
+        d
+          .select({
             itemNumber: quilts.itemNumber,
             name: quilts.name,
             currentStatus: quilts.currentStatus,
             season: quilts.season,
             location: quilts.location,
             updatedAt: quilts.updatedAt,
-            usageStarted: usageRecords.startDate
-        }).from(quilts)
-        .leftJoin(usageRecords, and(eq(quilts.id, usageRecords.quiltId), isNull(usageRecords.endDate)))
-        .orderBy(quilts.currentStatus, quilts.itemNumber),
-        
-        this.getStatusCounts(tx)
+            usageStarted: usageRecords.startDate,
+          })
+          .from(quilts)
+          .leftJoin(
+            usageRecords,
+            and(eq(quilts.id, usageRecords.quiltId), isNull(usageRecords.endDate))
+          )
+          .orderBy(quilts.currentStatus, quilts.itemNumber),
+
+        this.getStatusCounts(tx),
       ]);
 
       // Parse status counts
-      const summary = { 
-          inUse: statusCounts.inUse, 
-          storage: statusCounts.storage, 
-          maintenance: statusCounts.maintenance 
+      const summary = {
+        inUse: statusCounts.inUse,
+        storage: statusCounts.storage,
+        maintenance: statusCounts.maintenance,
       };
 
       return {
@@ -775,7 +806,9 @@ export class StatsRepository extends BaseRepositoryImpl<never, never> {
           lastUpdated: new Date(q.updatedAt),
           usageStarted: q.usageStarted ? new Date(q.usageStarted) : null,
           daysInCurrentStatus: q.usageStarted
-            ? Math.floor((new Date().getTime() - new Date(q.usageStarted).getTime()) / (1000 * 60 * 60 * 24))
+            ? Math.floor(
+                (new Date().getTime() - new Date(q.usageStarted).getTime()) / (1000 * 60 * 60 * 24)
+              )
             : null,
         })),
       };

@@ -1,11 +1,8 @@
 /**
- * End Usage Record REST API
+ * End-usage HTTP compatibility route.
  *
- * POST /api/usage/end - End an active usage record for a quilt
- *
- * Requirements: 1.2, 1.3 - REST API for usage records
- * Requirements: 5.3 - Consistent API response format
- * Requirements: 11.1 - Input sanitization
+ * Internal app flows use the DAL + server action path. This route remains as
+ * an external HTTP surface for ending an active usage record.
  */
 
 import { NextRequest } from 'next/server';

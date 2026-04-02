@@ -8,7 +8,8 @@
  * Requirements: 6.1, 6.2 - Repository pattern for database operations
  */
 
-import { dbLogger } from '@/lib/logger';
+import { connection } from 'next/server';
+
 import { getDashboardStats } from '@/lib/data/stats';
 import { createSuccessResponse, createInternalErrorResponse } from '@/lib/api/response';
 
@@ -23,6 +24,8 @@ import { createSuccessResponse, createInternalErrorResponse } from '@/lib/api/re
  */
 export async function GET() {
   try {
+    await connection();
+
     // Use data access layer for all database operations
     const dashboardStats = await getDashboardStats();
 
@@ -56,7 +59,6 @@ export async function GET() {
 
     return createSuccessResponse({ dashboard: dashboardData });
   } catch (error) {
-    dbLogger.error('Failed to fetch dashboard stats', { error });
     return createInternalErrorResponse('获取仪表板数据失败', error);
   }
 }

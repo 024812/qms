@@ -33,7 +33,7 @@ import { useTranslations } from 'next-intl';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { Edit, Trash, ArrowUpDown, ChevronUp, ChevronDown } from 'lucide-react';
-import { deleteCard } from '@/app/actions/card-actions';
+import { deleteCardAction } from '@/app/actions/cards';
 import { toast } from 'sonner';
 import { formatCurrency, formatDate } from '@/modules/cards/utils';
 
@@ -44,6 +44,7 @@ interface SoldCardListViewProps {
 }
 
 type SortKey = keyof CardItem | 'profit';
+type SortableValue = string | number | boolean | string[] | Date | null | undefined;
 
 export function SoldCardListView({ items, onCardsChange, searchTerm = '' }: SoldCardListViewProps) {
   const router = useRouter();
@@ -69,7 +70,12 @@ export function SoldCardListView({ items, onCardsChange, searchTerm = '' }: Sold
     if (!cardToDelete) return;
     setIsDeleting(true);
     try {
-      await deleteCard(cardToDelete);
+      const result = await deleteCardAction(cardToDelete);
+
+      if (!result.success) {
+        throw new Error(result.error.message);
+      }
+
       toast.success(t('dialogs.deleteSuccess'));
       onCardsChange?.();
       router.refresh();
@@ -129,8 +135,8 @@ export function SoldCardListView({ items, onCardsChange, searchTerm = '' }: Sold
 
     const { key, direction } = sortConfig;
 
-    let aValue: any;
-    let bValue: any;
+    let aValue: SortableValue;
+    let bValue: SortableValue;
 
     if (key === 'profit') {
       aValue = calculateProfit(a.soldPrice, a.purchasePrice).profit;

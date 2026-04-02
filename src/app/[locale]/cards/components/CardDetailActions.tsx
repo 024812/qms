@@ -16,7 +16,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
-import { deleteCard } from '@/app/actions/card-actions';
+import { deleteCardAction } from '@/app/actions/cards';
 import { useToast } from '@/hooks/useToast';
 import type { CardItem } from '@/modules/cards/schema';
 
@@ -31,7 +31,12 @@ export function CardDetailActions({ card }: CardDetailActionsProps) {
 
   const handleDelete = async () => {
     try {
-      await deleteCard(card.id);
+      const result = await deleteCardAction(card.id);
+
+      if (!result.success) {
+        throw new Error(result.error.message);
+      }
+
       success('Success', 'Card deleted successfully');
       router.push('/cards');
     } catch (err) {

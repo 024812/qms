@@ -1,13 +1,8 @@
 /**
- * Usage Record REST API - Single Record Operations
+ * Usage Record HTTP compatibility route.
  *
- * GET /api/usage/[id] - Get a single usage record
- * PUT /api/usage/[id] - Update a usage record
- * DELETE /api/usage/[id] - Delete a usage record
- *
- * Requirements: 1.2, 1.3 - REST API for usage records
- * Requirements: 5.3 - Consistent API response format
- * Requirements: 11.1 - Input sanitization
+ * Internal app flows use the DAL + server action path. This route remains as
+ * an external HTTP surface for record-level operations.
  */
 
 import { NextRequest } from 'next/server';

@@ -1,10 +1,8 @@
 /**
- * Usage Records by Quilt REST API
+ * Usage-by-quilt HTTP compatibility route.
  *
- * GET /api/usage/by-quilt/[quiltId] - Get all usage records for a specific quilt
- *
- * Requirements: 1.2, 1.3 - REST API for usage records
- * Requirements: 5.3 - Consistent API response format
+ * Internal app flows use the DAL + server action path. This route remains as
+ * an external HTTP surface for quilt-scoped usage history.
  */
 
 import { NextRequest } from 'next/server';

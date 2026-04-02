@@ -1,13 +1,24 @@
 'use server';
 
-import { quiltRepository } from '@/lib/repositories/quilt.repository';
-// Import Quilt from types.ts to match repository return type
+import {
+  countQuilts,
+  createQuilt,
+  deleteQuilt,
+  getQuiltById,
+  getQuilts,
+  updateQuilt,
+} from '@/lib/data/quilts';
 import { Quilt } from '@/lib/database/types';
 import { Card, auditLogs, cards } from '@/db/schema';
 import { eq, desc, and } from 'drizzle-orm';
 import { db } from '@/db';
-import { QuiltFiltersInput } from '@/lib/validations/quilt';
-import { CreateItemFormState, UpdateItemFormState, DeleteItemFormState } from '@/app/actions/types';
+import { QuiltStatus } from '@/lib/validations/quilt';
+import {
+  CreateItemFormState,
+  DeleteItemFormState,
+  ItemData,
+  UpdateItemFormState,
+} from '@/app/actions/types';
 
 export interface GetItemsOptions {
   page?: number;
@@ -22,6 +33,12 @@ export interface PaginatedResult<T> {
   totalCount: number;
 }
 
+type JsonObject = Record<string, unknown>;
+
+function getErrorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : 'Unknown error';
+}
+
 /**
  * Get items based on module type
  * Acts as a facade dispatching to specific repositories
@@ -34,42 +51,16 @@ export async function getItems(
   const offset = (page - 1) * pageSize;
 
   if (type === 'quilts') {
-    // Quilt Repository doesn't support pagination object directly in findAll yet strictly as per interface,
-    // but looking at implementation it takes QuiltFilters which matches many options.
-    // However, findAll returns Quilt array, not paginated result.
-    // We need to fetch count separately.
-
-    // Map status string to specific Enums if needed, or pass as is if compatible (needs casting)
-    const filters: QuiltFiltersInput = {
-      // filters schema has specific fields.
-      // We map generic options to specific filters.
-      status: status as any, // Cast to QuiltStatus enum if needed
-      search: options.search,
-      // limit/offset are handled by repository arguments, NOT filters object usually?
-      // Repository.findAll takes (filters?: QuiltFiltersInput).
-      // Let's check repository implementation again.
-      // It uses filters for WHERE clause. Pagination is usually separate or part of search schema.
-      // But QuiltRepository.count takes filters.
-      // QuiltRepository.findAll in step 159 took filters.
-      // We need to pass limit/offset if repo supports it in filters?
-      // Step 159 view didn't show findAll signature fully.
-      // Assuming it handles it or we slice.
-      // Actually QuiltSearchSchema has skip/take.
-      // QuiltFiltersInput is JUST filters.
-      // Does Repo have findAll(filters, pagination)?
-      // For now, let's pass filters.
+    const filters = {
+      ...(status ? { status: status as QuiltStatus } : {}),
+      ...(options.search ? { search: options.search } : {}),
+      limit: pageSize,
+      offset,
+      sortBy: 'itemNumber' as const,
+      sortOrder: 'asc' as const,
     };
 
-    // We might need to manually slice if repo doesn't support pagination args in findAll
-    // But verify: Repos usually do.
-    const [allData, totalCount] = await Promise.all([
-      quiltRepository.findAll(filters),
-      quiltRepository.count(filters),
-    ]);
-
-    // Manual pagination if repo returns all
-    // If findAll returns ALL, we slice here.
-    const data = allData.slice(offset, offset + pageSize);
+    const [data, totalCount] = await Promise.all([getQuilts(filters), countQuilts(filters)]);
 
     return {
       data,
@@ -89,7 +80,7 @@ export async function getItems(
     // Build conditions for filtering
     const conditions = [eq(cards.userId, userId)];
     if (status) {
-      conditions.push(eq(cards.status, status as any));
+      conditions.push(eq(cards.status, status as Card['status']));
     }
 
     // Query cards with conditions
@@ -136,7 +127,7 @@ export async function getUsageLogs(itemId: string) {
  */
 export async function getItemById(type: string, id: string): Promise<Quilt | Card | null> {
   if (type === 'quilts') {
-    return quiltRepository.findById(id);
+    return getQuiltById(id);
   } else if (type === 'cards') {
     // Direct DB query since CardRepository was removed
     const result = await db.select().from(cards).where(eq(cards.id, id)).limit(1);
@@ -154,9 +145,8 @@ export async function createItem(
 ): Promise<CreateItemFormState> {
   const type = formData.get('type') as string;
   const name = formData.get('name') as string;
-  // Parse attributes from JSON string
   const attributesJson = formData.get('attributes') as string;
-  const attributes = attributesJson ? JSON.parse(attributesJson) : {};
+  const attributes: JsonObject = attributesJson ? (JSON.parse(attributesJson) as JsonObject) : {};
 
   const data = {
     name,
@@ -164,49 +154,39 @@ export async function createItem(
   };
 
   try {
-    let resultItem: any = {};
+    let resultItem: unknown = {};
     if (type === 'quilts') {
-      // Quilt creation
-      // Need to map data to CreateQuiltData
-      // QuiltRepository.create takes CreateQuiltData
-      const quiltData: any = {
+      const quiltData: Parameters<typeof createQuilt>[0] = {
         name,
-        season: attributes.season,
+        season: attributes.season as Parameters<typeof createQuilt>[0]['season'],
         widthCm: Number(attributes.widthCm),
         lengthCm: Number(attributes.lengthCm),
         weightGrams: Number(attributes.weightGrams),
-        fillMaterial: attributes.fillMaterial,
-        color: attributes.color,
-        location: attributes.location || '',
-        // ... map other fields
-        // For simplicity in facade, we assume attributes match roughly or we pass data
-        ...attributes,
+        fillMaterial: String(attributes.fillMaterial ?? ''),
+        color: String(attributes.color ?? ''),
+        location: String(attributes.location ?? ''),
+        materialDetails: attributes.materialDetails as string | null | undefined,
+        brand: attributes.brand as string | null | undefined,
+        purchaseDate: attributes.purchaseDate as Date | null | undefined,
+        packagingInfo: attributes.packagingInfo as string | null | undefined,
+        currentStatus: attributes.currentStatus as Parameters<
+          typeof createQuilt
+        >[0]['currentStatus'],
+        notes: attributes.notes as string | null | undefined,
+        imageUrl: attributes.imageUrl as string | null | undefined,
+        thumbnailUrl: attributes.thumbnailUrl as string | null | undefined,
+        mainImage: attributes.mainImage as string | null | undefined,
+        attachmentImages: attributes.attachmentImages as string[] | null | undefined,
       };
-      resultItem = await quiltRepository.create(quiltData);
+      resultItem = await createQuilt(quiltData);
     } else if (type === 'cards') {
-      // Card creation
-      // Need auth context
       const { auth } = await import('@/auth');
       const session = await auth();
       if (!session?.user?.id) return { error: 'Unauthorized' };
 
-      // Use CardRepository or direct DB insert matching card-actions logic
-      // For consistency, let's reuse the logic pattern or call the repository
-      // But CardRepository doesn't handle 'userId' injection in create?
-      // We verified CardRepository.findAll takes userId.
-      // But card-actions.ts saveCard handles userId injection.
-      // cardRepository doesn't have a 'create' method? It has findAll, findById.
-      // Let's check CardRepository again. It had findAll, findById, findBySport etc.
-      // It did NOT have create/update/delete explicitly shown in the view!
-      // Only read methods were shown in Step 148.
-      // So I MUST use db.insert directly or add create to CardRepository.
-      // I will use `db` directly here as `card-actions.ts` does.
-
-      // const { db } = await import('@/db'); // Already imported globally
       const { cards } = await import('@/db/schema');
 
-      // Clean data
-      const cleanData: any = { ...data };
+      const cleanData: Partial<typeof cards.$inferInsert> & JsonObject = { ...data };
       ['grade', 'year', 'purchasePrice', 'currentValue', 'estimatedValue'].forEach(key => {
         if (cleanData[key] === '') cleanData[key] = null;
         if (typeof cleanData[key] === 'string' && !isNaN(Number(cleanData[key]))) {
@@ -215,14 +195,17 @@ export async function createItem(
       });
       cleanData.userId = session.user.id;
 
-      const [inserted] = await db.insert(cards).values(cleanData).returning();
+      const [inserted] = await db
+        .insert(cards)
+        .values(cleanData as typeof cards.$inferInsert)
+        .returning();
       resultItem = inserted;
     }
 
-    return { success: true, data: resultItem };
-  } catch (error: any) {
+    return { success: true, data: resultItem as ItemData };
+  } catch (error: unknown) {
     console.error('Create item error:', error);
-    return { error: error.message };
+    return { error: getErrorMessage(error) };
   }
 }
 
@@ -237,7 +220,7 @@ export async function updateItem(
   const id = formData.get('id') as string;
   const name = formData.get('name') as string;
   const attributesJson = formData.get('attributes') as string;
-  const attributes = attributesJson ? JSON.parse(attributesJson) : {};
+  const attributes: JsonObject = attributesJson ? (JSON.parse(attributesJson) as JsonObject) : {};
 
   const data = {
     name,
@@ -245,9 +228,9 @@ export async function updateItem(
   };
 
   try {
-    let resultItem: any = {};
+    let resultItem: unknown = {};
     if (type === 'quilts') {
-      resultItem = await quiltRepository.update(id, data);
+      resultItem = await updateQuilt(id, data as Parameters<typeof updateQuilt>[1]);
     } else if (type === 'cards') {
       const { auth } = await import('@/auth');
       const session = await auth();
@@ -257,7 +240,7 @@ export async function updateItem(
       const { cards } = await import('@/db/schema');
       const { eq } = await import('drizzle-orm');
 
-      const cleanData: any = { ...data };
+      const cleanData: Partial<typeof cards.$inferInsert> & JsonObject = { ...data };
       ['grade', 'year', 'purchasePrice', 'currentValue', 'estimatedValue'].forEach(key => {
         if (cleanData[key] === '') cleanData[key] = null;
         if (typeof cleanData[key] === 'string' && !isNaN(Number(cleanData[key]))) {
@@ -267,15 +250,15 @@ export async function updateItem(
 
       const [updated] = await db
         .update(cards)
-        .set({ ...cleanData, updatedAt: new Date() })
+        .set({ ...(cleanData as typeof cards.$inferInsert), updatedAt: new Date() })
         .where(and(eq(cards.id, id), eq(cards.userId, session.user.id)))
         .returning();
       resultItem = updated;
     }
-    return { success: true, data: resultItem };
-  } catch (error: any) {
+    return { success: true, data: resultItem as ItemData };
+  } catch (error: unknown) {
     console.error('Update item error:', error);
-    return { error: error.message };
+    return { error: getErrorMessage(error) };
   }
 }
 
@@ -286,26 +269,12 @@ export async function deleteItem(
   prevState: DeleteItemFormState | undefined,
   formData: FormData
 ): Promise<DeleteItemFormState> {
-  // Delete actions usually receive formData with ID or bind ID.
-  // If receiving formData:
   const type = formData.get('type') as string;
   const id = formData.get('id') as string;
 
   try {
     if (type === 'quilts') {
-      await quiltRepository.delete(id); // BaseRepository has delete
-      // But QuiltRepository extends BaseRepositoryImpl.
-      // Does BaseRepositoryImpl implement delete?
-      // Step 70 BaseRepository had abstract delete.
-      // Step 153 QuiltRepository extends BaseRepositoryImpl.
-      // I assume QuiltRepository implements delete or BaseRepositoryImpl provides it?
-      // BaseRepositoryImpl has abstract methods, so concrete class MUST implement them.
-      // QuiltRepository code shown in Step 153/159 didn't show 'delete' method explicitly, but it might be there (truncated).
-      // If missing, I might need to implement it or use direct DB.
-      // Let's assume it exists or I'll fix it if it errors.
-      // Actually, best to check if I can use direct DB for safety if not sure.
-      // But strict repository pattern suggests usage of repo.
-      // I'll try repo.delete(id).
+      await deleteQuilt(id);
     } else if (type === 'cards') {
       const { auth } = await import('@/auth');
       const session = await auth();
@@ -318,8 +287,8 @@ export async function deleteItem(
       await db.delete(cards).where(eq(cards.id, id));
     }
     return { success: true, data: { deleted: true } };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Delete item error:', error);
-    return { error: error.message };
+    return { error: getErrorMessage(error) };
   }
 }

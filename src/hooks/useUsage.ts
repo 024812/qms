@@ -1,24 +1,31 @@
 'use client';
 
 /**
- * Usage Hooks - REST API + React Query
+ * Usage hooks backed by server actions.
  *
- * Refactored from tRPC to use fetch + React Query.
- * Maintains the same interface and functionality.
- *
- * Requirements: 1.2, 1.3 - REST API migration
+ * This keeps the existing React Query-facing API stable for client
+ * components while removing internal reads and writes from `/api/usage/**`.
  */
 
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
-// Query keys for cache management
+import {
+  createUsageRecordAction,
+  deleteUsageRecordAction,
+  endUsageRecordAction,
+  getActiveUsageRecordAction,
+  getAllActiveUsageRecordsAction,
+  getOverallUsageStatsAction,
+  getQuiltUsageRecordsAction,
+  getUsageRecordAction,
+  getUsageRecordsAction,
+  getUsageStatsAction,
+  updateUsageRecordAction,
+} from '@/app/actions/usage';
+
 const USAGE_KEY = ['usage'] as const;
 const QUILTS_KEY = ['quilts'] as const;
 const DASHBOARD_KEY = ['dashboard'] as const;
-
-// ============================================================================
-// Types
-// ============================================================================
 
 export interface UsageRecord {
   id: string;
@@ -34,14 +41,14 @@ export interface UsageRecord {
 export interface UsageRecordWithQuilt {
   id: string;
   quiltId: string;
-  quiltName: string;
-  itemNumber: string;
-  color: string;
-  season: string;
-  currentStatus: string;
+  quiltName: string | null;
+  itemNumber: number | null;
+  color: string | null;
+  season: string | null;
+  currentStatus: string | null;
   startedAt: Date;
   endedAt: Date | null;
-  usageType: string;
+  usageType: string | null;
   notes: string | null;
   isActive: boolean;
   duration: number | null;
@@ -72,13 +79,14 @@ export interface UpdateUsageRecordInput {
   id: string;
   startDate?: Date;
   endDate?: Date | null;
+  usageType?: 'REGULAR' | 'GUEST' | 'SPECIAL_OCCASION' | 'SEASONAL_ROTATION';
   notes?: string | null;
 }
 
 export interface EndUsageRecordInput {
   quiltId: string;
   endDate: Date;
-  notes?: string;
+  notes?: string | null;
 }
 
 interface UsageFilters {
@@ -87,470 +95,168 @@ interface UsageFilters {
   offset?: number;
 }
 
-// ============================================================================
-// API Functions
-// ============================================================================
+function unwrapActionResult<T>(
+  result:
+    | {
+        success: true;
+        data: T;
+      }
+    | {
+        success: false;
+        error: {
+          message: string;
+        };
+      }
+): T {
+  if (!result.success) {
+    throw new Error(result.error.message);
+  }
 
-// API response type for unified format
-interface ApiResponse<T> {
-  success: boolean;
-  data: T;
-  meta?: {
-    total?: number;
-    limit?: number;
-    hasMore?: boolean;
-  };
-  error?: {
-    code: string;
-    message: string;
-  };
+  return result.data;
 }
 
-/**
- * Fetch all usage records with optional filtering
- */
-async function fetchUsageRecords(
-  filters?: UsageFilters
-): Promise<{ records: UsageRecordWithQuilt[]; total: number }> {
-  const params = new URLSearchParams();
-
-  if (filters?.quiltId) params.set('quiltId', filters.quiltId);
-  if (filters?.limit !== undefined) params.set('limit', String(filters.limit));
-  if (filters?.offset !== undefined) params.set('offset', String(filters.offset));
-
-  const queryString = params.toString();
-  const url = `/api/usage${queryString ? `?${queryString}` : ''}`;
-
-  const response = await fetch(url);
-
-  if (!response.ok) {
-    const error = await response.json().catch(() => ({ error: '获取使用记录列表失败' }));
-    throw new Error(error.error?.message || error.error || '获取使用记录列表失败');
-  }
-
-  const result: ApiResponse<{ records: UsageRecordWithQuilt[] }> = await response.json();
-
-  // Handle new unified API response format
-  if (result.success && result.data) {
-    return {
-      records: result.data.records || [],
-      total: result.meta?.total || result.data.records?.length || 0,
-    };
-  }
-
-  // Fallback for old format (backward compatibility)
-  return result as unknown as { records: UsageRecordWithQuilt[]; total: number };
-}
-
-/**
- * Fetch a single usage record by ID
- */
-async function fetchUsageRecordById(id: string): Promise<UsageRecord> {
-  const response = await fetch(`/api/usage/${id}`);
-
-  if (!response.ok) {
-    const error = await response.json().catch(() => ({ error: '获取使用记录失败' }));
-    throw new Error(error.error?.message || error.error || '获取使用记录失败');
-  }
-
-  const result = await response.json();
-
-  // Handle new unified API response format
-  if (result.success && result.data) {
-    return result.data.record || result.data;
-  }
-
-  return result;
-}
-
-/**
- * Fetch usage records for a specific quilt
- */
-async function fetchQuiltUsageRecords(
-  quiltId: string
-): Promise<{ records: UsageRecord[]; total: number; activeRecord: UsageRecord | null }> {
-  const response = await fetch(`/api/usage/by-quilt/${quiltId}`);
-
-  if (!response.ok) {
-    const error = await response.json().catch(() => ({ error: '获取被子使用记录失败' }));
-    throw new Error(error.error?.message || error.error || '获取被子使用记录失败');
-  }
-
-  const result = await response.json();
-
-  // Handle new unified API response format
-  if (result.success && result.data) {
-    return {
-      records: result.data.records || [],
-      total: result.meta?.total || result.data.records?.length || 0,
-      activeRecord: result.data.activeRecord || null,
-    };
-  }
-
-  return result;
-}
-
-/**
- * Fetch all active usage records
- */
-async function fetchAllActiveUsageRecords(): Promise<{
-  records: UsageRecord[];
-  total: number;
-}> {
-  const response = await fetch('/api/usage/active');
-
-  if (!response.ok) {
-    const error = await response.json().catch(() => ({ error: '获取活跃使用记录失败' }));
-    throw new Error(error.error?.message || error.error || '获取活跃使用记录失败');
-  }
-
-  const result = await response.json();
-
-  // Handle new unified API response format
-  if (result.success && result.data) {
-    return {
-      records: result.data.records || [],
-      total: result.meta?.total || result.data.records?.length || 0,
-    };
-  }
-
-  return result;
-}
-
-/**
- * Fetch usage statistics for a quilt
- */
-async function fetchUsageStats(quiltId: string): Promise<UsageStats> {
-  const response = await fetch(`/api/usage/by-quilt/${quiltId}?includeStats=true`);
-
-  if (!response.ok) {
-    const error = await response.json().catch(() => ({ error: '获取使用统计失败' }));
-    throw new Error(error.error?.message || error.error || '获取使用统计失败');
-  }
-
-  const result = await response.json();
-
-  // Handle new unified API response format
-  if (result.success && result.data) {
-    return (
-      result.data.stats || { totalUsages: 0, totalDays: 0, averageDays: 0, lastUsedDate: null }
-    );
-  }
-
-  return result.stats || { totalUsages: 0, totalDays: 0, averageDays: 0, lastUsedDate: null };
-}
-
-/**
- * Fetch overall usage statistics
- */
-async function fetchOverallUsageStats(): Promise<OverallUsageStats> {
-  const response = await fetch('/api/usage/stats');
-
-  if (!response.ok) {
-    const error = await response.json().catch(() => ({ error: '获取使用统计失败' }));
-    throw new Error(error.error?.message || error.error || '获取使用统计失败');
-  }
-
-  const result = await response.json();
-
-  // Handle new unified API response format
-  if (result.success && result.data) {
-    return result.data.stats || result.data;
-  }
-
-  return result;
-}
-
-/**
- * Create a new usage record
- */
-async function createUsageRecord(data: CreateUsageRecordInput): Promise<UsageRecord> {
-  const response = await fetch('/api/usage', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      quiltId: data.quiltId,
-      startDate: data.startDate.toISOString(),
-      endDate: data.endDate ? data.endDate.toISOString() : null,
-      usageType: data.usageType || 'REGULAR',
-      notes: data.notes,
-    }),
-  });
-
-  if (!response.ok) {
-    const error = await response.json().catch(() => ({ error: '创建使用记录失败' }));
-    throw new Error(error.error?.message || error.error || '创建使用记录失败');
-  }
-
-  const result = await response.json();
-
-  // Handle new unified API response format
-  if (result.success && result.data) {
-    return result.data.record || result.data;
-  }
-
-  return result;
-}
-
-/**
- * Update a usage record
- */
-async function updateUsageRecord(data: UpdateUsageRecordInput): Promise<UsageRecord> {
-  const { id, ...updateData } = data;
-
-  const body: Record<string, unknown> = {};
-  if (updateData.startDate) body.startDate = updateData.startDate.toISOString();
-  if (updateData.endDate !== undefined) {
-    body.endDate = updateData.endDate ? updateData.endDate.toISOString() : null;
-  }
-  if (updateData.notes !== undefined) body.notes = updateData.notes;
-
-  const response = await fetch(`/api/usage/${id}`, {
-    method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
-  });
-
-  if (!response.ok) {
-    const error = await response.json().catch(() => ({ error: '更新使用记录失败' }));
-    throw new Error(error.error?.message || error.error || '更新使用记录失败');
-  }
-
-  const result = await response.json();
-
-  // Handle new unified API response format
-  if (result.success && result.data) {
-    return result.data.record || result.data;
-  }
-
-  return result;
-}
-
-/**
- * End an active usage record
- */
-async function endUsageRecord(data: EndUsageRecordInput): Promise<UsageRecord> {
-  const response = await fetch('/api/usage/end', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      quiltId: data.quiltId,
-      endDate: data.endDate.toISOString(),
-      notes: data.notes,
-    }),
-  });
-
-  if (!response.ok) {
-    const error = await response.json().catch(() => ({ error: '结束使用记录失败' }));
-    throw new Error(error.error?.message || error.error || '结束使用记录失败');
-  }
-
-  const result = await response.json();
-
-  // Handle new unified API response format
-  if (result.success && result.data) {
-    return result.data.record || result.data;
-  }
-
-  return result;
-}
-
-/**
- * Delete a usage record
- */
-async function deleteUsageRecord(input: { id: string }): Promise<{ success: boolean }> {
-  const response = await fetch(`/api/usage/${input.id}`, {
-    method: 'DELETE',
-  });
-
-  if (!response.ok) {
-    const error = await response.json().catch(() => ({ error: '删除使用记录失败' }));
-    throw new Error(error.error?.message || error.error || '删除使用记录失败');
-  }
-
-  const result = await response.json();
-
-  // Handle new unified API response format
-  if (result.success !== undefined) {
-    return { success: result.success };
-  }
-
-  return result;
-}
-
-// ============================================================================
-// Hooks
-// ============================================================================
-
-/**
- * Hook to fetch all usage records with optional filtering
- * Returns the records array directly for backward compatibility
- */
 export function useUsageRecords(filters?: UsageFilters) {
   return useQuery({
     queryKey: [...USAGE_KEY, 'list', filters],
     queryFn: async () => {
-      const result = await fetchUsageRecords(filters);
-      return result.records;
+      const result = await getUsageRecordsAction(filters);
+      return unwrapActionResult(result).records;
     },
-    staleTime: 60000, // 1 minute
+    staleTime: 60000,
     refetchOnWindowFocus: false,
   });
 }
 
-/**
- * Hook to fetch a single usage record by ID
- */
 export function useUsageRecord(id: string) {
   return useQuery({
     queryKey: [...USAGE_KEY, 'detail', id],
-    queryFn: () => fetchUsageRecordById(id),
+    queryFn: async () => {
+      const result = await getUsageRecordAction(id);
+      const record = unwrapActionResult(result);
+
+      if (!record) {
+        throw new Error('Usage record not found');
+      }
+
+      return record;
+    },
     enabled: !!id,
   });
 }
 
-/**
- * Hook to fetch usage records for a specific quilt
- * Returns the records array directly for backward compatibility
- */
 export function useQuiltUsageRecords(quiltId: string) {
   return useQuery({
     queryKey: [...USAGE_KEY, 'by-quilt', quiltId],
     queryFn: async () => {
-      const result = await fetchQuiltUsageRecords(quiltId);
-      return result.records;
+      const result = await getQuiltUsageRecordsAction(quiltId);
+      return unwrapActionResult(result).records;
     },
     enabled: !!quiltId,
   });
 }
 
-/**
- * Hook to get the active usage record for a quilt
- */
 export function useActiveUsageRecord(quiltId: string) {
   return useQuery({
     queryKey: [...USAGE_KEY, 'active', quiltId],
     queryFn: async () => {
-      const result = await fetchQuiltUsageRecords(quiltId);
-      return result.activeRecord;
+      const result = await getActiveUsageRecordAction(quiltId);
+      return unwrapActionResult(result);
     },
     enabled: !!quiltId,
   });
 }
 
-/**
- * Hook to fetch all active usage records
- * Returns the records array directly for backward compatibility
- */
 export function useAllActiveUsageRecords() {
   return useQuery({
     queryKey: [...USAGE_KEY, 'all-active'],
     queryFn: async () => {
-      const result = await fetchAllActiveUsageRecords();
-      return result.records;
+      const result = await getAllActiveUsageRecordsAction();
+      return unwrapActionResult(result).records;
     },
-    staleTime: 60000, // 1 minute
+    staleTime: 60000,
     refetchOnWindowFocus: false,
   });
 }
 
-/**
- * Hook to create a new usage record
- */
 export function useCreateUsageRecord() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: createUsageRecord,
+    mutationFn: async (input: CreateUsageRecordInput) =>
+      unwrapActionResult(await createUsageRecordAction(input)),
     onSuccess: () => {
-      // Invalidate usage queries
       queryClient.invalidateQueries({ queryKey: USAGE_KEY });
-
-      // Invalidate quilt queries (usage affects quilt status)
       queryClient.invalidateQueries({ queryKey: QUILTS_KEY });
-
-      // Invalidate dashboard
       queryClient.invalidateQueries({ queryKey: DASHBOARD_KEY });
     },
   });
 }
 
-/**
- * Hook to update a usage record
- */
 export function useUpdateUsageRecord() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: updateUsageRecord,
+    mutationFn: async (input: UpdateUsageRecordInput) =>
+      unwrapActionResult(await updateUsageRecordAction(input)),
     onSuccess: () => {
-      // Invalidate usage queries
       queryClient.invalidateQueries({ queryKey: USAGE_KEY });
-
-      // Invalidate dashboard
+      queryClient.invalidateQueries({ queryKey: QUILTS_KEY });
       queryClient.invalidateQueries({ queryKey: DASHBOARD_KEY });
     },
   });
 }
 
-/**
- * Hook to end an active usage record
- */
 export function useEndUsageRecord() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: endUsageRecord,
+    mutationFn: async (input: EndUsageRecordInput) =>
+      unwrapActionResult(await endUsageRecordAction(input)),
     onSuccess: () => {
-      // Invalidate usage queries
       queryClient.invalidateQueries({ queryKey: USAGE_KEY });
-
-      // Invalidate quilt queries (ending usage affects quilt status)
       queryClient.invalidateQueries({ queryKey: QUILTS_KEY });
-
-      // Invalidate dashboard
       queryClient.invalidateQueries({ queryKey: DASHBOARD_KEY });
     },
   });
 }
 
-/**
- * Hook to delete a usage record
- */
 export function useDeleteUsageRecord() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: deleteUsageRecord,
-    onSuccess: () => {
-      // Invalidate usage queries
-      queryClient.invalidateQueries({ queryKey: USAGE_KEY });
+    mutationFn: async (input: { id: string }) => {
+      const result = await deleteUsageRecordAction(input.id);
+      const data = unwrapActionResult(result);
 
-      // Invalidate dashboard
+      return { success: data.deleted };
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: USAGE_KEY });
+      queryClient.invalidateQueries({ queryKey: QUILTS_KEY });
       queryClient.invalidateQueries({ queryKey: DASHBOARD_KEY });
     },
   });
 }
 
-/**
- * Hook to get usage statistics for a quilt
- */
 export function useUsageStats(quiltId: string) {
   return useQuery({
     queryKey: [...USAGE_KEY, 'stats', quiltId],
-    queryFn: () => fetchUsageStats(quiltId),
+    queryFn: async () => {
+      const result = await getUsageStatsAction(quiltId);
+      return unwrapActionResult(result);
+    },
     enabled: !!quiltId,
   });
 }
 
-/**
- * Hook to get overall usage statistics
- */
 export function useOverallUsageStats() {
   return useQuery({
     queryKey: [...USAGE_KEY, 'overall-stats'],
-    queryFn: fetchOverallUsageStats,
-    staleTime: 60000, // 1 minute
+    queryFn: async () => {
+      const result = await getOverallUsageStatsAction();
+      return unwrapActionResult(result);
+    },
+    staleTime: 60000,
     refetchOnWindowFocus: false,
   });
 }

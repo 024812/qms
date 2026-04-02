@@ -1,19 +1,5 @@
-/**
- * Quilts REST API - Single Quilt Operations
- *
- * GET /api/quilts/[id] - Get a single quilt by ID
- * PUT /api/quilts/[id] - Update a quilt
- * DELETE /api/quilts/[id] - Delete a quilt
- *
- * Requirements: 1.2, 1.3 - REST API for quilts
- * Requirements: 5.3 - Consistent API response format
- * Requirements: 11.1 - Input sanitization
- */
-
 import { NextRequest } from 'next/server';
-import { getQuiltById, updateQuilt, deleteQuilt } from '@/lib/data/quilts';
-import { updateQuiltSchema } from '@/lib/validations/quilt';
-import { sanitizeApiInput } from '@/lib/sanitization';
+
 import {
   createSuccessResponse,
   createValidationErrorResponse,
@@ -21,22 +7,22 @@ import {
   createInternalErrorResponse,
   createBadRequestResponse,
 } from '@/lib/api/response';
+import { getQuiltById, saveQuilt, deleteQuilt } from '@/lib/data/quilts';
+import { sanitizeApiInput } from '@/lib/sanitization';
+import { updateQuiltSchema } from '@/lib/validations/quilt';
+
+import { applyQuiltCompatibilityHeaders } from '../_shared';
 
 interface RouteParams {
   params: Promise<{ id: string }>;
 }
 
-/**
- * GET /api/quilts/[id]
- *
- * Get a single quilt by ID.
- */
-export async function GET(request: NextRequest, { params }: RouteParams) {
+export async function GET(_request: NextRequest, { params }: RouteParams) {
   try {
     const { id } = await params;
 
     if (!id) {
-      return createBadRequestResponse('被子 ID 是必需的');
+      return createBadRequestResponse('被子 ID 是必须的');
     }
 
     const quilt = await getQuiltById(id);
@@ -45,30 +31,18 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       return createNotFoundResponse('被子');
     }
 
-    const response = createSuccessResponse({ quilt });
-
-    // Prevent browser caching to ensure fresh data
-    response.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate');
-
-    return response;
+    return applyQuiltCompatibilityHeaders(createSuccessResponse({ quilt }));
   } catch (error) {
     return createInternalErrorResponse('获取被子详情失败', error);
   }
 }
 
-/**
- * PUT /api/quilts/[id]
- *
- * Update a quilt.
- *
- * Request Body: UpdateQuiltInput (partial)
- */
 export async function PUT(request: NextRequest, { params }: RouteParams) {
   try {
     const { id } = await params;
 
     if (!id) {
-      return createBadRequestResponse('被子 ID 是必需的');
+      return createBadRequestResponse('被子 ID 是必须的');
     }
 
     let rawBody: unknown;
@@ -83,15 +57,12 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
       return createBadRequestResponse('Request body must be a JSON object');
     }
 
-    // Sanitize input to prevent XSS (Requirements: 11.1)
     const body = sanitizeApiInput(rawBody as Record<string, unknown>);
 
-    // Handle purchaseDate conversion if it's a string
     if (body.purchaseDate && typeof body.purchaseDate === 'string') {
       body.purchaseDate = new Date(body.purchaseDate);
     }
 
-    // Validate input using Zod schema
     const validationResult = updateQuiltSchema.safeParse({ ...body, id });
 
     if (!validationResult.success) {
@@ -101,40 +72,27 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
       );
     }
 
-    // Check if quilt exists
     const existingQuilt = await getQuiltById(id);
     if (!existingQuilt) {
       return createNotFoundResponse('被子');
     }
 
-    // Update the quilt (exclude id from data)
-    const { id: _id, ...updateData } = validationResult.data;
-    const quilt = await updateQuilt(id, updateData);
+    const result = await saveQuilt(validationResult.data);
 
-    if (!quilt) {
-      return createNotFoundResponse('被子');
-    }
-
-    return createSuccessResponse({ quilt });
+    return applyQuiltCompatibilityHeaders(createSuccessResponse({ quilt: result.quilt }));
   } catch (error) {
     return createInternalErrorResponse('更新被子失败', error);
   }
 }
 
-/**
- * DELETE /api/quilts/[id]
- *
- * Delete a quilt and its related records.
- */
-export async function DELETE(request: NextRequest, { params }: RouteParams) {
+export async function DELETE(_request: NextRequest, { params }: RouteParams) {
   try {
     const { id } = await params;
 
     if (!id) {
-      return createBadRequestResponse('被子 ID 是必需的');
+      return createBadRequestResponse('被子 ID 是必须的');
     }
 
-    // Check if quilt exists
     const existingQuilt = await getQuiltById(id);
     if (!existingQuilt) {
       return createNotFoundResponse('被子');
@@ -146,7 +104,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
       return createNotFoundResponse('被子');
     }
 
-    return createSuccessResponse({ deleted: true, id });
+    return applyQuiltCompatibilityHeaders(createSuccessResponse({ deleted: true, id }));
   } catch (error) {
     return createInternalErrorResponse('删除被子失败', error);
   }

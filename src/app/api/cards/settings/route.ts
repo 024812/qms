@@ -1,3 +1,10 @@
+/**
+ * Cards settings HTTP compatibility route.
+ *
+ * Internal cards settings flows now use the cards server actions and the
+ * server-page/client-shell path. This route remains as an external HTTP surface.
+ */
+
 import { NextRequest } from 'next/server';
 import { z } from 'zod';
 import { systemSettingsRepository } from '@/lib/repositories/system-settings.repository';
@@ -23,8 +30,8 @@ const updateCardSettingsSchema = z.object({
 
 /**
  * GET /api/cards/settings
- * Get card module settings (Azure OpenAI & eBay config & Rapid API & Perplexity)
- * Admin only.
+ *
+ * Get card module settings. Admin only.
  */
 export async function GET() {
   try {
@@ -59,8 +66,8 @@ export async function GET() {
 
 /**
  * PUT /api/cards/settings
- * Update card module settings
- * Admin only.
+ *
+ * Update card module settings. Admin only.
  */
 export async function PUT(request: NextRequest) {
   try {

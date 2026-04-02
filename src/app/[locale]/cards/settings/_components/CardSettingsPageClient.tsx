@@ -1,0 +1,306 @@
+'use client';
+
+import { useState } from 'react';
+import { useLocale } from 'next-intl';
+import { ExternalLink, Save, Settings, ShieldAlert } from 'lucide-react';
+import { toast } from 'sonner';
+
+import { useCardSettings, useUpdateCardSettings, type CardSettings } from '@/hooks/useCardSettings';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Skeleton } from '@/components/ui/skeleton';
+
+interface CardSettingsPageClientProps {
+  initialSettings: CardSettings | null;
+  isAdmin: boolean;
+}
+
+const emptyFormData = {
+  azureOpenAIApiKey: '',
+  azureOpenAIEndpoint: '',
+  azureOpenAIDeployment: '',
+  ebayAppId: '',
+  ebayCertId: '',
+  ebayDevId: '',
+  rapidApiKey: '',
+  tavilyApiKey: '',
+};
+
+function CardSettingsForm({ settings, isZh }: { settings: CardSettings | null; isZh: boolean }) {
+  const updateSettings = useUpdateCardSettings();
+  const [formData, setFormData] = useState({
+    azureOpenAIApiKey: settings?.azureOpenAIApiKey || '',
+    azureOpenAIEndpoint: settings?.azureOpenAIEndpoint || '',
+    azureOpenAIDeployment: settings?.azureOpenAIDeployment || '',
+    ebayAppId: settings?.ebayAppId || '',
+    ebayCertId: settings?.ebayCertId || '',
+    ebayDevId: settings?.ebayDevId || '',
+    rapidApiKey: settings?.rapidApiKey || '',
+    tavilyApiKey: settings?.tavilyApiKey || '',
+  });
+
+  const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = event.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleSave = async () => {
+    try {
+      await updateSettings.mutateAsync(formData);
+      toast.success(isZh ? '设置已保存' : 'Settings saved');
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : isZh ? '保存失败' : 'Failed to save settings'
+      );
+    }
+  };
+
+  return (
+    <>
+      <Card>
+        <CardHeader>
+          <CardTitle>NBA API Free Data (RapidAPI)</CardTitle>
+          <CardDescription>
+            {isZh
+              ? '配置 RapidAPI Key 以获取最新的球员数据（NBA API Free Data）'
+              : 'Configure RapidAPI Key for latest player stats (NBA API Free Data)'}
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="rapidApiKey">RapidAPI Key</Label>
+            <Input
+              id="rapidApiKey"
+              name="rapidApiKey"
+              type="password"
+              value={formData.rapidApiKey}
+              onChange={handleChange}
+              placeholder={settings?.rapidApiKey ? '********' : 'Enter Rapid API Key'}
+            />
+          </div>
+          <div className="pt-2 text-sm text-muted-foreground">
+            <a
+              href="https://rapidapi.com/flfranceschi/api/nba-api-free-data"
+              target="_blank"
+              rel="noreferrer"
+              className="flex items-center gap-1 transition-colors hover:text-primary"
+            >
+              <ExternalLink className="h-3 w-3" />
+              {isZh ? '获取 RapidAPI Key' : 'Get RapidAPI Key'}
+            </a>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Tavily Search API</CardTitle>
+          <CardDescription>
+            {isZh
+              ? '配置 Tavily API Key 作为搜索数据源（对接 Azure OpenAI 生成分析）'
+              : 'Configure Tavily API Key for stats search (combined with Azure OpenAI)'}
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="tavilyApiKey">Tavily API Key</Label>
+            <Input
+              id="tavilyApiKey"
+              name="tavilyApiKey"
+              type="password"
+              value={formData.tavilyApiKey}
+              onChange={handleChange}
+              placeholder={settings?.tavilyApiKey ? '********' : 'tvly-...'}
+            />
+          </div>
+          <div className="pt-2 text-sm text-muted-foreground">
+            <a
+              href="https://tavily.com/"
+              target="_blank"
+              rel="noreferrer"
+              className="flex items-center gap-1 transition-colors hover:text-primary"
+            >
+              <ExternalLink className="h-3 w-3" />
+              {isZh ? '获取 Tavily API Key' : 'Get Tavily API Key'}
+            </a>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>eBay API Integration</CardTitle>
+          <CardDescription>
+            {isZh
+              ? '配置 eBay 开发者凭证以获取二手市场价格数据'
+              : 'Configure eBay Developer credentials for market data'}
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="ebayAppId">App ID (Client ID)</Label>
+            <Input
+              id="ebayAppId"
+              name="ebayAppId"
+              value={formData.ebayAppId}
+              onChange={handleChange}
+              placeholder="Enter eBay App ID"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="ebayCertId">Cert ID (Client Secret)</Label>
+            <Input
+              id="ebayCertId"
+              name="ebayCertId"
+              type="password"
+              value={formData.ebayCertId}
+              onChange={handleChange}
+              placeholder={settings?.ebayCertId ? '********' : 'Enter eBay Cert ID'}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="ebayDevId">Dev ID (Optional)</Label>
+            <Input
+              id="ebayDevId"
+              name="ebayDevId"
+              value={formData.ebayDevId}
+              onChange={handleChange}
+              placeholder="Enter eBay Dev ID"
+            />
+          </div>
+          <div className="pt-2 text-sm text-muted-foreground">
+            <a
+              href="https://developer.ebay.com/my/keys"
+              target="_blank"
+              rel="noreferrer"
+              className="flex items-center gap-1 transition-colors hover:text-primary"
+            >
+              <ExternalLink className="h-3 w-3" />
+              {isZh ? '获取 eBay API Keys' : 'Get eBay API Keys'}
+            </a>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Azure OpenAI (AI Scanning)</CardTitle>
+          <CardDescription>
+            {isZh
+              ? '配置用于卡片识别和估价的 AI 模型'
+              : 'Configure AI model for card recognition and valuation'}
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="azureOpenAIApiKey">API Key</Label>
+            <Input
+              id="azureOpenAIApiKey"
+              name="azureOpenAIApiKey"
+              type="password"
+              value={formData.azureOpenAIApiKey}
+              onChange={handleChange}
+              placeholder={settings?.azureOpenAIApiKey ? '********' : 'Enter Azure OpenAI Key'}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="azureOpenAIEndpoint">Endpoint URL</Label>
+            <Input
+              id="azureOpenAIEndpoint"
+              name="azureOpenAIEndpoint"
+              value={formData.azureOpenAIEndpoint}
+              onChange={handleChange}
+              placeholder="https://resource-name.openai.azure.com/"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="azureOpenAIDeployment">Deployment Name (Model)</Label>
+            <Input
+              id="azureOpenAIDeployment"
+              name="azureOpenAIDeployment"
+              value={formData.azureOpenAIDeployment}
+              onChange={handleChange}
+              placeholder="gpt-4o"
+            />
+          </div>
+        </CardContent>
+      </Card>
+
+      <div className="flex justify-end">
+        <Button onClick={handleSave} disabled={updateSettings.isPending}>
+          <Save className="mr-2 h-4 w-4" />
+          {isZh ? '保存所有设置' : 'Save All Settings'}
+        </Button>
+      </div>
+    </>
+  );
+}
+
+export function CardSettingsPageClient({ initialSettings, isAdmin }: CardSettingsPageClientProps) {
+  const locale = useLocale();
+  const isZh = locale === 'zh';
+
+  const { data: settings, isLoading } = useCardSettings({
+    ...(initialSettings ? { initialData: initialSettings } : {}),
+    enabled: isAdmin,
+  });
+
+  if (!isAdmin) {
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <div className="mx-auto max-w-2xl">
+          <Card className="border-destructive">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-destructive">
+                <ShieldAlert className="h-6 w-6" />
+                {isZh ? '访问被拒绝' : 'Access Denied'}
+              </CardTitle>
+              <CardDescription>
+                {isZh
+                  ? '只有管理员可以访问球星卡管理设置。'
+                  : 'Only administrators can access card management settings.'}
+              </CardDescription>
+            </CardHeader>
+          </Card>
+        </div>
+      </div>
+    );
+  }
+
+  if (isLoading && !settings) {
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <div className="mx-auto max-w-2xl space-y-6">
+          <Skeleton className="h-8 w-48" />
+          <Skeleton className="h-64 w-full" />
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="container mx-auto px-4 py-8">
+      <div className="mx-auto max-w-3xl space-y-6">
+        <div className="mb-8">
+          <h1 className="mb-2 flex items-center gap-3 text-3xl font-bold">
+            <Settings className="h-8 w-8" />
+            {isZh ? '球星卡管理设置' : 'Card Management Settings'}
+          </h1>
+          <p className="text-muted-foreground">
+            {isZh
+              ? '配置球星卡模块的 API 集成和行为（仅管理员）'
+              : 'Configure card module API integrations and behavior (Admin only)'}
+          </p>
+        </div>
+
+        <CardSettingsForm
+          key={settings ? JSON.stringify(settings) : JSON.stringify(emptyFormData)}
+          settings={settings ?? null}
+          isZh={isZh}
+        />
+      </div>
+    </div>
+  );
+}

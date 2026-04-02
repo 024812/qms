@@ -1,10 +1,8 @@
 /**
- * Active Usage Records REST API
+ * Active usage HTTP compatibility route.
  *
- * GET /api/usage/active - Get all active usage records (end_date is NULL)
- *
- * Requirements: 1.2, 1.3 - REST API for usage records
- * Requirements: 5.3 - Consistent API response format
+ * Internal app flows use the DAL + server action path. This route remains as
+ * an external HTTP surface for active usage queries.
  */
 
 import { getAllActiveUsageRecords } from '@/lib/data/usage';

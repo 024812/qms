@@ -1,12 +1,8 @@
 /**
- * Usage Records REST API - List and Create
+ * Usage Records HTTP compatibility route.
  *
- * GET /api/usage - Get all usage records with filtering and pagination
- * POST /api/usage - Create a new usage record
- *
- * Requirements: 1.2, 1.3 - REST API for usage records
- * Requirements: 5.3 - Consistent API response format
- * Requirements: 11.1 - Input sanitization
+ * Internal app flows use the DAL + server action path. This route remains as
+ * an external HTTP surface for list/create operations.
  */
 
 import { NextRequest } from 'next/server';

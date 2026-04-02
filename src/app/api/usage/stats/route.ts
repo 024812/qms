@@ -1,12 +1,8 @@
 /**
- * Usage Statistics REST API
+ * Usage statistics HTTP compatibility route.
  *
- * GET /api/usage/stats - Get overall usage statistics
- *
- * Requirements: 1.2, 1.3 - REST API for usage records
- * Requirements: 5.1, 5.2 - Database query efficiency
- * Requirements: 5.3 - Consistent API response format
- * Requirements: 6.1, 6.2 - Repository pattern for database operations
+ * Internal app flows use the DAL + server action path. This route remains as
+ * an external HTTP surface for aggregate usage statistics.
  */
 
 import { getSimpleUsageStats } from '@/lib/data/stats';
@@ -15,7 +11,7 @@ import { createSuccessResponse, createInternalErrorResponse } from '@/lib/api/re
 /**
  * GET /api/usage/stats
  *
- * Get overall usage statistics using repository pattern.
+ * Get overall usage statistics via the canonical data access layer.
  *
  * Returns:
  * - total: Total number of usage records
@@ -24,7 +20,6 @@ import { createSuccessResponse, createInternalErrorResponse } from '@/lib/api/re
  */
 export async function GET() {
   try {
-    // Use data access layer for all database operations
     const stats = await getSimpleUsageStats();
 
     return createSuccessResponse({ stats });

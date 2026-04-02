@@ -1,6 +1,6 @@
 import { notFound } from 'next/navigation';
-import { getCard } from '@/app/actions/card-actions';
-import { parseBackImage } from '@/modules/cards/utils';
+import { getCardAction } from '@/app/actions/cards';
+import { formatDateForInput, parseBackImage } from '@/modules/cards/utils';
 import { UnifiedCardDashboard } from '../components/UnifiedCardDashboard';
 
 interface CardPageProps {
@@ -12,7 +12,13 @@ interface CardPageProps {
 
 export default async function CardPage({ params }: CardPageProps) {
   const { id } = await params;
-  const card = await getCard(id);
+  const result = await getCardAction(id);
+
+  if (!result.success) {
+    throw new Error(result.error.message);
+  }
+
+  const card = result.data;
 
   if (!card) {
     notFound();
@@ -34,11 +40,12 @@ export default async function CardPage({ params }: CardPageProps) {
     grade: card.grade ? Number(card.grade) : undefined,
     certificationNumber: card.certificationNumber ?? undefined,
     purchasePrice: card.purchasePrice ? Number(card.purchasePrice) : undefined,
-    purchaseDate: card.purchaseDate ?? undefined,
+    purchaseDate: formatDateForInput(card.purchaseDate),
     currentValue: card.currentValue ? Number(card.currentValue) : undefined,
     estimatedValue: card.estimatedValue ? Number(card.estimatedValue) : undefined,
     soldPrice: card.soldPrice ? Number(card.soldPrice) : undefined,
-    soldDate: card.soldDate ?? undefined,
+    soldDate: formatDateForInput(card.soldDate),
+    valuationDate: formatDateForInput(card.lastValueUpdate),
     isAutographed: card.isAutographed,
     hasMemorabilia: card.hasMemorabilia,
     memorabiliaType: card.memorabiliaType ?? undefined,
@@ -46,6 +53,7 @@ export default async function CardPage({ params }: CardPageProps) {
     serialNumber: card.serialNumber ?? undefined,
     status: card.status,
     location: card.location ?? undefined,
+    storageType: card.storageType ?? undefined,
     condition: card.condition ?? undefined,
     notes: card.notes ?? undefined,
     frontImage: card.mainImage ?? undefined,

@@ -16,7 +16,7 @@ import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { useTranslations, useLocale } from 'next-intl';
 import { formSchema, type FormValues } from '../form-schema';
-import { saveCard } from '@/app/actions/card-actions';
+import { saveCardAction } from '@/app/actions/cards';
 import {
   identifyCardAction,
   estimatePriceAction,
@@ -335,7 +335,11 @@ export function useCardForm({
           attachmentImages: values.backImage ? [values.backImage] : [],
         };
 
-        await saveCard(payload);
+        const result = await saveCardAction(payload);
+
+        if (!result.success) {
+          throw new Error(result.error.message);
+        }
         router.refresh();
         dispatch({ type: 'SAVE_SUCCESS' });
         onSuccess?.();

@@ -85,6 +85,13 @@ export function formatDate(date: Date | string | null | undefined): string {
   return d.toLocaleDateString('zh-CN');
 }
 
+export function formatDateForInput(date: Date | string | null | undefined): string | undefined {
+  if (!date) return undefined;
+  const parsed = typeof date === 'string' ? new Date(date) : date;
+  if (isNaN(parsed.getTime())) return undefined;
+  return parsed.toISOString().split('T')[0];
+}
+
 export function formatDateTime(date: Date | string | null | undefined): string {
   if (!date) return '-';
   const d = typeof date === 'string' ? new Date(date) : date;

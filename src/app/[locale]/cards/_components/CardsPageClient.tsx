@@ -1,0 +1,191 @@
+'use client';
+
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { ChevronLeft, ChevronRight, LayoutDashboard, Loader2, PackageOpen } from 'lucide-react';
+import { useTranslations } from 'next-intl';
+
+import { getCardsAction } from '@/app/actions/cards';
+import { EmptyState } from '@/components/ui/empty-state';
+import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { CardCard } from '@/modules/cards/ui/CardCard';
+import type { CardItem } from '@/modules/cards/schema';
+
+import { CreateCardForm } from '../components/CreateCardForm';
+import { CardListView } from '../components/CardListView';
+import { CardToolbar } from '../components/CardToolbar';
+
+interface CardsPageClientProps {
+  initialCards: CardItem[];
+  initialTotalItems: number;
+  initialTotalPages: number;
+  initialPage: number;
+}
+
+export function CardsPageClient({
+  initialCards,
+  initialTotalItems,
+  initialTotalPages,
+  initialPage,
+}: CardsPageClientProps) {
+  const t = useTranslations('cards');
+  const hasHydratedRef = useRef(false);
+
+  const [cards, setCards] = useState<CardItem[]>(initialCards);
+  const [loading, setLoading] = useState(false);
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [viewMode, setViewMode] = useState<'list' | 'grid'>('grid');
+  const [searchTerm, setSearchTerm] = useState('');
+  const [filters, setFilters] = useState({
+    sport: 'ALL',
+    gradingCompany: 'ALL',
+    status: 'ALL',
+  });
+  const [currentPage, setCurrentPage] = useState(initialPage);
+  const [totalPages, setTotalPages] = useState(initialTotalPages);
+  const [totalItems, setTotalItems] = useState(initialTotalItems);
+
+  const fetchData = useCallback(async () => {
+    try {
+      setLoading(true);
+
+      const filter: Record<string, string> = {};
+      if (filters.sport !== 'ALL') filter.sport = filters.sport;
+      if (filters.gradingCompany !== 'ALL') filter.gradingCompany = filters.gradingCompany;
+      if (filters.status !== 'ALL') filter.status = filters.status;
+
+      const result = await getCardsAction({
+        search: searchTerm || undefined,
+        filter: Object.keys(filter).length > 0 ? filter : undefined,
+        page: currentPage,
+      });
+
+      if (!result.success) {
+        throw new Error(result.error.message);
+      }
+
+      const data = result.data;
+
+      setCards(data.items);
+      setTotalPages(data.totalPages);
+      setTotalItems(data.total);
+    } catch (error) {
+      console.error('Failed to fetch cards:', error);
+    } finally {
+      setLoading(false);
+    }
+  }, [searchTerm, filters, currentPage]);
+
+  useEffect(() => {
+    if (!hasHydratedRef.current) {
+      hasHydratedRef.current = true;
+      return;
+    }
+
+    fetchData();
+  }, [fetchData]);
+
+  const handleFilterChange = (key: string, value: string) => {
+    setFilters(prev => ({ ...prev, [key]: value }));
+    setCurrentPage(1);
+  };
+
+  const handleSuccess = async () => {
+    setDialogOpen(false);
+    await fetchData();
+  };
+
+  return (
+    <div className="min-h-screen w-full space-y-8 bg-background p-6">
+      <div className="flex flex-col gap-2">
+        <div className="flex items-center gap-2 text-muted-foreground">
+          <LayoutDashboard className="h-5 w-5" />
+          <h2 className="text-lg font-medium">Dashboard</h2>
+        </div>
+        <div className="flex items-end justify-between">
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight text-foreground">{t('title')}</h1>
+            <p className="mt-1 text-muted-foreground">
+              Manage your collection, track values, and analyze market trends.
+            </p>
+          </div>
+          <div className="flex gap-4 text-sm">
+            <div className="flex flex-col items-end">
+              <span className="text-muted-foreground">Total Cards</span>
+              <span className="font-mono text-xl font-bold">{totalItems}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <CardToolbar
+        viewMode={viewMode}
+        onViewChange={setViewMode}
+        onSearch={setSearchTerm}
+        onAdd={() => setDialogOpen(true)}
+        filters={filters}
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        onFilterChange={handleFilterChange as any}
+      />
+
+      {loading ? (
+        <div className="flex h-96 items-center justify-center">
+          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+        </div>
+      ) : cards.length === 0 ? (
+        <EmptyState
+          icon={PackageOpen}
+          title={t('empty.title')}
+          description={t('empty.description')}
+          action={{
+            label: t('actions.add'),
+            onClick: () => setDialogOpen(true),
+          }}
+        />
+      ) : viewMode === 'list' ? (
+        <CardListView items={cards} searchTerm={searchTerm} />
+      ) : (
+        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6">
+          {cards.map(card => (
+            <div key={card.id}>
+              <CardCard item={card} />
+            </div>
+          ))}
+        </div>
+      )}
+
+      {cards.length > 0 && (
+        <div className="flex items-center justify-end gap-2 border-t py-4">
+          <span className="mr-6 text-sm text-muted-foreground">
+            {t('pagination.page', { current: currentPage, total: totalPages })}
+          </span>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setCurrentPage(page => Math.max(1, page - 1))}
+            disabled={currentPage === 1}
+          >
+            <ChevronLeft className="h-4 w-4" />
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setCurrentPage(page => Math.min(totalPages, page + 1))}
+            disabled={currentPage === totalPages}
+          >
+            <ChevronRight className="h-4 w-4" />
+          </Button>
+        </div>
+      )}
+
+      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+        <DialogContent className="max-h-[90vh] max-w-3xl overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>{t('dialogs.addTitle')}</DialogTitle>
+          </DialogHeader>
+          <CreateCardForm onSuccess={handleSuccess} />
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}

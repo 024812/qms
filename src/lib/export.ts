@@ -1,9 +1,9 @@
 /**
  * Data Export Service
- * 
+ *
  * Provides data export functionality in multiple formats (CSV, Excel).
  * Supports custom field mapping and formatting.
- * 
+ *
  * Requirements: 6.3 - Data export service supporting CSV and Excel formats
  */
 
@@ -35,7 +35,7 @@ export interface ExportOptions {
 
 /**
  * Get nested value from object using dot notation
- * 
+ *
  * @param obj - Object to get value from
  * @param path - Dot-notation path (e.g., "attributes.size")
  * @returns Value at path or undefined
@@ -46,7 +46,7 @@ function getNestedValue(obj: any, path: string): any {
 
 /**
  * Escape CSV value
- * 
+ *
  * @param value - Value to escape
  * @returns Escaped value
  */
@@ -67,7 +67,7 @@ function escapeCsvValue(value: any): string {
 
 /**
  * Export data to CSV format
- * 
+ *
  * @param data - Array of items to export
  * @param options - Export options
  * @returns CSV string
@@ -79,13 +79,13 @@ export function exportToCSV<T = any>(data: T[], options: ExportOptions): string 
 
   // Add header row
   if (includeHeader) {
-    const headers = fields.map((field) => escapeCsvValue(field.label));
+    const headers = fields.map(field => escapeCsvValue(field.label));
     lines.push(headers.join(','));
   }
 
   // Add data rows
   for (const item of data) {
-    const values = fields.map((field) => {
+    const values = fields.map(field => {
       const rawValue = getNestedValue(item, field.key);
       const formattedValue = field.format ? field.format(rawValue, item) : rawValue;
       return escapeCsvValue(formattedValue);
@@ -98,7 +98,7 @@ export function exportToCSV<T = any>(data: T[], options: ExportOptions): string 
 
 /**
  * Export data to Excel-compatible CSV format (UTF-8 with BOM)
- * 
+ *
  * @param data - Array of items to export
  * @param options - Export options
  * @returns CSV string with BOM
@@ -111,23 +111,23 @@ export function exportToExcel<T = any>(data: T[], options: ExportOptions): strin
 
 /**
  * Create download blob for CSV
- * 
+ *
  * @param csvContent - CSV content string
  * @param fileName - File name (without extension)
  * @returns Blob object
  */
-export function createCSVBlob(csvContent: string, fileName: string = 'export'): Blob {
+export function createCSVBlob(csvContent: string, _fileName: string = 'export'): Blob {
   return new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
 }
 
 /**
  * Create download blob for Excel
- * 
+ *
  * @param csvContent - CSV content string with BOM
  * @param fileName - File name (without extension)
  * @returns Blob object
  */
-export function createExcelBlob(csvContent: string, fileName: string = 'export'): Blob {
+export function createExcelBlob(csvContent: string, _fileName: string = 'export'): Blob {
   return new Blob([csvContent], {
     type: 'application/vnd.ms-excel;charset=utf-8;',
   });
@@ -135,7 +135,7 @@ export function createExcelBlob(csvContent: string, fileName: string = 'export')
 
 /**
  * Trigger browser download
- * 
+ *
  * @param blob - Blob to download
  * @param fileName - File name with extension
  */
@@ -152,7 +152,7 @@ export function triggerDownload(blob: Blob, fileName: string): void {
 
 /**
  * Export items to CSV and trigger download
- * 
+ *
  * @param data - Array of items to export
  * @param options - Export options
  */
@@ -165,7 +165,7 @@ export function downloadCSV<T = any>(data: T[], options: ExportOptions): void {
 
 /**
  * Export items to Excel and trigger download
- * 
+ *
  * @param data - Array of items to export
  * @param options - Export options
  */
@@ -201,10 +201,12 @@ export const ExportFormatters = {
   /**
    * Format number with specified decimal places
    */
-  number: (decimals: number = 2) => (value: any): string => {
-    if (value === null || value === undefined || isNaN(value)) return '';
-    return Number(value).toFixed(decimals);
-  },
+  number:
+    (decimals: number = 2) =>
+    (value: any): string => {
+      if (value === null || value === undefined || isNaN(value)) return '';
+      return Number(value).toFixed(decimals);
+    },
 
   /**
    * Format currency (CNY)
@@ -244,11 +246,13 @@ export const ExportFormatters = {
   /**
    * Truncate long text
    */
-  truncate: (maxLength: number = 50) => (value: any): string => {
-    if (!value) return '';
-    const str = String(value);
-    return str.length > maxLength ? str.substring(0, maxLength) + '...' : str;
-  },
+  truncate:
+    (maxLength: number = 50) =>
+    (value: any): string => {
+      if (!value) return '';
+      const str = String(value);
+      return str.length > maxLength ? str.substring(0, maxLength) + '...' : str;
+    },
 };
 
 /**
@@ -280,13 +284,13 @@ export const CommonExportFields = {
    */
   withImages: (): ExportFieldConfig[] => [
     ...CommonExportFields.basic(),
-    { key: 'images', label: '图片数量', format: (value) => String(value?.length || 0) },
+    { key: 'images', label: '图片数量', format: value => String(value?.length || 0) },
   ],
 };
 
 /**
  * Create custom export fields for a module
- * 
+ *
  * @param attributeFields - Array of attribute field configurations
  * @returns Complete export field configuration
  */
@@ -294,7 +298,7 @@ export function createModuleExportFields(
   attributeFields: Array<{ key: string; label: string; format?: (value: any) => string }>
 ): ExportFieldConfig[] {
   const basicFields = CommonExportFields.basic();
-  const customFields = attributeFields.map((field) => ({
+  const customFields = attributeFields.map(field => ({
     key: `attributes.${field.key}`,
     label: field.label,
     format: field.format,
@@ -317,7 +321,7 @@ export async function exportWithProgress<T = any>(
 
   // Add header
   if (includeHeader) {
-    const headers = fields.map((field) => escapeCsvValue(field.label));
+    const headers = fields.map(field => escapeCsvValue(field.label));
     lines.push(headers.join(','));
   }
 
@@ -326,7 +330,7 @@ export async function exportWithProgress<T = any>(
     const batch = data.slice(i, i + batchSize);
 
     for (const item of batch) {
-      const values = fields.map((field) => {
+      const values = fields.map(field => {
         const rawValue = getNestedValue(item, field.key);
         const formattedValue = field.format ? field.format(rawValue, item) : rawValue;
         return escapeCsvValue(formattedValue);
@@ -341,7 +345,7 @@ export async function exportWithProgress<T = any>(
     }
 
     // Allow UI to update
-    await new Promise((resolve) => setTimeout(resolve, 0));
+    await new Promise(resolve => setTimeout(resolve, 0));
   }
 
   if (onProgress) {
@@ -353,7 +357,7 @@ export async function exportWithProgress<T = any>(
 
 /**
  * Validate export data
- * 
+ *
  * @param data - Data to validate
  * @param options - Export options
  * @returns Validation result
@@ -406,7 +410,7 @@ export interface ExportSummary {
 
 /**
  * Get export summary
- * 
+ *
  * @param data - Data to export
  * @param options - Export options
  * @returns Export summary

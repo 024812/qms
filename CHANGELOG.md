@@ -3,7 +3,39 @@
 All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
-and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+and this project uses npm-compatible date-based semantic versions in `YYYY.M.D` form.
+
+## [2026.4.2] - 2026-04-02
+
+### Changed
+
+- Standardized `quilts` and `cards` around a copyable module blueprint pattern in:
+  - `src/modules/core/blueprint.ts`
+  - `src/modules/quilts/blueprint.ts`
+  - `src/modules/cards/blueprint.ts`
+- Locked module architecture around canonical data files in `src/lib/data/*.ts`, canonical server actions in `src/app/actions/*.ts`, and server-page-shell plus client-shell boundaries under `src/app/[locale]/**`.
+- Continued moving internal module reads and writes away from legacy repository-first and REST-first paths.
+- Updated README documentation to match the real production stack: Next.js 16.2, React 19.2, Auth.js v5, Drizzle ORM, Neon, React Query wrappers, and Vercel deployment.
+
+### Fixed
+
+- Stabilized settings and dashboard data flow so server and client state no longer drift across fallback code paths.
+- Prevented build-time database noise on `/[locale]/settings` by forcing the page onto the proper runtime connection path.
+- Cleared remaining lint and type debt in the current release baseline.
+
+### Module Architecture
+
+- Quilts now act as the first canonical module template with a single DAL, a single actions surface, server-first pages, and tag-based cache invalidation.
+- Cards are aligned to the same model across list, detail, sold, overview, and settings flows.
+- Internal application flows now treat route handlers primarily as compatibility surfaces instead of the main truth layer.
+
+### Release
+
+- Bumped version from `2026.2.21` to `2026.4.2`.
+- Verified release baseline with:
+  - `npm run lint:check`
+  - `npm run type-check`
+  - `npm run build`
 
 ## [2026.02.21] - 2026-02-21
 

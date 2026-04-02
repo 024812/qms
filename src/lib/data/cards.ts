@@ -1,9 +1,9 @@
 import { cacheLife, cacheTag, revalidateTag } from 'next/cache';
+import { and, asc, count, desc, eq, ilike, ne, or, sql, type SQL } from 'drizzle-orm';
 
 import { db } from '@/db';
-import { cards } from '@/db/schema';
+import { cards, type Card, type NewCard } from '@/db/schema';
 import { dbLogger } from '@/lib/logger';
-import { cardRepository, type CardFilters } from '@/lib/repositories/card.repository';
 import { cardsCacheTags } from '@/modules/cards/blueprint';
 import type { CardItem } from '@/modules/cards/schema';
 
@@ -91,6 +91,26 @@ export interface ActivityItem {
 const VALID_SPORTS = ['BASKETBALL', 'SOCCER', 'OTHER'] as const;
 const VALID_GRADING_COMPANIES = ['UNGRADED', 'PSA', 'BGS', 'SGC', 'CGC'] as const;
 const VALID_CARD_STATUSES = ['COLLECTION', 'FOR_SALE', 'SOLD', 'GRADING', 'DISPLAY'] as const;
+type CardSortField =
+  | 'itemNumber'
+  | 'playerName'
+  | 'year'
+  | 'currentValue'
+  | 'createdAt'
+  | 'updatedAt';
+type SortOrder = 'asc' | 'desc';
+
+interface CardQueryFilters {
+  search?: string;
+  sport?: 'BASKETBALL' | 'SOCCER' | 'OTHER';
+  gradingCompany?: 'UNGRADED' | 'PSA' | 'BGS' | 'SGC' | 'CGC';
+  status?: 'COLLECTION' | 'FOR_SALE' | 'SOLD' | 'GRADING' | 'DISPLAY';
+  excludeSold?: boolean;
+  limit?: number;
+  offset?: number;
+  sortBy?: CardSortField;
+  sortOrder?: SortOrder;
+}
 
 function logCardDataError(message: string, error: unknown, meta?: Record<string, unknown>) {
   if (error instanceof Error) {
@@ -221,7 +241,7 @@ function cleanNumericToString(value: unknown): string | null {
     : null;
 }
 
-function toRepositoryFilters(input: CardListInput): CardFilters {
+function toCardQueryFilters(input: CardListInput): CardQueryFilters {
   const page = Math.max(1, input.page ?? 1);
   const pageSize = Math.max(1, input.pageSize ?? 20);
 
@@ -239,6 +259,132 @@ function toRepositoryFilters(input: CardListInput): CardFilters {
         }
       : {}),
   };
+}
+
+function buildWhereClause(filters: CardQueryFilters): SQL | undefined {
+  const conditions: SQL[] = [];
+
+  if (filters.excludeSold !== false && !filters.status) {
+    conditions.push(ne(cards.status, 'SOLD'));
+  }
+
+  if (filters.status) {
+    conditions.push(eq(cards.status, filters.status));
+  }
+
+  if (filters.sport) {
+    conditions.push(eq(cards.sport, filters.sport));
+  }
+
+  if (filters.gradingCompany) {
+    conditions.push(eq(cards.gradingCompany, filters.gradingCompany));
+  }
+
+  if (filters.search) {
+    const searchTerm = `%${filters.search}%`;
+    conditions.push(
+      or(
+        ilike(cards.playerName, searchTerm),
+        ilike(cards.brand, searchTerm),
+        ilike(cards.team, searchTerm)
+      ) ?? sql`false`
+    );
+  }
+
+  return conditions.length > 0 ? and(...conditions) : undefined;
+}
+
+async function findCardRecordById(id: string): Promise<Card | null> {
+  const result = await db.select().from(cards).where(eq(cards.id, id)).limit(1);
+  return result[0] ?? null;
+}
+
+async function findCardRecords(filters: CardQueryFilters): Promise<Card[]> {
+  const whereClause = buildWhereClause(filters);
+  const sortField = filters.sortBy ?? 'itemNumber';
+  const sortOrder = filters.sortOrder ?? 'desc';
+  const orderBy = sortOrder === 'asc' ? asc(cards[sortField]) : desc(cards[sortField]);
+
+  let query = db.select().from(cards);
+
+  if (whereClause) {
+    query = query.where(whereClause) as typeof query;
+  }
+
+  query = query.orderBy(orderBy) as typeof query;
+
+  if (typeof filters.limit === 'number') {
+    query = query.limit(filters.limit) as typeof query;
+  }
+
+  if (typeof filters.offset === 'number') {
+    query = query.offset(filters.offset) as typeof query;
+  }
+
+  return query;
+}
+
+async function countCardRecords(filters: CardQueryFilters): Promise<number> {
+  const whereClause = buildWhereClause(filters);
+  let query = db.select({ total: count() }).from(cards);
+
+  if (whereClause) {
+    query = query.where(whereClause) as typeof query;
+  }
+
+  const result = await query;
+  return Number(result[0]?.total ?? 0);
+}
+
+async function createCardRecord(data: Partial<NewCard>): Promise<Card> {
+  const result = await db
+    .insert(cards)
+    .values({
+      ...data,
+      gradingCompany: data.gradingCompany || 'UNGRADED',
+      status: data.status || 'COLLECTION',
+      grade: data.grade ?? null,
+      isAutographed: data.isAutographed ?? false,
+      hasMemorabilia: data.hasMemorabilia ?? false,
+      attachmentImages: data.attachmentImages || [],
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    } as NewCard)
+    .returning();
+
+  dbLogger.info('Card created', { id: result[0].id, itemNumber: result[0].itemNumber });
+  return result[0];
+}
+
+async function updateCardRecord(id: string, data: Partial<NewCard>): Promise<Card | null> {
+  const result = await db
+    .update(cards)
+    .set({
+      ...data,
+      updatedAt: new Date(),
+    })
+    .where(eq(cards.id, id))
+    .returning();
+
+  if (result.length === 0) {
+    dbLogger.warn('Card not found for update', { id });
+    return null;
+  }
+
+  dbLogger.info('Card updated', { id });
+  return result[0];
+}
+
+async function deleteCardRecord(id: string): Promise<boolean> {
+  const result = await db.delete(cards).where(eq(cards.id, id)).returning({ id: cards.id });
+
+  if (result.length === 0) {
+    dbLogger.warn('Card not found for delete', { id });
+    return false;
+  }
+
+  dbLogger.info('Card deleted', { id });
+  return true;
 }
 
 function invalidateCardCaches(params: {
@@ -271,7 +417,7 @@ export async function getCardById(id: string): Promise<CardItem | null> {
   cacheTag(cardsCacheTags.root, cardsCacheTags.item(id));
 
   try {
-    const card = await cardRepository.findById(id);
+    const card = await findCardRecordById(id);
     return card ? normalizeCardItem(card) : null;
   } catch (error) {
     logCardDataError('Error fetching card by ID', error, { id });
@@ -298,11 +444,8 @@ export async function getCards(input: CardListInput = {}): Promise<CardListResul
   cacheTag(...tags);
 
   try {
-    const filters = toRepositoryFilters({ ...input, page, pageSize });
-    const [items, total] = await Promise.all([
-      cardRepository.findAll(filters),
-      cardRepository.count(filters),
-    ]);
+    const filters = toCardQueryFilters({ ...input, page, pageSize });
+    const [items, total] = await Promise.all([findCardRecords(filters), countCardRecords(filters)]);
 
     return {
       items: items.map(normalizeCardItem),
@@ -319,7 +462,7 @@ export async function getCards(input: CardListInput = {}): Promise<CardListResul
 
 export async function saveCard(data: SaveCardData): Promise<CardItem> {
   try {
-    const current = data.id ? await cardRepository.findById(data.id) : null;
+    const current = data.id ? await findCardRecordById(data.id) : null;
 
     const cleanData = {
       playerName: data.playerName,
@@ -357,8 +500,8 @@ export async function saveCard(data: SaveCardData): Promise<CardItem> {
     };
 
     const saved = data.id
-      ? await cardRepository.update(data.id, cleanData)
-      : await cardRepository.create(cleanData);
+      ? await updateCardRecord(data.id, cleanData)
+      : await createCardRecord(cleanData);
 
     if (!saved) {
       throw new Error(data.id ? 'Card not found' : 'Failed to save card');
@@ -389,8 +532,8 @@ export async function saveCard(data: SaveCardData): Promise<CardItem> {
 
 export async function deleteCard(id: string): Promise<boolean> {
   try {
-    const current = await cardRepository.findById(id);
-    const deleted = await cardRepository.delete(id);
+    const current = await findCardRecordById(id);
+    const deleted = await deleteCardRecord(id);
 
     if (!deleted) {
       throw new Error('Card not found');

@@ -1,29 +1,12 @@
 'use client';
 
-/**
- * User Management Client Component
- *
- * Provides user management interface for admins:
- * - List all users
- * - Create new users
- * - Edit user details (name, email, password)
- * - Manage user roles (admin/member)
- * - Manage module subscriptions
- * - Delete users
- */
+import { useMemo, useState } from 'react';
+import { useLocale, useTranslations } from 'next-intl';
+import { Loader2, Pencil, Plus, Shield, Trash2, User, Users } from 'lucide-react';
 
-import { useState, useEffect } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from '@/components/ui/dialog';
+import { useToast } from '@/hooks/useToast';
+import { useCreateUser, useDeleteUser, useUpdateUser, useUsers } from '@/hooks/useUsers';
+import type { UserModule, UserSummary } from '@/lib/data/users';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -34,6 +17,18 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Checkbox } from '@/components/ui/checkbox';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
@@ -43,7 +38,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Checkbox } from '@/components/ui/checkbox';
 import {
   Table,
   TableBody,
@@ -52,88 +46,73 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { Users, Plus, Pencil, Trash2, Loader2, Shield, User } from 'lucide-react';
-import { useToast } from '@/hooks/useToast';
-import { useTranslations } from 'next-intl';
 
-interface UserData {
-  id: string;
+interface UsersPageClientProps {
+  currentUserId: string;
+  initialUsers: UserSummary[];
+}
+
+interface UserFormState {
   name: string;
   email: string;
-  role: string;
-  activeModules: string[];
-  createdAt: string;
-  updatedAt: string;
+  password: string;
+  role: 'admin' | 'member';
+  activeModules: UserModule[];
 }
 
-interface UserManagementClientProps {
-  currentUserId: string;
-}
+const emptyFormState: UserFormState = {
+  name: '',
+  email: '',
+  password: '',
+  role: 'member',
+  activeModules: [],
+};
 
-export function UserManagementClient({ currentUserId }: UserManagementClientProps) {
+export function UsersPageClient({ currentUserId, initialUsers }: UsersPageClientProps) {
   const t = useTranslations();
-  const [users, setUsers] = useState<UserData[]>([]);
-  const [loading, setLoading] = useState(true);
+  const locale = useLocale();
+  const dateLocale = locale === 'zh' ? 'zh-CN' : 'en-US';
+  const { success, error } = useToast();
+
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [selectedUser, setSelectedUser] = useState<UserData | null>(null);
-  const [saving, setSaving] = useState(false);
-  const { success, error } = useToast();
+  const [selectedUser, setSelectedUser] = useState<UserSummary | null>(null);
+  const [formData, setFormData] = useState<UserFormState>(emptyFormState);
 
-  const AVAILABLE_MODULES = [
-    { id: 'quilts', name: t('users.modules.quilts') },
-    { id: 'cards', name: t('users.modules.cards') },
-  ];
-
-  const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    password: '',
-    role: 'member',
-    activeModules: [] as string[],
+  const usersQuery = useUsers({
+    initialData: {
+      users: initialUsers,
+      total: initialUsers.length,
+    },
   });
+  const createUser = useCreateUser();
+  const updateUser = useUpdateUser();
+  const deleteUser = useDeleteUser();
 
-  // Fetch users
-  const fetchUsers = async () => {
-    try {
-      setLoading(true);
-      const response = await fetch('/api/users');
-      const data = await response.json();
+  const availableModules = useMemo(
+    () => [
+      { id: 'quilts' as const, name: t('users.modules.quilts') },
+      { id: 'cards' as const, name: t('users.modules.cards') },
+    ],
+    [t]
+  );
 
-      if (response.ok) {
-        // API returns { success: true, data: { users: [...], total: ... } }
-        const users = data.data?.users || data.users || [];
-        setUsers(users);
-      } else {
-        error(t('common.error'), data.error?.message || t('common.error'));
-      }
-    } catch {
-      error(t('common.error'), t('common.error'));
-    } finally {
-      setLoading(false);
-    }
+  const users = usersQuery.data?.users ?? initialUsers;
+  const loading = usersQuery.isLoading && users.length === 0;
+  const saving = createUser.isPending || updateUser.isPending || deleteUser.isPending;
+
+  const resetForm = () => {
+    setFormData(emptyFormState);
+    setSelectedUser(null);
   };
 
-  useEffect(() => {
-    fetchUsers();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  // Handle create user
   const handleCreate = () => {
-    setFormData({
-      name: '',
-      email: '',
-      password: '',
-      role: 'member',
-      activeModules: [],
-    });
+    resetForm();
     setCreateDialogOpen(true);
   };
 
-  // Handle edit user
-  const handleEdit = (user: UserData) => {
+  const handleEdit = (user: UserSummary) => {
     setSelectedUser(user);
     setFormData({
       name: user.name,
@@ -145,112 +124,83 @@ export function UserManagementClient({ currentUserId }: UserManagementClientProp
     setEditDialogOpen(true);
   };
 
-  // Handle delete user
-  const handleDelete = (user: UserData) => {
+  const handleDelete = (user: UserSummary) => {
     setSelectedUser(user);
     setDeleteDialogOpen(true);
   };
 
-  // Submit create user
-  const submitCreate = async () => {
-    try {
-      setSaving(true);
-      const response = await fetch('/api/users', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData),
-      });
-
-      const data = await response.json();
-
-      if (response.ok) {
-        success(t('common.success'), t('users.dialogs.create.title') + t('common.success'));
-        setCreateDialogOpen(false);
-        fetchUsers();
-      } else {
-        error(t('common.error'), data.message || t('actions.failedToCreate'));
-      }
-    } catch {
-      error(t('common.error'), t('actions.failedToCreate'));
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  // Submit edit user
-  const submitEdit = async () => {
-    if (!selectedUser) return;
-
-    try {
-      setSaving(true);
-      const response = await fetch(`/api/users/${selectedUser.id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData),
-      });
-
-      const data = await response.json();
-
-      if (response.ok) {
-        success(t('common.success'), t('actions.updatedSuccessfully'));
-        setEditDialogOpen(false);
-        fetchUsers();
-      } else {
-        error(t('common.error'), data.message || t('actions.failedToUpdate'));
-      }
-    } catch {
-      error(t('common.error'), t('actions.failedToUpdate'));
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  // Submit delete user
-  const submitDelete = async () => {
-    if (!selectedUser) return;
-
-    try {
-      setSaving(true);
-      const response = await fetch(`/api/users/${selectedUser.id}`, {
-        method: 'DELETE',
-      });
-
-      const data = await response.json();
-
-      if (response.ok) {
-        success(t('common.success'), t('actions.deletedSuccessfully'));
-        setDeleteDialogOpen(false);
-        fetchUsers();
-      } else {
-        error(t('common.error'), data.message || t('actions.failedToDelete'));
-      }
-    } catch {
-      error(t('common.error'), t('actions.failedToDelete'));
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  // Toggle module subscription
-  const toggleModule = (moduleId: string) => {
-    setFormData(prev => ({
-      ...prev,
-      activeModules: prev.activeModules.includes(moduleId)
-        ? prev.activeModules.filter(m => m !== moduleId)
-        : [...prev.activeModules, moduleId],
+  const toggleModule = (moduleId: UserModule) => {
+    setFormData(previous => ({
+      ...previous,
+      activeModules: previous.activeModules.includes(moduleId)
+        ? previous.activeModules.filter(module => module !== moduleId)
+        : [...previous.activeModules, moduleId],
     }));
   };
 
+  const submitCreate = async () => {
+    try {
+      await createUser.mutateAsync(formData);
+      success(t('common.success'), t('actions.createdSuccessfully'));
+      setCreateDialogOpen(false);
+      resetForm();
+    } catch (caughtError) {
+      error(
+        t('common.error'),
+        caughtError instanceof Error ? caughtError.message : t('actions.failedToCreate')
+      );
+    }
+  };
+
+  const submitEdit = async () => {
+    if (!selectedUser) {
+      return;
+    }
+
+    try {
+      await updateUser.mutateAsync({
+        id: selectedUser.id,
+        ...formData,
+      });
+      success(t('common.success'), t('actions.updatedSuccessfully'));
+      setEditDialogOpen(false);
+      resetForm();
+    } catch (caughtError) {
+      error(
+        t('common.error'),
+        caughtError instanceof Error ? caughtError.message : t('actions.failedToUpdate')
+      );
+    }
+  };
+
+  const submitDelete = async () => {
+    if (!selectedUser) {
+      return;
+    }
+
+    try {
+      await deleteUser.mutateAsync({ id: selectedUser.id });
+      success(t('common.success'), t('actions.deletedSuccessfully'));
+      setDeleteDialogOpen(false);
+      resetForm();
+    } catch (caughtError) {
+      error(
+        t('common.error'),
+        caughtError instanceof Error ? caughtError.message : t('actions.failedToDelete')
+      );
+    }
+  };
+
   return (
-    <div className="container mx-auto py-8 px-4">
-      <div className="max-w-6xl mx-auto">
-        <div className="mb-8 flex items-center justify-between">
+    <div className="container mx-auto px-4 py-8">
+      <div className="mx-auto max-w-6xl">
+        <div className="mb-8 flex items-center justify-between gap-4">
           <div>
-            <h1 className="text-3xl font-bold mb-2">{t('users.title')}</h1>
+            <h1 className="mb-2 text-3xl font-bold">{t('users.title')}</h1>
             <p className="text-muted-foreground">{t('users.subtitle')}</p>
           </div>
           <Button onClick={handleCreate}>
-            <Plus className="w-4 h-4 mr-2" />
+            <Plus className="mr-2 h-4 w-4" />
             {t('users.add')}
           </Button>
         </div>
@@ -258,8 +208,8 @@ export function UserManagementClient({ currentUserId }: UserManagementClientProp
         <Card>
           <CardHeader>
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
-                <Users className="w-5 h-5 text-primary" />
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
+                <Users className="h-5 w-5 text-primary" />
               </div>
               <div>
                 <CardTitle>{t('users.listTitle')}</CardTitle>
@@ -270,10 +220,10 @@ export function UserManagementClient({ currentUserId }: UserManagementClientProp
           <CardContent>
             {loading ? (
               <div className="flex items-center justify-center py-8">
-                <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+                <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
               </div>
             ) : users.length === 0 ? (
-              <div className="text-center py-8 text-muted-foreground">{t('users.empty')}</div>
+              <div className="py-8 text-center text-muted-foreground">{t('users.empty')}</div>
             ) : (
               <Table>
                 <TableHeader>
@@ -297,23 +247,27 @@ export function UserManagementClient({ currentUserId }: UserManagementClientProp
                           className="gap-1"
                         >
                           {user.role === 'admin' ? (
-                            <Shield className="w-3 h-3" />
+                            <Shield className="h-3 w-3" />
                           ) : (
-                            <User className="w-3 h-3" />
+                            <User className="h-3 w-3" />
                           )}
                           {user.role === 'admin' ? t('users.roles.admin') : t('users.roles.member')}
                         </Badge>
                       </TableCell>
                       <TableCell>
-                        <div className="flex gap-1 flex-wrap">
+                        <div className="flex flex-wrap gap-1">
                           {user.activeModules.length === 0 ? (
-                            <span className="text-sm text-muted-foreground">{t('users.table.noModules')}</span>
+                            <span className="text-sm text-muted-foreground">
+                              {t('users.table.noModules')}
+                            </span>
                           ) : (
                             user.activeModules.map(moduleId => {
-                              const mod = AVAILABLE_MODULES.find(m => m.id === moduleId);
+                              const activeModule = availableModules.find(
+                                item => item.id === moduleId
+                              );
                               return (
                                 <Badge key={moduleId} variant="outline" className="text-xs">
-                                  {mod?.name || moduleId}
+                                  {activeModule?.name ?? moduleId}
                                 </Badge>
                               );
                             })
@@ -321,12 +275,12 @@ export function UserManagementClient({ currentUserId }: UserManagementClientProp
                         </div>
                       </TableCell>
                       <TableCell className="text-sm text-muted-foreground">
-                        {new Date(user.createdAt).toLocaleDateString(t('common.locale', { default: 'zh-CN' }))}
+                        {new Date(user.createdAt).toLocaleDateString(dateLocale)}
                       </TableCell>
                       <TableCell className="text-right">
-                        <div className="flex gap-2 justify-end">
+                        <div className="flex justify-end gap-2">
                           <Button variant="ghost" size="sm" onClick={() => handleEdit(user)}>
-                            <Pencil className="w-4 h-4" />
+                            <Pencil className="h-4 w-4" />
                           </Button>
                           <Button
                             variant="ghost"
@@ -334,7 +288,7 @@ export function UserManagementClient({ currentUserId }: UserManagementClientProp
                             onClick={() => handleDelete(user)}
                             disabled={user.id === currentUserId}
                           >
-                            <Trash2 className="w-4 h-4" />
+                            <Trash2 className="h-4 w-4" />
                           </Button>
                         </div>
                       </TableCell>
@@ -346,8 +300,15 @@ export function UserManagementClient({ currentUserId }: UserManagementClientProp
           </CardContent>
         </Card>
 
-        {/* Create User Dialog */}
-        <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
+        <Dialog
+          open={createDialogOpen}
+          onOpenChange={open => {
+            setCreateDialogOpen(open);
+            if (!open) {
+              resetForm();
+            }
+          }}
+        >
           <DialogContent className="max-w-md">
             <DialogHeader>
               <DialogTitle>{t('users.dialogs.create.title')}</DialogTitle>
@@ -359,7 +320,7 @@ export function UserManagementClient({ currentUserId }: UserManagementClientProp
                 <Input
                   id="create-name"
                   value={formData.name}
-                  onChange={e => setFormData({ ...formData, name: e.target.value })}
+                  onChange={event => setFormData({ ...formData, name: event.target.value })}
                   placeholder={t('users.dialogs.fields.namePlaceholder')}
                 />
               </div>
@@ -369,7 +330,7 @@ export function UserManagementClient({ currentUserId }: UserManagementClientProp
                   id="create-email"
                   type="email"
                   value={formData.email}
-                  onChange={e => setFormData({ ...formData, email: e.target.value })}
+                  onChange={event => setFormData({ ...formData, email: event.target.value })}
                   placeholder={t('users.dialogs.fields.emailPlaceholder')}
                 />
               </div>
@@ -379,7 +340,7 @@ export function UserManagementClient({ currentUserId }: UserManagementClientProp
                   id="create-password"
                   type="password"
                   value={formData.password}
-                  onChange={e => setFormData({ ...formData, password: e.target.value })}
+                  onChange={event => setFormData({ ...formData, password: event.target.value })}
                   placeholder={t('users.dialogs.fields.passwordPlaceholder')}
                 />
               </div>
@@ -387,9 +348,11 @@ export function UserManagementClient({ currentUserId }: UserManagementClientProp
                 <Label htmlFor="create-role">{t('users.dialogs.fields.role')}</Label>
                 <Select
                   value={formData.role}
-                  onValueChange={role => setFormData({ ...formData, role })}
+                  onValueChange={role =>
+                    setFormData({ ...formData, role: role as UserFormState['role'] })
+                  }
                 >
-                  <SelectTrigger>
+                  <SelectTrigger id="create-role">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -401,18 +364,18 @@ export function UserManagementClient({ currentUserId }: UserManagementClientProp
               <div className="space-y-2">
                 <Label>{t('users.dialogs.fields.modules')}</Label>
                 <div className="space-y-2">
-                  {AVAILABLE_MODULES.map(mod => (
-                    <div key={mod.id} className="flex items-center space-x-2">
+                  {availableModules.map(module => (
+                    <div key={module.id} className="flex items-center space-x-2">
                       <Checkbox
-                        id={`create-module-${mod.id}`}
-                        checked={formData.activeModules.includes(mod.id)}
-                        onCheckedChange={() => toggleModule(mod.id)}
+                        id={`create-module-${module.id}`}
+                        checked={formData.activeModules.includes(module.id)}
+                        onCheckedChange={() => toggleModule(module.id)}
                       />
                       <label
-                        htmlFor={`create-module-${mod.id}`}
-                        className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                        htmlFor={`create-module-${module.id}`}
+                        className="text-sm font-medium leading-none"
                       >
-                        {mod.name}
+                        {module.name}
                       </label>
                     </div>
                   ))}
@@ -431,15 +394,22 @@ export function UserManagementClient({ currentUserId }: UserManagementClientProp
                 onClick={submitCreate}
                 disabled={saving || !formData.name || !formData.email || !formData.password}
               >
-                {saving ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
+                {saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
                 {t('common.create')}
               </Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
 
-        {/* Edit User Dialog */}
-        <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
+        <Dialog
+          open={editDialogOpen}
+          onOpenChange={open => {
+            setEditDialogOpen(open);
+            if (!open) {
+              resetForm();
+            }
+          }}
+        >
           <DialogContent className="max-w-md">
             <DialogHeader>
               <DialogTitle>{t('users.dialogs.edit.title')}</DialogTitle>
@@ -451,7 +421,7 @@ export function UserManagementClient({ currentUserId }: UserManagementClientProp
                 <Input
                   id="edit-name"
                   value={formData.name}
-                  onChange={e => setFormData({ ...formData, name: e.target.value })}
+                  onChange={event => setFormData({ ...formData, name: event.target.value })}
                 />
               </div>
               <div className="space-y-2">
@@ -460,7 +430,7 @@ export function UserManagementClient({ currentUserId }: UserManagementClientProp
                   id="edit-email"
                   type="email"
                   value={formData.email}
-                  onChange={e => setFormData({ ...formData, email: e.target.value })}
+                  onChange={event => setFormData({ ...formData, email: event.target.value })}
                 />
               </div>
               <div className="space-y-2">
@@ -469,7 +439,7 @@ export function UserManagementClient({ currentUserId }: UserManagementClientProp
                   id="edit-password"
                   type="password"
                   value={formData.password}
-                  onChange={e => setFormData({ ...formData, password: e.target.value })}
+                  onChange={event => setFormData({ ...formData, password: event.target.value })}
                   placeholder={t('users.dialogs.fields.newPasswordPlaceholder')}
                 />
               </div>
@@ -477,9 +447,11 @@ export function UserManagementClient({ currentUserId }: UserManagementClientProp
                 <Label htmlFor="edit-role">{t('users.dialogs.fields.role')}</Label>
                 <Select
                   value={formData.role}
-                  onValueChange={role => setFormData({ ...formData, role })}
+                  onValueChange={role =>
+                    setFormData({ ...formData, role: role as UserFormState['role'] })
+                  }
                 >
-                  <SelectTrigger>
+                  <SelectTrigger id="edit-role">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -491,18 +463,18 @@ export function UserManagementClient({ currentUserId }: UserManagementClientProp
               <div className="space-y-2">
                 <Label>{t('users.dialogs.fields.modules')}</Label>
                 <div className="space-y-2">
-                  {AVAILABLE_MODULES.map(mod => (
-                    <div key={mod.id} className="flex items-center space-x-2">
+                  {availableModules.map(module => (
+                    <div key={module.id} className="flex items-center space-x-2">
                       <Checkbox
-                        id={`edit-module-${mod.id}`}
-                        checked={formData.activeModules.includes(mod.id)}
-                        onCheckedChange={() => toggleModule(mod.id)}
+                        id={`edit-module-${module.id}`}
+                        checked={formData.activeModules.includes(module.id)}
+                        onCheckedChange={() => toggleModule(module.id)}
                       />
                       <label
-                        htmlFor={`edit-module-${mod.id}`}
-                        className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                        htmlFor={`edit-module-${module.id}`}
+                        className="text-sm font-medium leading-none"
                       >
-                        {mod.name}
+                        {module.name}
                       </label>
                     </div>
                   ))}
@@ -514,15 +486,22 @@ export function UserManagementClient({ currentUserId }: UserManagementClientProp
                 {t('common.cancel')}
               </Button>
               <Button onClick={submitEdit} disabled={saving}>
-                {saving ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
+                {saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
                 {t('common.save')}
               </Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
 
-        {/* Delete User Dialog */}
-        <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialog
+          open={deleteDialogOpen}
+          onOpenChange={open => {
+            setDeleteDialogOpen(open);
+            if (!open) {
+              resetForm();
+            }
+          }}
+        >
           <AlertDialogContent>
             <AlertDialogHeader>
               <AlertDialogTitle>{t('users.dialogs.delete.title')}</AlertDialogTitle>
@@ -537,7 +516,7 @@ export function UserManagementClient({ currentUserId }: UserManagementClientProp
                 disabled={saving}
                 className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
               >
-                {saving ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
+                {saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
                 {t('common.delete')}
               </AlertDialogAction>
             </AlertDialogFooter>

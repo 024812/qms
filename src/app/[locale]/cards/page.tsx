@@ -1,4 +1,5 @@
 import { getCardsAction } from '@/app/actions/cards';
+import type { GetCardsActionResult } from '@/app/actions/cards';
 
 import { CardsPageClient } from './_components/CardsPageClient';
 
@@ -9,14 +10,7 @@ export default async function CardsPage() {
     throw new Error(initialResult.error.message);
   }
 
-  const initialData = initialResult.data;
+  const initialData: GetCardsActionResult = initialResult.data;
 
-  return (
-    <CardsPageClient
-      initialCards={initialData.items}
-      initialTotalItems={initialData.total}
-      initialTotalPages={initialData.totalPages}
-      initialPage={initialData.page}
-    />
-  );
+  return <CardsPageClient initialData={initialData} />;
 }

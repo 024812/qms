@@ -29,7 +29,7 @@ const handleI18nRouting = createMiddleware(routing);
  * - Implement module-based redirect logic
  */
 export async function proxy(req: NextRequest) {
-  const { pathname } = req.nextUrl;
+  const { pathname, search } = req.nextUrl;
 
   // Static assets and API routes (handled separately)
   // Check BEFORE any processing for performance
@@ -48,12 +48,17 @@ export async function proxy(req: NextRequest) {
 
   // 2. Authentication Logic
   const publicPaths = ['/login', '/register'];
-  // Check if current path (after locale potential stripping by i18n logic, but usually we check raw pathname)
-  // We need to account for locale prefix in pathname checking.
-  // Standard pattern: Check if path contains public segment or matches public route regardless of locale.
-  // Simple check: does the path end with /login or /register? Or contains it properly.
-  const isPublicPath = publicPaths.some(path =>
-    pathname.endsWith(path) || pathname.includes(`${path}/`)
+  const pathSegments = pathname.split('/').filter(Boolean);
+  const locale = routing.locales.includes(pathSegments[0] as (typeof routing.locales)[number])
+    ? pathSegments[0]
+    : null;
+  const normalizedPathname = locale
+    ? `/${pathSegments.slice(1).join('/')}` || '/'
+    : pathname || '/';
+  const localePrefix = locale ? `/${locale}` : '';
+  const callbackUrl = `${pathname}${search}`;
+  const isPublicPath = publicPaths.some(
+    path => normalizedPathname === path || normalizedPathname.startsWith(`${path}/`)
   );
 
   // Get authentication state
@@ -61,21 +66,14 @@ export async function proxy(req: NextRequest) {
 
   // Unauthenticated user trying to access protected route
   if (!session && !isPublicPath) {
-    // Redirect to login, preserving locale if present, or defaulting to it via handleI18nRouting if we just redirect to /login
-    // Easiest is to redirect to relative /login and let i18n middleware handle the locale addition on next pass if missing
-    // But since we are inside proxy, we construct a URL.
-    // Ideally, we want to maintain the current locale if present.
-    // next-intl doesn't expose ease way to "get current locale" inside middleware without parsing.
-    // But since `res` is already generated, we can assume standard routing.
-
-    const loginUrl = new URL('/login', req.url);
-    loginUrl.searchParams.set('callbackUrl', pathname);
+    const loginUrl = new URL(`${localePrefix}/login`, req.url);
+    loginUrl.searchParams.set('callbackUrl', callbackUrl);
     return NextResponse.redirect(loginUrl);
   }
 
   // Authenticated user trying to access login/register page
   if (session && isPublicPath) {
-    return NextResponse.redirect(new URL('/', req.url));
+    return NextResponse.redirect(new URL(localePrefix || '/', req.url));
   }
 
   // Dashboard redirect logic for authenticated users
@@ -85,14 +83,16 @@ export async function proxy(req: NextRequest) {
   // e.g. /en or /zh is effectively "/" for the app.
 
   // Simple heuristic: if pathname ends with the locale or is just "/"
-  const isRootPath = pathname === '/' || routing.locales.some(l => pathname === `/${l}`);
+  const isRootPath = normalizedPathname === '/';
 
   if (session && isRootPath) {
     const activeModules = (session.user?.activeModules as string[]) || [];
 
     // Single module user: redirect directly to module page
     if (activeModules.length === 1) {
-      return NextResponse.redirect(new URL(`/${activeModules[0]}`, req.url));
+      const destination = new URL(`${localePrefix}/${activeModules[0]}`, req.url);
+      destination.search = search;
+      return NextResponse.redirect(destination);
     }
   }
 

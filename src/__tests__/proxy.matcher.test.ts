@@ -7,7 +7,7 @@
  * Requirements: 1.4 (Update configuration to use proxy matcher patterns)
  */
 
-import { describe, it, expect } from '@jest/globals';
+import { describe, expect, it } from 'vitest';
 
 /**
  * Helper function to test if a path matches the proxy matcher pattern

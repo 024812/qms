@@ -10,8 +10,27 @@ export default defineConfig({
     setupFiles: ['./vitest.setup.ts'],
   },
   resolve: {
-    alias: {
-      '@': path.resolve(__dirname, './src'),
-    },
+    alias: [
+      {
+        find: /^next\/server$/,
+        replacement: path.resolve(__dirname, './node_modules/next/server.js'),
+      },
+      {
+        find: /^next\/navigation$/,
+        replacement: path.resolve(__dirname, './node_modules/next/navigation.js'),
+      },
+      {
+        find: /^next\/headers$/,
+        replacement: path.resolve(__dirname, './node_modules/next/headers.js'),
+      },
+      {
+        find: /^next\/cache$/,
+        replacement: path.resolve(__dirname, './node_modules/next/cache.js'),
+      },
+      {
+        find: '@',
+        replacement: path.resolve(__dirname, './src'),
+      },
+    ],
   },
 });

@@ -1,38 +1,28 @@
 'use client';
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { ChevronLeft, ChevronRight, LayoutDashboard, Loader2, PackageOpen } from 'lucide-react';
 import { useTranslations } from 'next-intl';
+import { useQueryClient } from '@tanstack/react-query';
 
-import { getCardsAction } from '@/app/actions/cards';
+import type { GetCardsActionInput, GetCardsActionResult } from '@/app/actions/cards';
 import { EmptyState } from '@/components/ui/empty-state';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { useCards } from '@/hooks/useCards';
 import { CardCard } from '@/modules/cards/ui/CardCard';
-import type { CardItem } from '@/modules/cards/schema';
-
 import { CreateCardForm } from '../components/CreateCardForm';
 import { CardListView } from '../components/CardListView';
 import { CardToolbar } from '../components/CardToolbar';
 
 interface CardsPageClientProps {
-  initialCards: CardItem[];
-  initialTotalItems: number;
-  initialTotalPages: number;
-  initialPage: number;
+  initialData: GetCardsActionResult;
 }
 
-export function CardsPageClient({
-  initialCards,
-  initialTotalItems,
-  initialTotalPages,
-  initialPage,
-}: CardsPageClientProps) {
+export function CardsPageClient({ initialData }: CardsPageClientProps) {
   const t = useTranslations('cards');
-  const hasHydratedRef = useRef(false);
+  const queryClient = useQueryClient();
 
-  const [cards, setCards] = useState<CardItem[]>(initialCards);
-  const [loading, setLoading] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [viewMode, setViewMode] = useState<'list' | 'grid'>('grid');
   const [searchTerm, setSearchTerm] = useState('');
@@ -41,49 +31,35 @@ export function CardsPageClient({
     gradingCompany: 'ALL',
     status: 'ALL',
   });
-  const [currentPage, setCurrentPage] = useState(initialPage);
-  const [totalPages, setTotalPages] = useState(initialTotalPages);
-  const [totalItems, setTotalItems] = useState(initialTotalItems);
+  const [currentPage, setCurrentPage] = useState(initialData.page);
 
-  const fetchData = useCallback(async () => {
-    try {
-      setLoading(true);
+  const queryInput = useMemo<GetCardsActionInput>(() => {
+    const filter: NonNullable<GetCardsActionInput['filter']> = {};
 
-      const filter: Record<string, string> = {};
-      if (filters.sport !== 'ALL') filter.sport = filters.sport;
-      if (filters.gradingCompany !== 'ALL') filter.gradingCompany = filters.gradingCompany;
-      if (filters.status !== 'ALL') filter.status = filters.status;
-
-      const result = await getCardsAction({
-        search: searchTerm || undefined,
-        filter: Object.keys(filter).length > 0 ? filter : undefined,
-        page: currentPage,
-      });
-
-      if (!result.success) {
-        throw new Error(result.error.message);
-      }
-
-      const data = result.data;
-
-      setCards(data.items);
-      setTotalPages(data.totalPages);
-      setTotalItems(data.total);
-    } catch (error) {
-      console.error('Failed to fetch cards:', error);
-    } finally {
-      setLoading(false);
+    if (filters.sport !== 'ALL') {
+      filter.sport = filters.sport as NonNullable<GetCardsActionInput['filter']>['sport'];
     }
-  }, [searchTerm, filters, currentPage]);
-
-  useEffect(() => {
-    if (!hasHydratedRef.current) {
-      hasHydratedRef.current = true;
-      return;
+    if (filters.gradingCompany !== 'ALL') {
+      filter.gradingCompany = filters.gradingCompany as NonNullable<
+        GetCardsActionInput['filter']
+      >['gradingCompany'];
+    }
+    if (filters.status !== 'ALL') {
+      filter.status = filters.status as NonNullable<GetCardsActionInput['filter']>['status'];
     }
 
-    fetchData();
-  }, [fetchData]);
+    return {
+      search: searchTerm || undefined,
+      filter: Object.keys(filter).length > 0 ? filter : undefined,
+      page: currentPage,
+    };
+  }, [currentPage, filters, searchTerm]);
+
+  const cardsQuery = useCards(queryInput, { initialData });
+  const cards = cardsQuery.data?.items ?? initialData.items;
+  const totalPages = cardsQuery.data?.totalPages ?? initialData.totalPages;
+  const totalItems = cardsQuery.data?.total ?? initialData.total;
+  const loading = cardsQuery.isFetching && cards.length === 0;
 
   const handleFilterChange = (key: string, value: string) => {
     setFilters(prev => ({ ...prev, [key]: value }));
@@ -92,7 +68,10 @@ export function CardsPageClient({
 
   const handleSuccess = async () => {
     setDialogOpen(false);
-    await fetchData();
+    await Promise.all([
+      queryClient.invalidateQueries({ queryKey: ['cards'] }),
+      cardsQuery.refetch(),
+    ]);
   };
 
   return (

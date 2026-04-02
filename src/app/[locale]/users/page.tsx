@@ -1,14 +1,10 @@
-/**
- * User Management Page
- *
- * Admin-only page for managing system users.
- */
-
-import { Suspense } from 'react';
 import { setRequestLocale } from 'next-intl/server';
-import { Skeleton } from '@/components/ui/skeleton';
-import { UserGuard } from './UserGuard';
-import { connection } from 'next/server';
+import { redirect } from '@/i18n/routing';
+
+import { auth } from '@/auth';
+import { listUsers } from '@/lib/data/users';
+
+import { UsersPageClient } from './_components/UsersPageClient';
 
 interface PageProps {
   params: Promise<{
@@ -19,15 +15,15 @@ interface PageProps {
 export default async function UsersPage({ params }: PageProps) {
   const { locale } = await params;
   setRequestLocale(locale);
-  
-  // Opt-in to dynamic rendering for auth check in UserGuard
-  await connection();
 
+  const session = await auth();
+  const currentUserId = session?.user?.id;
 
-  return (
-    <Suspense fallback={<Skeleton className="h-[600px] w-full" />}>
-        <UserGuard />
-    </Suspense>
-  );
+  if (!currentUserId || session?.user?.role !== 'admin') {
+    redirect({ href: '/', locale });
+  }
+
+  const initialUsers = await listUsers();
+
+  return <UsersPageClient currentUserId={currentUserId!} initialUsers={initialUsers} />;
 }
-

@@ -1,101 +1,113 @@
 import { NextRequest } from 'next/server';
 
-import { countQuilts, getQuilts, saveQuilt } from '@/lib/data/quilts';
-import {
-  createSuccessResponse,
-  createValidationErrorResponse,
-  createInternalErrorResponse,
-  createCreatedResponse,
-} from '@/lib/api/response';
-import { sanitizeApiInput, sanitizeSearchQuery } from '@/lib/sanitization';
-import { createQuiltSchema, quiltFiltersSchema } from '@/lib/validations/quilt';
+import { createQuiltAction, getQuiltsAction } from '@/app/actions/quilts';
+import { actionResultToApiResponse } from '@/lib/api/action-response';
+import { createBadRequestResponse, createSuccessResponse } from '@/lib/api/response';
+import { sanitizeSearchQuery } from '@/lib/sanitization';
+import type { QuiltSearchInput } from '@/lib/validations/quilt';
 
 import { applyQuiltCompatibilityHeaders } from './_shared';
 
-export async function GET(request: NextRequest) {
-  try {
-    const { searchParams } = new URL(request.url);
+function getStringParam(searchParams: URLSearchParams, key: string) {
+  const value = searchParams.get(key);
+  return value && value.trim() !== '' ? value : undefined;
+}
 
-    const season = searchParams.get('season') || undefined;
-    const status = searchParams.get('status') || undefined;
-    const location = searchParams.get('location') || undefined;
-    const brand = searchParams.get('brand') || undefined;
-    const search = searchParams.get('search')
-      ? sanitizeSearchQuery(searchParams.get('search'))
-      : undefined;
-    const limit = Math.min(parseInt(searchParams.get('limit') || '20', 10), 100);
-    const offset = parseInt(searchParams.get('offset') || '0', 10);
-    const sortBy = searchParams.get('sortBy') || 'itemNumber';
-    const sortOrder = searchParams.get('sortOrder') || 'asc';
-
-    const filtersResult = quiltFiltersSchema.safeParse({
-      season,
-      status,
-      location,
-      brand,
-      search,
-    });
-
-    if (!filtersResult.success) {
-      return createValidationErrorResponse(
-        '过滤参数无效',
-        filtersResult.error.flatten().fieldErrors as Record<string, string[]>
-      );
-    }
-
-    const filters = {
-      ...filtersResult.data,
-      limit,
-      offset,
-      sortBy: sortBy as
-        | 'itemNumber'
-        | 'name'
-        | 'season'
-        | 'weightGrams'
-        | 'createdAt'
-        | 'updatedAt',
-      sortOrder: sortOrder as 'asc' | 'desc',
-    };
-
-    const [quilts, total] = await Promise.all([getQuilts(filters), countQuilts(filters)]);
-
-    return applyQuiltCompatibilityHeaders(
-      createSuccessResponse(
-        { quilts },
-        {
-          total,
-          limit,
-          hasMore: offset + quilts.length < total,
-        }
-      )
-    );
-  } catch (error) {
-    return createInternalErrorResponse('获取被子列表失败', error);
+function parseNonNegativeInt(value: string | undefined, fallback: number) {
+  if (!value) {
+    return fallback;
   }
+
+  const parsed = Number.parseInt(value, 10);
+  return Number.isFinite(parsed) && parsed >= 0 ? parsed : fallback;
+}
+
+function parseSearchInput(request: NextRequest) {
+  const { searchParams } = new URL(request.url);
+  const limit = Math.min(parseNonNegativeInt(getStringParam(searchParams, 'limit'), 20), 100);
+  const offset = parseNonNegativeInt(getStringParam(searchParams, 'offset'), 0);
+  const allowedSortBy: NonNullable<QuiltSearchInput['sortBy']>[] = [
+    'itemNumber',
+    'name',
+    'season',
+    'weightGrams',
+    'createdAt',
+    'updatedAt',
+  ];
+  const sortByParam = getStringParam(searchParams, 'sortBy');
+  const sortOrderParam = getStringParam(searchParams, 'sortOrder');
+  const sortBy = allowedSortBy.includes(sortByParam as NonNullable<QuiltSearchInput['sortBy']>)
+    ? (sortByParam as NonNullable<QuiltSearchInput['sortBy']>)
+    : 'itemNumber';
+  const sortOrder: NonNullable<QuiltSearchInput['sortOrder']> =
+    sortOrderParam === 'desc' ? 'desc' : 'asc';
+  const search = getStringParam(searchParams, 'search');
+  const season = getStringParam(searchParams, 'season');
+  const status = getStringParam(searchParams, 'status');
+  const location = getStringParam(searchParams, 'location');
+  const brand = getStringParam(searchParams, 'brand');
+
+  return {
+    filters: {
+      ...(season
+        ? {
+            season: season as NonNullable<QuiltSearchInput['filters']>['season'],
+          }
+        : {}),
+      ...(status
+        ? {
+            status: status as NonNullable<QuiltSearchInput['filters']>['status'],
+          }
+        : {}),
+      ...(location ? { location } : {}),
+      ...(brand ? { brand } : {}),
+      ...(search ? { search: sanitizeSearchQuery(search) } : {}),
+    },
+    sortBy,
+    sortOrder,
+    skip: offset,
+    take: limit,
+  } satisfies QuiltSearchInput;
+}
+
+export async function GET(request: NextRequest) {
+  const searchInput = parseSearchInput(request);
+  const result = await getQuiltsAction(searchInput);
+
+  if (!result.success) {
+    return applyQuiltCompatibilityHeaders(actionResultToApiResponse(result));
+  }
+
+  return applyQuiltCompatibilityHeaders(
+    createSuccessResponse(
+      { quilts: result.data.quilts },
+      {
+        total: result.data.total,
+        limit: searchInput.take,
+        hasMore: result.data.hasMore,
+      }
+    )
+  );
 }
 
 export async function POST(request: NextRequest) {
+  let body: unknown;
+
   try {
-    const rawBody = await request.json();
-    const body = sanitizeApiInput(rawBody);
-
-    if (body.purchaseDate && typeof body.purchaseDate === 'string') {
-      body.purchaseDate = new Date(body.purchaseDate);
-    }
-
-    const validationResult = createQuiltSchema.safeParse(body);
-
-    if (!validationResult.success) {
-      return createValidationErrorResponse(
-        '被子数据验证失败',
-        validationResult.error.flatten().fieldErrors as Record<string, string[]>
-      );
-    }
-
-    const result = await saveQuilt(validationResult.data);
-
-    return applyQuiltCompatibilityHeaders(createCreatedResponse({ quilt: result.quilt }));
-  } catch (error) {
-    return createInternalErrorResponse('创建被子失败', error);
+    body = await request.json();
+  } catch {
+    return applyQuiltCompatibilityHeaders(
+      createBadRequestResponse('Request body must be valid JSON')
+    );
   }
+
+  return applyQuiltCompatibilityHeaders(
+    actionResultToApiResponse(
+      await createQuiltAction(body as Parameters<typeof createQuiltAction>[0]),
+      {
+        status: 201,
+        mapData: quilt => ({ quilt }),
+      }
+    )
+  );
 }

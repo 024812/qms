@@ -846,6 +846,11 @@ export async function deleteQuilt(id: string): Promise<boolean> {
   try {
     const quilt = await getQuiltById(id);
 
+    if (!quilt) {
+      dbLogger.warn('Quilt not found for delete', { id });
+      return false;
+    }
+
     // Using transaction for cascade delete safety, though constraints handle it usually.
     await db.transaction(async tx => {
       // Manual delete if cascade not set or just to be safe

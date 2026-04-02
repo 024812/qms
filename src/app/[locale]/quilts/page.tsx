@@ -1,11 +1,6 @@
+import { getQuiltsAction } from '@/app/actions/quilts';
 import { getAppSettingsAction } from '@/app/actions/settings';
-import {
-  getQuilts,
-  countQuilts,
-  type QuiltFilters,
-  type QuiltSortField,
-  type SortOrder,
-} from '@/lib/data/quilts';
+import type { QuiltSortField, SortOrder } from '@/lib/data/quilts';
 import type { QuiltSearchInput } from '@/types/quilt';
 import type { FilterCriteria } from '@/components/quilts/AdvancedFilters';
 import { QuiltsPageClient } from './_components/QuiltsPageClient';
@@ -27,7 +22,6 @@ function parsePositiveInt(value: string | undefined, fallback: number): number {
 }
 
 function parseQuiltSearchParams(searchParams: RawSearchParams): {
-  filters: QuiltFilters;
   searchInput?: QuiltSearchInput;
   initialSearchTerm: string;
   initialFilters: FilterCriteria;
@@ -55,18 +49,6 @@ function parseQuiltSearchParams(searchParams: RawSearchParams): {
     ? (sortByParam as QuiltSortField)
     : 'itemNumber';
   const sortOrder: SortOrder = sortOrderParam === 'desc' ? 'desc' : 'asc';
-
-  const filters: QuiltFilters = {
-    ...(season ? { season: season as QuiltFilters['season'] } : {}),
-    ...(status ? { status: status as QuiltFilters['status'] } : {}),
-    ...(location ? { location } : {}),
-    ...(brand ? { brand } : {}),
-    ...(search ? { search } : {}),
-    limit,
-    offset,
-    sortBy,
-    sortOrder,
-  };
 
   const initialFilters: FilterCriteria = {
     seasons: season ? [season] : [],
@@ -99,7 +81,6 @@ function parseQuiltSearchParams(searchParams: RawSearchParams): {
     : undefined;
 
   return {
-    filters,
     searchInput,
     initialSearchTerm: search || '',
     initialFilters,
@@ -112,21 +93,26 @@ export default async function QuiltsPage({
   searchParams?: Promise<RawSearchParams>;
 }) {
   const resolvedSearchParams = (await searchParams) ?? {};
-  const { filters, searchInput, initialSearchTerm, initialFilters } =
+  const { searchInput, initialSearchTerm, initialFilters } =
     parseQuiltSearchParams(resolvedSearchParams);
 
-  const [quilts, total, appSettingsResult] = await Promise.all([
-    getQuilts(filters),
-    countQuilts(filters),
+  const [quiltsResult, appSettingsResult] = await Promise.all([
+    getQuiltsAction(searchInput),
     getAppSettingsAction(),
   ]);
+
+  if (!quiltsResult.success) {
+    throw new Error(quiltsResult.error.message);
+  }
+
+  const { quilts, total, hasMore } = quiltsResult.data;
 
   return (
     <QuiltsPageClient
       initialData={{
         quilts,
         total,
-        hasMore: (filters.offset ?? 0) + quilts.length < total,
+        hasMore,
       }}
       initialAppSettings={appSettingsResult.success ? appSettingsResult.data : null}
       initialSearchParams={searchInput}

@@ -14,6 +14,7 @@ export interface CardListInput {
     gradingCompany?: 'UNGRADED' | 'PSA' | 'BGS' | 'SGC' | 'CGC';
     status?: 'COLLECTION' | 'FOR_SALE' | 'SOLD' | 'GRADING' | 'DISPLAY';
   };
+  includeSold?: boolean;
   page?: number;
   pageSize?: number;
 }
@@ -28,6 +29,7 @@ export interface CardListResult {
 
 export interface SaveCardData {
   id?: string;
+  userId?: string | null;
   playerName: string;
   sport: 'BASKETBALL' | 'SOCCER' | 'OTHER';
   team?: string | null;
@@ -247,7 +249,7 @@ function toCardQueryFilters(input: CardListInput): CardQueryFilters {
 
   return {
     search: input.search,
-    excludeSold: !input.filter?.status,
+    excludeSold: input.includeSold === true ? false : !input.filter?.status,
     limit: pageSize,
     offset: (page - 1) * pageSize,
     ...(input.filter?.sport ? { sport: input.filter.sport } : {}),
@@ -465,6 +467,7 @@ export async function saveCard(data: SaveCardData): Promise<CardItem> {
     const current = data.id ? await findCardRecordById(data.id) : null;
 
     const cleanData = {
+      userId: data.id ? undefined : (data.userId ?? null),
       playerName: data.playerName,
       sport: data.sport,
       team: data.team || null,

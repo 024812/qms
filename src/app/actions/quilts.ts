@@ -3,6 +3,7 @@
 import { updateTag } from 'next/cache';
 import { z } from 'zod';
 
+import { auth } from '@/auth';
 import {
   countQuilts,
   deleteQuilt as deleteQuiltData,
@@ -56,6 +57,70 @@ function normalizeQuiltInputDates<T extends Record<string, unknown> & { purchase
   return normalized;
 }
 
+function validationErrorResult(
+  message: string,
+  fieldErrors?: Record<string, string[]>
+): ActionResult<never> {
+  return {
+    success: false,
+    error: {
+      code: 'VALIDATION_FAILED',
+      message,
+      ...(fieldErrors ? { fieldErrors } : {}),
+    },
+  };
+}
+
+function notFoundErrorResult(message: string): ActionResult<never> {
+  return {
+    success: false,
+    error: {
+      code: 'NOT_FOUND',
+      message,
+    },
+  };
+}
+
+function conflictErrorResult(message: string): ActionResult<never> {
+  return {
+    success: false,
+    error: {
+      code: 'ALREADY_EXISTS',
+      message,
+    },
+  };
+}
+
+function internalErrorResult(message: string): ActionResult<never> {
+  return {
+    success: false,
+    error: {
+      code: 'INTERNAL_ERROR',
+      message,
+    },
+  };
+}
+
+function unauthorizedErrorResult(message = 'Unauthorized'): ActionResult<never> {
+  return {
+    success: false,
+    error: {
+      code: 'UNAUTHORIZED',
+      message,
+    },
+  };
+}
+
+async function requireAuthenticatedUser() {
+  const session = await auth();
+
+  if (!session?.user?.id) {
+    return null;
+  }
+
+  return session;
+}
+
 function refreshQuiltActionCaches(id?: string) {
   updateTag('quilts');
   updateTag('quilts-list');
@@ -89,6 +154,12 @@ export async function saveQuiltAction(
   input: CreateQuiltInput | UpdateQuiltInput
 ): Promise<ActionResult<Quilt>> {
   try {
+    const session = await requireAuthenticatedUser();
+
+    if (!session) {
+      return unauthorizedErrorResult();
+    }
+
     const sanitizedInput = normalizeQuiltInputDates(sanitizeApiInput(input));
     const maybeId = 'id' in sanitizedInput ? sanitizedInput.id : undefined;
     const isUpdate = typeof maybeId === 'string' && maybeId.length > 0;
@@ -98,14 +169,10 @@ export async function saveQuiltAction(
       : createQuiltSchema.safeParse(sanitizedInput);
 
     if (!validationResult.success) {
-      return {
-        success: false,
-        error: {
-          code: 'VALIDATION_FAILED',
-          message: '被子数据校验失败',
-          fieldErrors: validationResult.error.flatten().fieldErrors as Record<string, string[]>,
-        },
-      };
+      return validationErrorResult(
+        '被子数据校验失败',
+        validationResult.error.flatten().fieldErrors as Record<string, string[]>
+      );
     }
 
     const result = await saveQuilt(validationResult.data as CreateQuiltInput | UpdateQuiltInput);
@@ -117,13 +184,11 @@ export async function saveQuiltAction(
     };
   } catch (error) {
     console.error('[Server Action] saveQuiltAction error:', error);
-    return {
-      success: false,
-      error: {
-        code: 'INTERNAL_ERROR',
-        message: error instanceof Error ? error.message : '保存被子失败',
-      },
-    };
+    if (error instanceof Error && error.message === 'Quilt not found') {
+      return notFoundErrorResult('被子不存在');
+    }
+
+    return internalErrorResult(error instanceof Error ? error.message : '保存被子失败');
   }
 }
 
@@ -137,17 +202,22 @@ export async function updateQuiltAction(input: UpdateQuiltInput): Promise<Action
 
 export async function deleteQuiltAction(id: string): Promise<ActionResult<{ deleted: boolean }>> {
   try {
-    if (!id || typeof id !== 'string') {
-      return {
-        success: false,
-        error: {
-          code: 'VALIDATION_FAILED',
-          message: '被子 ID 无效',
-        },
-      };
+    const session = await requireAuthenticatedUser();
+
+    if (!session) {
+      return unauthorizedErrorResult();
     }
 
-    await deleteQuiltData(id);
+    if (!id || typeof id !== 'string') {
+      return validationErrorResult('被子 ID 无效');
+    }
+
+    const deleted = await deleteQuiltData(id);
+
+    if (!deleted) {
+      return notFoundErrorResult('被子不存在');
+    }
+
     refreshQuiltActionCaches(id);
 
     return {
@@ -156,13 +226,7 @@ export async function deleteQuiltAction(id: string): Promise<ActionResult<{ dele
     };
   } catch (error) {
     console.error('[Server Action] deleteQuiltAction error:', error);
-    return {
-      success: false,
-      error: {
-        code: 'INTERNAL_ERROR',
-        message: error instanceof Error ? error.message : '删除被子失败',
-      },
-    };
+    return internalErrorResult(error instanceof Error ? error.message : '删除被子失败');
   }
 }
 
@@ -175,17 +239,19 @@ export async function changeQuiltStatusAction(input: {
   endDate?: Date | string;
 }): Promise<ActionResult<{ quilt: Quilt; usageRecord: unknown | null }>> {
   try {
+    const session = await requireAuthenticatedUser();
+
+    if (!session) {
+      return unauthorizedErrorResult();
+    }
+
     const validationResult = changeQuiltStatusSchema.safeParse(sanitizeApiInput(input));
 
     if (!validationResult.success) {
-      return {
-        success: false,
-        error: {
-          code: 'VALIDATION_FAILED',
-          message: '状态数据校验失败',
-          fieldErrors: validationResult.error.flatten().fieldErrors as Record<string, string[]>,
-        },
-      };
+      return validationErrorResult(
+        '状态数据校验失败',
+        validationResult.error.flatten().fieldErrors as Record<string, string[]>
+      );
     }
 
     const { quiltId, status, usageType, notes, startDate, endDate } = validationResult.data;
@@ -205,26 +271,30 @@ export async function changeQuiltStatusAction(input: {
     };
   } catch (error) {
     console.error('[Server Action] changeQuiltStatusAction error:', error);
-    return {
-      success: false,
-      error: {
-        code: 'INTERNAL_ERROR',
-        message: error instanceof Error ? error.message : '更新被子状态失败',
-      },
-    };
+    if (error instanceof Error) {
+      if (error.message === 'Quilt not found') {
+        return notFoundErrorResult('被子不存在');
+      }
+
+      if (error.message === 'Quilt already has an active usage record') {
+        return conflictErrorResult('该被子已有活跃的使用记录');
+      }
+    }
+
+    return internalErrorResult(error instanceof Error ? error.message : '更新被子状态失败');
   }
 }
 
 export async function getQuiltAction(id: string): Promise<ActionResult<Quilt | null>> {
   try {
+    const session = await requireAuthenticatedUser();
+
+    if (!session) {
+      return unauthorizedErrorResult();
+    }
+
     if (!id || typeof id !== 'string') {
-      return {
-        success: false,
-        error: {
-          code: 'VALIDATION_FAILED',
-          message: '被子 ID 无效',
-        },
-      };
+      return validationErrorResult('被子 ID 无效');
     }
 
     const quilt = await getQuiltById(id);
@@ -235,13 +305,7 @@ export async function getQuiltAction(id: string): Promise<ActionResult<Quilt | n
     };
   } catch (error) {
     console.error('[Server Action] getQuiltAction error:', error);
-    return {
-      success: false,
-      error: {
-        code: 'INTERNAL_ERROR',
-        message: error instanceof Error ? error.message : '获取被子详情失败',
-      },
-    };
+    return internalErrorResult(error instanceof Error ? error.message : '获取被子详情失败');
   }
 }
 
@@ -249,18 +313,20 @@ export async function getQuiltsAction(
   input?: QuiltSearchInput
 ): Promise<ActionResult<{ quilts: Quilt[]; total: number; hasMore: boolean }>> {
   try {
+    const session = await requireAuthenticatedUser();
+
+    if (!session) {
+      return unauthorizedErrorResult();
+    }
+
     const sanitizedInput = sanitizeApiInput(input ?? {});
     const validationResult = quiltSearchSchema.safeParse(sanitizedInput);
 
     if (!validationResult.success) {
-      return {
-        success: false,
-        error: {
-          code: 'VALIDATION_FAILED',
-          message: '被子查询参数校验失败',
-          fieldErrors: validationResult.error.flatten().fieldErrors as Record<string, string[]>,
-        },
-      };
+      return validationErrorResult(
+        '被子查询参数校验失败',
+        validationResult.error.flatten().fieldErrors as Record<string, string[]>
+      );
     }
 
     const filters = toDataLayerFilters(validationResult.data);
@@ -276,12 +342,6 @@ export async function getQuiltsAction(
     };
   } catch (error) {
     console.error('[Server Action] getQuiltsAction error:', error);
-    return {
-      success: false,
-      error: {
-        code: 'INTERNAL_ERROR',
-        message: error instanceof Error ? error.message : '获取被子列表失败',
-      },
-    };
+    return internalErrorResult(error instanceof Error ? error.message : '获取被子列表失败');
   }
 }

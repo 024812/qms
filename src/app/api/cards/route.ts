@@ -1,80 +1,111 @@
-/**
- * Cards API Route
- *
- * Handles CRUD operations for sports cards
- */
+import { NextRequest } from 'next/server';
 
-import { NextRequest, NextResponse } from 'next/server';
-import { auth } from '@/auth';
-import { db } from '@/db';
-import { cards } from '@/db/schema';
+import { getCardsAction, saveCardAction, type GetCardsActionInput } from '@/app/actions/cards';
+import { actionResultToApiResponse } from '@/lib/api/action-response';
+import { createBadRequestResponse } from '@/lib/api/response';
 
-export async function GET(_request: NextRequest) {
-  try {
-    const session = await auth();
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+function getStringParam(searchParams: URLSearchParams, key: string) {
+  const value = searchParams.get(key);
+  return value && value.trim() !== '' ? value : undefined;
+}
 
-    const userCards = await db.select().from(cards).orderBy(cards.createdAt);
-
-    return NextResponse.json({ cards: userCards });
-  } catch (error) {
-    console.error('Failed to fetch cards:', error);
-    return NextResponse.json({ error: 'Failed to fetch cards' }, { status: 500 });
+function parsePositiveInt(value: string | undefined) {
+  if (!value) {
+    return undefined;
   }
+
+  const parsed = Number.parseInt(value, 10);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : undefined;
+}
+
+function parseBoolean(value: string | undefined) {
+  if (value === undefined) {
+    return undefined;
+  }
+
+  if (value === 'true') {
+    return true;
+  }
+
+  if (value === 'false') {
+    return false;
+  }
+
+  return undefined;
+}
+
+function buildCardsActionInput(request: NextRequest): GetCardsActionInput {
+  const { searchParams } = new URL(request.url);
+  const sport = getStringParam(searchParams, 'sport');
+  const gradingCompany = getStringParam(searchParams, 'gradingCompany');
+  const status = getStringParam(searchParams, 'status');
+  const page = parsePositiveInt(getStringParam(searchParams, 'page'));
+  const pageSize = parsePositiveInt(getStringParam(searchParams, 'pageSize'));
+  const includeSold = parseBoolean(getStringParam(searchParams, 'includeSold'));
+
+  const filter: NonNullable<GetCardsActionInput['filter']> = {};
+
+  if (sport) {
+    filter.sport = sport as NonNullable<GetCardsActionInput['filter']>['sport'];
+  }
+
+  if (gradingCompany) {
+    filter.gradingCompany = gradingCompany as NonNullable<
+      GetCardsActionInput['filter']
+    >['gradingCompany'];
+  }
+
+  if (status) {
+    filter.status = status as NonNullable<GetCardsActionInput['filter']>['status'];
+  }
+
+  const hasExplicitQuery =
+    searchParams.size > 0 ||
+    sport !== undefined ||
+    gradingCompany !== undefined ||
+    status !== undefined ||
+    page !== undefined ||
+    pageSize !== undefined ||
+    includeSold !== undefined;
+
+  return {
+    search: getStringParam(searchParams, 'search'),
+    ...(Object.keys(filter).length > 0 ? { filter } : {}),
+    ...(page !== undefined ? { page } : hasExplicitQuery ? { page: 1 } : {}),
+    ...(pageSize !== undefined ? { pageSize } : hasExplicitQuery ? {} : { pageSize: 1000 }),
+    ...(includeSold !== undefined
+      ? { includeSold }
+      : hasExplicitQuery
+        ? {}
+        : { includeSold: true }),
+  };
+}
+
+export async function GET(request: NextRequest) {
+  const result = await getCardsAction(buildCardsActionInput(request));
+
+  return actionResultToApiResponse(result, {
+    mapData: data => ({
+      cards: data.items,
+      total: data.total,
+      page: data.page,
+      pageSize: data.pageSize,
+      totalPages: data.totalPages,
+    }),
+  });
 }
 
 export async function POST(request: NextRequest) {
+  let body: unknown;
+
   try {
-    const session = await auth();
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    const body = await request.json();
-
-    // Prepare images array: frontImage as mainImage, backImage in attachmentImages
-    const mainImage = body.frontImage || null;
-    const attachmentImages = body.backImage ? [body.backImage] : [];
-
-    const newCard = await db
-      .insert(cards)
-      .values({
-        userId: session.user.id, // text type, not uuid
-        playerName: body.playerName,
-        sport: body.sport,
-        team: body.team || null,
-        position: body.position || null,
-        year: body.year,
-        brand: body.brand,
-        series: body.series || null,
-        cardNumber: body.cardNumber || null,
-        gradingCompany: body.gradingCompany || 'UNGRADED',
-        grade: body.grade ? body.grade.toString() : null,
-        certificationNumber: body.certificationNumber || null,
-        purchasePrice: body.purchasePrice ? body.purchasePrice.toString() : null,
-        purchaseDate: body.purchaseDate || null,
-        currentValue: body.currentValue ? body.currentValue.toString() : null,
-        estimatedValue: body.estimatedValue ? body.estimatedValue.toString() : null,
-        parallel: body.parallel || null,
-        serialNumber: body.serialNumber || null,
-        isAutographed: body.isAutographed || false,
-        hasMemorabilia: body.hasMemorabilia || false,
-        memorabiliaType: body.memorabiliaType || null,
-        status: body.status || 'COLLECTION',
-        location: body.location || null,
-        storageType: body.storageType || null,
-        condition: body.condition || null,
-        notes: body.notes || null,
-        mainImage: mainImage,
-        attachmentImages: attachmentImages,
-      })
-      .returning();
-
-    return NextResponse.json({ card: newCard[0] });
-  } catch (error) {
-    console.error('Failed to create card:', error);
-    return NextResponse.json({ error: 'Failed to create card' }, { status: 500 });
+    body = await request.json();
+  } catch {
+    return createBadRequestResponse('Request body must be valid JSON');
   }
+
+  return actionResultToApiResponse(await saveCardAction(body), {
+    status: 201,
+    mapData: data => data,
+  });
 }

@@ -64,6 +64,7 @@ export interface GetCardsActionInput {
     gradingCompany?: 'UNGRADED' | 'PSA' | 'BGS' | 'SGC' | 'CGC';
     status?: 'COLLECTION' | 'FOR_SALE' | 'SOLD' | 'GRADING' | 'DISPLAY';
   };
+  includeSold?: boolean;
   page?: number;
   pageSize?: number;
 }
@@ -96,8 +97,9 @@ const getCardsSchema = z.object({
       status: z.enum(['COLLECTION', 'FOR_SALE', 'SOLD', 'GRADING', 'DISPLAY']).optional(),
     })
     .optional(),
+  includeSold: z.boolean().optional(),
   page: z.coerce.number().int().positive().optional(),
-  pageSize: z.coerce.number().int().positive().max(100).optional(),
+  pageSize: z.coerce.number().int().positive().max(1000).optional(),
 });
 
 const cardInputSchema = z.object({
@@ -365,7 +367,7 @@ export async function getCardAction(id: string): Promise<ActionResult<CardItem |
   }
 }
 
-export async function saveCardAction(data: unknown): Promise<ActionResult<{ success: true }>> {
+export async function saveCardAction(data: unknown): Promise<ActionResult<{ card: CardItem }>> {
   try {
     const session = await requireAuthenticatedUser();
 
@@ -379,11 +381,14 @@ export async function saveCardAction(data: unknown): Promise<ActionResult<{ succ
       return validationErrorResult('Validation failed', zodFieldErrors(validationResult.error));
     }
 
-    await saveCardData(validationResult.data);
+    const card = await saveCardData({
+      ...validationResult.data,
+      ...(validationResult.data.id ? {} : { userId: session.user.id }),
+    });
 
     return {
       success: true,
-      data: { success: true },
+      data: { card },
     };
   } catch (error) {
     return {

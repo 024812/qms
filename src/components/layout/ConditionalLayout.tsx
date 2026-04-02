@@ -9,13 +9,13 @@ import { CommandPalette } from '@/components/CommandPalette';
 /**
  * Conditional Layout Wrapper
  *
- * Excludes AppLayout for public pages like login and register.
- * Dashboard pages use their own (dashboard) route group layout.
+ * Excludes the application shell for public pages like login and register.
+ * Dashboard pages use the shared sidebar/header shell from this component.
  */
 export function ConditionalLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
 
-  // Pages that should not use AppLayout
+  // Pages that should not use the authenticated app shell
   const publicPages = ['/login', '/register'];
 
   if (publicPages.includes(pathname)) {

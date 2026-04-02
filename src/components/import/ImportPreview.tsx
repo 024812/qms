@@ -210,15 +210,18 @@ export function ImportPreview({
           </CardHeader>
           <CardContent>
             <div className="space-y-3 max-h-64 overflow-y-auto">
-              {preview.errors.slice(0, 10).map((error: any, index: number) => (
-                <div key={index} className="flex items-start space-x-3 p-3 bg-red-50 rounded-lg">
+              {preview.errors.slice(0, 10).map(errorItem => (
+                <div
+                  key={`preview-error-${errorItem.row}-${errorItem.field ?? 'general'}`}
+                  className="flex items-start space-x-3 p-3 bg-red-50 rounded-lg"
+                >
                   <AlertTriangle className="h-4 w-4 text-red-600 mt-0.5" />
                   <div className="flex-1">
                     <p className="text-sm font-medium text-red-800">
-                      Row {error.row}: {error.message}
+                      Row {errorItem.row}: {errorItem.message}
                     </p>
-                    {error.field && (
-                      <p className="text-xs text-red-600 mt-1">Field: {error.field}</p>
+                    {errorItem.field && (
+                      <p className="text-xs text-red-600 mt-1">Field: {errorItem.field}</p>
                     )}
                   </div>
                 </div>
@@ -260,8 +263,8 @@ export function ImportPreview({
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {preview.preview.slice(0, 5).map((row: any, index: number) => (
-                    <TableRow key={index}>
+                  {preview.preview.slice(0, 5).map(row => (
+                    <TableRow key={`preview-row-${row.itemNumber}-${row.name}`}>
                       <TableCell>{row.itemNumber}</TableCell>
                       <TableCell>{row.name}</TableCell>
                       <TableCell>

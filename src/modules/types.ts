@@ -1,20 +1,22 @@
 /**
  * Module Definition Types
- * 
+ *
  * This file defines the core interfaces for the module system.
  * Each module must implement the ModuleDefinition interface.
- * 
+ *
  * Requirements: 1.2, 5.1
  */
 
 import { z } from 'zod';
-import { ReactNode } from 'react';
 
 /**
  * Module definition interface
  * Every item module must implement this interface
  */
-export interface ModuleDefinition {
+export interface ModuleDefinition<
+  TItem = unknown,
+  TAttributes extends z.ZodRawShape = z.ZodRawShape,
+> {
   /** Module unique identifier (kebab-case) */
   id: string;
 
@@ -31,22 +33,22 @@ export interface ModuleDefinition {
   color: string;
 
   /** Attributes Zod Schema */
-  attributesSchema: z.ZodObject<any>;
+  attributesSchema: z.ZodObject<TAttributes>;
 
   /** List card component */
-  CardComponent?: React.ComponentType<{ item: any }>;
+  CardComponent?: React.ComponentType<{ item: TItem }>;
 
   /** Detail view component */
-  DetailComponent?: React.ComponentType<{ item: any }>;
+  DetailComponent?: React.ComponentType<{ item: TItem }>;
 
   /** Form field configuration */
   formFields: FormFieldConfig[];
 
   /** List column configuration */
-  listColumns: ColumnConfig[];
+  listColumns: ColumnConfig<TItem>[];
 
   /** Statistics configuration (optional) */
-  statsConfig?: StatsConfig;
+  statsConfig?: StatsConfig<TItem>;
 }
 
 /**
@@ -65,19 +67,19 @@ export interface FormFieldConfig {
 /**
  * Column configuration
  */
-export interface ColumnConfig {
+export interface ColumnConfig<TItem = unknown> {
   key: string;
   label: string;
-  render?: (value: any, item: any) => ReactNode;
+  render?: (value: unknown, item: TItem) => unknown;
 }
 
 /**
  * Statistics configuration
  */
-export interface StatsConfig {
+export interface StatsConfig<TItem = unknown> {
   metrics: Array<{
     key: string;
     label: string;
-    calculate: (items: any[]) => number | string;
+    calculate: (items: TItem[]) => number | string;
   }>;
 }

@@ -165,6 +165,17 @@ export interface StatusReport {
   quilts: StatusReportItem[];
 }
 
+interface HistoricalUsageRow {
+  id: string;
+  quilt_id: string;
+  quilt_name: string;
+  item_number: number;
+  season: string;
+  start_date: string | Date;
+  end_date: string | Date | null;
+  year: string | number;
+}
+
 /**
  * Stats Repository - handles all statistical database queries
  */
@@ -314,7 +325,7 @@ export class StatsRepository extends BaseRepositoryImpl<never, never> {
         // Actually, drizzle `execute` with template literal usually returns rows directly or standard object.
         // But types might be loose.
 
-        return (result.rows as any[]).map(row => ({
+        return (result.rows as unknown as HistoricalUsageRow[]).map(row => ({
           id: row.id,
           quiltId: row.quilt_id,
           quiltName: row.quilt_name,
@@ -322,7 +333,7 @@ export class StatsRepository extends BaseRepositoryImpl<never, never> {
           season: row.season,
           startDate: new Date(row.start_date),
           endDate: row.end_date ? new Date(row.end_date) : null,
-          year: parseInt(row.year),
+          year: parseInt(String(row.year), 10),
         }));
       },
       'getHistoricalUsage',

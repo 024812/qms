@@ -5,7 +5,7 @@
  * DELETE /api/users/[id] - Delete user (admin only)
  *
  * Requirements: 8.1 (User management)
- * 
+ *
  * Note: This uses the actual production database schema with "users" table
  * Schema: id (text), email (text), name (text), hashed_password (text), preferences (jsonb)
  */
@@ -23,13 +23,16 @@ import {
   createInternalErrorResponse,
 } from '@/lib/api/response';
 
+interface UserPreferences {
+  role?: string;
+  activeModules?: string[];
+  [key: string]: unknown;
+}
+
 /**
  * PATCH /api/users/[id] - Update user
  */
-export async function PATCH(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const session = await auth();
 
@@ -56,19 +59,21 @@ export async function PATCH(
       name: string;
       email: string;
       hashed_password: string | null;
-      preferences: any;
+      preferences: UserPreferences | null;
     };
 
     // Prepare updated values
     const updatedName = name !== undefined ? name : existingUser.name;
     const updatedEmail = email !== undefined ? email : existingUser.email;
     let updatedHashedPassword = existingUser.hashed_password;
-    
+
     // Update preferences
-    const updatedPreferences = {
-      ...existingUser.preferences,
-      role: role !== undefined ? role.toLowerCase() : (existingUser.preferences?.role || 'member'),
-      activeModules: activeModules !== undefined ? activeModules : (existingUser.preferences?.activeModules || []),
+    const existingPreferences = existingUser.preferences ?? {};
+    const updatedPreferences: UserPreferences = {
+      ...existingPreferences,
+      role: role !== undefined ? role.toLowerCase() : existingPreferences.role || 'member',
+      activeModules:
+        activeModules !== undefined ? activeModules : existingPreferences.activeModules || [],
     };
 
     // Validate email if provided
@@ -113,7 +118,7 @@ export async function PATCH(
       id: string;
       name: string;
       email: string;
-      preferences: any;
+      preferences: UserPreferences | null;
     };
 
     return createSuccessResponse({

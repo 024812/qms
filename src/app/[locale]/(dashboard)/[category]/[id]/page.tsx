@@ -1,4 +1,4 @@
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card as UICard, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, Edit } from 'lucide-react';
 import Link from 'next/link';
@@ -8,6 +8,8 @@ import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { notFound } from 'next/navigation';
 import { getModule } from '@/modules/registry';
 import { getItemById } from '@/app/actions/items';
+import type { Quilt } from '@/lib/database/types';
+import type { Card as CardRecord } from '@/db/schema';
 
 // We rely on dynamic rendering for items as the list is indefinite.
 // cacheComponents might require this page to be dynamic explicitly if generateStaticParams is missing?
@@ -21,9 +23,15 @@ interface PageProps {
   }>;
 }
 
+type ItemRecord = Quilt | CardRecord;
+
+function isCardItem(item: ItemRecord): item is CardRecord {
+  return 'playerName' in item;
+}
+
 export default async function ItemDetail({ params }: PageProps) {
   const { locale, category, id } = await params;
-  
+
   // Enable static rendering
   setRequestLocale(locale);
   const t = await getTranslations('common');
@@ -54,7 +62,7 @@ export default async function ItemDetail({ params }: PageProps) {
 async function ItemDetailContent({ category, id }: { category: string; id: string }) {
   const tCommon = await getTranslations('common');
 
-  let item: Awaited<ReturnType<typeof getItemById>> | null = null;
+  let item: ItemRecord | null = null;
   let fetchError: unknown = null;
 
   try {
@@ -86,64 +94,82 @@ async function ItemDetailContent({ category, id }: { category: string; id: strin
   let itemStatus: string | undefined | null = '';
   let itemDescription: string | undefined | null = '';
 
-  if ('playerName' in item) {
+  if (isCardItem(item)) {
     // It's a Card
     itemName = `${item.year} ${item.brand} ${item.playerName}`;
     itemStatus = item.status;
     itemDescription = item.notes; // Cards use notes, not description
   } else {
     // It's a Quilt (or has name)
-    itemName = (item as any).name || 'Unknown Item';
-    itemStatus = (item as any).currentStatus || (item as any).status;
-    itemDescription = (item as any).notes || (item as any).description;
+    itemName = item.name || 'Unknown Item';
+    itemStatus = item.currentStatus;
+    itemDescription = item.notes;
   }
 
   return (
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <div className="space-y-1">
-            <CardTitle className="text-2xl font-bold">{itemName}</CardTitle>
-            <div className="flex items-center space-x-2 text-sm text-muted-foreground">
-              <span>ID: {item.id}</span>
-              <span>•</span>
-              {itemStatus && <StatusBadge status={itemStatus} />}
+    <UICard>
+      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+        <div className="space-y-1">
+          <CardTitle className="text-2xl font-bold">{itemName}</CardTitle>
+          <div className="flex items-center space-x-2 text-sm text-muted-foreground">
+            <span>ID: {item.id}</span>
+            <span>•</span>
+            {itemStatus && <StatusBadge status={itemStatus} />}
+          </div>
+        </div>
+        <Button variant="outline" size="sm" asChild>
+          <Link href={`/${category}/${id}/edit`}>
+            <Edit className="w-4 h-4 mr-2" />
+            {tCommon('edit')}
+          </Link>
+        </Button>
+      </CardHeader>
+      <CardContent>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mt-6">
+          <div className="space-y-6">
+            <div>
+              <h3 className="text-sm font-medium text-muted-foreground mb-2">Description</h3>
+              <p className="text-sm">
+                {itemDescription || item.notes || 'No description provided.'}
+              </p>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              {Object.entries(item).map(([key, value]) => {
+                if (
+                  [
+                    'id',
+                    'name',
+                    'description',
+                    'notes',
+                    'status',
+                    'currentStatus',
+                    'images',
+                    'userId',
+                    'updatedAt',
+                    'mainImage',
+                    'attachmentImages',
+                  ].includes(key)
+                )
+                  return null;
+                if (typeof value === 'object' && value !== null && !(value instanceof Date))
+                  return null;
+
+                return (
+                  <div key={key}>
+                    <h4 className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-1">
+                      {key}
+                    </h4>
+                    <p className="text-sm font-medium">
+                      {value instanceof Date ? value.toLocaleDateString() : String(value)}
+                    </p>
+                  </div>
+                );
+              })}
             </div>
           </div>
-          <Button variant="outline" size="sm" asChild>
-            <Link href={`/${category}/${id}/edit`}>
-              <Edit className="w-4 h-4 mr-2" />
-              {tCommon('edit')}
-            </Link>
-          </Button>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mt-6">
-            <div className="space-y-6">
-              <div>
-                <h3 className="text-sm font-medium text-muted-foreground mb-2">Description</h3>
-                <p className="text-sm">{itemDescription || item.notes || 'No description provided.'}</p>
-              </div>
-              
-              <div className="grid grid-cols-2 gap-4">
-                {Object.entries(item).map(([key, value]) => {
-                  if (['id', 'name', 'description', 'notes', 'status', 'currentStatus', 'images', 'userId', 'updatedAt', 'mainImage', 'attachmentImages'].includes(key)) return null;
-                  if (typeof value === 'object' && value !== null && !(value instanceof Date)) return null; 
-                  
-                  return (
-                    <div key={key}>
-                      <h4 className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-1">
-                        {key}
-                      </h4>
-                      <p className="text-sm font-medium">
-                        {value instanceof Date ? value.toLocaleDateString() : String(value)}
-                      </p>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+        </div>
+      </CardContent>
+    </UICard>
   );
 }

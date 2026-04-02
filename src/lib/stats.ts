@@ -1,9 +1,9 @@
 /**
  * Statistics Analysis Service
- * 
+ *
  * Provides generic statistical calculation functions that support custom metrics.
  * This service can be used by any module to calculate statistics on their data.
- * 
+ *
  * Requirements: 6.2 - Generic statistics analysis engine with custom metrics support
  */
 
@@ -13,7 +13,7 @@ interface Item {
   type: string;
   name: string;
   status: string;
-  attributes: Record<string, any>;
+  attributes: Record<string, unknown>;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -21,7 +21,7 @@ interface Item {
 /**
  * Metric definition interface
  */
-export interface MetricDefinition<T = any> {
+export interface MetricDefinition<T = unknown> {
   /** Unique metric identifier */
   key: string;
   /** Display label */
@@ -48,12 +48,12 @@ export interface StatisticsResult {
 
 /**
  * Calculate statistics based on metric definitions
- * 
+ *
  * @param items - Array of items to analyze
  * @param metrics - Array of metric definitions
  * @returns Statistics results
  */
-export function calculateStatistics<T = any>(
+export function calculateStatistics<T = unknown>(
   items: T[],
   metrics: MetricDefinition<T>[]
 ): StatisticsResult {
@@ -148,18 +148,18 @@ export const StatFunctions = {
   /**
    * Group items by a key
    */
-  groupBy: <T, K extends string | number>(
-    items: T[],
-    getKey: (item: T) => K
-  ): Record<K, T[]> => {
-    return items.reduce((acc, item) => {
-      const key = getKey(item);
-      if (!acc[key]) {
-        acc[key] = [];
-      }
-      acc[key].push(item);
-      return acc;
-    }, {} as Record<K, T[]>);
+  groupBy: <T, K extends string | number>(items: T[], getKey: (item: T) => K): Record<K, T[]> => {
+    return items.reduce(
+      (acc, item) => {
+        const key = getKey(item);
+        if (!acc[key]) {
+          acc[key] = [];
+        }
+        acc[key].push(item);
+        return acc;
+      },
+      {} as Record<K, T[]>
+    );
   },
 
   /**
@@ -169,11 +169,14 @@ export const StatFunctions = {
     items: T[],
     getValue: (item: T) => K
   ): Record<K, number> => {
-    return items.reduce((acc, item) => {
-      const value = getValue(item);
-      acc[value] = (acc[value] || 0) + 1;
-      return acc;
-    }, {} as Record<K, number>);
+    return items.reduce(
+      (acc, item) => {
+        const value = getValue(item);
+        acc[value] = (acc[value] || 0) + 1;
+        return acc;
+      },
+      {} as Record<K, number>
+    );
   },
 
   /**
@@ -210,18 +213,22 @@ export const Formatters = {
   /**
    * Format as decimal with specified precision
    */
-  decimal: (precision: number = 2) => (value: number | string): string => {
-    const num = typeof value === 'string' ? parseFloat(value) : value;
-    return num.toFixed(precision);
-  },
+  decimal:
+    (precision: number = 2) =>
+    (value: number | string): string => {
+      const num = typeof value === 'string' ? parseFloat(value) : value;
+      return num.toFixed(precision);
+    },
 
   /**
    * Format as percentage
    */
-  percentage: (precision: number = 1) => (value: number | string): string => {
-    const num = typeof value === 'string' ? parseFloat(value) : value;
-    return `${num.toFixed(precision)}%`;
-  },
+  percentage:
+    (precision: number = 1) =>
+    (value: number | string): string => {
+      const num = typeof value === 'string' ? parseFloat(value) : value;
+      return `${num.toFixed(precision)}%`;
+    },
 
   /**
    * Format as currency (CNY)
@@ -253,7 +260,7 @@ export const CommonMetrics = {
   totalCount: <T>(): MetricDefinition<T> => ({
     key: 'total',
     label: '总数量',
-    calculate: (items) => StatFunctions.count(items),
+    calculate: items => StatFunctions.count(items),
     format: Formatters.integer,
   }),
 
@@ -263,7 +270,7 @@ export const CommonMetrics = {
   countByStatus: (status: string, label: string): MetricDefinition<Item> => ({
     key: `count_${status}`,
     label,
-    calculate: (items) => StatFunctions.countWhere(items, (item) => item.status === status),
+    calculate: items => StatFunctions.countWhere(items, item => item.status === status),
     format: Formatters.integer,
   }),
 
@@ -277,10 +284,10 @@ export const CommonMetrics = {
   ): MetricDefinition<Item> => ({
     key: `avg_${attributeKey}`,
     label,
-    calculate: (items) =>
+    calculate: items =>
       StatFunctions.average(
-        items.filter((item) => typeof item.attributes[attributeKey] === 'number'),
-        (item) => item.attributes[attributeKey] as number
+        items.filter(item => typeof item.attributes[attributeKey] === 'number'),
+        item => item.attributes[attributeKey] as number
       ),
     format: Formatters.decimal(precision),
   }),
@@ -291,10 +298,10 @@ export const CommonMetrics = {
   sumAttribute: (attributeKey: string, label: string): MetricDefinition<Item> => ({
     key: `sum_${attributeKey}`,
     label,
-    calculate: (items) =>
+    calculate: items =>
       StatFunctions.sum(
-        items.filter((item) => typeof item.attributes[attributeKey] === 'number'),
-        (item) => item.attributes[attributeKey] as number
+        items.filter(item => typeof item.attributes[attributeKey] === 'number'),
+        item => item.attributes[attributeKey] as number
       ),
     format: Formatters.integer,
   }),
@@ -305,8 +312,13 @@ export const CommonMetrics = {
   modeAttribute: (attributeKey: string, label: string): MetricDefinition<Item> => ({
     key: `mode_${attributeKey}`,
     label,
-    calculate: (items) => {
-      const value = StatFunctions.mode(items, (item) => item.attributes[attributeKey]);
+    calculate: items => {
+      const value = StatFunctions.mode(items, item => {
+        const attributeValue = item.attributes[attributeKey];
+        return typeof attributeValue === 'string' || typeof attributeValue === 'number'
+          ? attributeValue
+          : 'N/A';
+      });
       return value ?? 'N/A';
     },
   }),
@@ -321,7 +333,7 @@ export const CommonMetrics = {
   ): MetricDefinition<T> => ({
     key,
     label,
-    calculate: (items) => {
+    calculate: items => {
       const count = StatFunctions.countWhere(items, predicate);
       return StatFunctions.percentage(count, items.length);
     },
@@ -336,14 +348,10 @@ export const TimeStats = {
   /**
    * Count items created in date range
    */
-  countInDateRange: (
-    items: Item[],
-    startDate: Date,
-    endDate: Date
-  ): number => {
+  countInDateRange: (items: Item[], startDate: Date, endDate: Date): number => {
     return StatFunctions.countWhere(
       items,
-      (item) => item.createdAt >= startDate && item.createdAt <= endDate
+      item => item.createdAt >= startDate && item.createdAt <= endDate
     );
   },
 
@@ -354,7 +362,7 @@ export const TimeStats = {
     items: Item[],
     period: 'day' | 'week' | 'month' | 'year'
   ): Record<string, Item[]> => {
-    return StatFunctions.groupBy(items, (item) => {
+    return StatFunctions.groupBy(items, item => {
       const date = new Date(item.createdAt);
       switch (period) {
         case 'day':
@@ -433,7 +441,7 @@ export const DistributionStats = {
 /**
  * Export all statistics utilities
  */
-export default {
+const statsUtilities = {
   calculateStatistics,
   StatFunctions,
   Formatters,
@@ -441,3 +449,5 @@ export default {
   TimeStats,
   DistributionStats,
 };
+
+export default statsUtilities;

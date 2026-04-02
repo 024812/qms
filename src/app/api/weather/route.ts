@@ -73,7 +73,7 @@ export async function GET(request: Request) {
         updatedAt: new Date().toISOString(),
       },
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     return createInternalErrorResponse('获取天气数据失败', error);
   }
 }

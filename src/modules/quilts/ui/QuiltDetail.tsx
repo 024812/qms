@@ -1,17 +1,17 @@
 /**
  * QuiltDetail Component for Module System
- * 
+ *
  * This component displays comprehensive quilt information in the detail view.
  * It preserves the existing design and functionality while being compatible
  * with the module registry system.
- * 
+ *
  * Key features:
  * - Displays all 24+ quilt fields in an organized layout
  * - Shows image carousel/gallery for main and attachment images
  * - Displays usage history (if available)
  * - Compatible with both module system and existing routes
  * - Responsive design with grid layout
- * 
+ *
  * Requirements: 4.1
  */
 
@@ -120,7 +120,7 @@ function DetailField({
 
 /**
  * QuiltDetail Component
- * 
+ *
  * Displays comprehensive quilt information including:
  * - Image gallery (main image + attachment images)
  * - Basic information (item number, name, season, status)
@@ -128,7 +128,7 @@ function DetailField({
  * - Material information
  * - Purchase and storage information
  * - Additional notes
- * 
+ *
  * Layout:
  * - Top: Image gallery
  * - Middle: Information cards organized by category
@@ -156,7 +156,7 @@ export function QuiltDetail({ item }: QuiltDetailProps) {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {allImages.map((imageUrl, index) => (
                 <div
-                  key={index}
+                  key={imageUrl}
                   className="relative aspect-square bg-muted rounded-lg overflow-hidden"
                 >
                   <Image
@@ -187,15 +187,8 @@ export function QuiltDetail({ item }: QuiltDetailProps) {
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <DetailField
-              icon={Package}
-              label="物品编号"
-              value={`#${item.itemNumber}`}
-            />
-            <DetailField
-              label="名称"
-              value={item.name}
-            />
+            <DetailField icon={Package} label="物品编号" value={`#${item.itemNumber}`} />
+            <DetailField label="名称" value={item.name} />
             <DetailField
               label="适用季节"
               value={
@@ -212,12 +205,7 @@ export function QuiltDetail({ item }: QuiltDetailProps) {
                 </Badge>
               }
             />
-            {item.groupId && (
-              <DetailField
-                label="分组ID"
-                value={item.groupId}
-              />
-            )}
+            {item.groupId && <DetailField label="分组ID" value={item.groupId} />}
           </div>
         </CardContent>
       </Card>
@@ -242,13 +230,14 @@ export function QuiltDetail({ item }: QuiltDetailProps) {
             <DetailField
               icon={Weight}
               label="重量"
-              value={item.weightGrams ? `${item.weightGrams} 克 (${(item.weightGrams / 1000).toFixed(2)} 千克)` : '-'}
+              value={
+                item.weightGrams
+                  ? `${item.weightGrams} 克 (${(item.weightGrams / 1000).toFixed(2)} 千克)`
+                  : '-'
+              }
             />
-            {(item.lengthCm && item.widthCm) && (
-              <DetailField
-                label="总尺寸"
-                value={`${item.lengthCm} × ${item.widthCm} 厘米`}
-              />
+            {item.lengthCm && item.widthCm && (
+              <DetailField label="总尺寸" value={`${item.lengthCm} × ${item.widthCm} 厘米`} />
             )}
           </div>
         </CardContent>
@@ -261,28 +250,12 @@ export function QuiltDetail({ item }: QuiltDetailProps) {
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <DetailField
-              label="填充材料"
-              value={item.fillMaterial}
-            />
-            <DetailField
-              icon={Palette}
-              label="颜色"
-              value={item.color}
-            />
+            <DetailField label="填充材料" value={item.fillMaterial} />
+            <DetailField icon={Palette} label="颜色" value={item.color} />
             {item.materialDetails && (
-              <DetailField
-                label="材料详情"
-                value={item.materialDetails}
-                fullWidth
-              />
+              <DetailField label="材料详情" value={item.materialDetails} fullWidth />
             )}
-            {item.brand && (
-              <DetailField
-                label="品牌"
-                value={item.brand}
-              />
-            )}
+            {item.brand && <DetailField label="品牌" value={item.brand} />}
           </div>
         </CardContent>
       </Card>
@@ -294,22 +267,10 @@ export function QuiltDetail({ item }: QuiltDetailProps) {
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <DetailField
-              icon={Calendar}
-              label="购买日期"
-              value={formatDate(item.purchaseDate)}
-            />
-            <DetailField
-              icon={MapPin}
-              label="存放位置"
-              value={item.location}
-            />
+            <DetailField icon={Calendar} label="购买日期" value={formatDate(item.purchaseDate)} />
+            <DetailField icon={MapPin} label="存放位置" value={item.location} />
             {item.packagingInfo && (
-              <DetailField
-                icon={Box}
-                label="包装信息"
-                value={item.packagingInfo}
-              />
+              <DetailField icon={Box} label="包装信息" value={item.packagingInfo} />
             )}
           </div>
         </CardContent>
@@ -334,16 +295,8 @@ export function QuiltDetail({ item }: QuiltDetailProps) {
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <DetailField
-              icon={Calendar}
-              label="创建时间"
-              value={formatDate(item.createdAt)}
-            />
-            <DetailField
-              icon={Calendar}
-              label="更新时间"
-              value={formatDate(item.updatedAt)}
-            />
+            <DetailField icon={Calendar} label="创建时间" value={formatDate(item.createdAt)} />
+            <DetailField icon={Calendar} label="更新时间" value={formatDate(item.updatedAt)} />
           </div>
         </CardContent>
       </Card>

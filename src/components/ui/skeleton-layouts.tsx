@@ -23,19 +23,23 @@ export function CardSkeleton({ className }: { className?: string }) {
  * Used for loading table data
  */
 export function TableSkeleton({ rows = 5, columns = 4 }: { rows?: number; columns?: number }) {
+  const headerKeys = Array.from({ length: columns }, (_, index) => `header-${index + 1}`);
+  const rowKeys = Array.from({ length: rows }, (_, index) => `row-${index + 1}`);
+  const cellKeys = Array.from({ length: columns }, (_, index) => `cell-${index + 1}`);
+
   return (
     <div className="space-y-3">
       {/* Table Header */}
       <div className="flex gap-4 border-b border-border pb-3">
-        {Array.from({ length: columns }).map((_, i) => (
-          <Skeleton key={`header-${i}`} className="h-4 flex-1" />
+        {headerKeys.map(key => (
+          <Skeleton key={key} className="h-4 flex-1" />
         ))}
       </div>
       {/* Table Rows */}
-      {Array.from({ length: rows }).map((_, rowIndex) => (
-        <div key={`row-${rowIndex}`} className="flex gap-4">
-          {Array.from({ length: columns }).map((_, colIndex) => (
-            <Skeleton key={`cell-${rowIndex}-${colIndex}`} className="h-4 flex-1" />
+      {rowKeys.map(rowKey => (
+        <div key={rowKey} className="flex gap-4">
+          {cellKeys.map(cellKey => (
+            <Skeleton key={`${rowKey}-${cellKey}`} className="h-4 flex-1" />
           ))}
         </div>
       ))}
@@ -48,10 +52,12 @@ export function TableSkeleton({ rows = 5, columns = 4 }: { rows?: number; column
  * Used for loading form fields
  */
 export function FormSkeleton({ fields = 4 }: { fields?: number }) {
+  const fieldKeys = Array.from({ length: fields }, (_, index) => `field-${index + 1}`);
+
   return (
     <div className="space-y-4">
-      {Array.from({ length: fields }).map((_, i) => (
-        <div key={`field-${i}`} className="space-y-2">
+      {fieldKeys.map(key => (
+        <div key={key} className="space-y-2">
           <Skeleton className="h-4 w-24" />
           <Skeleton className="h-9 w-full" />
         </div>
@@ -69,13 +75,12 @@ export function FormSkeleton({ fields = 4 }: { fields?: number }) {
  * Used for loading list items
  */
 export function ListSkeleton({ items = 5 }: { items?: number }) {
+  const itemKeys = Array.from({ length: items }, (_, index) => `item-${index + 1}`);
+
   return (
     <div className="space-y-3">
-      {Array.from({ length: items }).map((_, i) => (
-        <div
-          key={`item-${i}`}
-          className="flex items-center gap-4 rounded-lg border border-border p-4"
-        >
+      {itemKeys.map(key => (
+        <div key={key} className="flex items-center gap-4 rounded-lg border border-border p-4">
           <Skeleton className="h-10 w-10 rounded-full" />
           <div className="flex-1 space-y-2">
             <Skeleton className="h-4 w-3/4" />
@@ -92,10 +97,12 @@ export function ListSkeleton({ items = 5 }: { items?: number }) {
  * Used for loading dashboard statistics cards
  */
 export function DashboardStatsSkeleton({ cards = 4 }: { cards?: number }) {
+  const cardKeys = Array.from({ length: cards }, (_, index) => `stat-${index + 1}`);
+
   return (
     <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
-      {Array.from({ length: cards }).map((_, i) => (
-        <div key={`stat-${i}`} className="rounded-lg border border-border p-5 shadow-sm">
+      {cardKeys.map(key => (
+        <div key={key} className="rounded-lg border border-border p-5 shadow-sm">
           <div className="flex items-center justify-between">
             <div className="space-y-2 flex-1">
               <Skeleton className="h-4 w-24" />

@@ -29,6 +29,8 @@ import {
   PackageOpen,
 } from 'lucide-react';
 
+import type { AppSettings } from '@/lib/types/settings';
+
 interface UsageTrackingStats {
   total: number;
   active: number;
@@ -50,18 +52,22 @@ interface UsageHistoryRecord {
 }
 
 interface UsageTrackingPageClientProps {
+  initialAppSettings: AppSettings | null;
   initialUsageHistory: UsageHistoryRecord[];
   initialStats: UsageTrackingStats;
 }
 
 export function UsageTrackingPageClient({
+  initialAppSettings,
   initialUsageHistory,
   initialStats,
 }: UsageTrackingPageClientProps) {
   const router = useRouter();
   const t = useTranslations();
   const locale = useLocale();
-  const { data: appSettings } = useAppSettings();
+  const { data: appSettings } = useAppSettings({
+    initialData: initialAppSettings ?? undefined,
+  });
 
   const [sortField, setSortField] = useState<string | null>(null);
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
@@ -72,7 +78,7 @@ export function UsageTrackingPageClient({
   };
 
   const handleRecordDoubleClick = (record: UsageHistoryRecord) => {
-    const usageDoubleClickAction = (appSettings?.usageDoubleClickAction as string) || 'view';
+    const usageDoubleClickAction = appSettings?.usageDoubleClickAction || 'view';
 
     switch (usageDoubleClickAction) {
       case 'view':

@@ -2,10 +2,12 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Card, CardContent } from '@/components/ui/card';
 
 export function QuiltListSkeleton({ count = 6 }: { count?: number }) {
+  const cardKeys = Array.from({ length: count }, (_, index) => `quilt-skeleton-${index + 1}`);
+
   return (
     <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
-      {Array.from({ length: count }).map((_, i) => (
-        <Card key={`quilt-skeleton-${i}`}>
+      {cardKeys.map(key => (
+        <Card key={key}>
           <CardContent className="p-6">
             <div className="space-y-4">
               {/* Header */}
@@ -47,6 +49,8 @@ export function QuiltListSkeleton({ count = 6 }: { count?: number }) {
 }
 
 export function QuiltTableSkeleton({ rows = 10 }: { rows?: number }) {
+  const rowKeys = Array.from({ length: rows }, (_, index) => `row-${index + 1}`);
+
   return (
     <div className="rounded-md border">
       {/* Table Header */}
@@ -64,8 +68,8 @@ export function QuiltTableSkeleton({ rows = 10 }: { rows?: number }) {
 
       {/* Table Rows */}
       <div className="divide-y">
-        {Array.from({ length: rows }).map((_, i) => (
-          <div key={`row-${i}`} className="p-4">
+        {rowKeys.map(key => (
+          <div key={key} className="p-4">
             <div className="flex gap-4 items-center">
               <Skeleton className="h-4 w-16" />
               <Skeleton className="h-4 w-32 flex-1" />

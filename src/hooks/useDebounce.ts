@@ -48,10 +48,10 @@ export function useDebouncedSearch(initialValue: string = '', delay: number = 30
  * @param deps - Dependencies array for the callback
  * @returns The debounced callback function
  */
-export function useDebouncedCallback<T extends (...args: any[]) => any>(
+export function useDebouncedCallback<T extends (...args: unknown[]) => unknown>(
   callback: T,
   delay: number,
-  deps: React.DependencyList = []
+  _deps: React.DependencyList = []
 ): T {
   const [debouncedCallback, setDebouncedCallback] = useState<T | null>(null);
 
@@ -63,7 +63,7 @@ export function useDebouncedCallback<T extends (...args: any[]) => any>(
     return () => {
       clearTimeout(handler);
     };
-  }, [callback, delay, ...deps]);
+  }, [callback, delay]);
 
   return (debouncedCallback || callback) as T;
 }

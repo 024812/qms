@@ -63,12 +63,12 @@ export function ImageUpload({
 
       if (newImages.length > 0) {
         onImagesChange([...images, ...newImages]);
-        toast.success(
-          t('quilts.dialogs.imageUpload.addedSuccess', { count: newImages.length })
-        );
+        toast.success(t('quilts.dialogs.imageUpload.addedSuccess', { count: newImages.length }));
       }
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : t('quilts.dialogs.imageUpload.uploadError'));
+      toast.error(
+        error instanceof Error ? error.message : t('quilts.dialogs.imageUpload.uploadError')
+      );
     } finally {
       setIsUploading(false);
       if (fileInputRef.current) {
@@ -114,7 +114,9 @@ export function ImageUpload({
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <label className="text-sm font-medium">{label || t('quilts.dialogs.imageUpload.label')}</label>
+        <label className="text-sm font-medium">
+          {label || t('quilts.dialogs.imageUpload.label')}
+        </label>
         <span className="text-xs text-gray-500">
           {images.length} / {maxImages}
         </span>
@@ -126,80 +128,86 @@ export function ImageUpload({
         role="list"
         aria-label={t('quilts.dialogs.imageUpload.label')}
       >
-        {images.map((image, imageIndex) => (
-          // eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions
-          <div
-            key={`${image.substring(0, 30)}-${imageIndex}`}
-            draggable
-            onDragStart={() => handleDragStart(imageIndex)}
-            onDragOver={handleDragOver}
-            onDrop={e => handleDrop(e, imageIndex)}
-            onDragEnd={handleDragEnd}
-            role="listitem"
-            aria-label={`${t('quilts.dialogs.images.attachment', { index: imageIndex + 1 })} ${
-              showMainImage && imageIndex === 0 ? t('quilts.dialogs.images.main') : ''
-            }. ${t('quilts.dialogs.imageUpload.dragHint')}`}
-            className={`
+        {images.map((image, imageIndex) =>
+          (() => {
+            const key = image.startsWith('data:image') ? `image-${image.substring(0, 48)}` : image;
+
+            return (
+              // eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions
+              <div
+                key={key}
+                draggable
+                onDragStart={() => handleDragStart(imageIndex)}
+                onDragOver={handleDragOver}
+                onDrop={e => handleDrop(e, imageIndex)}
+                onDragEnd={handleDragEnd}
+                role="listitem"
+                aria-label={`${t('quilts.dialogs.images.attachment', { index: imageIndex + 1 })} ${
+                  showMainImage && imageIndex === 0 ? t('quilts.dialogs.images.main') : ''
+                }. ${t('quilts.dialogs.imageUpload.dragHint')}`}
+                className={`
               relative aspect-square rounded-lg overflow-hidden border-2 
               ${draggedIndex === imageIndex ? 'opacity-50 border-blue-500' : 'border-gray-200'}
               hover:border-blue-400 transition-all cursor-move group
             `}
-          >
-            {/* Main Image Badge */}
-            {showMainImage && imageIndex === 0 && (
-              <div className="absolute top-2 left-2 z-10">
-                <span className="bg-blue-500 text-white text-xs px-2 py-1 rounded">
-                  {t('quilts.dialogs.images.main')}
-                </span>
-              </div>
-            )}
+              >
+                {/* Main Image Badge */}
+                {showMainImage && imageIndex === 0 && (
+                  <div className="absolute top-2 left-2 z-10">
+                    <span className="bg-blue-500 text-white text-xs px-2 py-1 rounded">
+                      {t('quilts.dialogs.images.main')}
+                    </span>
+                  </div>
+                )}
 
-            {/* Image */}
-            {/* eslint-disable-next-line @next/next/no-img-element, jsx-a11y/no-noninteractive-element-interactions */}
-            <img
-              src={image}
-              alt={t('quilts.dialogs.images.attachment', { index: imageIndex + 1 })}
-              className="absolute inset-0 w-full h-full object-cover"
-              style={{ zIndex: 1 }}
-              onError={e => {
-                e.currentTarget.src =
-                  'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="200" height="200"%3E%3Crect fill="%23f3f4f6" width="200" height="200"/%3E%3Ctext x="50%25" y="50%25" font-family="system-ui" font-size="14" fill="%239ca3af" text-anchor="middle" dy=".3em"%3EError%3C/text%3E%3C/svg%3E';
-              }}
-            />
+                {/* Image */}
+                {/* eslint-disable-next-line @next/next/no-img-element, jsx-a11y/no-noninteractive-element-interactions */}
+                <img
+                  src={image}
+                  alt={t('quilts.dialogs.images.attachment', { index: imageIndex + 1 })}
+                  className="absolute inset-0 w-full h-full object-cover"
+                  style={{ zIndex: 1 }}
+                  onError={e => {
+                    e.currentTarget.src =
+                      'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="200" height="200"%3E%3Crect fill="%23f3f4f6" width="200" height="200"/%3E%3Ctext x="50%25" y="50%25" font-family="system-ui" font-size="14" fill="%239ca3af" text-anchor="middle" dy=".3em"%3EError%3C/text%3E%3C/svg%3E';
+                  }}
+                />
 
-            {/* Delete Button */}
-            <button
-              type="button"
-              onClick={e => {
-                e.preventDefault();
-                e.stopPropagation();
-                handleDelete(imageIndex);
-              }}
-              className="
+                {/* Delete Button */}
+                <button
+                  type="button"
+                  onClick={e => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    handleDelete(imageIndex);
+                  }}
+                  className="
                 absolute top-2 right-2 z-30
                 bg-red-500 text-white rounded-full p-1
                 opacity-0 group-hover:opacity-100 transition-opacity
                 hover:bg-red-600
               "
-              aria-label={t('quilts.dialogs.imageUpload.deleteImage')}
-            >
-              <X className="w-4 h-4" />
-            </button>
+                  aria-label={t('quilts.dialogs.imageUpload.deleteImage')}
+                >
+                  <X className="w-4 h-4" />
+                </button>
 
-            {/* Drag Indicator */}
-            <div
-              className="absolute inset-0 flex items-center justify-center pointer-events-none transition-all"
-              style={{
-                zIndex: 20,
-                backgroundColor: 'transparent',
-              }}
-            >
-              <span className="text-white opacity-0 group-hover:opacity-100 text-xs bg-black bg-opacity-50 px-2 py-1 rounded">
-                {t('quilts.dialogs.imageUpload.dragHint')}
-              </span>
-            </div>
-          </div>
-        ))}
+                {/* Drag Indicator */}
+                <div
+                  className="absolute inset-0 flex items-center justify-center pointer-events-none transition-all"
+                  style={{
+                    zIndex: 20,
+                    backgroundColor: 'transparent',
+                  }}
+                >
+                  <span className="text-white opacity-0 group-hover:opacity-100 text-xs bg-black bg-opacity-50 px-2 py-1 rounded">
+                    {t('quilts.dialogs.imageUpload.dragHint')}
+                  </span>
+                </div>
+              </div>
+            );
+          })()
+        )}
 
         {/* Upload Button */}
         {images.length < maxImages && (
@@ -245,9 +253,7 @@ export function ImageUpload({
       />
 
       {/* Help Text */}
-      <p className="text-xs text-gray-500">
-        {t('quilts.dialogs.imageUpload.helpText')}
-      </p>
+      <p className="text-xs text-gray-500">{t('quilts.dialogs.imageUpload.helpText')}</p>
     </div>
   );
 }

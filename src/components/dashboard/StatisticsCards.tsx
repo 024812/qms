@@ -47,6 +47,17 @@ interface StatisticsCardsProps {
 }
 
 export function StatisticsCards({ stats, previousStats, isLoading = false }: StatisticsCardsProps) {
+  const loadingKeys = [
+    'stats-skeleton-1',
+    'stats-skeleton-2',
+    'stats-skeleton-3',
+    'stats-skeleton-4',
+    'stats-skeleton-5',
+    'stats-skeleton-6',
+    'stats-skeleton-7',
+    'stats-skeleton-8',
+  ];
+
   const getTrendIndicator = (current: number, previous?: number) => {
     if (!previous || previous === 0) return null;
 
@@ -87,8 +98,8 @@ export function StatisticsCards({ stats, previousStats, isLoading = false }: Sta
   if (isLoading) {
     return (
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {Array.from({ length: 8 }).map((_, i) => (
-          <Card key={i} className="animate-pulse">
+        {loadingKeys.map(key => (
+          <Card key={key} className="animate-pulse">
             <CardContent className="pt-6">
               <div className="space-y-3">
                 <div className="h-4 bg-gray-200 rounded w-3/4"></div>

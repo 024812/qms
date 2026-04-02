@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useCallback } from 'react';
+import Image from 'next/image';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { ZoomIn, ZoomOut, RotateCcw, RotateCw, X, RotateCcwIcon } from 'lucide-react';
@@ -153,10 +154,15 @@ export function ImageViewerDialog({
           className="flex items-center justify-center w-[90vw] h-[90vh] overflow-auto cursor-grab active:cursor-grabbing"
           onWheel={handleWheel}
         >
-          <img
+          {/* next/image is intentionally used in unoptimized mode because the viewer
+              can receive data URLs and arbitrary remote assets. */}
+          <Image
             src={imageSrc}
             alt={alt}
-            className="max-w-none select-none transition-transform duration-200 ease-out"
+            width={1600}
+            height={1600}
+            unoptimized
+            className="h-auto max-w-none select-none transition-transform duration-200 ease-out"
             style={{
               transform: `scale(${zoom}) rotate(${rotation}deg)`,
             }}

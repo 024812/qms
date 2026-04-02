@@ -14,9 +14,30 @@ const LOG_LEVELS: LogLevel = {
   DEBUG: 3,
 };
 
+type LogMeta = Record<string, unknown>;
+
+interface RequestLike {
+  method?: string;
+  url?: string;
+  headers: Record<string, string | string[] | undefined>;
+  connection?: {
+    remoteAddress?: string;
+  };
+}
+
+interface ResponseLike {
+  statusCode: number;
+  on: (event: 'finish', callback: () => void) => void;
+}
+
+interface ErrorInfoLike {
+  componentStack?: string;
+}
+
 class Logger {
   private level: number;
   private context: string;
+  private timers = new Map<string, number>();
 
   constructor(context: string = 'QMS') {
     this.context = context;
@@ -34,7 +55,7 @@ class Logger {
     return level <= this.level;
   }
 
-  private formatMessage(level: string, message: string, meta?: any): string {
+  private formatMessage(level: string, message: string, meta?: LogMeta): string {
     const timestamp = new Date().toISOString();
     const logEntry = {
       timestamp,
@@ -52,22 +73,41 @@ class Logger {
     return JSON.stringify(logEntry);
   }
 
-  error(message: string, error?: Error | any, meta?: any): void {
+  private writeLog(level: keyof LogLevel, payload: string): void {
+    if (level === 'ERROR') {
+      console.error(payload);
+      return;
+    }
+
+    if (level === 'WARN') {
+      console.warn(payload);
+      return;
+    }
+
+    if (typeof process !== 'undefined' && process.stdout?.write) {
+      process.stdout.write(`${payload}\n`);
+    }
+  }
+
+  error(message: string, error?: unknown, meta?: LogMeta): void {
     if (!this.shouldLog(LOG_LEVELS.ERROR)) return;
 
+    const normalizedError =
+      error instanceof Error
+        ? {
+            name: error.name,
+            message: error.message,
+            stack: error.stack,
+            ...(error.cause !== undefined ? { cause: error.cause } : {}),
+          }
+        : error;
+
     const errorMeta = {
-      ...meta,
-      ...(error && {
-        error: {
-          name: error.name,
-          message: error.message,
-          stack: error.stack,
-          ...(error.cause && { cause: error.cause }),
-        },
-      }),
+      ...(meta ?? {}),
+      ...(error !== undefined ? { error: normalizedError } : {}),
     };
 
-    console.error(this.formatMessage('ERROR', message, errorMeta));
+    this.writeLog('ERROR', this.formatMessage('ERROR', message, errorMeta));
 
     // Send to external error tracking service in production (only in Node.js runtime)
     if (typeof process !== 'undefined' && process.env?.NODE_ENV === 'production') {
@@ -75,39 +115,45 @@ class Logger {
     }
   }
 
-  warn(message: string, meta?: any): void {
+  warn(message: string, meta?: LogMeta): void {
     if (!this.shouldLog(LOG_LEVELS.WARN)) return;
-    console.warn(this.formatMessage('WARN', message, meta));
+    this.writeLog('WARN', this.formatMessage('WARN', message, meta));
   }
 
-  info(message: string, meta?: any): void {
+  info(message: string, meta?: LogMeta): void {
     if (!this.shouldLog(LOG_LEVELS.INFO)) return;
-    console.info(this.formatMessage('INFO', message, meta));
+    this.writeLog('INFO', this.formatMessage('INFO', message, meta));
   }
 
-  debug(message: string, meta?: any): void {
+  debug(message: string, meta?: LogMeta): void {
     if (!this.shouldLog(LOG_LEVELS.DEBUG)) return;
-    console.debug(this.formatMessage('DEBUG', message, meta));
+    this.writeLog('DEBUG', this.formatMessage('DEBUG', message, meta));
   }
 
   // Performance logging
   time(label: string): void {
-    console.time(label);
+    this.timers.set(label, Date.now());
   }
 
   timeEnd(label: string): void {
-    console.timeEnd(label);
+    const startTime = this.timers.get(label);
+    if (startTime === undefined) {
+      return;
+    }
+
+    this.timers.delete(label);
+    this.debug(`Timer: ${label}`, { duration: `${Date.now() - startTime}ms` });
   }
 
   // Request logging middleware
-  logRequest(req: any, res: any, duration: number): void {
+  logRequest(req: RequestLike, res: ResponseLike, duration: number): void {
     const logData = {
       method: req.method,
       url: req.url,
       statusCode: res.statusCode,
       duration: `${duration}ms`,
       userAgent: req.headers['user-agent'],
-      ip: req.headers['x-forwarded-for'] || req.connection.remoteAddress,
+      ip: req.headers['x-forwarded-for'] || req.connection?.remoteAddress,
       referer: req.headers.referer,
     };
 
@@ -134,11 +180,11 @@ class Logger {
   }
 
   // Business logic logging
-  logBusinessEvent(event: string, userId?: string, meta?: any): void {
+  logBusinessEvent(event: string, userId?: string, meta?: LogMeta): void {
     const logData = {
       event,
       ...(userId && { userId }),
-      ...meta,
+      ...(meta ?? {}),
     };
 
     this.info(`Business Event: ${event}`, logData);
@@ -148,12 +194,12 @@ class Logger {
   logSecurityEvent(
     event: string,
     severity: 'low' | 'medium' | 'high' | 'critical',
-    meta?: any
+    meta?: LogMeta
   ): void {
     const logData = {
       event,
       severity,
-      ...meta,
+      ...(meta ?? {}),
     };
 
     if (severity === 'critical' || severity === 'high') {
@@ -163,7 +209,11 @@ class Logger {
     }
   }
 
-  private async sendToErrorTracking(message: string, error?: Error, meta?: any): Promise<void> {
+  private async sendToErrorTracking(
+    message: string,
+    error?: unknown,
+    meta?: LogMeta
+  ): Promise<void> {
     try {
       // Integration with error tracking services like Sentry, Bugsnag, etc.
       // This is a placeholder for actual implementation
@@ -174,6 +224,8 @@ class Logger {
         // Sentry.captureException(error, { extra: meta });
       }
 
+      const normalizedError = error instanceof Error ? error : undefined;
+
       if (process.env?.WEBHOOK_ERROR_URL) {
         // Send to webhook for custom error handling
         await fetch(process.env.WEBHOOK_ERROR_URL, {
@@ -181,8 +233,8 @@ class Logger {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             message,
-            error: error?.message,
-            stack: error?.stack,
+            error: normalizedError?.message,
+            stack: normalizedError?.stack,
             meta,
             timestamp: new Date().toISOString(),
             environment: process.env?.NODE_ENV,
@@ -204,7 +256,7 @@ export const authLogger = new Logger('QMS:Auth');
 
 // Request logging middleware for Next.js
 export function createRequestLogger() {
-  return (req: any, res: any, next: any) => {
+  return (req: RequestLike, res: ResponseLike, next?: () => void) => {
     const start = Date.now();
 
     res.on('finish', () => {
@@ -217,7 +269,7 @@ export function createRequestLogger() {
 }
 
 // Error boundary logging
-export function logErrorBoundary(error: Error, errorInfo: any): void {
+export function logErrorBoundary(error: Error, errorInfo: ErrorInfoLike): void {
   logger.error('React Error Boundary caught an error', error, {
     componentStack: errorInfo.componentStack,
     errorBoundary: true,

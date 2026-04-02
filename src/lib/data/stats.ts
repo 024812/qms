@@ -106,6 +106,27 @@ export interface AnalyticsData {
   usageByMonth: UsageByPeriod[];
 }
 
+interface HistoricalUsageRow {
+  id: string;
+  quilt_id: string;
+  quilt_name: string;
+  item_number: number;
+  season: string;
+  start_date: string | Date;
+  end_date: string | Date | null;
+  year: string | number;
+}
+
+interface UsageByYearRow {
+  year: string | number;
+  count: number;
+}
+
+interface UsageByMonthRow {
+  month: string;
+  count: number;
+}
+
 // ============================================================================
 // READ OPERATIONS (with caching)
 // ============================================================================
@@ -121,12 +142,13 @@ export async function getStatusCounts(): Promise<StatusCounts> {
   cacheLife('seconds'); // 1 minute (60 seconds)
   cacheTag('stats', 'stats-dashboard');
 
-  const result = await db.select({
-    status: quilts.currentStatus,
-    count: sql<number>`count(*)::int`
-  })
-  .from(quilts)
-  .groupBy(quilts.currentStatus);
+  const result = await db
+    .select({
+      status: quilts.currentStatus,
+      count: sql<number>`count(*)::int`,
+    })
+    .from(quilts)
+    .groupBy(quilts.currentStatus);
 
   const counts: StatusCounts = { inUse: 0, storage: 0, maintenance: 0, total: 0 };
   result.forEach(row => {
@@ -150,12 +172,13 @@ export async function getSeasonalCounts(): Promise<SeasonalCounts> {
   cacheLife('seconds'); // 1 minute (60 seconds)
   cacheTag('stats', 'stats-dashboard');
 
-  const result = await db.select({
-    season: quilts.season,
-    count: sql<number>`count(*)::int`
-  })
-  .from(quilts)
-  .groupBy(quilts.season);
+  const result = await db
+    .select({
+      season: quilts.season,
+      count: sql<number>`count(*)::int`,
+    })
+    .from(quilts)
+    .groupBy(quilts.season);
 
   const counts: SeasonalCounts = { WINTER: 0, SPRING_AUTUMN: 0, SUMMER: 0 };
   result.forEach(row => {
@@ -178,17 +201,18 @@ export async function getInUseQuilts(): Promise<InUseQuilt[]> {
   cacheLife('seconds'); // 1 minute (60 seconds)
   cacheTag('stats', 'stats-dashboard');
 
-  const result = await db.select({
-    id: quilts.id,
-    name: quilts.name,
-    itemNumber: quilts.itemNumber,
-    season: quilts.season,
-    fillMaterial: quilts.fillMaterial,
-    weightGrams: quilts.weightGrams,
-    location: quilts.location
-  })
-  .from(quilts)
-  .where(eq(quilts.currentStatus, 'IN_USE'));
+  const result = await db
+    .select({
+      id: quilts.id,
+      name: quilts.name,
+      itemNumber: quilts.itemNumber,
+      season: quilts.season,
+      fillMaterial: quilts.fillMaterial,
+      weightGrams: quilts.weightGrams,
+      location: quilts.location,
+    })
+    .from(quilts)
+    .where(eq(quilts.currentStatus, 'IN_USE'));
 
   return result.map(q => ({
     id: q.id,
@@ -246,7 +270,7 @@ export async function getHistoricalUsage(
     LIMIT 20
   `);
 
-  return result.rows.map((row: any) => ({
+  return (result.rows as unknown as HistoricalUsageRow[]).map(row => ({
     id: row.id,
     quiltId: row.quilt_id,
     quiltName: row.quilt_name,
@@ -254,7 +278,7 @@ export async function getHistoricalUsage(
     season: row.season,
     startDate: new Date(row.start_date),
     endDate: row.end_date ? new Date(row.end_date) : null,
-    year: parseInt(row.year),
+    year: parseInt(String(row.year), 10),
   }));
 }
 
@@ -305,23 +329,25 @@ export async function getUsageStats(): Promise<UsageStats> {
   cacheLife('seconds'); // 2 minutes (120 seconds)
   cacheTag('stats', 'stats-analytics');
 
-  const result = await db.select({
-    totalPeriods: sql<number>`COUNT(*)::int`,
-    totalDays: sql<number>`COALESCE(SUM(
+  const result = await db
+    .select({
+      totalPeriods: sql<number>`COUNT(*)::int`,
+      totalDays: sql<number>`COALESCE(SUM(
         CASE
           WHEN ${usageRecords.endDate} IS NOT NULL
           THEN EXTRACT(DAY FROM (${usageRecords.endDate} - ${usageRecords.startDate}))
           ELSE 0
         END
       ), 0)::int`,
-    avgDays: sql<number>`COALESCE(AVG(
+      avgDays: sql<number>`COALESCE(AVG(
         CASE
           WHEN ${usageRecords.endDate} IS NOT NULL
           THEN EXTRACT(DAY FROM (${usageRecords.endDate} - ${usageRecords.startDate}))
           ELSE NULL
         END
-      ), 0)::int`
-  }).from(usageRecords);
+      ), 0)::int`,
+    })
+    .from(usageRecords);
 
   return {
     totalPeriods: result[0]?.totalPeriods || 0,
@@ -341,13 +367,14 @@ export async function getUsageBySeason(): Promise<SeasonalCounts> {
   cacheLife('seconds'); // 2 minutes (120 seconds)
   cacheTag('stats', 'stats-analytics');
 
-  const result = await db.select({
-    season: quilts.season,
-    count: sql<number>`COUNT(*)::int`
-  })
-  .from(usageRecords)
-  .leftJoin(quilts, eq(usageRecords.quiltId, quilts.id))
-  .groupBy(quilts.season);
+  const result = await db
+    .select({
+      season: quilts.season,
+      count: sql<number>`COUNT(*)::int`,
+    })
+    .from(usageRecords)
+    .leftJoin(quilts, eq(usageRecords.quiltId, quilts.id))
+    .groupBy(quilts.season);
 
   const counts: SeasonalCounts = { WINTER: 0, SPRING_AUTUMN: 0, SUMMER: 0 };
   result.forEach(row => {
@@ -370,23 +397,24 @@ export async function getMostUsedQuilts(limit: number = 5): Promise<MostUsedQuil
   cacheLife('seconds'); // 2 minutes (120 seconds)
   cacheTag('stats', 'stats-analytics');
 
-  const result = await db.select({
-    quiltId: usageRecords.quiltId,
-    name: quilts.name,
-    usageCount: sql<number>`COUNT(*)::int`,
-    totalDays: sql<number>`COALESCE(SUM(
+  const result = await db
+    .select({
+      quiltId: usageRecords.quiltId,
+      name: quilts.name,
+      usageCount: sql<number>`COUNT(*)::int`,
+      totalDays: sql<number>`COALESCE(SUM(
         CASE
           WHEN ${usageRecords.endDate} IS NOT NULL
           THEN EXTRACT(DAY FROM (${usageRecords.endDate} - ${usageRecords.startDate}))
           ELSE 0
         END
-      ), 0)::int`
-  })
-  .from(usageRecords)
-  .leftJoin(quilts, eq(usageRecords.quiltId, quilts.id))
-  .groupBy(usageRecords.quiltId, quilts.name)
-  .orderBy(desc(sql`count(*)`))
-  .limit(limit);
+      ), 0)::int`,
+    })
+    .from(usageRecords)
+    .leftJoin(quilts, eq(usageRecords.quiltId, quilts.id))
+    .groupBy(usageRecords.quiltId, quilts.name)
+    .orderBy(desc(sql`count(*)`))
+    .limit(limit);
 
   return result.map(row => ({
     quiltId: row.quiltId,
@@ -417,7 +445,7 @@ export async function getUsageByYear(): Promise<UsageByPeriod[]> {
     ORDER BY year
   `);
 
-  return result.rows.map((row: any) => ({
+  return (result.rows as unknown as UsageByYearRow[]).map(row => ({
     period: String(row.year),
     count: row.count,
   }));
@@ -451,8 +479,8 @@ export async function getUsageByMonth(): Promise<UsageByPeriod[]> {
     const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
     usageByMonthMap[key] = 0;
   }
-  
-  result.rows.forEach((row: any) => {
+
+  (result.rows as unknown as UsageByMonthRow[]).forEach(row => {
     if (row.month in usageByMonthMap) {
       usageByMonthMap[row.month] = row.count;
     }
@@ -475,7 +503,8 @@ export async function getCurrentUsageCount(): Promise<number> {
   cacheLife('seconds'); // 1 minute (60 seconds)
   cacheTag('stats', 'stats-analytics');
 
-  const result = await db.select({ count: sql<number>`count(*)::int` })
+  const result = await db
+    .select({ count: sql<number>`count(*)::int` })
     .from(usageRecords)
     .where(isNull(usageRecords.endDate));
 
@@ -547,7 +576,10 @@ export async function getSimpleUsageStats(): Promise<{
 
   const [totalResult, activeResult] = await Promise.all([
     db.select({ count: sql<number>`count(*)::int` }).from(usageRecords),
-    db.select({ count: sql<number>`count(*)::int` }).from(usageRecords).where(isNull(usageRecords.endDate)),
+    db
+      .select({ count: sql<number>`count(*)::int` })
+      .from(usageRecords)
+      .where(isNull(usageRecords.endDate)),
   ]);
 
   const total = totalResult[0]?.count || 0;

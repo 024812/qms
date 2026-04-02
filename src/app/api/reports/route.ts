@@ -12,6 +12,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { statsRepository } from '@/lib/repositories/stats.repository';
+import type {
+  InventoryReport,
+  UsageReport,
+  StatusReport,
+} from '@/lib/repositories/stats.repository';
 import {
   createSuccessResponse,
   createValidationErrorResponse,
@@ -23,6 +28,16 @@ const reportQuerySchema = z.object({
   type: z.enum(['inventory', 'usage', 'analytics', 'status']).default('inventory'),
   format: z.enum(['json', 'csv']).default('json'),
 });
+
+type ReportType = z.infer<typeof reportQuerySchema>['type'];
+type AnalyticsReport = Awaited<ReturnType<typeof statsRepository.getAnalyticsReport>>;
+type ReportDataByType = {
+  inventory: InventoryReport;
+  usage: UsageReport;
+  analytics: AnalyticsReport;
+  status: StatusReport;
+};
+type CsvCell = string | number | Date | null | undefined;
 
 // GET /api/reports - Get report data
 export async function GET(request: NextRequest) {
@@ -44,7 +59,7 @@ export async function GET(request: NextRequest) {
 
     const { type: reportType, format } = validationResult.data;
 
-    let reportData: any = {};
+    let reportData: ReportDataByType[ReportType];
 
     // Use repository for all database operations (Requirements: 6.1, 6.2)
     switch (reportType) {
@@ -82,12 +97,13 @@ export async function GET(request: NextRequest) {
   }
 }
 
-function convertToCSV(data: any, reportType: string): string {
+function convertToCSV(data: ReportDataByType[ReportType], reportType: ReportType): string {
   let headers: string[] = [];
-  let rows: any[] = [];
+  let rows: CsvCell[][] = [];
 
   switch (reportType) {
-    case 'inventory':
+    case 'inventory': {
+      const inventoryData = data as InventoryReport;
       headers = [
         'Item Number',
         'Name',
@@ -101,7 +117,7 @@ function convertToCSV(data: any, reportType: string): string {
         'Status',
         'Notes',
       ];
-      rows = data.quilts.map((q: any) => [
+      rows = inventoryData.quilts.map(q => [
         q.itemNumber,
         q.name,
         q.season,
@@ -115,7 +131,9 @@ function convertToCSV(data: any, reportType: string): string {
         q.notes,
       ]);
       break;
-    case 'usage':
+    }
+    case 'usage': {
+      const usageData = data as UsageReport;
       headers = [
         'Quilt Name',
         'Item Number',
@@ -126,7 +144,7 @@ function convertToCSV(data: any, reportType: string): string {
         'Usage Type',
         'Notes',
       ];
-      rows = data.usagePeriods.map((p: any) => [
+      rows = usageData.usagePeriods.map(p => [
         p.quiltName,
         p.itemNumber,
         p.season,
@@ -137,7 +155,9 @@ function convertToCSV(data: any, reportType: string): string {
         p.notes,
       ]);
       break;
-    case 'status':
+    }
+    case 'status': {
+      const statusData = data as StatusReport;
       headers = [
         'Item Number',
         'Name',
@@ -147,7 +167,7 @@ function convertToCSV(data: any, reportType: string): string {
         'Last Updated',
         'Days in Status',
       ];
-      rows = data.quilts.map((q: any) => [
+      rows = statusData.quilts.map(q => [
         q.itemNumber,
         q.name,
         q.status,
@@ -157,6 +177,7 @@ function convertToCSV(data: any, reportType: string): string {
         q.daysInCurrentStatus,
       ]);
       break;
+    }
     default:
       headers = ['Data'];
       rows = [['No data available']];
@@ -164,7 +185,7 @@ function convertToCSV(data: any, reportType: string): string {
 
   const csvContent = [
     headers.join(','),
-    ...rows.map(row => row.map((cell: any) => `"${cell || ''}"`).join(',')),
+    ...rows.map(row => row.map(cell => `"${cell ?? ''}"`).join(',')),
   ].join('\n');
 
   return csvContent;

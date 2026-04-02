@@ -54,15 +54,12 @@ export function ChangePasswordDialog() {
         newPassword: formData.newPassword,
       });
 
-      if (result.success) {
+      if (result.changed) {
         toast.success(t('success'), t('successDesc'));
         handleClose();
       }
     } catch (error) {
-      toast.error(
-        t('changeFailed'),
-        error instanceof Error ? error.message : t('common.tryAgain')
-      );
+      toast.error(t('changeFailed'), error instanceof Error ? error.message : t('common.tryAgain'));
     }
   };
 

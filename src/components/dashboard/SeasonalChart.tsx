@@ -19,6 +19,8 @@ interface SeasonalChartProps {
 }
 
 export function SeasonalChart({ data, totalQuilts, isLoading = false }: SeasonalChartProps) {
+  const loadingKeys = ['season-skeleton-1', 'season-skeleton-2', 'season-skeleton-3'];
+
   if (isLoading) {
     return (
       <Card className="animate-pulse">
@@ -30,8 +32,8 @@ export function SeasonalChart({ data, totalQuilts, isLoading = false }: Seasonal
           <div className="space-y-4">
             <div className="h-32 bg-muted rounded"></div>
             <div className="grid grid-cols-3 gap-4">
-              {Array.from({ length: 3 }).map((_, i) => (
-                <div key={i} className="h-16 bg-muted rounded"></div>
+              {loadingKeys.map(key => (
+                <div key={key} className="h-16 bg-muted rounded"></div>
               ))}
             </div>
           </div>

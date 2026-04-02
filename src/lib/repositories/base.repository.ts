@@ -3,6 +3,13 @@ import { sql } from 'drizzle-orm';
 import { dbLogger } from '@/lib/logger';
 import { createError, ErrorCodes } from '@/lib/error-handler';
 
+interface DatabaseErrorLike {
+  code?: string;
+  detail?: string;
+  constraint?: string;
+  hint?: string;
+}
+
 export interface BaseRepository<T> {
   findAll(filters?: Record<string, unknown>, tx?: Tx): Promise<T[]>;
   findById(id: string, tx?: Tx): Promise<T | null>;
@@ -38,7 +45,8 @@ export abstract class BaseRepositoryImpl<TRow, TModel> implements BaseRepository
       return result;
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
-      const pgError = error as any; // Cast to access Postgres error properties
+      const pgError: DatabaseErrorLike =
+        typeof error === 'object' && error !== null ? (error as DatabaseErrorLike) : {};
 
       dbLogger.error(`${operation} failed`, error as Error, {
         table: this.tableName,
@@ -70,7 +78,7 @@ export abstract class BaseRepositoryImpl<TRow, TModel> implements BaseRepository
       }
       // Check for validation/constraint errors
       else if (
-        ['23505', '23503', '23502'].includes(pgError.code) ||
+        (pgError.code !== undefined && ['23505', '23503', '23502'].includes(pgError.code)) ||
         errorMessage.includes('constraint') ||
         errorMessage.includes('violates')
       ) {

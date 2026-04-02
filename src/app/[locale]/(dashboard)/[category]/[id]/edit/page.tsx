@@ -23,7 +23,8 @@ import { Button } from '@/components/ui/button';
 import { ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 import { connection } from 'next/server';
-
+import type { Quilt } from '@/lib/database/types';
+import type { Card } from '@/db/schema';
 
 interface PageProps {
   params: Promise<{
@@ -32,13 +33,15 @@ interface PageProps {
   }>;
 }
 
+type EditableItem = Quilt | Card;
+
 export default async function EditItemPage(props: PageProps) {
   // Await params (Next.js 15+ requirement)
   const params = await props.params;
-  
+
   // Opt-in to dynamic rendering for auth check
   await connection();
-  
+
   // Verify authentication
   const session = await auth();
 
@@ -53,7 +56,7 @@ export default async function EditItemPage(props: PageProps) {
   }
 
   // Fetch item
-  let item;
+  let item: EditableItem | null = null;
   try {
     item = await getItemById(params.category, params.id);
   } catch {
@@ -66,7 +69,12 @@ export default async function EditItemPage(props: PageProps) {
   }
 
   // Get display name (handle generic types)
-  const itemName = (item as any).name || (item as any).playerName || 'Item';
+  const itemName = 'playerName' in item ? item.playerName : item.name;
+  const initialData = {
+    ...item,
+    name: 'playerName' in item ? item.playerName : item.name,
+    status: 'playerName' in item ? item.status : item.currentStatus,
+  };
 
   return (
     <div className="container mx-auto py-8 max-w-2xl">
@@ -86,7 +94,7 @@ export default async function EditItemPage(props: PageProps) {
       <div className="bg-card border rounded-lg p-6">
         <ItemForm
           moduleType={params.category}
-          initialData={item as any}
+          initialData={initialData}
           action={updateItem}
           redirectPath={`/${params.category}/${params.id}`}
         />

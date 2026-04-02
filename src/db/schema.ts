@@ -110,7 +110,7 @@ export const users = pgTable(
       .$type<{
         role?: string;
         activeModules?: string[];
-        [key: string]: any;
+        [key: string]: unknown;
       }>()
       .notNull()
       .default({}),
@@ -277,7 +277,7 @@ export const cards = pgTable(
     valuationDate: timestamp('valuation_date'),
     valuationConfidence: text('valuation_confidence'), // HIGH, MEDIUM, LOW
     valuationSources: jsonb('valuation_sources').$type<string[]>().default([]),
-    priceHistory: jsonb('price_history').$type<Record<string, any>[]>().default([]),
+    priceHistory: jsonb('price_history').$type<Array<Record<string, unknown>>>().default([]),
 
     // Physical characteristics
     parallel: text('parallel'),
@@ -329,7 +329,7 @@ export const auditLogs = pgTable(
     action: text('action'),
     success: text('success').notNull(),
     reason: text('reason'),
-    metadata: jsonb('metadata').$type<Record<string, any>>().notNull().default({}),
+    metadata: jsonb('metadata').$type<Record<string, unknown>>().notNull().default({}),
     ipAddress: text('ip_address'),
     userAgent: text('user_agent'),
     createdAt: timestamp('created_at').notNull().defaultNow(),

@@ -51,7 +51,11 @@ if (typeof setInterval !== 'undefined') {
 /**
  * Simple Upstash REST API client (no extra dependencies needed)
  */
-async function upstashCommand(command: string[]): Promise<any> {
+interface UpstashResponse<T = unknown> {
+  result?: T;
+}
+
+async function upstashCommand<T = unknown>(command: string[]): Promise<T | null> {
   if (!UPSTASH_URL || !UPSTASH_TOKEN) return null;
 
   try {
@@ -69,8 +73,8 @@ async function upstashCommand(command: string[]): Promise<any> {
       return null;
     }
 
-    const data = await response.json();
-    return data.result;
+    const data = (await response.json()) as UpstashResponse<T>;
+    return data.result ?? null;
   } catch (error) {
     console.warn('[RateLimit] Upstash error, falling back to memory:', error);
     return null;
@@ -116,7 +120,7 @@ export class RateLimiter {
   } | null> {
     try {
       // Use INCR with EXPIRE for atomic increment
-      const count = await upstashCommand(['INCR', key]);
+      const count = await upstashCommand<number>(['INCR', key]);
       if (count === null) return null;
 
       // Set expiry on first request
@@ -125,7 +129,8 @@ export class RateLimiter {
       }
 
       // Get TTL for reset time
-      const ttl = await upstashCommand(['TTL', key]);
+      const ttl = await upstashCommand<number>(['TTL', key]);
+      if (ttl === null) return null;
       const resetTime = now + (ttl > 0 ? ttl * 1000 : this.config.windowMs);
 
       if (count > this.config.maxRequests) {

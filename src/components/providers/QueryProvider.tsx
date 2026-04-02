@@ -39,28 +39,20 @@ export function QueryProvider({ children }: { children: React.ReactNode }) {
         }),
         defaultOptions: {
           queries: {
-            // Cache data for 5 minutes (data is considered fresh)
-            staleTime: 5 * 60 * 1000,
-            // Keep unused data in cache for 10 minutes before garbage collection
-            gcTime: 10 * 60 * 1000,
-            // Smart retry - don't retry on auth errors
+            staleTime: 60 * 1000,
+            gcTime: 5 * 60 * 1000,
             retry: (failureCount, error) => {
               if (isApiError(error) && (error.status === 401 || error.status === 403)) {
                 return false;
               }
-              return failureCount < 3;
+              return failureCount < 1;
             },
-            // Refetch on window focus for data freshness
-            refetchOnWindowFocus: 'always',
-            // Refetch on reconnect for data consistency
+            refetchOnWindowFocus: false,
             refetchOnReconnect: true,
-            // Don't refetch on mount if data is fresh
             refetchOnMount: false,
-            // Network mode for offline support
-            networkMode: 'offlineFirst',
+            networkMode: 'online',
           },
           mutations: {
-            // Retry failed mutations once (except auth errors)
             retry: (failureCount, error) => {
               if (isApiError(error) && (error.status === 401 || error.status === 403)) {
                 return false;

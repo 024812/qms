@@ -1,11 +1,11 @@
 /**
  * Authentication Server Actions
- * 
+ *
  * This module provides server-side authentication actions including:
  * - User registration with password hashing
  * - Input validation using Zod
  * - Error handling
- * 
+ *
  * Requirements: 8.1 (Authentication and user management)
  */
 
@@ -21,15 +21,17 @@ import { signIn } from '@/auth';
 /**
  * Registration input validation schema
  */
-const registerSchema = z.object({
-  name: z.string().min(2, 'Name must be at least 2 characters'),
-  email: z.string().email('Invalid email address'),
-  password: z.string().min(6, 'Password must be at least 6 characters'),
-  confirmPassword: z.string(),
-}).refine((data) => data.password === data.confirmPassword, {
-  message: "Passwords don't match",
-  path: ['confirmPassword'],
-});
+const registerSchema = z
+  .object({
+    name: z.string().min(2, 'Name must be at least 2 characters'),
+    email: z.string().email('Invalid email address'),
+    password: z.string().min(6, 'Password must be at least 6 characters'),
+    confirmPassword: z.string(),
+  })
+  .refine(data => data.password === data.confirmPassword, {
+    message: "Passwords don't match",
+    path: ['confirmPassword'],
+  });
 
 /**
  * Registration result type
@@ -39,17 +41,24 @@ type RegisterResult = {
   message: string;
   error?: string;
 };
+export type { RegisterResult };
+
+export interface LoginActionState {
+  success: boolean;
+  message: string;
+  error?: string;
+}
 
 /**
  * Register a new user
- * 
+ *
  * This function:
  * 1. Validates input using Zod
  * 2. Checks if user already exists
  * 3. Hashes password using bcrypt
  * 4. Creates user in database
  * 5. Automatically signs in the user
- * 
+ *
  * @param formData - Form data containing name, email, password, confirmPassword
  * @returns RegisterResult with success status and message
  */
@@ -67,7 +76,7 @@ export async function registerUser(formData: FormData): Promise<RegisterResult> 
     const validationResult = registerSchema.safeParse(rawData);
 
     if (!validationResult.success) {
-      const errors = validationResult.error.issues.map((err) => err.message).join(', ');
+      const errors = validationResult.error.issues.map(err => err.message).join(', ');
       return {
         success: false,
         message: 'Validation failed',
@@ -78,11 +87,7 @@ export async function registerUser(formData: FormData): Promise<RegisterResult> 
     const { name, email, password } = validationResult.data;
 
     // Check if user already exists
-    const existingUser = await db
-      .select()
-      .from(users)
-      .where(eq(users.email, email))
-      .limit(1);
+    const existingUser = await db.select().from(users).where(eq(users.email, email)).limit(1);
 
     if (existingUser.length > 0) {
       return {
@@ -150,16 +155,19 @@ import { redirect } from 'next/navigation';
 
 /**
  * Login user
- * 
+ *
  * This function:
  * 1. Validates input using Zod
  * 2. Attempts to sign in using Auth.js
  * 3. Redirects on success (Server-Side Redirect)
- * 
+ *
  * @param prevState - Previous state (for useActionState)
  * @param formData - Form data containing email, password, and optional callbackUrl
  */
-export async function loginUser(prevState: any, formData: FormData) {
+export async function loginUser(
+  _prevState: LoginActionState | null | undefined,
+  formData: FormData
+): Promise<LoginActionState | null> {
   const callbackUrl = (formData.get('callbackUrl') as string) || '/';
 
   try {
@@ -173,7 +181,7 @@ export async function loginUser(prevState: any, formData: FormData) {
     const validationResult = loginSchema.safeParse(rawData);
 
     if (!validationResult.success) {
-      const errors = validationResult.error.issues.map((err) => err.message).join(', ');
+      const errors = validationResult.error.issues.map(err => err.message).join(', ');
       return {
         success: false,
         message: 'Validation failed',
@@ -222,4 +230,5 @@ export async function loginUser(prevState: any, formData: FormData) {
 
   // Redirect must be outside the try-catch block or re-thrown
   redirect(callbackUrl);
+  return null;
 }

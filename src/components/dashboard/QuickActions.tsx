@@ -153,10 +153,22 @@ export function QuickActions({
   ];
 
   const quickFilters = [
-    { label: 'Winter Quilts', icon: Package, count: 0 },
-    { label: 'In Use', icon: Clock, count: 0 },
-    { label: 'Storage', icon: Star, count: 0 },
-    { label: 'Need Maintenance', icon: Zap, count: pendingActions },
+    { id: 'winter', label: 'Winter Quilts', icon: Package, count: 0 },
+    { id: 'in-use', label: 'In Use', icon: Clock, count: 0 },
+    { id: 'storage', label: 'Storage', icon: Star, count: 0 },
+    { id: 'maintenance', label: 'Need Maintenance', icon: Zap, count: pendingActions },
+  ];
+  const loadingPrimaryKeys = [
+    'primary-skeleton-1',
+    'primary-skeleton-2',
+    'primary-skeleton-3',
+    'primary-skeleton-4',
+  ];
+  const loadingSecondaryKeys = [
+    'secondary-skeleton-1',
+    'secondary-skeleton-2',
+    'secondary-skeleton-3',
+    'secondary-skeleton-4',
   ];
 
   if (isLoading) {
@@ -168,13 +180,13 @@ export function QuickActions({
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-            {Array.from({ length: 4 }).map((_, i) => (
-              <div key={i} className="h-24 bg-gray-200 rounded-lg"></div>
+            {loadingPrimaryKeys.map(key => (
+              <div key={key} className="h-24 bg-gray-200 rounded-lg"></div>
             ))}
           </div>
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-            {Array.from({ length: 4 }).map((_, i) => (
-              <div key={i} className="h-16 bg-gray-200 rounded-lg"></div>
+            {loadingSecondaryKeys.map(key => (
+              <div key={key} className="h-16 bg-gray-200 rounded-lg"></div>
             ))}
           </div>
         </CardContent>
@@ -280,8 +292,8 @@ export function QuickActions({
               Quick Filters
             </h4>
             <div className="flex flex-wrap gap-2">
-              {quickFilters.map((filter, index) => (
-                <Button key={index} variant="outline" size="sm" className="h-8 px-3 text-xs">
+              {quickFilters.map(filter => (
+                <Button key={filter.id} variant="outline" size="sm" className="h-8 px-3 text-xs">
                   <filter.icon className="h-3 w-3 mr-1" />
                   {filter.label}
                   {filter.count > 0 && (

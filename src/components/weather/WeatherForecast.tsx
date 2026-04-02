@@ -6,7 +6,7 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -35,7 +35,7 @@ export function WeatherForecastWidget({ className }: WeatherForecastProps) {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchForecast = async () => {
+  const fetchForecast = useCallback(async () => {
     try {
       setIsLoading(true);
       setError(null);
@@ -59,11 +59,21 @@ export function WeatherForecastWidget({ className }: WeatherForecastProps) {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [t]);
 
   useEffect(() => {
-    fetchForecast();
-  }, []);
+    void fetchForecast();
+  }, [fetchForecast]);
+
+  const loadingKeys = [
+    'forecast-skeleton-1',
+    'forecast-skeleton-2',
+    'forecast-skeleton-3',
+    'forecast-skeleton-4',
+    'forecast-skeleton-5',
+    'forecast-skeleton-6',
+    'forecast-skeleton-7',
+  ];
 
   const getWeatherIcon = (iconCode: string, size: string = 'w-8 h-8') => {
     if (iconCode.includes('01')) return <Sun className={`${size} text-yellow-500`} />;
@@ -91,8 +101,8 @@ export function WeatherForecastWidget({ className }: WeatherForecastProps) {
             <Skeleton className="h-8 w-8 rounded" />
           </div>
           <div className="grid grid-cols-7 gap-3">
-            {Array.from({ length: 7 }).map((_, i) => (
-              <Skeleton key={i} className="h-32 w-full" />
+            {loadingKeys.map(key => (
+              <Skeleton key={key} className="h-32 w-full" />
             ))}
           </div>
         </CardContent>

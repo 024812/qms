@@ -56,6 +56,28 @@ export interface eBaySalesResult {
   image?: string;
 }
 
+interface EbayPriceSummary {
+  value?: string;
+  currency?: string;
+}
+
+interface EbayImageSummary {
+  imageUrl?: string;
+}
+
+interface EbayItemSummary {
+  title?: string;
+  price?: EbayPriceSummary;
+  itemEndDate?: string;
+  itemWebUrl?: string;
+  image?: EbayImageSummary;
+}
+
+interface EbayBrowseSearchResponse {
+  itemSummaries?: EbayItemSummary[];
+  total?: number;
+}
+
 // ============================================================================
 // eBay API Client
 // ============================================================================
@@ -144,19 +166,19 @@ export class eBayApiClient {
       const client = await this.getClient();
 
       // Helper to perform search
-      const performSearch = async (currentParams: eBaySearchParams): Promise<any[]> => {
+      const performSearch = async (currentParams: eBaySearchParams): Promise<EbayItemSummary[]> => {
         const q = currentParams.customQuery
           ? currentParams.customQuery
           : this.buildSearchQuery(currentParams);
         console.warn('DEBUG: Generated Query:', q);
 
-        const response = await client.buy.browse.search({
+        const response = (await client.buy.browse.search({
           q: q,
           filter: 'soldItemsOnly:true',
           sort: 'createdDate:DESC',
           limit: 50,
           fieldgroups: 'ITEM_SUMMARY,PRICE',
-        });
+        })) as EbayBrowseSearchResponse;
 
         return response.itemSummaries || [];
       };
@@ -191,7 +213,7 @@ export class eBayApiClient {
       // 5. Post-Process & Filter (Client-side filtering is safer than API exclusion)
       // We filter out reprints, digital cards, etc. here instead of in the API query
       // to avoid "zero results" due to aggressive keyword matching.
-      const filteredSummaries = itemSummaries.filter((item: any) => {
+      const filteredSummaries = itemSummaries.filter(item => {
         const title = (item.title || '').toLowerCase();
 
         // Negative keywords (Junk filter)
@@ -222,17 +244,17 @@ export class eBayApiClient {
         return [];
       }
 
-      return filteredSummaries.map((item: any) => {
+      return filteredSummaries.map(item => {
         const priceValue = parseFloat(item.price?.value || '0');
         const priceCurrency = item.price?.currency || 'USD';
         const normalizedPrice = this.normalizeCurrency(priceValue, priceCurrency);
 
         return {
-          title: item.title,
+          title: item.title ?? '',
           price: normalizedPrice,
           currency: 'USD',
           date: item.itemEndDate || new Date().toISOString(),
-          url: item.itemWebUrl,
+          url: item.itemWebUrl ?? '',
           image: item.image?.imageUrl,
         };
       });
@@ -257,10 +279,10 @@ export class eBayApiClient {
       const client = await this.getClient();
       const q = params.customQuery ? params.customQuery : this.buildSearchQuery(params);
 
-      const response = await client.buy.browse.search({
+      const response = (await client.buy.browse.search({
         q: q,
         limit: 1,
-      });
+      })) as EbayBrowseSearchResponse;
 
       return response.total || 0;
     } catch (error) {

@@ -1,8 +1,8 @@
 /**
  * Module Selector Component
- * 
+ *
  * Client component that displays available modules and handles subscription.
- * 
+ *
  * Requirements: 5.1, 8.2
  */
 
@@ -16,7 +16,13 @@ import { getAllModules } from '@/modules/registry';
 import { toggleModuleSubscription, getUserActiveModules } from '@/app/actions/modules';
 import { useToast } from '@/hooks/useToast';
 import { Loader2, Check, Plus } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 import * as LucideIcons from 'lucide-react';
+
+function getModuleIcon(iconName: string): LucideIcon {
+  const candidate = LucideIcons[iconName as keyof typeof LucideIcons];
+  return typeof candidate === 'function' ? (candidate as LucideIcon) : LucideIcons.Package;
+}
 
 export function ModuleSelector() {
   const { success, error: showError } = useToast();
@@ -54,13 +60,10 @@ export function ModuleSelector() {
         if (result.subscribed) {
           setActiveModules([...activeModules, moduleId]);
         } else {
-          setActiveModules(activeModules.filter((m) => m !== moduleId));
+          setActiveModules(activeModules.filter(m => m !== moduleId));
         }
 
-        success(
-          result.subscribed ? '订阅成功' : '取消订阅成功',
-          result.message
-        );
+        success(result.subscribed ? '订阅成功' : '取消订阅成功', result.message);
 
         // Refresh the page to update session and sidebar
         setTimeout(() => {
@@ -69,10 +72,7 @@ export function ModuleSelector() {
       }
     } catch (err) {
       console.error('Failed to toggle module:', err);
-      showError(
-        '操作失败',
-        err instanceof Error ? err.message : '无法更新模块订阅'
-      );
+      showError('操作失败', err instanceof Error ? err.message : '无法更新模块订阅');
     } finally {
       setTogglingModule(null);
     }
@@ -90,10 +90,10 @@ export function ModuleSelector() {
     <div className="space-y-6">
       {/* Available Modules Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {allModules.map((module) => {
+        {allModules.map(module => {
           const isSubscribed = activeModules.includes(module.id);
           const isToggling = togglingModule === module.id;
-          const IconComponent = (LucideIcons as any)[module.icon] || LucideIcons.Package;
+          const IconComponent = getModuleIcon(module.icon);
 
           return (
             <Card
@@ -167,7 +167,8 @@ export function ModuleSelector() {
             <div className="flex-1">
               <h3 className="font-medium mb-1">关于模块订阅</h3>
               <p className="text-sm text-muted-foreground">
-                订阅模块后，您可以在导航栏中访问该模块的功能。如果您只订阅了一个模块，系统会在登录后直接跳转到该模块页面。您可以随时在此页面管理您的模块订阅。当前已订阅 {activeModules.length} 个模块。
+                订阅模块后，您可以在导航栏中访问该模块的功能。如果您只订阅了一个模块，系统会在登录后直接跳转到该模块页面。您可以随时在此页面管理您的模块订阅。当前已订阅{' '}
+                {activeModules.length} 个模块。
               </p>
             </div>
           </div>

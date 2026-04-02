@@ -1,9 +1,9 @@
 /**
  * ItemCard Component
- * 
+ *
  * Generic item card component that dynamically renders module-specific card components.
  * Uses the Strategy Pattern to delegate rendering to module-specific CardComponent.
- * 
+ *
  * Requirements: 4.1, 4.2
  */
 
@@ -11,31 +11,40 @@ import { getModule } from '@/modules/registry';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { useTranslations } from 'next-intl';
+import type { ComponentType } from 'react';
 
 /**
  * ItemCard Props
  */
+type ItemCardRecord = Record<string, unknown> & {
+  id: string;
+  name?: string;
+  status?: string;
+  createdAt?: string | Date;
+  type?: string;
+};
+
 interface ItemCardProps {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  item: any;
+  item: ItemCardRecord;
+  moduleType: string;
   onClick?: () => void;
 }
 
 /**
  * ItemCard Component
- * 
+ *
  * Renders a card for any item type by delegating to the module-specific CardComponent.
  * Falls back to a default card layout if no custom CardComponent is provided.
  */
-export function ItemCard({ item, onClick }: ItemCardProps) {
+export function ItemCard({ item, moduleType, onClick }: ItemCardProps) {
   const t = useTranslations('status');
-  const moduleConfig = getModule(item.type);
+  const moduleConfig = getModule(moduleType);
 
   if (!moduleConfig) {
     return (
       <Card className="cursor-pointer hover:shadow-lg transition-shadow" onClick={onClick}>
         <CardContent className="p-4">
-          <div className="text-destructive">Unknown module type: {item.type}</div>
+          <div className="text-destructive">Unknown module type: {moduleType}</div>
         </CardContent>
       </Card>
     );
@@ -43,7 +52,9 @@ export function ItemCard({ item, onClick }: ItemCardProps) {
 
   // Use module-specific CardComponent if provided
   if (moduleConfig.CardComponent) {
-    const { CardComponent } = moduleConfig;
+    const CardComponent = moduleConfig.CardComponent as unknown as ComponentType<{
+      item: ItemCardRecord;
+    }>;
     return (
       <Card className="cursor-pointer hover:shadow-lg transition-shadow" onClick={onClick}>
         <CardContent className="p-4">
@@ -60,11 +71,13 @@ export function ItemCard({ item, onClick }: ItemCardProps) {
         <div className="space-y-2">
           <div className="flex items-start justify-between">
             <h3 className="font-semibold text-lg">{item.name}</h3>
-            <Badge variant={getStatusVariant(item.status)}>{t(item.status.toUpperCase())}</Badge>
+            <Badge variant={getStatusVariant(item.status ?? '')}>
+              {t((item.status ?? '').toUpperCase())}
+            </Badge>
           </div>
           <p className="text-sm text-muted-foreground">{moduleConfig.name}</p>
           <div className="text-xs text-muted-foreground">
-            Created: {new Date(item.createdAt).toLocaleDateString()}
+            Created: {item.createdAt ? new Date(item.createdAt).toLocaleDateString() : '-'}
           </div>
         </div>
       </CardContent>

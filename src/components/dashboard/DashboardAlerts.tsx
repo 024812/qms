@@ -26,6 +26,7 @@ interface DashboardAlertsProps {
 export function DashboardAlerts({ alerts, isLoading = false, onDismissAll }: DashboardAlertsProps) {
   const t = useTranslations('dashboard.alerts');
   const locale = useLocale();
+  const loadingKeys = ['alert-skeleton-1', 'alert-skeleton-2', 'alert-skeleton-3'];
 
   if (isLoading) {
     return (
@@ -36,8 +37,8 @@ export function DashboardAlerts({ alerts, isLoading = false, onDismissAll }: Das
         </CardHeader>
         <CardContent>
           <div className="space-y-3">
-            {Array.from({ length: 3 }).map((_, i) => (
-              <div key={i} className="h-16 bg-muted rounded"></div>
+            {loadingKeys.map(key => (
+              <div key={key} className="h-16 bg-muted rounded"></div>
             ))}
           </div>
         </CardContent>
@@ -167,9 +168,9 @@ export function DashboardAlerts({ alerts, isLoading = false, onDismissAll }: Das
       </CardHeader>
       <CardContent>
         <div className="space-y-3">
-          {sortedAlerts.slice(0, 5).map((alert, index) => (
+          {sortedAlerts.slice(0, 5).map(alert => (
             <div
-              key={index}
+              key={`${alert.type}-${alert.priority}-${alert.timestamp?.toISOString() ?? alert.message}`}
               className={cn(
                 'p-4 rounded-lg border-2 transition-all duration-200',
                 getAlertStyles(alert.type)

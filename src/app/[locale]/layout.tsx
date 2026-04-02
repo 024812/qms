@@ -17,6 +17,11 @@ import { routing } from '@/i18n/routing';
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
 const firaCode = Fira_Code({ subsets: ['latin'], variable: '--font-fira-code' });
+type AppLocale = (typeof routing.locales)[number];
+
+function isValidLocale(locale: string): locale is AppLocale {
+  return routing.locales.includes(locale as AppLocale);
+}
 
 export const metadata: Metadata = {
   title: 'QMS - 家庭物品管理系统',
@@ -54,7 +59,7 @@ export default async function LocaleLayout({
   setRequestLocale(locale);
 
   // Ensure that the incoming `locale` is valid
-  if (!routing.locales.includes(locale as any)) {
+  if (!isValidLocale(locale)) {
     notFound();
   }
 

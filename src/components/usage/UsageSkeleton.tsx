@@ -2,6 +2,9 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 
 export function UsageDetailSkeleton() {
+  const infoKeys = ['info-1', 'info-2', 'info-3', 'info-4'];
+  const historyKeys = ['history-1', 'history-2', 'history-3', 'history-4', 'history-5'];
+
   return (
     <div className="space-y-6">
       {/* Quilt Info */}
@@ -17,8 +20,8 @@ export function UsageDetailSkeleton() {
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
-            {Array.from({ length: 4 }).map((_, i) => (
-              <div key={`info-${i}`} className="space-y-2">
+            {infoKeys.map(key => (
+              <div key={key} className="space-y-2">
                 <Skeleton className="h-3 w-16" />
                 <Skeleton className="h-4 w-24" />
               </div>
@@ -47,9 +50,9 @@ export function UsageDetailSkeleton() {
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            {Array.from({ length: 5 }).map((_, i) => (
+            {historyKeys.map(key => (
               <div
-                key={`history-${i}`}
+                key={key}
                 className="flex items-center justify-between border-b pb-4 last:border-0"
               >
                 <div className="space-y-2 flex-1">
@@ -70,10 +73,12 @@ export function UsageDetailSkeleton() {
 }
 
 export function UsageListSkeleton({ count = 10 }: { count?: number }) {
+  const usageKeys = Array.from({ length: count }, (_, index) => `usage-${index + 1}`);
+
   return (
     <div className="space-y-3">
-      {Array.from({ length: count }).map((_, i) => (
-        <Card key={`usage-${i}`}>
+      {usageKeys.map(key => (
+        <Card key={key}>
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div className="space-y-2 flex-1">

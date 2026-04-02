@@ -6,7 +6,7 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -36,7 +36,7 @@ export function WeatherWidget({ className }: WeatherWidgetProps) {
   const [error, setError] = useState<string | null>(null);
 
   // Fetch weather data
-  const fetchWeatherData = async () => {
+  const fetchWeatherData = useCallback(async () => {
     try {
       setIsLoading(true);
       setError(null);
@@ -60,11 +60,11 @@ export function WeatherWidget({ className }: WeatherWidgetProps) {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [t]);
 
   useEffect(() => {
-    fetchWeatherData();
-  }, []);
+    void fetchWeatherData();
+  }, [fetchWeatherData]);
 
   const getWeatherIcon = (iconCode: string) => {
     if (iconCode.includes('01')) return <Sun className="w-8 h-8 text-yellow-500" />;

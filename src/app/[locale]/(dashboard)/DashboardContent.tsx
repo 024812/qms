@@ -13,27 +13,7 @@ import { EmptyState } from '@/components/ui/empty-state';
 import { WeatherForecastWidget } from '@/components/weather/WeatherForecast';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent } from '@/components/ui/card';
-
-interface DashboardQuilt {
-  id: string;
-  name: string;
-  itemNumber: string;
-  season: string;
-  fillMaterial: string;
-  weightGrams: number;
-  location: string;
-}
-
-interface HistoricalUsageRecord {
-  id: string;
-  year: number;
-  quiltName: string;
-  itemNumber: string;
-  season: string;
-  startDate: string;
-  endDate: string | null;
-  quiltId: string;
-}
+import type { DashboardHistoricalUsage, DashboardInUseQuilt } from '@/lib/types/dashboard';
 
 export function DashboardContent() {
   const router = useRouter();
@@ -194,7 +174,7 @@ export function DashboardContent() {
                     />
                   </div>
                 ) : (
-                  inUseQuilts.map((quilt: DashboardQuilt) => (
+                  inUseQuilts.map((quilt: DashboardInUseQuilt) => (
                     <div
                       key={quilt.id}
                       className="px-6 py-3 table-row-hover cursor-pointer"
@@ -255,7 +235,7 @@ export function DashboardContent() {
                     />
                   </div>
                 ) : (
-                  historicalUsage.map((record: HistoricalUsageRecord) => (
+                  historicalUsage.map((record: DashboardHistoricalUsage) => (
                     <div
                       key={record.id}
                       className="px-6 py-3 table-row-hover cursor-pointer"

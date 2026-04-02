@@ -11,9 +11,8 @@
  * Requirements: 1.4 (Database connection setup)
  */
 
-import { drizzle, NeonDatabase } from 'drizzle-orm/neon-serverless';
+import { drizzle } from 'drizzle-orm/neon-serverless';
 import { Pool, neonConfig } from '@neondatabase/serverless';
-import { PgTransaction } from 'drizzle-orm/pg-core';
 import * as schema from './schema';
 import ws from 'ws';
 
@@ -29,7 +28,7 @@ const pool = new Pool({
 });
 
 export const db = drizzle(pool, { schema });
-export type Tx = NeonDatabase<typeof schema> | PgTransaction<any, typeof schema, any>;
+export type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
 
 // Re-export schema for convenience
 export * from './schema';

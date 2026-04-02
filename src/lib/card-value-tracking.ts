@@ -52,6 +52,11 @@ export interface ValueStatistics {
   recordCount: number;
 }
 
+interface CardValueRow {
+  current_value: string | number | null;
+  purchase_price: string | number | null;
+}
+
 /**
  * Record a new value for a card
  *
@@ -165,7 +170,7 @@ export async function getCardValueStatistics(cardId: string): Promise<ValueStati
     WHERE id = ${cardId}
   `);
 
-  const card = result.rows[0] as any;
+  const card = result.rows[0] as unknown as CardValueRow | undefined;
   const currentValue = card?.current_value ? Number(card.current_value) : null;
   const purchasePrice = card?.purchase_price ? Number(card.purchase_price) : null;
 

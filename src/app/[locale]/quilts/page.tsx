@@ -1,3 +1,4 @@
+import { getAppSettingsAction } from '@/app/actions/settings';
 import {
   getQuilts,
   countQuilts,
@@ -114,7 +115,11 @@ export default async function QuiltsPage({
   const { filters, searchInput, initialSearchTerm, initialFilters } =
     parseQuiltSearchParams(resolvedSearchParams);
 
-  const [quilts, total] = await Promise.all([getQuilts(filters), countQuilts(filters)]);
+  const [quilts, total, appSettingsResult] = await Promise.all([
+    getQuilts(filters),
+    countQuilts(filters),
+    getAppSettingsAction(),
+  ]);
 
   return (
     <QuiltsPageClient
@@ -123,6 +128,7 @@ export default async function QuiltsPage({
         total,
         hasMore: (filters.offset ?? 0) + quilts.length < total,
       }}
+      initialAppSettings={appSettingsResult.success ? appSettingsResult.data : null}
       initialSearchParams={searchInput}
       initialSearchTerm={initialSearchTerm}
       initialFilters={initialFilters}

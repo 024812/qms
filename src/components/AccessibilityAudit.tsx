@@ -47,7 +47,7 @@ export function AccessibilityAudit() {
           ],
         });
 
-        console.log(
+        console.warn(
           '%c[Accessibility Audit] axe-core is running. Check console for violations.',
           'color: #2563EB; font-weight: bold;'
         );

@@ -7,57 +7,73 @@
  * Requirements: 6.3 - Data export service supporting CSV and Excel formats
  */
 
-// Item import removed
+type ExportRecord = Record<string, unknown>;
+type ExportFormatter<TItem extends ExportRecord = ExportRecord> = (
+  value: unknown,
+  item: TItem
+) => string;
 
-/**
- * Export field configuration
- */
-export interface ExportFieldConfig {
-  /** Field key (can use dot notation for nested fields) */
+export interface ExportFieldConfig<TItem extends ExportRecord = ExportRecord> {
   key: string;
-  /** Column header label */
   label: string;
-  /** Optional formatter function */
-  format?: (value: any, item: any) => string;
+  format?: ExportFormatter<TItem>;
 }
 
-/**
- * Export options
- */
-export interface ExportOptions {
-  /** Fields to export */
-  fields: ExportFieldConfig[];
-  /** File name (without extension) */
+export interface ExportOptions<TItem extends ExportRecord = ExportRecord> {
+  fields: ExportFieldConfig<TItem>[];
   fileName?: string;
-  /** Include header row */
   includeHeader?: boolean;
 }
 
-/**
- * Get nested value from object using dot notation
- *
- * @param obj - Object to get value from
- * @param path - Dot-notation path (e.g., "attributes.size")
- * @returns Value at path or undefined
- */
-function getNestedValue(obj: any, path: string): any {
-  return path.split('.').reduce((current, key) => current?.[key], obj);
+export interface ExportSummary {
+  totalRecords: number;
+  exportedRecords: number;
+  fields: number;
+  estimatedSize: string;
 }
 
-/**
- * Escape CSV value
- *
- * @param value - Value to escape
- * @returns Escaped value
- */
-function escapeCsvValue(value: any): string {
+function toDateValue(value: unknown): Date | null {
+  if (value instanceof Date) {
+    return value;
+  }
+
+  if (typeof value === 'string' || typeof value === 'number') {
+    const date = new Date(value);
+    return Number.isNaN(date.getTime()) ? null : date;
+  }
+
+  return null;
+}
+
+function toNumberValue(value: unknown): number | null {
+  if (typeof value === 'number') {
+    return Number.isNaN(value) ? null : value;
+  }
+
+  if (typeof value === 'string' && value.trim() !== '') {
+    const numericValue = Number(value);
+    return Number.isNaN(numericValue) ? null : numericValue;
+  }
+
+  return null;
+}
+
+function getNestedValue(obj: unknown, path: string): unknown {
+  return path.split('.').reduce<unknown>((current, key) => {
+    if (typeof current !== 'object' || current === null) {
+      return undefined;
+    }
+
+    return (current as ExportRecord)[key];
+  }, obj);
+}
+
+function escapeCsvValue(value: unknown): string {
   if (value === null || value === undefined) {
     return '';
   }
 
   const stringValue = String(value);
-
-  // If value contains comma, quote, or newline, wrap in quotes and escape quotes
   if (stringValue.includes(',') || stringValue.includes('"') || stringValue.includes('\n')) {
     return `"${stringValue.replace(/"/g, '""')}"`;
   }
@@ -65,25 +81,17 @@ function escapeCsvValue(value: any): string {
   return stringValue;
 }
 
-/**
- * Export data to CSV format
- *
- * @param data - Array of items to export
- * @param options - Export options
- * @returns CSV string
- */
-export function exportToCSV<T = any>(data: T[], options: ExportOptions): string {
+export function exportToCSV<TItem extends ExportRecord>(
+  data: TItem[],
+  options: ExportOptions<TItem>
+): string {
   const { fields, includeHeader = true } = options;
-
   const lines: string[] = [];
 
-  // Add header row
   if (includeHeader) {
-    const headers = fields.map(field => escapeCsvValue(field.label));
-    lines.push(headers.join(','));
+    lines.push(fields.map(field => escapeCsvValue(field.label)).join(','));
   }
 
-  // Add data rows
   for (const item of data) {
     const values = fields.map(field => {
       const rawValue = getNestedValue(item, field.key);
@@ -96,49 +104,23 @@ export function exportToCSV<T = any>(data: T[], options: ExportOptions): string 
   return lines.join('\n');
 }
 
-/**
- * Export data to Excel-compatible CSV format (UTF-8 with BOM)
- *
- * @param data - Array of items to export
- * @param options - Export options
- * @returns CSV string with BOM
- */
-export function exportToExcel<T = any>(data: T[], options: ExportOptions): string {
-  const csv = exportToCSV(data, options);
-  // Add UTF-8 BOM for Excel compatibility
-  return '\uFEFF' + csv;
+export function exportToExcel<TItem extends ExportRecord>(
+  data: TItem[],
+  options: ExportOptions<TItem>
+): string {
+  return '\uFEFF' + exportToCSV(data, options);
 }
 
-/**
- * Create download blob for CSV
- *
- * @param csvContent - CSV content string
- * @param fileName - File name (without extension)
- * @returns Blob object
- */
 export function createCSVBlob(csvContent: string, _fileName: string = 'export'): Blob {
   return new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
 }
 
-/**
- * Create download blob for Excel
- *
- * @param csvContent - CSV content string with BOM
- * @param fileName - File name (without extension)
- * @returns Blob object
- */
 export function createExcelBlob(csvContent: string, _fileName: string = 'export'): Blob {
   return new Blob([csvContent], {
     type: 'application/vnd.ms-excel;charset=utf-8;',
   });
 }
 
-/**
- * Trigger browser download
- *
- * @param blob - Blob to download
- * @param fileName - File name with extension
- */
 export function triggerDownload(blob: Blob, fileName: string): void {
   const url = URL.createObjectURL(blob);
   const link = document.createElement('a');
@@ -150,118 +132,69 @@ export function triggerDownload(blob: Blob, fileName: string): void {
   URL.revokeObjectURL(url);
 }
 
-/**
- * Export items to CSV and trigger download
- *
- * @param data - Array of items to export
- * @param options - Export options
- */
-export function downloadCSV<T = any>(data: T[], options: ExportOptions): void {
+export function downloadCSV<TItem extends ExportRecord>(
+  data: TItem[],
+  options: ExportOptions<TItem>
+): void {
   const fileName = options.fileName || 'export';
-  const csv = exportToCSV(data, options);
-  const blob = createCSVBlob(csv, fileName);
-  triggerDownload(blob, `${fileName}.csv`);
+  triggerDownload(createCSVBlob(exportToCSV(data, options), fileName), `${fileName}.csv`);
 }
 
-/**
- * Export items to Excel and trigger download
- *
- * @param data - Array of items to export
- * @param options - Export options
- */
-export function downloadExcel<T = any>(data: T[], options: ExportOptions): void {
+export function downloadExcel<TItem extends ExportRecord>(
+  data: TItem[],
+  options: ExportOptions<TItem>
+): void {
   const fileName = options.fileName || 'export';
-  const csv = exportToExcel(data, options);
-  const blob = createExcelBlob(csv, fileName);
-  triggerDownload(blob, `${fileName}.xlsx`);
+  triggerDownload(createExcelBlob(exportToExcel(data, options), fileName), `${fileName}.xlsx`);
 }
 
-/**
- * Common formatters for export
- */
 export const ExportFormatters = {
-  /**
-   * Format date to YYYY-MM-DD
-   */
-  date: (value: any): string => {
-    if (!value) return '';
-    const date = value instanceof Date ? value : new Date(value);
-    return date.toISOString().split('T')[0];
+  date: (value: unknown): string => {
+    const date = toDateValue(value);
+    return date ? date.toISOString().split('T')[0] : '';
   },
-
-  /**
-   * Format datetime to YYYY-MM-DD HH:mm:ss
-   */
-  datetime: (value: any): string => {
-    if (!value) return '';
-    const date = value instanceof Date ? value : new Date(value);
-    return date.toISOString().replace('T', ' ').split('.')[0];
+  datetime: (value: unknown): string => {
+    const date = toDateValue(value);
+    return date ? date.toISOString().replace('T', ' ').split('.')[0] : '';
   },
-
-  /**
-   * Format number with specified decimal places
-   */
   number:
     (decimals: number = 2) =>
-    (value: any): string => {
-      if (value === null || value === undefined || isNaN(value)) return '';
-      return Number(value).toFixed(decimals);
+    (value: unknown): string => {
+      const numericValue = toNumberValue(value);
+      return numericValue === null ? '' : numericValue.toFixed(decimals);
     },
-
-  /**
-   * Format currency (CNY)
-   */
-  currency: (value: any): string => {
-    if (value === null || value === undefined || isNaN(value)) return '';
-    return `¥${Number(value).toFixed(2)}`;
+  currency: (value: unknown): string => {
+    const numericValue = toNumberValue(value);
+    return numericValue === null ? '' : `CNY ${numericValue.toFixed(2)}`;
   },
+  boolean: (value: unknown): string => (value ? '是' : '否'),
+  array: (value: unknown): string => (Array.isArray(value) ? value.join(', ') : ''),
+  json: (value: unknown): string => {
+    if (value === null || value === undefined) {
+      return '';
+    }
 
-  /**
-   * Format boolean as Yes/No
-   */
-  boolean: (value: any): string => {
-    return value ? '是' : '否';
-  },
-
-  /**
-   * Format array as comma-separated string
-   */
-  array: (value: any): string => {
-    if (!Array.isArray(value)) return '';
-    return value.join(', ');
-  },
-
-  /**
-   * Format JSON object as string
-   */
-  json: (value: any): string => {
-    if (value === null || value === undefined) return '';
     try {
       return JSON.stringify(value);
     } catch {
       return String(value);
     }
   },
-
-  /**
-   * Truncate long text
-   */
   truncate:
     (maxLength: number = 50) =>
-    (value: any): string => {
-      if (!value) return '';
-      const str = String(value);
-      return str.length > maxLength ? str.substring(0, maxLength) + '...' : str;
+    (value: unknown): string => {
+      if (!value) {
+        return '';
+      }
+
+      const stringValue = String(value);
+      return stringValue.length > maxLength
+        ? `${stringValue.substring(0, maxLength)}...`
+        : stringValue;
     },
 };
 
-/**
- * Pre-defined field configurations for common item fields
- */
 export const CommonExportFields = {
-  /**
-   * Basic item fields
-   */
   basic: (): ExportFieldConfig[] => [
     { key: 'id', label: 'ID' },
     { key: 'name', label: '名称' },
@@ -270,64 +203,48 @@ export const CommonExportFields = {
     { key: 'createdAt', label: '创建时间', format: ExportFormatters.datetime },
     { key: 'updatedAt', label: '更新时间', format: ExportFormatters.datetime },
   ],
-
-  /**
-   * Item with owner information
-   */
   withOwner: (): ExportFieldConfig[] => [
     ...CommonExportFields.basic(),
     { key: 'ownerId', label: '所有者ID' },
   ],
-
-  /**
-   * Item with images
-   */
   withImages: (): ExportFieldConfig[] => [
     ...CommonExportFields.basic(),
-    { key: 'images', label: '图片数量', format: value => String(value?.length || 0) },
+    {
+      key: 'images',
+      label: '图片数量',
+      format: value => (Array.isArray(value) ? String(value.length) : '0'),
+    },
   ],
 };
 
-/**
- * Create custom export fields for a module
- *
- * @param attributeFields - Array of attribute field configurations
- * @returns Complete export field configuration
- */
 export function createModuleExportFields(
-  attributeFields: Array<{ key: string; label: string; format?: (value: any) => string }>
+  attributeFields: Array<{ key: string; label: string; format?: (value: unknown) => string }>
 ): ExportFieldConfig[] {
-  const basicFields = CommonExportFields.basic();
-  const customFields = attributeFields.map(field => ({
-    key: `attributes.${field.key}`,
-    label: field.label,
-    format: field.format,
-  }));
-
-  return [...basicFields, ...customFields];
+  return [
+    ...CommonExportFields.basic(),
+    ...attributeFields.map(field => ({
+      key: `attributes.${field.key}`,
+      label: field.label,
+      format: field.format,
+    })),
+  ];
 }
 
-/**
- * Batch export with progress tracking
- */
-export async function exportWithProgress<T = any>(
-  data: T[],
-  options: ExportOptions,
+export async function exportWithProgress<TItem extends ExportRecord>(
+  data: TItem[],
+  options: ExportOptions<TItem>,
   onProgress?: (progress: number) => void
 ): Promise<string> {
   const { fields, includeHeader = true } = options;
   const lines: string[] = [];
   const batchSize = 100;
 
-  // Add header
   if (includeHeader) {
-    const headers = fields.map(field => escapeCsvValue(field.label));
-    lines.push(headers.join(','));
+    lines.push(fields.map(field => escapeCsvValue(field.label)).join(','));
   }
 
-  // Process in batches
-  for (let i = 0; i < data.length; i += batchSize) {
-    const batch = data.slice(i, i + batchSize);
+  for (let index = 0; index < data.length; index += batchSize) {
+    const batch = data.slice(index, index + batchSize);
 
     for (const item of batch) {
       const values = fields.map(field => {
@@ -338,33 +255,20 @@ export async function exportWithProgress<T = any>(
       lines.push(values.join(','));
     }
 
-    // Report progress
     if (onProgress) {
-      const progress = Math.min(100, Math.round(((i + batchSize) / data.length) * 100));
-      onProgress(progress);
+      onProgress(Math.min(100, Math.round(((index + batchSize) / data.length) * 100)));
     }
 
-    // Allow UI to update
     await new Promise(resolve => setTimeout(resolve, 0));
   }
 
-  if (onProgress) {
-    onProgress(100);
-  }
-
+  onProgress?.(100);
   return lines.join('\n');
 }
 
-/**
- * Validate export data
- *
- * @param data - Data to validate
- * @param options - Export options
- * @returns Validation result
- */
-export function validateExportData<T = any>(
-  data: T[],
-  options: ExportOptions
+export function validateExportData<TItem extends ExportRecord>(
+  data: TItem[],
+  options: ExportOptions<TItem>
 ): { valid: boolean; errors: string[] } {
   const errors: string[] = [];
 
@@ -380,13 +284,10 @@ export function validateExportData<T = any>(
     errors.push('必须指定至少一个导出字段');
   }
 
-  // Check if all fields exist in at least one item
   if (data.length > 0 && options.fields) {
     const sampleItem = data[0];
     for (const field of options.fields) {
-      const value = getNestedValue(sampleItem, field.key);
-      if (value === undefined) {
-        // This is just a warning, not an error
+      if (getNestedValue(sampleItem, field.key) === undefined) {
         console.warn(`Field "${field.key}" not found in sample item`);
       }
     }
@@ -398,24 +299,10 @@ export function validateExportData<T = any>(
   };
 }
 
-/**
- * Export statistics summary
- */
-export interface ExportSummary {
-  totalRecords: number;
-  exportedRecords: number;
-  fields: number;
-  estimatedSize: string;
-}
-
-/**
- * Get export summary
- *
- * @param data - Data to export
- * @param options - Export options
- * @returns Export summary
- */
-export function getExportSummary<T = any>(data: T[], options: ExportOptions): ExportSummary {
+export function getExportSummary<TItem extends ExportRecord>(
+  data: TItem[],
+  options: ExportOptions<TItem>
+): ExportSummary {
   const csv = exportToCSV(data, options);
   const sizeInBytes = new Blob([csv]).size;
   const sizeInKB = sizeInBytes / 1024;
@@ -438,10 +325,7 @@ export function getExportSummary<T = any>(data: T[], options: ExportOptions): Ex
   };
 }
 
-/**
- * Export all utilities
- */
-export default {
+const exportUtilities = {
   exportToCSV,
   exportToExcel,
   downloadCSV,
@@ -456,3 +340,5 @@ export default {
   validateExportData,
   getExportSummary,
 };
+
+export default exportUtilities;

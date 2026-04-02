@@ -1,19 +1,19 @@
 /**
  * Login Form Component
- * 
+ *
  * Client component that handles user login with:
  * - Progressive enhancement using Next.js 16 Form (when available)
  * - Client-side validation feedback
  * - Server Action integration (Server-Side Redirect)
  * - Error handling and display
- * 
+ *
  * Requirements: 8.1 (User authentication)
  */
 
 'use client';
 
 import { useActionState } from 'react';
-import { loginUser } from '@/app/actions/auth';
+import { loginUser, type LoginActionState } from '@/app/actions/auth';
 import { useSearchParams } from 'next/navigation';
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -31,7 +31,10 @@ export function LoginForm() {
   const searchParams = useSearchParams();
   const callbackUrl = searchParams.get('callbackUrl') || '/';
 
-  const [state, formAction, isPending] = useActionState(loginUser, null);
+  const [state, formAction, isPending] = useActionState<LoginActionState | null, FormData>(
+    loginUser,
+    null
+  );
 
   return (
     <Card className="shadow-lg">
@@ -78,21 +81,13 @@ export function LoginForm() {
             <Alert variant="destructive">
               <AlertDescription>
                 {state.message}
-                {state.error && (
-                  <div className="mt-1 text-sm">
-                    {state.error}
-                  </div>
-                )}
+                {state.error && <div className="mt-1 text-sm">{state.error}</div>}
               </AlertDescription>
             </Alert>
           )}
 
           {/* Submit button */}
-          <Button
-            type="submit"
-            disabled={isPending}
-            className="w-full"
-          >
+          <Button type="submit" disabled={isPending} className="w-full">
             {isPending ? t('loggingIn') : t('loginButton')}
           </Button>
         </form>

@@ -23,7 +23,7 @@ interface ImportResultsProps {
       row: number;
       message: string;
       field?: string;
-      data?: any;
+      data?: unknown;
     }>;
     summary: {
       totalRows: number;
@@ -170,8 +170,11 @@ export function ImportResults({
           </CardHeader>
           <CardContent>
             <div className="space-y-3 max-h-64 overflow-y-auto">
-              {results.errors.slice(0, 10).map((error, index) => (
-                <div key={index} className="flex items-start space-x-3 p-3 bg-red-50 rounded-lg">
+              {results.errors.slice(0, 10).map(error => (
+                <div
+                  key={`import-error-${error.row}-${error.field ?? 'general'}`}
+                  className="flex items-start space-x-3 p-3 bg-red-50 rounded-lg"
+                >
                   <XCircle className="h-4 w-4 text-red-600 mt-0.5" />
                   <div className="flex-1">
                     <p className="text-sm font-medium text-red-800">

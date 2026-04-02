@@ -1,9 +1,9 @@
 /**
  * ItemList Component
- * 
+ *
  * Generic list component that displays items in a responsive grid layout.
  * Handles empty states and delegates card rendering to ItemCard component.
- * 
+ *
  * Requirements: 4.1, 4.2
  */
 
@@ -16,15 +16,22 @@ import { getModule } from '@/modules/registry';
 /**
  * ItemList Props
  */
+type ItemListRecord = Record<string, unknown> & {
+  id: string;
+  name?: string;
+  status?: string;
+  createdAt?: string | Date;
+  type?: string;
+};
+
 interface ItemListProps {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  items: any[];
+  items: ItemListRecord[];
   moduleType: string;
 }
 
 /**
  * ItemList Component
- * 
+ *
  * Displays a grid of item cards with responsive layout.
  * Shows an empty state when no items are available.
  */
@@ -56,9 +63,7 @@ export function ItemList({ items, moduleType }: ItemListProps) {
         <p className="text-sm text-muted-foreground mb-4">
           {moduleDef ? `还没有添加任何${moduleDef.name}` : '还没有添加任何物品'}
         </p>
-        <p className="text-xs text-muted-foreground">
-          点击右上角的“添加”按钮创建第一个物品
-        </p>
+        <p className="text-xs text-muted-foreground">点击右上角的“添加”按钮创建第一个物品</p>
       </div>
     );
   }
@@ -66,10 +71,11 @@ export function ItemList({ items, moduleType }: ItemListProps) {
   // Render grid of items
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-      {items.map((item) => (
+      {items.map(item => (
         <ItemCard
           key={item.id}
           item={item}
+          moduleType={moduleType}
           onClick={() => router.push(`/${moduleType}/${item.id}`)}
         />
       ))}

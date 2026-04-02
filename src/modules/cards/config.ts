@@ -8,7 +8,7 @@
  */
 
 import { ModuleDefinition } from '../types';
-import { cardAttributesSchema } from './schema';
+import { cardAttributesSchema, type CardItem } from './schema';
 import { CardCard } from './ui/CardCard';
 
 /**
@@ -22,7 +22,7 @@ import { CardCard } from './ui/CardCard';
  * - Physical details (parallel, serial number, autograph, memorabilia)
  * - Storage and condition
  */
-export const cardModule: ModuleDefinition = {
+export const cardModule: ModuleDefinition<CardItem> = {
   id: 'cards',
   name: '球星卡管理',
   description: '管理体育球星卡收藏，追踪价值和评级信息',

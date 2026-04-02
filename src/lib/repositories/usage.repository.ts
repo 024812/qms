@@ -32,6 +32,18 @@ export interface UpdateUsageRecordData {
   notes?: string | null;
 }
 
+export interface UsageListItem extends UsageRecord {
+  quiltName: string | null;
+  itemNumber: number | null;
+  color: string | null;
+  season: string | null;
+  currentStatus: string | null;
+  startedAt: Date;
+  endedAt: Date | null;
+  isActive: boolean;
+  duration: number | null;
+}
+
 export class UsageRepository extends BaseRepositoryImpl<UsageRecordRow, UsageRecord> {
   protected tableName = 'usage_records';
 
@@ -65,13 +77,14 @@ export class UsageRepository extends BaseRepositoryImpl<UsageRecordRow, UsageRec
   async findAll(
     filters: { quiltId?: string; limit?: number; offset?: number } = {},
     tx?: Tx
-  ): Promise<any[]> {
+  ): Promise<UsageListItem[]> {
     return this.executeQuery(
       async () => {
         const { quiltId, limit = 50, offset = 0 } = filters;
         const d = tx || db;
 
-        const query = d.select({
+        const query = d
+          .select({
             id: usageRecords.id,
             quiltId: usageRecords.quiltId,
             startDate: usageRecords.startDate,
@@ -83,44 +96,49 @@ export class UsageRepository extends BaseRepositoryImpl<UsageRecordRow, UsageRec
             color: quilts.color,
             season: quilts.season,
             currentStatus: quilts.currentStatus,
-        }).from(usageRecords)
+          })
+          .from(usageRecords)
           .leftJoin(quilts, eq(usageRecords.quiltId, quilts.id))
           .orderBy(desc(usageRecords.startDate))
           .limit(limit)
           .offset(offset);
 
         if (quiltId) {
-            query.where(eq(usageRecords.quiltId, quiltId));
+          query.where(eq(usageRecords.quiltId, quiltId));
         }
 
         const rows = await query;
 
         // Transform to expected format
         return rows.map(row => {
-            const endDate = row.endDate ? new Date(row.endDate) : null;
-            const startDate = new Date(row.startDate);
-            let duration: number | null = null;
-            
-            if (endDate) {
-                const diffTime = Math.abs(endDate.getTime() - startDate.getTime());
-                duration = Math.ceil(diffTime / (1000 * 60 * 60 * 24)); 
-            }
+          const endDate = row.endDate ? new Date(row.endDate) : null;
+          const startDate = new Date(row.startDate);
+          let duration: number | null = null;
 
-            return {
-                id: row.id,
-                quiltId: row.quiltId,
-                quiltName: row.quiltName,
-                itemNumber: row.itemNumber,
-                color: row.color,
-                season: row.season,
-                currentStatus: row.currentStatus,
-                startedAt: startDate,
-                endedAt: endDate,
-                usageType: row.usageType,
-                notes: row.notes,
-                isActive: !endDate,
-                duration: duration,
-            };
+          if (endDate) {
+            const diffTime = Math.abs(endDate.getTime() - startDate.getTime());
+            duration = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+          }
+
+          return {
+            id: row.id,
+            quiltId: row.quiltId,
+            startDate,
+            endDate,
+            usageType: (row.usageType as UsageRecord['usageType']) ?? 'REGULAR',
+            notes: row.notes,
+            createdAt: startDate,
+            updatedAt: endDate ?? startDate,
+            quiltName: row.quiltName,
+            itemNumber: row.itemNumber,
+            color: row.color,
+            season: row.season,
+            currentStatus: row.currentStatus,
+            startedAt: startDate,
+            endedAt: endDate,
+            isActive: !endDate,
+            duration: duration,
+          };
         });
       },
       'findAll',
@@ -135,10 +153,11 @@ export class UsageRepository extends BaseRepositoryImpl<UsageRecordRow, UsageRec
     return this.executeQuery(
       async () => {
         const d = tx || db;
-        const rows = await d.select()
-            .from(usageRecords)
-            .where(eq(usageRecords.quiltId, quiltId))
-            .orderBy(desc(usageRecords.startDate));
+        const rows = await d
+          .select()
+          .from(usageRecords)
+          .where(eq(usageRecords.quiltId, quiltId))
+          .orderBy(desc(usageRecords.startDate));
         return rows.map(row => this.rowToModel(row as unknown as UsageRecordRow));
       },
       'findByQuiltId',
@@ -153,10 +172,11 @@ export class UsageRepository extends BaseRepositoryImpl<UsageRecordRow, UsageRec
     return this.executeQuery(
       async () => {
         const d = tx || db;
-        const rows = await d.select()
-            .from(usageRecords)
-            .where(and(eq(usageRecords.quiltId, quiltId), isNull(usageRecords.endDate)))
-            .limit(1);
+        const rows = await d
+          .select()
+          .from(usageRecords)
+          .where(and(eq(usageRecords.quiltId, quiltId), isNull(usageRecords.endDate)))
+          .limit(1);
         return rows[0] ? this.rowToModel(rows[0] as unknown as UsageRecordRow) : null;
       },
       'getActiveUsageRecord',
@@ -172,29 +192,35 @@ export class UsageRepository extends BaseRepositoryImpl<UsageRecordRow, UsageRec
       async () => {
         const d = tx || db;
         const now = new Date(); // Drizzle handles Date object
-        
+
         dbLogger.info('Creating usage record', { quiltId: data.quiltId });
 
-        const rows = await d.insert(usageRecords).values({
+        const rows = await d
+          .insert(usageRecords)
+          .values({
             quiltId: data.quiltId,
             startDate: data.startDate,
             endDate: data.endDate ?? null,
             usageType: data.usageType || 'REGULAR',
             notes: data.notes || null,
             createdAt: now,
-            updatedAt: now
-        }).returning();
+            updatedAt: now,
+          })
+          .returning();
 
-        dbLogger.info('Usage record created successfully', { id: rows[0].id, quiltId: data.quiltId });
-        
+        dbLogger.info('Usage record created successfully', {
+          id: rows[0].id,
+          quiltId: data.quiltId,
+        });
+
         // Invalidate cache tags
         if (!tx) {
-            revalidateTag('usage', 'max');
-            revalidateTag('usage-list', 'max');
-            revalidateTag(`usage-quilt-${data.quiltId}`, 'max');
-            revalidateTag('stats', 'max');
+          revalidateTag('usage', 'max');
+          revalidateTag('usage-list', 'max');
+          revalidateTag(`usage-quilt-${data.quiltId}`, 'max');
+          revalidateTag('stats', 'max');
         }
-        
+
         return this.rowToModel(rows[0] as unknown as UsageRecordRow);
       },
       'createUsageRecord',
@@ -218,14 +244,15 @@ export class UsageRepository extends BaseRepositoryImpl<UsageRecordRow, UsageRec
 
         dbLogger.info('Ending usage record', { quiltId, endDate });
 
-        const rows = await d.update(usageRecords)
-            .set({
-                endDate: endDate,
-                ...(notes ? { notes } : {}),
-                updatedAt: now
-            })
-            .where(and(eq(usageRecords.quiltId, quiltId), isNull(usageRecords.endDate)))
-            .returning();
+        const rows = await d
+          .update(usageRecords)
+          .set({
+            endDate: endDate,
+            ...(notes ? { notes } : {}),
+            updatedAt: now,
+          })
+          .where(and(eq(usageRecords.quiltId, quiltId), isNull(usageRecords.endDate)))
+          .returning();
 
         if (rows.length === 0) {
           dbLogger.warn('No active usage record found to end', { quiltId });
@@ -233,14 +260,14 @@ export class UsageRepository extends BaseRepositoryImpl<UsageRecordRow, UsageRec
         }
 
         dbLogger.info('Usage record ended successfully', { id: rows[0].id, quiltId });
-        
+
         // Invalidate cache tags
         if (!tx) {
-            revalidateTag('usage', 'max');
-            revalidateTag('usage-list', 'max');
-            revalidateTag(`usage-${rows[0].id}`, 'max');
-            revalidateTag(`usage-quilt-${quiltId}`, 'max');
-            revalidateTag('stats', 'max');
+          revalidateTag('usage', 'max');
+          revalidateTag('usage-list', 'max');
+          revalidateTag(`usage-${rows[0].id}`, 'max');
+          revalidateTag(`usage-quilt-${quiltId}`, 'max');
+          revalidateTag('stats', 'max');
         }
 
         return this.rowToModel(rows[0] as unknown as UsageRecordRow);
@@ -261,29 +288,32 @@ export class UsageRepository extends BaseRepositoryImpl<UsageRecordRow, UsageRec
 
         dbLogger.info('Updating usage record', { id });
 
-        const updateValues: any = { updatedAt: now };
+        const updateValues: Partial<typeof usageRecords.$inferInsert> & { updatedAt: Date } = {
+          updatedAt: now,
+        };
         if (data.startDate !== undefined) updateValues.startDate = data.startDate;
         if (data.endDate !== undefined) updateValues.endDate = data.endDate;
         if (data.notes !== undefined) updateValues.notes = data.notes;
 
-        const rows = await d.update(usageRecords)
-            .set(updateValues)
-            .where(eq(usageRecords.id, id))
-            .returning();
+        const rows = await d
+          .update(usageRecords)
+          .set(updateValues)
+          .where(eq(usageRecords.id, id))
+          .returning();
 
         if (rows.length === 0) {
           return null;
         }
 
         dbLogger.info('Usage record updated successfully', { id });
-        
+
         // Invalidate cache tags
         if (!tx) {
-            revalidateTag('usage', 'max');
-            revalidateTag('usage-list', 'max');
-            revalidateTag(`usage-${id}`, 'max');
-            revalidateTag(`usage-quilt-${rows[0].quiltId}`, 'max');
-            revalidateTag('stats', 'max');
+          revalidateTag('usage', 'max');
+          revalidateTag('usage-list', 'max');
+          revalidateTag(`usage-${id}`, 'max');
+          revalidateTag(`usage-quilt-${rows[0].quiltId}`, 'max');
+          revalidateTag('stats', 'max');
         }
 
         return this.rowToModel(rows[0] as unknown as UsageRecordRow);
@@ -299,10 +329,11 @@ export class UsageRepository extends BaseRepositoryImpl<UsageRecordRow, UsageRec
   async getAllActive(tx?: Tx): Promise<UsageRecord[]> {
     return this.executeQuery(async () => {
       const d = tx || db;
-      const rows = await d.select()
-          .from(usageRecords)
-          .where(isNull(usageRecords.endDate))
-          .orderBy(desc(usageRecords.startDate));
+      const rows = await d
+        .select()
+        .from(usageRecords)
+        .where(isNull(usageRecords.endDate))
+        .orderBy(desc(usageRecords.startDate));
       return rows.map(row => this.rowToModel(row as unknown as UsageRecordRow));
     }, 'getAllActive');
   }
@@ -310,7 +341,10 @@ export class UsageRepository extends BaseRepositoryImpl<UsageRecordRow, UsageRec
   /**
    * Get usage statistics for a quilt
    */
-  async getUsageStats(quiltId: string, tx?: Tx): Promise<{
+  async getUsageStats(
+    quiltId: string,
+    tx?: Tx
+  ): Promise<{
     totalUsages: number;
     totalDays: number;
     averageDays: number;
@@ -319,12 +353,13 @@ export class UsageRepository extends BaseRepositoryImpl<UsageRecordRow, UsageRec
     return this.executeQuery(
       async () => {
         const d = tx || db;
-        
+
         // Drizzle aggregation
         // total days = sum(EXTRACT(DAY FROM (end_date - start_date)))
         // We can use sql template for expression
-        
-        const result = await d.select({
+
+        const result = await d
+          .select({
             totalUsages: count(),
             totalDays: sql<number>`
                 COALESCE(SUM(
@@ -335,10 +370,10 @@ export class UsageRepository extends BaseRepositoryImpl<UsageRecordRow, UsageRec
                   END
                 ), 0)
             `.mapWith(Number),
-            lastUsed: max(usageRecords.startDate)
-        })
-        .from(usageRecords)
-        .where(eq(usageRecords.quiltId, quiltId));
+            lastUsed: max(usageRecords.startDate),
+          })
+          .from(usageRecords)
+          .where(eq(usageRecords.quiltId, quiltId));
 
         const stats = result[0];
         const totalUsages = stats.totalUsages || 0;
@@ -369,22 +404,23 @@ export class UsageRepository extends BaseRepositoryImpl<UsageRecordRow, UsageRec
         const record = await d.select().from(usageRecords).where(eq(usageRecords.id, id)).limit(1);
         const quiltId = record[0]?.quiltId;
 
-        const result = await d.delete(usageRecords)
-            .where(eq(usageRecords.id, id))
-            .returning({ id: usageRecords.id });
+        const result = await d
+          .delete(usageRecords)
+          .where(eq(usageRecords.id, id))
+          .returning({ id: usageRecords.id });
 
         const success = result.length > 0;
         if (success) {
           dbLogger.info('Usage record deleted successfully', { id });
-          
+
           if (!tx) {
-             revalidateTag('usage', 'max');
-             revalidateTag('usage-list', 'max');
-             revalidateTag(`usage-${id}`, 'max');
-             if (quiltId) {
-                 revalidateTag(`usage-quilt-${quiltId}`, 'max');
-             }
-             revalidateTag('stats', 'max');
+            revalidateTag('usage', 'max');
+            revalidateTag('usage-list', 'max');
+            revalidateTag(`usage-${id}`, 'max');
+            if (quiltId) {
+              revalidateTag(`usage-quilt-${quiltId}`, 'max');
+            }
+            revalidateTag('stats', 'max');
           }
         }
         return success;

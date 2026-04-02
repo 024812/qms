@@ -26,9 +26,11 @@ import type {
   QuiltSearchInput,
 } from '@/types/quilt';
 import type { FilterCriteria } from '@/components/quilts/AdvancedFilters';
+import type { AppSettings } from '@/lib/types/settings';
 
 interface QuiltsPageClientProps {
   initialData: QuiltsResponse;
+  initialAppSettings: AppSettings | null;
   initialSearchParams?: QuiltSearchInput;
   initialSearchTerm: string;
   initialFilters: FilterCriteria;
@@ -36,6 +38,7 @@ interface QuiltsPageClientProps {
 
 export function QuiltsPageClient({
   initialData,
+  initialAppSettings,
   initialSearchParams,
   initialSearchTerm,
   initialFilters,
@@ -57,7 +60,9 @@ export function QuiltsPageClient({
 
   const queryClient = useQueryClient();
   const { data: quiltsData, isLoading } = useQuilts(initialSearchParams, { initialData });
-  const { data: appSettings } = useAppSettings();
+  const { data: appSettings } = useAppSettings({
+    initialData: initialAppSettings ?? undefined,
+  });
 
   const quilts: Quilt[] = useMemo(
     () => quiltsData?.quilts || initialData.quilts,
@@ -263,7 +268,7 @@ export function QuiltsPageClient({
   };
 
   const handleQuiltDoubleClick = (quilt: Quilt) => {
-    const doubleClickAction = (appSettings?.doubleClickAction as string) || 'status';
+    const doubleClickAction = appSettings?.doubleClickAction || 'status';
 
     switch (doubleClickAction) {
       case 'status':

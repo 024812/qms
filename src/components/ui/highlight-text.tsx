@@ -4,6 +4,8 @@
  * Highlights search terms within text
  */
 
+import type { ReactNode } from 'react';
+
 interface HighlightTextProps {
   text: string;
   searchTerm: string;
@@ -23,20 +25,28 @@ export function HighlightText({ text, searchTerm, className = '' }: HighlightTex
 
   // Split text by search term
   const parts = text.split(regex);
+  const renderedParts = parts.reduce<{
+    nodes: ReactNode[];
+    offset: number;
+  }>(
+    (state, part) => {
+      const key = `${state.offset}-${part}`;
+      const node =
+        part.toLowerCase() === searchTerm.toLowerCase() ? (
+          <mark key={key} className="bg-yellow-200 text-gray-900 font-medium px-0.5 rounded">
+            {part}
+          </mark>
+        ) : (
+          <span key={key}>{part}</span>
+        );
 
-  return (
-    <span className={className}>
-      {parts.map((part, index) => {
-        // Check if this part matches the search term (case-insensitive)
-        if (part.toLowerCase() === searchTerm.toLowerCase()) {
-          return (
-            <mark key={index} className="bg-yellow-200 text-gray-900 font-medium px-0.5 rounded">
-              {part}
-            </mark>
-          );
-        }
-        return <span key={index}>{part}</span>;
-      })}
-    </span>
-  );
+      return {
+        nodes: [...state.nodes, node],
+        offset: state.offset + part.length,
+      };
+    },
+    { nodes: [], offset: 0 }
+  ).nodes;
+
+  return <span className={className}>{renderedParts}</span>;
 }

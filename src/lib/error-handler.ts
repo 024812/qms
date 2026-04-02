@@ -129,7 +129,7 @@ export interface ApiError {
   message: string;
   code?: string;
   status?: number;
-  details?: any;
+  details?: unknown;
 }
 
 /**
@@ -217,7 +217,7 @@ export async function withRetry<T>(
 /**
  * Fetch with error handling and retry
  */
-export async function fetchWithErrorHandling<T = any>(
+export async function fetchWithErrorHandling<T = unknown>(
   url: string,
   options?: RequestInit,
   lang: 'zh' | 'en' = 'zh'
@@ -276,7 +276,7 @@ export function setupGlobalErrorHandler() {
 /**
  * Error logging utility (can be extended to send to error tracking service)
  */
-export function logError(error: unknown, _context?: Record<string, any>) {
+export function logError(error: unknown, _context?: Record<string, unknown>) {
   const _parsedError = parseError(error);
 
   // Future enhancement: Integrate with error tracking service (e.g., Sentry)

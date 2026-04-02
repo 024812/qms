@@ -174,7 +174,7 @@ export class CardRepository extends BaseRepositoryImpl<Card, Card> {
    * Converts empty strings to null for numeric/date fields
    */
   private sanitizeCardData(data: Partial<Card> | CreateCardData): Partial<Card> {
-    const cleanData: any = { ...data };
+    const cleanData: Record<string, unknown> = { ...data };
     const numericFields = [
       'grade',
       'year',

@@ -1,23 +1,23 @@
 /**
  * Quilt Module Configuration
- * 
+ *
  * COMPREHENSIVE configuration that preserves ALL existing quilt functionality.
  * This configuration matches the existing quilt management system with 24+ fields,
  * usage tracking, image management, and maintenance records.
- * 
+ *
  * DO NOT simplify this configuration - it must support the full existing system.
- * 
+ *
  * Requirements: 5.1, 5.2
  */
 
 import { ModuleDefinition } from '../types';
-import { quiltAttributesSchema } from './schema';
+import { quiltAttributesSchema, type QuiltItem } from './schema';
 import { QuiltCard } from './ui/QuiltCard';
 import { QuiltDetail } from './ui/QuiltDetail';
 
 /**
  * Quilt module configuration
- * 
+ *
  * This configuration defines ALL fields from the existing quilt system:
  * - itemNumber (auto-generated, display only)
  * - name, season, dimensions (length, width), weight
@@ -27,7 +27,7 @@ import { QuiltDetail } from './ui/QuiltDetail';
  * - mainImage, attachmentImages (image upload support)
  * - groupId (for grouping related quilts)
  */
-export const quiltModule: ModuleDefinition = {
+export const quiltModule: ModuleDefinition<QuiltItem> = {
   id: 'quilts',
   name: '被子管理',
   description: '管理家中的被子，记录使用情况和保养信息',
@@ -54,7 +54,7 @@ export const quiltModule: ModuleDefinition = {
       description: '自动生成的唯一编号',
       required: false,
     },
-    
+
     // Basic Information
     {
       name: 'name',
@@ -76,7 +76,7 @@ export const quiltModule: ModuleDefinition = {
       ],
       description: '被子适用的季节',
     },
-    
+
     // Dimensions
     {
       name: 'lengthCm',
@@ -102,7 +102,7 @@ export const quiltModule: ModuleDefinition = {
       required: false,
       description: '被子的重量，单位：克',
     },
-    
+
     // Material Information
     {
       name: 'fillMaterial',
@@ -136,7 +136,7 @@ export const quiltModule: ModuleDefinition = {
       required: false,
       description: '被子的品牌',
     },
-    
+
     // Purchase Information
     {
       name: 'purchaseDate',
@@ -145,7 +145,7 @@ export const quiltModule: ModuleDefinition = {
       required: false,
       description: '购买被子的日期',
     },
-    
+
     // Storage and Location
     {
       name: 'location',
@@ -163,7 +163,7 @@ export const quiltModule: ModuleDefinition = {
       required: false,
       description: '被子的包装方式或收纳信息',
     },
-    
+
     // Status
     {
       name: 'currentStatus',
@@ -177,7 +177,7 @@ export const quiltModule: ModuleDefinition = {
       ],
       description: '被子的当前使用状态',
     },
-    
+
     // Additional Information
     {
       name: 'notes',
@@ -187,7 +187,7 @@ export const quiltModule: ModuleDefinition = {
       required: false,
       description: '其他需要记录的信息',
     },
-    
+
     // Image Management
     {
       name: 'mainImage',
@@ -205,7 +205,7 @@ export const quiltModule: ModuleDefinition = {
       required: false,
       description: '被子的其他图片（细节图、标签图等）',
     },
-    
+
     // Grouping (for related quilts)
     {
       name: 'groupId',
@@ -224,7 +224,7 @@ export const quiltModule: ModuleDefinition = {
     {
       key: 'itemNumber',
       label: '编号',
-      render: (value) => `#${value}`,
+      render: value => `#${value}`,
     },
     {
       key: 'name',
@@ -233,7 +233,7 @@ export const quiltModule: ModuleDefinition = {
     {
       key: 'season',
       label: '季节',
-      render: (value) => {
+      render: value => {
         const seasonMap: Record<string, string> = {
           WINTER: '冬季',
           SPRING_AUTUMN: '春秋',
@@ -255,9 +255,10 @@ export const quiltModule: ModuleDefinition = {
     {
       key: 'weightGrams',
       label: '重量',
-      render: (value) => {
-        if (value) {
-          return `${(value / 1000).toFixed(1)}kg`;
+      render: value => {
+        const numericValue = typeof value === 'number' ? value : Number(value);
+        if (!Number.isNaN(numericValue) && numericValue > 0) {
+          return `${(numericValue / 1000).toFixed(1)}kg`;
         }
         return '-';
       },
@@ -273,7 +274,7 @@ export const quiltModule: ModuleDefinition = {
     {
       key: 'brand',
       label: '品牌',
-      render: (value) => value || '-',
+      render: value => value || '-',
     },
     {
       key: 'location',
@@ -282,7 +283,7 @@ export const quiltModule: ModuleDefinition = {
     {
       key: 'currentStatus',
       label: '状态',
-      render: (value) => {
+      render: value => {
         const statusMap: Record<string, string> = {
           IN_USE: '使用中',
           MAINTENANCE: '维护中',
@@ -294,7 +295,7 @@ export const quiltModule: ModuleDefinition = {
     {
       key: 'mainImage',
       label: '图片',
-      render: (value) => (value ? '✓' : '-'),
+      render: value => (value ? '✓' : '-'),
     },
   ],
 
@@ -307,18 +308,18 @@ export const quiltModule: ModuleDefinition = {
       {
         key: 'total',
         label: '总数量',
-        calculate: (items) => items.length,
+        calculate: items => items.length,
       },
       {
         key: 'byStatus',
         label: '按状态统计',
-        calculate: (items) => {
+        calculate: items => {
           const statusCounts = {
             IN_USE: 0,
             MAINTENANCE: 0,
             STORAGE: 0,
           };
-          items.forEach((item) => {
+          items.forEach(item => {
             const status = item.currentStatus || 'STORAGE';
             if (status in statusCounts) {
               statusCounts[status as keyof typeof statusCounts]++;
@@ -330,13 +331,13 @@ export const quiltModule: ModuleDefinition = {
       {
         key: 'bySeason',
         label: '按季节统计',
-        calculate: (items) => {
+        calculate: items => {
           const seasonCounts = {
             WINTER: 0,
             SPRING_AUTUMN: 0,
             SUMMER: 0,
           };
-          items.forEach((item) => {
+          items.forEach(item => {
             const season = item.season;
             if (season in seasonCounts) {
               seasonCounts[season as keyof typeof seasonCounts]++;
@@ -345,13 +346,13 @@ export const quiltModule: ModuleDefinition = {
           return `冬季:${seasonCounts.WINTER} 春秋:${seasonCounts.SPRING_AUTUMN} 夏季:${seasonCounts.SUMMER}`;
         },
       },
-      
+
       // Average metrics
       {
         key: 'avgWeight',
         label: '平均重量',
-        calculate: (items) => {
-          const itemsWithWeight = items.filter((i) => i.weightGrams);
+        calculate: items => {
+          const itemsWithWeight = items.filter(i => i.weightGrams);
           if (itemsWithWeight.length === 0) return '无数据';
           const sum = itemsWithWeight.reduce((acc, i) => acc + (i.weightGrams || 0), 0);
           return `${(sum / itemsWithWeight.length / 1000).toFixed(2)}kg`;
@@ -360,22 +361,26 @@ export const quiltModule: ModuleDefinition = {
       {
         key: 'avgDimensions',
         label: '平均尺寸',
-        calculate: (items) => {
-          const itemsWithDimensions = items.filter((i) => i.lengthCm && i.widthCm);
+        calculate: items => {
+          const itemsWithDimensions = items.filter(i => i.lengthCm && i.widthCm);
           if (itemsWithDimensions.length === 0) return '无数据';
-          const avgLength = itemsWithDimensions.reduce((acc, i) => acc + (i.lengthCm || 0), 0) / itemsWithDimensions.length;
-          const avgWidth = itemsWithDimensions.reduce((acc, i) => acc + (i.widthCm || 0), 0) / itemsWithDimensions.length;
+          const avgLength =
+            itemsWithDimensions.reduce((acc, i) => acc + (i.lengthCm || 0), 0) /
+            itemsWithDimensions.length;
+          const avgWidth =
+            itemsWithDimensions.reduce((acc, i) => acc + (i.widthCm || 0), 0) /
+            itemsWithDimensions.length;
           return `${avgLength.toFixed(0)}×${avgWidth.toFixed(0)}cm`;
         },
       },
-      
+
       // Material distribution
       {
         key: 'materialDistribution',
         label: '材料分布',
-        calculate: (items) => {
+        calculate: items => {
           const materials: Record<string, number> = {};
-          items.forEach((item) => {
+          items.forEach(item => {
             const material = item.fillMaterial || '未知';
             materials[material] = (materials[material] || 0) + 1;
           });
@@ -387,24 +392,26 @@ export const quiltModule: ModuleDefinition = {
           return topMaterials || '无数据';
         },
       },
-      
+
       // Image coverage
       {
         key: 'withImages',
         label: '有图片',
-        calculate: (items) => {
-          const withImages = items.filter((i) => i.mainImage || (i.attachmentImages && i.attachmentImages.length > 0));
+        calculate: items => {
+          const withImages = items.filter(
+            i => i.mainImage || (i.attachmentImages && i.attachmentImages.length > 0)
+          );
           return `${withImages.length}/${items.length}`;
         },
       },
-      
+
       // Brand distribution
       {
         key: 'brandDistribution',
         label: '品牌分布',
-        calculate: (items) => {
+        calculate: items => {
           const brands: Record<string, number> = {};
-          items.forEach((item) => {
+          items.forEach(item => {
             const brand = item.brand || '无品牌';
             brands[brand] = (brands[brand] || 0) + 1;
           });

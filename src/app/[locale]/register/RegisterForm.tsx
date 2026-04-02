@@ -1,19 +1,19 @@
 /**
  * Registration Form Component
- * 
+ *
  * Client component that handles user registration with:
  * - Progressive enhancement using Next.js 16 Form
  * - Client-side validation feedback
  * - Server Action integration
  * - Error handling and display
- * 
+ *
  * Requirements: 8.1 (User registration)
  */
 
 'use client';
 
-import { useActionState , useEffect } from 'react';
-import { registerUser } from '@/app/actions/auth';
+import { useActionState, useEffect } from 'react';
+import { registerUser, type RegisterResult } from '@/app/actions/auth';
 import { useRouter } from 'next/navigation';
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -30,8 +30,8 @@ import { useTranslations } from 'next-intl';
 export function RegisterForm() {
   const t = useTranslations('auth');
   const router = useRouter();
-  const [state, formAction, isPending] = useActionState(
-    async (prevState: any, formData: FormData) => {
+  const [state, formAction, isPending] = useActionState<RegisterResult | null, FormData>(
+    async (_prevState, formData) => {
       const result = await registerUser(formData);
       return result;
     },
@@ -120,11 +120,7 @@ export function RegisterForm() {
             <Alert variant="destructive">
               <AlertDescription>
                 {state.message}
-                {state.error && (
-                  <div className="mt-1 text-sm">
-                    {state.error}
-                  </div>
-                )}
+                {state.error && <div className="mt-1 text-sm">{state.error}</div>}
               </AlertDescription>
             </Alert>
           )}
@@ -132,18 +128,12 @@ export function RegisterForm() {
           {/* Success message */}
           {state?.success && (
             <Alert className="bg-green-50 text-green-800 border-green-200">
-              <AlertDescription>
-                {t('registerSuccess')}
-              </AlertDescription>
+              <AlertDescription>{t('registerSuccess')}</AlertDescription>
             </Alert>
           )}
 
           {/* Submit button */}
-          <Button
-            type="submit"
-            disabled={isPending}
-            className="w-full"
-          >
+          <Button type="submit" disabled={isPending} className="w-full">
             {isPending ? t('registering') : t('registerButton')}
           </Button>
         </form>

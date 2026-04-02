@@ -1,13 +1,18 @@
+import { getAppSettingsAction } from '@/app/actions/settings';
 import { getSimpleUsageStats } from '@/lib/data/stats';
 import { getUsageRecordsWithQuilts } from '@/lib/data/usage';
 import { UsageTrackingPageClient } from './_components/UsageTrackingPageClient';
 
 export default async function UsageTrackingPage() {
-  const stats = await getSimpleUsageStats();
+  const [stats, appSettingsResult] = await Promise.all([
+    getSimpleUsageStats(),
+    getAppSettingsAction(),
+  ]);
   const usageHistory = stats.total ? await getUsageRecordsWithQuilts({ limit: stats.total }) : [];
 
   return (
     <UsageTrackingPageClient
+      initialAppSettings={appSettingsResult.success ? appSettingsResult.data : null}
       initialStats={stats}
       initialUsageHistory={usageHistory.map(record => ({
         id: record.id,

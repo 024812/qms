@@ -13,7 +13,8 @@
 'use client';
 
 import { useActionState } from 'react';
-import { loginUser, type LoginActionState } from '@/app/actions/auth';
+import { loginUser } from '@/app/actions/auth';
+import type { LoginActionState } from '@/app/actions/auth.types';
 import { useSearchParams } from 'next/navigation';
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';

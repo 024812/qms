@@ -1,5 +1,5 @@
 import { getCardsAction } from '@/app/actions/cards';
-import type { GetCardsActionResult } from '@/app/actions/cards';
+import type { GetCardsActionResult } from '@/app/actions/cards.types';
 
 import { CardsPageClient } from './_components/CardsPageClient';
 

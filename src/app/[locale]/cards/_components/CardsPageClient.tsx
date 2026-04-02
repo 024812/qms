@@ -5,7 +5,7 @@ import { ChevronLeft, ChevronRight, LayoutDashboard, Loader2, PackageOpen } from
 import { useTranslations } from 'next-intl';
 import { useQueryClient } from '@tanstack/react-query';
 
-import type { GetCardsActionInput, GetCardsActionResult } from '@/app/actions/cards';
+import type { GetCardsActionInput, GetCardsActionResult } from '@/app/actions/cards.types';
 import { EmptyState } from '@/components/ui/empty-state';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';

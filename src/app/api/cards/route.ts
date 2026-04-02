@@ -1,6 +1,7 @@
 import { NextRequest } from 'next/server';
 
-import { getCardsAction, saveCardAction, type GetCardsActionInput } from '@/app/actions/cards';
+import { getCardsAction, saveCardAction } from '@/app/actions/cards';
+import type { GetCardsActionInput } from '@/app/actions/cards.types';
 import { actionResultToApiResponse } from '@/lib/api/action-response';
 import { createBadRequestResponse } from '@/lib/api/response';
 

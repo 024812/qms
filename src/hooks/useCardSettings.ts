@@ -2,12 +2,8 @@
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
-import {
-  getCardSettingsAction,
-  updateCardSettingsAction,
-  type CardSettings,
-  type UpdateCardSettingsInput,
-} from '@/app/actions/cards';
+import { getCardSettingsAction, updateCardSettingsAction } from '@/app/actions/cards';
+import type { CardSettings, UpdateCardSettingsInput } from '@/app/actions/cards.types';
 
 const CARD_SETTINGS_KEY = ['card-settings'] as const;
 

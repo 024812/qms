@@ -3,6 +3,7 @@
 import { updateTag } from 'next/cache';
 import { z } from 'zod';
 
+import type { GetUsersActionData } from './users.types';
 import { auth } from '@/auth';
 import { hashPassword } from '@/lib/auth/password';
 import {
@@ -10,11 +11,9 @@ import {
   deleteUser,
   isUserEmailTaken,
   listUsers,
+  type UserSummary,
   updateUser,
   usersCacheTag,
-  type UserModule,
-  type UserRole,
-  type UserSummary,
 } from '@/lib/data/users';
 
 const MODULE_IDS = ['quilts', 'cards'] as const;
@@ -34,32 +33,6 @@ interface ActionError {
 }
 
 type ActionResult<T> = ActionSuccess<T> | ActionError;
-
-export interface GetUsersActionData {
-  users: UserSummary[];
-  total: number;
-}
-
-export interface CreateUserActionInput {
-  name: string;
-  email: string;
-  password: string;
-  role: UserRole;
-  activeModules: UserModule[];
-}
-
-export interface UpdateUserActionInput {
-  id: string;
-  name?: string;
-  email?: string;
-  password?: string;
-  role?: UserRole;
-  activeModules?: UserModule[];
-}
-
-export interface DeleteUserActionInput {
-  id: string;
-}
 
 const createUserSchema = z.object({
   name: z.string().trim().min(1, 'Name is required'),

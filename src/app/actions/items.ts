@@ -20,14 +20,14 @@ import {
   UpdateItemFormState,
 } from '@/app/actions/types';
 
-export interface GetItemsOptions {
+interface GetItemsOptions {
   page?: number;
   pageSize?: number;
   status?: string;
   search?: string;
 }
 
-export interface PaginatedResult<T> {
+interface PaginatedResult<T> {
   data: T[];
   totalPages: number;
   totalCount: number;

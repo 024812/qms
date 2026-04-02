@@ -14,6 +14,7 @@
 import { signIn } from '@/auth';
 import { db } from '@/db';
 import { users } from '@/db/schema';
+import type { LoginActionState, RegisterResult } from './auth.types';
 import bcrypt from 'bcryptjs';
 import { eq } from 'drizzle-orm';
 import { AuthError } from 'next-auth';
@@ -33,22 +34,6 @@ const registerSchema = z
     message: "Passwords don't match",
     path: ['confirmPassword'],
   });
-
-/**
- * Registration result type
- */
-type RegisterResult = {
-  success: boolean;
-  message: string;
-  error?: string;
-};
-export type { RegisterResult };
-
-export interface LoginActionState {
-  success: boolean;
-  message: string;
-  error?: string;
-}
 
 function normalizeCallbackUrl(value: FormDataEntryValue | null): string {
   if (typeof value !== 'string' || value.length === 0) {
@@ -72,10 +57,14 @@ function normalizeCallbackUrl(value: FormDataEntryValue | null): string {
  * 4. Creates user in database
  * 5. Automatically signs in the user
  *
+ * @param _prevState - Previous state (for useActionState)
  * @param formData - Form data containing name, email, password, confirmPassword
  * @returns RegisterResult with success status and message
  */
-export async function registerUser(formData: FormData): Promise<RegisterResult> {
+export async function registerUser(
+  _prevState: RegisterResult | null | undefined,
+  formData: FormData
+): Promise<RegisterResult> {
   try {
     const rawData = {
       name: formData.get('name') as string,

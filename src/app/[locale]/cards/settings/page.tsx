@@ -1,5 +1,6 @@
 import { auth } from '@/auth';
-import { getCardSettingsAction, type CardSettings } from '@/app/actions/cards';
+import { getCardSettingsAction } from '@/app/actions/cards';
+import type { CardSettings } from '@/app/actions/cards.types';
 
 import { CardSettingsPageClient } from './_components/CardSettingsPageClient';
 

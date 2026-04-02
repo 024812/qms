@@ -2,6 +2,12 @@
 
 import { z } from 'zod';
 
+import type {
+  CardSettings,
+  GetCardsActionInput,
+  GetCardsActionResult,
+  UpdateCardSettingsInput,
+} from './cards.types';
 import { auth } from '@/auth';
 import {
   deleteCard as deleteCardData,
@@ -19,28 +25,6 @@ import {
 import { systemSettingsRepository } from '@/lib/repositories/system-settings.repository';
 import type { CardItem } from '@/modules/cards/schema';
 
-export interface CardSettings {
-  azureOpenAIApiKey: string;
-  azureOpenAIEndpoint: string;
-  azureOpenAIDeployment: string;
-  ebayAppId: string;
-  ebayCertId: string;
-  ebayDevId: string;
-  rapidApiKey: string;
-  tavilyApiKey: string;
-}
-
-export interface UpdateCardSettingsInput {
-  azureOpenAIApiKey?: string;
-  azureOpenAIEndpoint?: string;
-  azureOpenAIDeployment?: string;
-  ebayAppId?: string;
-  ebayCertId?: string;
-  ebayDevId?: string;
-  rapidApiKey?: string;
-  tavilyApiKey?: string;
-}
-
 interface ActionSuccess<T> {
   success: true;
   data: T;
@@ -56,26 +40,6 @@ interface ActionError {
 }
 
 type ActionResult<T> = ActionSuccess<T> | ActionError;
-
-export interface GetCardsActionInput {
-  search?: string;
-  filter?: {
-    sport?: 'BASKETBALL' | 'SOCCER' | 'OTHER';
-    gradingCompany?: 'UNGRADED' | 'PSA' | 'BGS' | 'SGC' | 'CGC';
-    status?: 'COLLECTION' | 'FOR_SALE' | 'SOLD' | 'GRADING' | 'DISPLAY';
-  };
-  includeSold?: boolean;
-  page?: number;
-  pageSize?: number;
-}
-
-export interface GetCardsActionResult {
-  items: CardItem[];
-  total: number;
-  page: number;
-  pageSize: number;
-  totalPages: number;
-}
 
 const updateCardSettingsSchema = z.object({
   azureOpenAIApiKey: z.string().optional(),

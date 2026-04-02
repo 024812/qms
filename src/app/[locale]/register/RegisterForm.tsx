@@ -13,7 +13,8 @@
 'use client';
 
 import { useActionState, useEffect } from 'react';
-import { registerUser, type RegisterResult } from '@/app/actions/auth';
+import { registerUser } from '@/app/actions/auth';
+import type { RegisterResult } from '@/app/actions/auth.types';
 import { useRouter } from 'next/navigation';
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -31,10 +32,7 @@ export function RegisterForm() {
   const t = useTranslations('auth');
   const router = useRouter();
   const [state, formAction, isPending] = useActionState<RegisterResult | null, FormData>(
-    async (_prevState, formData) => {
-      const result = await registerUser(formData);
-      return result;
-    },
+    registerUser,
     null
   );
 

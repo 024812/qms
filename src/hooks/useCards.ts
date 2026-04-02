@@ -2,11 +2,8 @@
 
 import { useQuery } from '@tanstack/react-query';
 
-import {
-  getCardsAction,
-  type GetCardsActionInput,
-  type GetCardsActionResult,
-} from '@/app/actions/cards';
+import { getCardsAction } from '@/app/actions/cards';
+import type { GetCardsActionInput, GetCardsActionResult } from '@/app/actions/cards.types';
 
 const CARDS_KEY = ['cards'] as const;
 

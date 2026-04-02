@@ -2,15 +2,17 @@
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
+import type {
+  CreateUserActionInput,
+  DeleteUserActionInput,
+  GetUsersActionData,
+  UpdateUserActionInput,
+} from '@/app/actions/users.types';
 import {
   createUserAction,
   deleteUserAction,
   getUsersAction,
   updateUserAction,
-  type CreateUserActionInput,
-  type DeleteUserActionInput,
-  type GetUsersActionData,
-  type UpdateUserActionInput,
 } from '@/app/actions/users';
 
 const USERS_KEY = ['users'] as const;

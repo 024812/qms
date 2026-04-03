@@ -2,11 +2,7 @@
   "compilerOptions": {
     // Updated target for better performance and smaller bundles
     "target": "ES2022",
-    "lib": [
-      "dom",
-      "dom.iterable",
-      "esnext"
-    ],
+    "lib": ["dom", "dom.iterable", "esnext"],
     "allowJs": true,
     "skipLibCheck": true,
     // Enhanced strict mode options for better type safety
@@ -25,6 +21,7 @@
     "allowSyntheticDefaultImports": true,
     "forceConsistentCasingInFileNames": true,
     "jsx": "react-jsx",
+    "ignoreDeprecations": "6.0",
     // Optimized incremental compilation settings
     "incremental": true,
     "tsBuildInfoFile": ".next/cache/tsconfig.tsbuildinfo",
@@ -36,24 +33,12 @@
       }
     ],
     "paths": {
-      "@/*": [
-        "./src/*"
-      ],
-      "@/components/*": [
-        "./src/components/*"
-      ],
-      "@/lib/*": [
-        "./src/lib/*"
-      ],
-      "@/hooks/*": [
-        "./src/hooks/*"
-      ],
-      "@/server/*": [
-        "./src/server/*"
-      ],
-      "@/types/*": [
-        "./src/types/*"
-      ]
+      "@/*": ["./src/*"],
+      "@/components/*": ["./src/components/*"],
+      "@/lib/*": ["./src/lib/*"],
+      "@/hooks/*": ["./src/hooks/*"],
+      "@/server/*": ["./src/server/*"],
+      "@/types/*": ["./src/types/*"]
     },
     "baseUrl": "."
   },
@@ -65,10 +50,5 @@
     ".next/dev/types/**/*.ts",
     "**/*.mts"
   ],
-  "exclude": [
-    "node_modules",
-    "scripts/archive",
-    "scripts/migrations",
-    "src/__tests__"
-  ]
+  "exclude": ["node_modules", "scripts/archive", "scripts/migrations", "src/__tests__"]
 }

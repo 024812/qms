@@ -1,4 +1,3 @@
-import eBayApi from '@hendt/ebay-api';
 import { systemSettingsRepository } from '@/lib/repositories/system-settings.repository';
 
 // ============================================================================
@@ -41,8 +40,8 @@ export interface eBaySearchParams {
   series?: string;
   cardNum?: string;
   parallel?: string;
-  gradingCompany?: string; // PSA, BGS, SGC, etc.
-  grade?: number; // 9, 10, etc.
+  gradingCompany?: string;
+  grade?: number;
   isAutographed?: boolean;
   customQuery?: string;
 }
@@ -51,9 +50,26 @@ export interface eBaySalesResult {
   title: string;
   price: number;
   currency: string;
-  date: string; // ISO string
+  date: string;
   url: string;
   image?: string;
+}
+
+interface EbayCredentials {
+  appId: string;
+  certId: string;
+}
+
+interface EbayAccessTokenResponse {
+  access_token?: string;
+  expires_in?: number;
+  error?: string;
+  error_description?: string;
+}
+
+interface EbayTokenCache {
+  token: string;
+  expiresAt: number;
 }
 
 interface EbayPriceSummary {
@@ -78,27 +94,33 @@ interface EbayBrowseSearchResponse {
   total?: number;
 }
 
+interface EbayErrorResponse {
+  errors?: Array<{
+    errorId?: number;
+    message?: string;
+    longMessage?: string;
+  }>;
+}
+
 // ============================================================================
 // eBay API Client
 // ============================================================================
 
+const EBAY_SCOPE = 'https://api.ebay.com/oauth/api_scope';
+const EBAY_MARKETPLACE_ID = 'EBAY_US';
+
 export class eBayApiClient {
-  private client: eBayApi | null = null;
+  private tokenCache: EbayTokenCache | null = null;
 
-  constructor() {}
+  private getApiBaseUrl() {
+    return process.env.EBAY_ENVIRONMENT === 'sandbox'
+      ? 'https://api.sandbox.ebay.com'
+      : 'https://api.ebay.com';
+  }
 
-  /**
-   * Initialize or retrieve the eBay SDK client
-   * @throws {EbayConfigError} if credentials are missing
-   * @throws {EbayApiError} if authentication fails
-   */
-  private async getClient(): Promise<eBayApi> {
-    if (this.client) {
-      return this.client;
-    }
-
-    // 1. Get credentials from DB (Safe fetch)
+  private async getCredentials(): Promise<EbayCredentials> {
     let config = null;
+
     try {
       config = await systemSettingsRepository.getEbayApiConfig();
     } catch (error) {
@@ -110,18 +132,10 @@ export class eBayApiClient {
 
     let appId = config?.appId || undefined;
     let certId = config?.certId || undefined;
-    let devId = config?.devId || undefined; // Optional
 
-    // 2. Fallback to Env Vars if DB is missing
     if (!appId || !certId) {
-      if (process.env.App_ID) appId = process.env.App_ID;
-      if (process.env.EBAY_APP_ID) appId = process.env.EBAY_APP_ID;
-
-      if (process.env.Cert_ID) certId = process.env.Cert_ID;
-      if (process.env.EBAY_CERT_ID) certId = process.env.EBAY_CERT_ID;
-
-      if (process.env.Dev_ID) devId = process.env.Dev_ID;
-      if (process.env.EBAY_DEV_ID) devId = process.env.EBAY_DEV_ID;
+      appId = appId || process.env.App_ID || process.env.EBAY_APP_ID;
+      certId = certId || process.env.Cert_ID || process.env.EBAY_CERT_ID;
     }
 
     if (!appId || !certId) {
@@ -130,30 +144,82 @@ export class eBayApiClient {
       );
     }
 
-    // 3. Initialize Client
-    const isSandbox = process.env.EBAY_ENVIRONMENT === 'sandbox';
+    return { appId, certId };
+  }
 
-    this.client = new eBayApi({
-      appId: appId,
-      certId: certId,
-      devId: devId,
-      sandbox: isSandbox,
-      siteId: eBayApi.SiteId.EBAY_US,
-      marketplaceId: eBayApi.MarketplaceId.EBAY_US,
-      autoRefreshToken: true,
-    });
-
-    // 4. Authenticate (Client Credentials Flow)
-    try {
-      this.client.OAuth2.setScope(['https://api.ebay.com/oauth/api_scope']);
-      await this.client.OAuth2.getApplicationAccessToken();
-    } catch (error) {
-      console.error('eBay Auth Failed:', error);
-      // Auth failures are usually config issues (wrong credentials)
-      throw new EbayConfigError('eBay Authentication Failed. Check credentials.');
+  private async getAccessToken(forceRefresh = false): Promise<string> {
+    if (!forceRefresh && this.tokenCache && this.tokenCache.expiresAt > Date.now() + 60_000) {
+      return this.tokenCache.token;
     }
 
-    return this.client;
+    const { appId, certId } = await this.getCredentials();
+    const basicAuth = Buffer.from(`${appId}:${certId}`).toString('base64');
+    const body = new URLSearchParams({
+      grant_type: 'client_credentials',
+      scope: EBAY_SCOPE,
+    });
+
+    const response = await fetch(`${this.getApiBaseUrl()}/identity/v1/oauth2/token`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Basic ${basicAuth}`,
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: body.toString(),
+    });
+
+    const data = (await response.json()) as EbayAccessTokenResponse;
+
+    if (!response.ok || !data.access_token) {
+      throw new EbayConfigError(
+        data.error_description || data.error || 'eBay Authentication Failed. Check credentials.'
+      );
+    }
+
+    this.tokenCache = {
+      token: data.access_token,
+      expiresAt: Date.now() + Math.max(60, (data.expires_in || 7200) - 60) * 1000,
+    };
+
+    return this.tokenCache.token;
+  }
+
+  private async browseSearch(
+    params: Record<string, string | number | undefined>,
+    forceRefresh = false
+  ): Promise<EbayBrowseSearchResponse> {
+    const token = await this.getAccessToken(forceRefresh);
+    const url = new URL(`${this.getApiBaseUrl()}/buy/browse/v1/item_summary/search`);
+
+    for (const [key, value] of Object.entries(params)) {
+      if (value !== undefined && value !== '') {
+        url.searchParams.set(key, String(value));
+      }
+    }
+
+    const response = await fetch(url, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'X-EBAY-C-MARKETPLACE-ID': EBAY_MARKETPLACE_ID,
+      },
+    });
+
+    if ((response.status === 401 || response.status === 403) && !forceRefresh) {
+      this.tokenCache = null;
+      return this.browseSearch(params, true);
+    }
+
+    if (!response.ok) {
+      const errorData = (await response.json().catch(() => null)) as EbayErrorResponse | null;
+      const message =
+        errorData?.errors?.[0]?.longMessage ||
+        errorData?.errors?.[0]?.message ||
+        `eBay Browse API request failed with status ${response.status}`;
+
+      throw new EbayApiError(message, response.status === 429 || response.status >= 500);
+    }
+
+    return (await response.json()) as EbayBrowseSearchResponse;
   }
 
   /**
@@ -163,30 +229,25 @@ export class eBayApiClient {
    */
   async searchSoldListings(params: eBaySearchParams): Promise<eBaySalesResult[]> {
     try {
-      const client = await this.getClient();
-
-      // Helper to perform search
       const performSearch = async (currentParams: eBaySearchParams): Promise<EbayItemSummary[]> => {
         const q = currentParams.customQuery
           ? currentParams.customQuery
           : this.buildSearchQuery(currentParams);
         console.warn('DEBUG: Generated Query:', q);
 
-        const response = (await client.buy.browse.search({
-          q: q,
+        const response = await this.browseSearch({
+          q,
           filter: 'soldItemsOnly:true',
           sort: 'createdDate:DESC',
           limit: 50,
           fieldgroups: 'ITEM_SUMMARY,PRICE',
-        })) as EbayBrowseSearchResponse;
+        });
 
         return response.itemSummaries || [];
       };
 
-      // 1. Attempt 1: Full Criteria
       let itemSummaries = await performSearch(params);
 
-      // 2. Attempt 2: If no results, retry WITHOUT YEAR (Common mismatch source, e.g. 2023 vs 2024 cards)
       if (itemSummaries.length === 0 && params.year && !params.customQuery) {
         console.warn('DEBUG: No results found. Retrying without YEAR...');
         const paramsNoYear = { ...params };
@@ -194,29 +255,19 @@ export class eBayApiClient {
         itemSummaries = await performSearch(paramsNoYear);
       }
 
-      // 3. Attempt 3: If still no results, retry WITHOUT SERIES (Some listings omit "Prizm" or put it elsewhere)
-      // Only if we haven't already stripped it (unlikely) and if series exists
-      // 3. Attempt 3: If still no results, retry WITHOUT SERIES (Some listings omit "Prizm" or put it elsewhere)
       if (itemSummaries.length === 0 && params.series && !params.customQuery) {
         console.warn('DEBUG: No results found. Retrying without SERIES...');
-        // Try removing Series from the ORIGINAL params (assuming Year was correct)
         const paramsNoSeries = { ...params };
         delete paramsNoSeries.series;
         itemSummaries = await performSearch(paramsNoSeries);
       }
 
-      // 4. Transform results
       if (itemSummaries.length === 0) {
         return [];
       }
 
-      // 5. Post-Process & Filter (Client-side filtering is safer than API exclusion)
-      // We filter out reprints, digital cards, etc. here instead of in the API query
-      // to avoid "zero results" due to aggressive keyword matching.
       const filteredSummaries = itemSummaries.filter(item => {
         const title = (item.title || '').toLowerCase();
-
-        // Negative keywords (Junk filter)
         const negatives = [
           'reprint',
           'rp',
@@ -229,10 +280,8 @@ export class eBayApiClient {
           'case',
           'break',
         ];
-        const hasNegative = negatives.some(neg => title.includes(neg));
 
-        // We could also check item.condition or category here if needed
-        return !hasNegative;
+        return !negatives.some(neg => title.includes(neg));
       });
 
       console.warn(
@@ -259,12 +308,10 @@ export class eBayApiClient {
         };
       });
     } catch (error) {
-      // Re-throw configuration errors - caller must handle
       if (error instanceof EbayConfigError) {
         throw error;
       }
 
-      // Log and suppress transient API errors
       console.error('eBay API Search Error:', error);
       return [];
     }
@@ -276,17 +323,14 @@ export class eBayApiClient {
    */
   async getActiveListingsCount(params: eBaySearchParams): Promise<number> {
     try {
-      const client = await this.getClient();
       const q = params.customQuery ? params.customQuery : this.buildSearchQuery(params);
-
-      const response = (await client.buy.browse.search({
-        q: q,
+      const response = await this.browseSearch({
+        q,
         limit: 1,
-      })) as EbayBrowseSearchResponse;
+      });
 
       return response.total || 0;
     } catch (error) {
-      // Config errors are logged but return 0 (graceful degradation for count)
       if (error instanceof EbayConfigError) {
         console.warn('eBay not configured for active listings count:', error.message);
       } else {
@@ -302,32 +346,19 @@ export class eBayApiClient {
   private buildSearchQuery(params: eBaySearchParams): string {
     const parts: string[] = [];
 
-    // Core: Year Player Brand
     if (params.year) parts.push(String(params.year));
-
-    // Precise Player Name Matching
-    // Precise Player Name Matching - Removed quotes for better recall
     parts.push(params.playerName);
 
     if (params.brand) parts.push(params.brand);
     if (params.series) parts.push(params.series);
-
-    // Card Number is very specific - handle various formats
-    // Card Number
-    if (params.cardNum) {
-      parts.push(params.cardNum);
-    }
-
-    // Parallel/Variation
+    if (params.cardNum) parts.push(params.cardNum);
     if (params.parallel) parts.push(params.parallel);
 
-    // Grading
     if (params.gradingCompany && params.gradingCompany !== 'UNGRADED') {
       parts.push(params.gradingCompany);
       if (params.grade) parts.push(String(params.grade));
     }
 
-    // Autograph
     if (params.isAutographed) {
       parts.push('auto');
     }
@@ -358,10 +389,10 @@ export class eBayApiClient {
   }
 
   /**
-   * Reset the client (useful for testing or credential refresh)
+   * Reset the cached token (useful for testing or credential refresh)
    */
   resetClient(): void {
-    this.client = null;
+    this.tokenCache = null;
   }
 }
 

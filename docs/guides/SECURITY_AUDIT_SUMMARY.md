@@ -1,160 +1,103 @@
 # Security Audit Summary
 
-## Current Status: January 2026
+Audit date: `2026-04-03`
 
-### Vulnerability Assessment
+## Current status
 
-#### High Severity Issues: 1
+- `npm audit --omit=dev`: `0` vulnerabilities
+- `npm audit`: `4` moderate vulnerabilities
+- Remaining findings are limited to the development/build toolchain and are not present in production runtime dependencies
 
-**1. xlsx Package Vulnerabilities**
+## What was fixed
 
-- **Package**: xlsx (SheetJS)
-- **Severity**: High
-- **Issues**:
-  - Prototype Pollution (GHSA-4r6h-8v6p-xvw6)
-  - Regular Expression Denial of Service (ReDoS) (GHSA-5pgg-2g8v-p4x9)
-- **Status**: No fix available
-- **Risk Assessment**: Medium
-  - The xlsx package is only used for Excel file import/export functionality
-  - Not exposed to untrusted user input in typical usage
-  - Mitigated by input validation and file size limits
-- **Mitigation Strategies**:
-  - File upload size limits implemented (10MB max)
-  - Input validation on uploaded files
-  - Server-side processing isolation
-  - Consider alternative libraries in future updates
+### Removed unused or redundant direct dependencies
 
-#### Critical Severity Issues: 0 ✅
+The following packages were removed because they are no longer referenced by source code or active tooling:
 
-#### Medium/Low Severity Issues: 0 ✅
+- `@auth/core`
+- `@auth/drizzle-adapter`
+- `@radix-ui/react-avatar`
+- `@radix-ui/react-dropdown-menu`
+- `dotenv`
+- `jsonwebtoken`
+- `zustand`
+- `@fast-check/vitest`
+- `@tanstack/react-query-devtools`
+- `@testing-library/user-event`
+- `@types/glob`
+- `@types/jsonwebtoken`
+- `@vitest/coverage-v8`
+- `axe-core`
+- `eslint-plugin-jsx-a11y`
+- `fast-check`
+- `glob`
+- `tsx`
 
-### Security Enhancements Implemented
+### Added missing direct dependency
 
-#### 1. Rate Limiting ✅
+- Added `@radix-ui/react-visually-hidden` because it is imported directly in application code
 
-- **API Endpoints**: 100 requests per 15 minutes
-- **Upload Operations**: 10 uploads per hour
-- **Heavy Operations**: 3 operations per 5 minutes
-- **Implementation**: Custom rate limiting middleware with in-memory store
-- **Headers**: Proper rate limit headers included in responses
+### Upgraded supported dependencies
 
-#### 2. Input Sanitization ✅
+The project was upgraded to the latest supported versions for the current stack, excluding `next-auth` per project requirement:
 
-- **Text Inputs**: XSS prevention with HTML entity encoding
-- **Numeric Inputs**: Range validation and type checking
-- **URL Inputs**: Protocol validation (http/https only)
-- **File Names**: Special character sanitization
-- **Quilt Data**: Comprehensive validation and sanitization
-- **Implementation**: Custom sanitization utilities with Zod integration
+- `@tanstack/react-query` -> `5.96.1`
+- `@types/node` -> `25.5.0`
+- `@vitejs/plugin-react` -> `6.0.1`
+- `framer-motion` -> `12.38.0`
+- `jsdom` -> `29.0.1`
+- `lucide-react` -> `1.7.0`
+- `next-intl` -> `4.9.0`
+- `react-day-picker` -> `9.14.0`
+- `recharts` -> `3.8.1`
+- `tailwind-merge` -> `3.5.0`
+- `typescript` -> `6.0.2`
 
-#### 3. Enhanced Security Headers ✅
+### Compatibility fixes applied after upgrades
 
-- **Content Security Policy**: Comprehensive CSP implementation
-- **HSTS**: HTTP Strict Transport Security enabled
-- **X-Frame-Options**: Clickjacking protection (DENY)
-- **X-Content-Type-Options**: MIME sniffing protection
-- **X-XSS-Protection**: XSS attack prevention
-- **Permissions Policy**: Browser feature restrictions
-- **Cross-Origin Policies**: COEP, COOP, CORP configured
-- **Additional Headers**: X-Permitted-Cross-Domain-Policies, X-Download-Options
+- Replaced the removed Lucide GitHub brand icon usage with an inline SVG in the sidebar footer
+- Updated the Recharts tooltip formatter typing to match the newer `ValueType` / `NameType` signatures
+- Added `"ignoreDeprecations": "6.0"` in `tsconfig.json` to acknowledge the TypeScript 6 deprecation warning for `baseUrl`
+- Upgraded `eslint-import-resolver-typescript` to `4.4.4` so ESLint continues to resolve TypeScript imports correctly with TypeScript 6
 
-#### 4. API Security ✅
+## Remaining exceptions
 
-- **Middleware**: Enhanced API middleware with security checks
-- **Error Handling**: Secure error responses without information leakage
-- **Logging**: Comprehensive request logging for security monitoring
-- **Validation**: Enhanced input validation with Zod schemas
+### `next-auth`
 
-### Automated Security Monitoring
+- Kept at `5.0.0-beta.30` intentionally, per explicit project requirement
 
-#### 1. Dependency Scanning ✅
+### `eslint`
 
-- **Tool**: npm audit (built-in)
-- **Frequency**: On every install/update
-- **Integration**: CI/CD pipeline integration ready
-- **Alerts**: Manual review process established
+- `npm outdated` reports `eslint@10.1.0` as the latest release
+- The current Next.js lint stack still pulls `eslint-plugin-import`, `eslint-plugin-react`, `eslint-plugin-react-hooks`, and `eslint-plugin-jsx-a11y` versions whose published peer ranges stop at ESLint 9
+- Attempting the ESLint 10 upgrade produced real runtime lint failures in this repository
+- The project therefore remains on `eslint@9.39.4`, which is the latest working version for the current Next.js lint dependency chain
 
-#### 2. Code Quality Scanning ✅
+## Remaining audit findings
 
-- **Tool**: ESLint with security rules
-- **Rules**: Security-focused linting rules enabled
-- **Coverage**: All TypeScript/JavaScript files
-- **Integration**: Pre-commit hooks implemented
+All remaining `npm audit` findings come from the dev-only `drizzle-kit` toolchain:
 
-#### 3. Build Security ✅
+- `drizzle-kit` -> `@esbuild-kit/esm-loader` -> `@esbuild-kit/core-utils` -> `esbuild`
 
-- **TypeScript**: Strict mode enabled for type safety
-- **Bundling**: Secure webpack configuration
-- **Environment**: Proper environment variable handling
-- **Secrets**: No hardcoded secrets detected
+Notes:
 
-### Security Best Practices Implemented
+- `npm audit --omit=dev` is already `0`
+- `drizzle-kit@0.31.10` is currently the latest stable release on npm
+- The audit suggestion to install `drizzle-kit@0.18.1` is stale and would actually downgrade the package
+- These findings do not affect the production deployment dependency graph
 
-#### 1. Authentication & Authorization
+## Verification completed
 
-- **Status**: Not applicable (no user authentication in current version)
-- **Future**: Ready for implementation with tRPC context
+The repository was re-verified after cleanup and upgrades:
 
-#### 2. Data Protection
+- `npm run lint:check`
+- `npm run type-check`
+- `npm test`
+- `npm run build`
+- `npm audit --omit=dev`
 
-- **Input Validation**: Comprehensive validation with Zod
-- **Output Encoding**: Proper encoding for all outputs
-- **SQL Injection**: Protected by parameterized queries (Neon/PostgreSQL)
-- **XSS Protection**: Input sanitization and CSP headers
+## Recommended policy
 
-#### 3. Infrastructure Security
-
-- **HTTPS**: Enforced in production (Vercel)
-- **Headers**: Comprehensive security headers implemented
-- **Cookies**: Secure cookie configuration ready
-- **CORS**: Proper CORS configuration
-
-### Recommendations
-
-#### Immediate Actions (Completed) ✅
-
-1. ✅ Implement rate limiting for API endpoints
-2. ✅ Add comprehensive input sanitization
-3. ✅ Configure security headers
-4. ✅ Set up automated dependency scanning
-
-#### Short-term (Next 3 months)
-
-1. **Monitor xlsx vulnerabilities**: Check for updates monthly
-2. **Security testing**: Implement automated security testing
-3. **Penetration testing**: Consider third-party security assessment
-4. **Alternative libraries**: Research xlsx alternatives
-
-#### Long-term (Next 6-12 months)
-
-1. **Security audit**: Professional security audit
-2. **Compliance**: Evaluate compliance requirements (GDPR, etc.)
-3. **Advanced monitoring**: Implement advanced security monitoring
-4. **Security training**: Team security awareness training
-
-### Compliance Status
-
-#### OWASP Top 10 (2021)
-
-- **A01 - Broken Access Control**: ✅ Not applicable (no authentication)
-- **A02 - Cryptographic Failures**: ✅ HTTPS enforced, secure headers
-- **A03 - Injection**: ✅ Protected by input validation and parameterized queries
-- **A04 - Insecure Design**: ✅ Security-first design principles applied
-- **A05 - Security Misconfiguration**: ✅ Secure configuration implemented
-- **A06 - Vulnerable Components**: ⚠️ xlsx vulnerability (monitored)
-- **A07 - Identity/Authentication Failures**: ✅ Not applicable
-- **A08 - Software/Data Integrity Failures**: ✅ Secure build process
-- **A09 - Security Logging/Monitoring**: ✅ Comprehensive logging implemented
-- **A10 - Server-Side Request Forgery**: ✅ No external requests from user input
-
-### Security Score: 9/10
-
-**Excellent security posture with one monitored vulnerability**
-
-### Next Review Date: July 2026
-
----
-
-**Audit Completed**: January 2026  
-**Auditor**: QMS 2026 Comprehensive Review  
-**Status**: ✅ Production Ready with Monitoring
+- Keep `npm audit --omit=dev` as the production dependency gate in CI
+- Continue monitoring `drizzle-kit` releases for a toolchain update that removes the `@esbuild-kit/esm-loader` advisory path
+- Revisit the ESLint 10 upgrade after the Next.js lint plugin chain publishes official support

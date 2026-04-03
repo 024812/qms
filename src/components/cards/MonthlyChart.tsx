@@ -12,6 +12,7 @@ import {
   ResponsiveContainer,
   type TooltipProps,
 } from 'recharts';
+import type { NameType, ValueType } from 'recharts/types/component/DefaultTooltipContent';
 import type { MonthlyBuySellData } from '@/lib/data/cards';
 
 interface MonthlyChartProps {
@@ -20,8 +21,16 @@ interface MonthlyChartProps {
 
 export function MonthlyChart({ data }: MonthlyChartProps) {
   const t = useTranslations('cards.overview');
-  const tooltipFormatter: TooltipProps<number, string>['formatter'] = (value, name) => {
-    const numericValue = typeof value === 'number' ? value : 0;
+  const tooltipFormatter: TooltipProps<ValueType, NameType>['formatter'] = (value, name) => {
+    const numericValue =
+      typeof value === 'number'
+        ? value
+        : typeof value === 'string'
+          ? Number(value) || 0
+          : Array.isArray(value)
+            ? Number(value[0]) || 0
+            : 0;
+
     return [`$${numericValue.toFixed(2)}`, name === 'bought' ? t('bought') : t('sold')];
   };
 

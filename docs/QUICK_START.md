@@ -1,109 +1,105 @@
-# Quick Start Guide
+# Quick Start
 
-## Get Started in 5 Minutes
-
-### 1. Install Dependencies
+## 1. Install Dependencies
 
 ```bash
 npm install
 ```
 
-### 2. Configure Environment
+## 2. Create Your Local Environment File
 
-```bash
-# Copy environment template
-copy .env.example .env.local
+PowerShell:
 
-# Edit .env.local and add your database URL and secrets
+```powershell
+Copy-Item .env.example .env.local
 ```
 
-Required environment variables:
-- `DATABASE_URL` - Your Neon PostgreSQL connection string
-- `NEXTAUTH_SECRET` - Generate with: `openssl rand -base64 32`
-
-### 3. Set Up Database
+macOS or Linux:
 
 ```bash
-# Push schema to database
+cp .env.example .env.local
+```
+
+Minimum recommended values:
+
+```env
+DATABASE_URL=
+NEXTAUTH_SECRET=
+NEXTAUTH_URL=http://localhost:3000
+```
+
+## 3. Apply The Database Schema
+
+```bash
 npm run db:push
 ```
 
-### 4. Run Development Server
+## 4. Start The App
 
 ```bash
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) in your browser.
+Open `http://localhost:3000`.
 
-## What's Configured
-
-✅ **Next.js 16.1** - Latest version with App Router  
-✅ **TypeScript 5** - Full type safety  
-✅ **Drizzle ORM** - Type-safe database queries  
-✅ **Auth.js v5** - Modern authentication  
-✅ **shadcn/ui** - Beautiful UI components  
-✅ **Tailwind CSS v4** - Latest styling framework  
-✅ **Neon PostgreSQL** - Serverless database connection  
-
-## Project Structure
-
-```
-src/
-├── app/              # Next.js pages and API routes
-├── auth.ts           # Authentication configuration
-├── middleware.ts     # Route protection
-├── db/               # Database schema and client
-├── modules/          # Module system (to be implemented)
-├── components/       # React components
-└── lib/              # Utilities
-```
-
-## Next Steps
-
-1. **Phase 1**: Implement user management system
-2. **Phase 2**: Migrate quilt management to new framework
-3. **Phase 3**: Add sports card management module
-
-See [SETUP.md](./SETUP.md) for detailed documentation.
-
-## Available Commands
+## 5. Run Quality Checks
 
 ```bash
-# Development
-npm run dev              # Start dev server
-npm run build            # Build for production
-npm run start            # Start production server
+npm run lint:check
+npm run type-check
+npm test
+```
 
-# Database
-npm run db:push          # Push schema changes
-npm run db:studio        # Open database GUI
-npm run db:generate      # Generate migrations
+## Current Project Shape
 
-# Code Quality
-npm run lint             # Fix linting issues
-npm run type-check       # Check TypeScript types
-npm run format           # Format code
+```text
+proxy.ts
+src/
+  app/
+    [locale]/
+    actions/
+    api/
+  components/
+  db/
+  hooks/
+  lib/
+    data/
+  modules/
+docs/
+```
+
+## Architecture Notes
+
+- Route protection lives in the root `proxy.ts` file.
+- Internal reads and writes should go through `src/app/actions/*.ts` and `src/lib/data/*.ts`.
+- React Query is used as a client-side interaction wrapper, not as the primary data truth layer.
+
+## Useful Commands
+
+```bash
+npm run dev
+npm run dev:turbo
+npm run build
+npm run db:generate
+npm run db:migrate
+npm run db:studio
 ```
 
 ## Troubleshooting
 
-**Database connection error?**
-- Check your `DATABASE_URL` in `.env.local`
-- Ensure Neon database is accessible
+### Database connection issues
 
-**Authentication not working?**
-- Verify `NEXTAUTH_SECRET` is set
-- Clear browser cookies
+- Verify `DATABASE_URL` in `.env.local`
+- Re-run `npm run db:push`
 
-**Build errors?**
+### Authentication issues
+
+- Verify `NEXTAUTH_SECRET`
+- Verify `NEXTAUTH_URL`
+- Clear cookies after changing auth configuration
+
+### Build issues
+
+- Run `npm run lint:check`
 - Run `npm run type-check`
-- Run `npm run lint`
-- Delete `.next` folder and rebuild
-
-## Support
-
-- [Full Setup Guide](./SETUP.md)
-- [Next.js Docs](https://nextjs.org/docs)
-- [Drizzle ORM Docs](https://orm.drizzle.team)
-- [Auth.js Docs](https://authjs.dev)
+- Run `npm test`

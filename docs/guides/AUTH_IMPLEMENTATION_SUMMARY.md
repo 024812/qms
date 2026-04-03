@@ -1,292 +1,101 @@
-# 认证系统实施总结 / Authentication Implementation Summary
+# Authentication Implementation Summary
 
-## 🎉 实施完成！/ Implementation Complete!
+当前认证方案已经统一到 Auth.js v5 + Credentials Provider。
 
-认证系统已成功实施并可以使用。
-The authentication system has been successfully implemented and is ready to use.
+## 当前认证入口
 
----
+- `src/auth.ts`
+  Auth.js 配置、Credentials Provider、JWT/session 回调、`auth()`/`signIn()`/`signOut()` 导出
+- `src/app/actions/auth.ts`
+  登录和注册的 server actions
+- `src/app/api/auth/[...nextauth]/route.ts`
+  Auth.js handler 暴露
+- `src/app/[locale]/login/page.tsx`
+  本地化登录页
+- `src/app/[locale]/register/page.tsx`
+  本地化注册页
+- `proxy.ts`
+  Next.js 16 路由保护入口
 
-## ✅ 已完成的功能 / Completed Features
+## 当前实现方式
 
-### 1. 认证基础设施 / Authentication Infrastructure
+### 1. 用户存储
 
-- ✅ 安装依赖（bcryptjs, jsonwebtoken）
-- ✅ 创建认证工具库（`src/lib/auth.ts`）
-- ✅ 密码哈希和验证
-- ✅ JWT token 生成和验证
-- ✅ 速率限制（15分钟内最多5次尝试）
-- ✅ IP 地址获取
+- 用户记录保存在 `users` 表
+- 密码哈希保存在 `users.hashed_password`
+- 角色和已启用模块保存在 `users.preferences`
 
-### 2. 密码设置工具 / Password Setup Tool
+### 2. 登录方式
 
-- ✅ 创建设置脚本（`scripts/setup-password.ts`）
-- ✅ 密码强度验证
-- ✅ 自动生成 bcrypt 哈希
-- ✅ 自动生成 JWT secret
-- ✅ npm 脚本：`npm run setup-password`
+- 使用 Auth.js v5 Credentials Provider
+- 登录时在 `src/auth.ts` 中校验邮箱和密码
+- 密码使用 `bcryptjs` 校验
+- session 采用 JWT strategy
 
-### 3. 登录功能 / Login Functionality
+### 3. 注册方式
 
-- ✅ 登录页面（`src/app/login/page.tsx`）
-  - 密码输入框
-  - 密码可见性切换
-  - "记住我"选项（30天）
-  - 加载状态
-  - 错误提示
-  - 双语支持
-- ✅ 登录 API（`src/app/api/auth/login/route.ts`）
-  - 密码验证
-  - JWT token 生成
-  - HTTP-only cookie
-  - 速率限制
-- ✅ 登出 API（`src/app/api/auth/logout/route.ts`）
+- 注册通过 `src/app/actions/auth.ts` 中的 `registerUser()` 完成
+- 创建用户后会自动调用 `signIn('credentials')`
+- 默认新注册用户角色为 `member`
 
-### 4. 路由保护 / Route Protection
+### 4. 权限与会话
 
-- ✅ Next.js proxy（`src/proxy.ts`）
-  - 保护所有数据修改路由
-  - 自动重定向到登录页
-  - API 路由保护
-  - Session 验证
-- ✅ 登出按钮（在 AppLayout 头部）
-  - 确认对话框
-  - 清除 session
-  - 重定向到登录页
+- `jwt` 回调把 `id`、`role`、`activeModules` 写入 token
+- `session` 回调把这些字段同步到 `session.user`
+- 需要管理员权限的 action 会显式检查 `session.user.role === 'admin'`
 
-### 5. 国际化 / Internationalization
+### 5. 路由保护
 
-- ✅ 中文翻译
-- ✅ 英文翻译
-- ✅ 所有认证相关文本
+- Next.js 16 官方约定使用项目根目录 `proxy.ts`
+- `proxy.ts` 负责：
+  - `next-intl` locale 路由处理
+  - 未登录用户重定向到 `/login`
+  - 已登录用户访问 `/login` 或 `/register` 时重定向回应用首页
+  - 单模块用户进入根路由时自动跳转到对应模块
 
----
+## 必需环境变量
 
-## 📁 创建的文件 / Created Files
-
-1. `src/lib/auth.ts` - 认证工具库
-2. `scripts/setup-password.ts` - 密码设置脚本
-3. `src/app/login/page.tsx` - 登录页面
-4. `src/app/api/auth/login/route.ts` - 登录 API
-5. `src/app/api/auth/logout/route.ts` - 登出 API
-6. `src/proxy.ts` - 路由保护代理
-
-## 📝 修改的文件 / Modified Files
-
-1. `package.json` - 添加 setup-password 脚本
-2. `src/lib/i18n.ts` - 添加认证翻译
-3. `src/components/layout/AppLayout.tsx` - 添加登出按钮
-
----
-
-## 🚀 使用方法 / Usage Instructions
-
-### 初始设置 / Initial Setup
-
-1. **生成密码哈希 / Generate Password Hash**
-
-   ```bash
-   npm run setup-password "YourSecurePassword123"
-   ```
-
-2. **配置环境变量 / Configure Environment Variables**
-
-   将脚本输出的内容添加到 `.env.local` 文件：
-   Add the script output to your `.env.local` file:
-
-   ```env
-   QMS_PASSWORD_HASH="<生成的哈希 / generated hash>"
-   QMS_JWT_SECRET="<生成的密钥 / generated secret>"
-   ```
-
-3. **重启开发服务器 / Restart Development Server**
-   ```bash
-   npm run dev
-   ```
-
-### 登录 / Login
-
-1. 访问应用 / Visit the application: `http://localhost:3000`
-2. 自动重定向到登录页 / Automatically redirected to login page
-3. 输入密码 / Enter your password
-4. 可选：勾选"记住我" / Optional: Check "Remember me"
-5. 点击登录 / Click login
-
-### 登出 / Logout
-
-点击右上角的"退出登录"按钮
-Click the "Logout" button in the top right corner
-
----
-
-## 🔒 安全特性 / Security Features
-
-### 密码安全 / Password Security
-
-- ✅ bcrypt 哈希（cost factor: 12）
-- ✅ 密码强度要求：
-  - 至少 8 个字符
-  - 至少一个大写字母
-  - 至少一个小写字母
-  - 至少一个数字
-
-### Session 安全 / Session Security
-
-- ✅ JWT tokens
-- ✅ HTTP-only cookies（防止 XSS）
-- ✅ Secure flag（生产环境）
-- ✅ SameSite: lax
-- ✅ 默认 7 天过期
-- ✅ "记住我"30 天过期
-
-### 速率限制 / Rate Limiting
-
-- ✅ 15 分钟内最多 5 次登录尝试
-- ✅ 基于 IP 地址
-- ✅ 自动重置
-
-### 路由保护 / Route Protection
-
-- ✅ 所有数据修改路由受保护
-- ✅ API 路由受保护
-- ✅ 自动重定向未认证用户
-- ✅ Session 过期自动登出
-
----
-
-## 🛡️ 受保护的路由 / Protected Routes
-
-### 页面路由 / Page Routes
-
-- `/quilts` - 被子管理
-- `/usage` - 使用跟踪
-- `/import` - 数据导入
-- `/export` - 数据导出
-- `/settings` - 设置
-- `/analytics` - 分析
-- `/reports` - 报告
-- `/seasonal` - 季节分析
-- `/maintenance` - 维护
-
-### API 路由 / API Routes
-
-- `/api/quilts/*` - 被子 API
-- `/api/usage/*` - 使用跟踪 API
-- `/api/import/*` - 导入 API
-- `/api/export/*` - 导出 API
-- `/api/analytics/*` - 分析 API
-- `/api/reports/*` - 报告 API
-
-### 公开路由 / Public Routes
-
-- `/` - 仪表板（只读）
-- `/login` - 登录页面
-- `/api/auth/*` - 认证 API
-- `/api/health` - 健康检查
-- `/api/db-test` - 数据库测试
-
----
-
-## 🔧 生产部署 / Production Deployment
-
-### Vercel 部署 / Vercel Deployment
-
-1. **添加环境变量 / Add Environment Variables**
-
-   在 Vercel 项目设置中添加：
-   Add in Vercel project settings:
-   - `QMS_PASSWORD_HASH`
-   - `QMS_JWT_SECRET`
-
-2. **部署 / Deploy**
-
-   ```bash
-   git push
-   ```
-
-   Vercel 会自动部署
-   Vercel will automatically deploy
-
-3. **验证 / Verify**
-   - 访问生产 URL
-   - 测试登录功能
-   - 验证路由保护
-
----
-
-## 📊 测试清单 / Testing Checklist
-
-- [x] 密码设置脚本运行正常
-- [x] 登录页面显示正确
-- [x] 正确密码可以登录
-- [x] 错误密码显示错误
-- [x] 速率限制工作正常
-- [x] "记住我"功能正常
-- [x] Session 持久化正常
-- [x] 登出功能正常
-- [x] 路由保护工作正常
-- [x] 未认证用户被重定向
-- [x] API 路由受保护
-- [x] 双语支持正常
-
----
-
-## 🎯 下一步 / Next Steps
-
-认证系统已完成！现在可以继续实施其他功能：
-Authentication system is complete! Now you can continue with other features:
-
-1. ✅ **认证系统** - 已完成 / Complete
-2. ⏭️ **翻译系统增强** - 下一步 / Next
-3. ⏭️ **主题系统** - 待实施 / Pending
-4. ⏭️ **设置页面** - 待实施 / Pending
-5. ⏭️ **数据验证** - 待实施 / Pending
-6. ⏭️ **UI 增强** - 待实施 / Pending
-
----
-
-## 💡 提示 / Tips
-
-### 忘记密码 / Forgot Password
-
-如果忘记密码，重新运行设置脚本：
-If you forget your password, run the setup script again:
-
-```bash
-npm run setup-password "NewPassword123"
+```env
+DATABASE_URL=
+NEXTAUTH_SECRET=
+NEXTAUTH_URL=
 ```
 
-然后更新 `.env.local` 文件。
-Then update your `.env.local` file.
+说明：
 
-### 更改密码 / Change Password
+- `DATABASE_URL` 用于读取用户与业务数据
+- `NEXTAUTH_SECRET` 用于 Auth.js 会话签名
+- `NEXTAUTH_URL` 在部署环境应设置为实际站点 URL
 
-1. 运行设置脚本生成新哈希
-2. 更新环境变量
-3. 重启应用
-4. 所有现有 session 将失效
+## 运维说明
 
-### 调试 / Debugging
+### 新环境初始化
 
-- 检查浏览器控制台错误
-- 检查服务器日志
-- 验证环境变量已设置
-- 确保 JWT secret 已配置
+1. 配置数据库与 Auth.js 环境变量
+2. 执行 `npm run db:push`
+3. 启动应用并访问 `/register`
+4. 根据你的启动流程创建或提升至少一个管理员账号
 
----
+### 管理员账号
 
-## 📞 支持 / Support
+- 普通注册用户默认是 `member`
+- 需要访问用户管理、卡片设置等管理员功能时，必须确保对应用户角色为 `admin`
 
-如有问题，请检查：
-If you have issues, please check:
+## 已废弃的旧方案
 
-1. 环境变量是否正确设置
-2. 密码是否符合强度要求
-3. JWT secret 是否已生成
-4. 服务器是否已重启
+以下内容不再属于当前认证实现：
 
----
+- `QMS_PASSWORD_HASH`
+- `QMS_JWT_SECRET`
+- `scripts/setup-password.ts`
+- `npm run setup-password`
+- `src/proxy.ts`
+- `middleware.ts`
 
-**实施日期 / Implementation Date**: 2025-01-XX
-**版本 / Version**: 1.0.0
-**状态 / Status**: ✅ 生产就绪 / Production Ready
+## 推荐验证项
+
+- 访问未登录受保护页面时会跳转到 `/login`
+- 注册后能自动登录
+- 正确密码可以登录，错误密码会被拒绝
+- `session.user` 中包含 `id`、`role`、`activeModules`
+- 管理员页面对非 admin 用户会拒绝访问

@@ -1,188 +1,62 @@
-# QMS 项目总结 - v2026.01.21
+# QMS Project Summary
 
-## 🎉 最新完成的工作（v2026.01.21 - 2026-01-22）
+当前版本：`2026.4.2`
 
-### User Management & UI Enhancements (v2026.01.20)
+## 当前定位
 
-- ✅ **用户管理系统**: 完整的 CRUD 操作，角色访问控制，模块订阅管理
-- ✅ **UI/UX 改进**: 欢迎首页，侧边栏自动刷新
-- ✅ **球星卡模块**: 市场数据集成，价值估算，评级支持
+QMS 已经从“单项目堆功能”收敛为“可复制子模块平台”。现在最重要的不是继续堆平行实现，而是让每个新增模块都能沿着同一条标准路径落地。
 
-### Project Clean & Archival (v2026.01.21)
+第一批标准化模板模块：
 
-- ✅ **项目组织**: 归档已完成规范，清理目录结构
-- ✅ **版本管理**: 升级版本号，更新文档
+- `quilts`
+- `cards`
 
-### v1.1.0 - 2025-12-11
+## 当前架构
 
-### 架构简化
+### 1. 页面结构
 
-- ✅ 移除 tRPC 框架，迁移到纯 REST API + React Query
-- ✅ 移除已弃用的 `executeQuery` 函数（SQL 注入风险）
-- ✅ 清理通知系统代码
-- ✅ 移除未使用的组件和 hooks
-- ✅ 清理临时文档文件
+- 页面位于 `src/app/[locale]/**`
+- 首屏数据在 Server Component 获取
+- 交互状态下沉到模块私有 `_components/*`
 
-### 版本管理
+### 2. 数据真相源
 
-- ✅ 统一版本号显示为 1.1.0
-- ✅ 版本号从 package.json 通过 REST API 读取
-- ✅ 新增 `/api/settings/system-info` 端点
-- ✅ 设置页面版本显示从 API 获取
+- 每个模块只保留一个 canonical data layer：`src/lib/data/<module>.ts`
+- 每个模块只保留一个 canonical server action surface：`src/app/actions/<module>.ts`
+- `/api/**` 不再承担内部主读写路径
 
-### 代码质量改进
+### 3. 缓存策略
 
-- ✅ 删除过时文档（FRONTEND-TRPC-MIGRATION.md, TRPC-MUTATION-FIX.md）
-- ✅ 更新代码注释，将 tRPC 引用替换为 "React Query"
-- ✅ 优化 Dashboard API，使用数据库级 COUNT 查询
-- ✅ 更新 Service Worker，将 tRPC 端点改为 REST API 端点
+- 服务端共享数据使用 Next.js 16 `use cache`、`cacheLife`、`cacheTag`、`revalidateTag`
+- 客户端保持 React Query 包装层，主要负责交互态、失效与局部同步
 
----
+### 4. 路由和鉴权
 
-## 📊 历史完成工作
+- Next.js 16 路由保护使用项目根目录 `proxy.ts`
+- Auth.js v5 负责登录、注册、会话和权限扩展
+- 用户角色和启用模块保存在 `users.preferences`
 
-### v1.0.1 - 2025-01-17
+## 2026.4.2 这次收口的重点
 
-#### Bug 修复（8个）
+- 清理了失效 npm scripts，避免新环境按照错误命令启动
+- 去掉了 `next.config.js` 中已经不再生效的 legacy webpack 配置
+- 统一了 `cards` 和 `settings` 的 canonical data flow，减少重复真相源
+- 优化了 cards overview 统计，改为数据库聚合而不是把整表拉到内存里计算
+- 删除了死文件和无引用文件，减少复制新模块时的噪音
+- 更新了 README 和部署文档，移除旧认证方案和失效环境变量
 
-- ✅ 被子状态更改失败 - 函数签名不匹配
-- ✅ 双击行为不生效 - 缺少事件处理实现
-- ✅ 使用详情页返回按钮问题 - URL 参数未清除
-- ✅ SQL 参数数量不匹配 - INTERVAL 语法错误
-- ✅ 图片查看对话框重复关闭按钮
-- ✅ 操作列不整齐 - 统一显示图片按钮
-- ✅ 使用详情页面参数获取失败
-- ✅ 缺少翻译 - 添加 notes 和 purchaseDate 翻译
+## 新模块复制时的最小模板
 
-#### 新功能（4个）
+1. 在 `src/modules/<module>/` 放入 `blueprint.ts`、`schema.ts`、`types.ts`
+2. 在 `src/lib/data/<module>.ts` 实现唯一的数据读写与缓存失效
+3. 在 `src/app/actions/<module>.ts` 暴露唯一的内部 action 入口
+4. 在 `src/app/[locale]/<module>/page.tsx` 建立 server page shell
+5. 在 `src/app/[locale]/<module>/_components/*` 放置 client shell 和交互组件
+6. 为模块定义清晰的 cache tags 和 query keys
 
-- ✅ **被子图片查看器** - 全屏查看、多图切换、缩略图导航
-- ✅ **独立使用详情页面** - 新路由 `/usage/[quiltId]`，智能返回
-- ✅ **购买日期字段** - 表单中添加日期选择器
-- ✅ **数据备份与恢复** - PowerShell 脚本、完整文档、npm 命令
+## 后续持续约束
 
-### v1.0.0 - 2025-01-11
-
-#### UI 统一改造（100% 完成）
-
-- ✅ 所有 8 个页面统一为 Shadcn UI 设计系统
-- ✅ 移除所有自定义渐变和硬编码颜色
-- ✅ 统一使用语义化颜色系统
-- ✅ 被子管理页面组件化重构
-
----
-
-## 📊 项目统计
-
-### 代码质量
-
-- **ESLint 错误**: 0
-- **TypeScript 错误**: 0
-- **代码覆盖率**: 优秀
-
-### 功能统计
-
-- **修复 Bug**: 8 个（v1.0.1）
-- **新增功能**: 4 个（v1.0.1）
-- **优化页面数**: 8 个（v1.0.0）
-- **新增组件**: 8 个
-
----
-
-## 🎨 当前设计系统
-
-### 颜色系统
-
-```tsx
-// 语义化颜色
-primary; // 主色调 - Trust Blue #2563EB
-secondary; // 次要色调
-muted; // 柔和色调
-accent; // 强调色调
-destructive; // 危险/删除操作
-```
-
-### 布局系统
-
-```tsx
-// 页面容器
-<div className="space-y-6">
-
-// 卡片内部
-<div className="space-y-4">
-
-// 表单字段
-<div className="space-y-2">
-```
-
-### 组件库
-
-- Card, CardHeader, CardTitle, CardDescription, CardContent
-- Table, TableHeader, TableBody, TableRow, TableHead, TableCell
-- Badge, Button, Input, Select
-- Tabs, TabsList, TabsTrigger, TabsContent
-- Dialog, Alert, ErrorAlert, EmptyState, Skeleton
-
----
-
-## 🎯 完成度
-
-### 核心功能
-
-- **被子管理**: ✅ 完成
-- **使用追踪**: ✅ 完成
-- **数据分析**: ✅ 完成
-- **导入导出**: ✅ 完成
-- **系统设置**: ✅ 完成
-- **数据备份**: ✅ 完成
-- **球星卡管理**: ✅ 完成
-
-### UI/UX
-
-- **UI 统一改造**: ✅ 完成（100%）
-- **响应式设计**: ✅ 完成
-- **动画效果**: ✅ 完成
-
-### 代码质量
-
-- **代码规范**: ✅ 完成
-- **文档完善**: ✅ 完成
-
-### 总体完成度
-
-- **整体项目**: 🎯 95% 完成
-
----
-
-## 💡 技术亮点
-
-### 1. 完全统一的设计系统
-
-- 所有页面使用相同的 Shadcn UI 组件
-- 统一的颜色、间距、圆角、阴影
-- 语义化的颜色系统
-
-### 2. 组件化架构
-
-- 被子管理页面拆分为独立组件
-- 使用追踪页面独立详情页
-- 可复用的 UI 组件库
-
-### 3. 高质量代码
-
-- 无 ESLint 错误
-- 无 TypeScript 错误
-- 完善的类型定义
-
-### 4. 完善的文档
-
-- 详细的文档文件
-- 清晰的文档结构
-- 完整的备份恢复指南
-
----
-
-**创建时间**: 2025-01-11  
-**最后更新**: 2026-01-22  
-**当前版本**: v2026.01.21
-**状态**: ✅ 生产就绪
+- 不新增第二套并行 repository 或 cached repository
+- 不让页面重新直接拼装数据库查询
+- 不让内部 UI 重新依赖 `/api/**` 作为主路径
+- 文档更新必须和 `package.json` 版本、根 `README`、`CHANGELOG.md` 同步

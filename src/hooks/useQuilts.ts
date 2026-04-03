@@ -11,8 +11,7 @@ import { useQuery } from '@tanstack/react-query';
 
 import { getQuiltAction, getQuiltsAction } from '@/app/actions/quilts';
 import type { Quilt, QuiltSearchInput } from '@/lib/validations/quilt';
-
-const QUILTS_KEY = ['quilts'] as const;
+import { quiltsQueryKeys } from '@/modules/quilts/blueprint';
 
 export interface QuiltsResponse {
   quilts: Quilt[];
@@ -25,7 +24,7 @@ export function useQuilts(
   options?: { initialData?: QuiltsResponse }
 ) {
   return useQuery({
-    queryKey: [...QUILTS_KEY, searchParams],
+    queryKey: quiltsQueryKeys.list(searchParams ?? {}),
     queryFn: async () => {
       const result = await getQuiltsAction(searchParams);
 
@@ -42,7 +41,7 @@ export function useQuilts(
 
 export function useQuilt(id: string) {
   return useQuery({
-    queryKey: [...QUILTS_KEY, id],
+    queryKey: quiltsQueryKeys.item(id),
     queryFn: async () => {
       const result = await getQuiltAction(id);
 

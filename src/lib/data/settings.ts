@@ -5,10 +5,10 @@ import { countQuilts, getQuilts } from '@/lib/data/quilts';
 import { getSimpleUsageStats } from '@/lib/data/stats';
 import { getUsageRecords } from '@/lib/data/usage';
 import { systemSettingsRepository } from '@/lib/repositories/system-settings.repository';
-import { db } from '@/db';
+import { db, type Tx } from '@/db';
 import { sql } from 'drizzle-orm';
 import { hashPassword, verifyPassword } from '@/lib/auth/password';
-import { cacheLife, cacheTag } from 'next/cache';
+import { cacheLife, cacheTag, revalidateTag } from 'next/cache';
 
 import type {
   AppSettings,
@@ -24,10 +24,14 @@ export async function getAppSettings(): Promise<AppSettings> {
   cacheLife('minutes');
   cacheTag('settings', 'settings-app');
 
+  return readAppSettings();
+}
+
+async function readAppSettings(tx?: Tx): Promise<AppSettings> {
   const [appName, doubleClickAction, usageDoubleClickAction] = await Promise.all([
-    systemSettingsRepository.getAppName(),
-    systemSettingsRepository.getDoubleClickAction(),
-    systemSettingsRepository.getUsageDoubleClickAction(),
+    systemSettingsRepository.getAppName(tx),
+    systemSettingsRepository.getDoubleClickAction(tx),
+    systemSettingsRepository.getUsageDoubleClickAction(tx),
   ]);
 
   return {
@@ -42,19 +46,27 @@ export async function getAppSettings(): Promise<AppSettings> {
 }
 
 export async function updateAppSettings(input: UpdateAppSettingsInput): Promise<AppSettings> {
-  if (input.appName) {
-    await systemSettingsRepository.updateAppName(input.appName);
-  }
+  const settings = await db.transaction(async tx => {
+    if (input.appName !== undefined) {
+      await systemSettingsRepository.updateAppName(input.appName, tx);
+    }
 
-  if (input.doubleClickAction) {
-    await systemSettingsRepository.updateDoubleClickAction(input.doubleClickAction);
-  }
+    if (input.doubleClickAction !== undefined) {
+      await systemSettingsRepository.updateDoubleClickAction(input.doubleClickAction, tx);
+    }
 
-  if (input.usageDoubleClickAction) {
-    await systemSettingsRepository.updateUsageDoubleClickAction(input.usageDoubleClickAction);
-  }
+    if (input.usageDoubleClickAction !== undefined) {
+      await systemSettingsRepository.updateUsageDoubleClickAction(input.usageDoubleClickAction, tx);
+    }
 
-  return getAppSettings();
+    return readAppSettings(tx);
+  });
+
+  revalidateTag('settings', 'max');
+  revalidateTag('settings-app', 'max');
+  revalidateTag('settings-system-info', 'max');
+
+  return settings;
 }
 
 export async function getDatabaseStats(): Promise<DatabaseStats> {

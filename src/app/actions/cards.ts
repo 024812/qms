@@ -13,16 +13,18 @@ import {
   deleteCard as deleteCardData,
   getCardById,
   getCards as getCardsData,
+  getCardSettings as getCardSettingsData,
   getCardStats as getCardStatsData,
   getMonthlyBuySellData as getMonthlyBuySellDataData,
   getRecentActivity as getRecentActivityData,
   saveCard as saveCardData,
+  updateCardSettings as updateCardSettingsData,
   type CardListInput,
+  type CardSettingsData,
   type ActivityItem,
   type MonthlyBuySellData,
   type CardStats,
 } from '@/lib/data/cards';
-import { systemSettingsRepository } from '@/lib/repositories/system-settings.repository';
 import type { CardItem } from '@/modules/cards/schema';
 
 interface ActionSuccess<T> {
@@ -162,24 +164,21 @@ async function requireAuthenticatedUser() {
   return session;
 }
 
-async function readMaskedCardSettings(): Promise<CardSettings> {
-  const [azureConfig, ebayConfig, rapidApiKey, tavilyApiKey] = await Promise.all([
-    systemSettingsRepository.getAzureOpenAIConfig(),
-    systemSettingsRepository.getEbayApiConfig(),
-    systemSettingsRepository.getRapidApiKey(),
-    systemSettingsRepository.getTavilyApiKey(),
-  ]);
-
+function maskCardSettings(settings: CardSettingsData): CardSettings {
   return {
-    azureOpenAIApiKey: azureConfig.apiKey ? '********' : '',
-    azureOpenAIEndpoint: azureConfig.endpoint || '',
-    azureOpenAIDeployment: azureConfig.deployment || '',
-    ebayAppId: ebayConfig.appId || '',
-    ebayCertId: ebayConfig.certId ? '********' : '',
-    ebayDevId: ebayConfig.devId || '',
-    rapidApiKey: rapidApiKey ? '********' : '',
-    tavilyApiKey: tavilyApiKey ? '********' : '',
+    azureOpenAIApiKey: settings.azureOpenAIApiKey ? '********' : '',
+    azureOpenAIEndpoint: settings.azureOpenAIEndpoint,
+    azureOpenAIDeployment: settings.azureOpenAIDeployment,
+    ebayAppId: settings.ebayAppId,
+    ebayCertId: settings.ebayCertId ? '********' : '',
+    ebayDevId: settings.ebayDevId,
+    rapidApiKey: settings.rapidApiKey ? '********' : '',
+    tavilyApiKey: settings.tavilyApiKey ? '********' : '',
   };
+}
+
+async function readMaskedCardSettings(): Promise<CardSettings> {
+  return maskCardSettings(await getCardSettingsData());
 }
 
 export async function getCardSettingsAction(): Promise<ActionResult<CardSettings>> {
@@ -217,52 +216,33 @@ export async function updateCardSettingsAction(
 
     const data = validationResult.data;
 
-    const [currentAzureConfig, currentEbayConfig, currentRapidKey, currentTavilyKey] =
-      await Promise.all([
-        systemSettingsRepository.getAzureOpenAIConfig(),
-        systemSettingsRepository.getEbayApiConfig(),
-        systemSettingsRepository.getRapidApiKey(),
-        systemSettingsRepository.getTavilyApiKey(),
-      ]);
-
-    const newAzureApiKey =
-      data.azureOpenAIApiKey && data.azureOpenAIApiKey !== '********'
-        ? data.azureOpenAIApiKey
-        : currentAzureConfig.apiKey || '';
-
-    const newEbayCertId =
-      data.ebayCertId && data.ebayCertId !== '********'
-        ? data.ebayCertId
-        : currentEbayConfig.certId || '';
-
-    const newRapidKey =
-      data.rapidApiKey && data.rapidApiKey !== '********'
-        ? data.rapidApiKey
-        : currentRapidKey || '';
-
-    const newTavilyKey =
-      data.tavilyApiKey && data.tavilyApiKey !== '********'
-        ? data.tavilyApiKey
-        : currentTavilyKey || '';
-
-    await Promise.all([
-      systemSettingsRepository.updateAzureOpenAIConfig({
-        apiKey: newAzureApiKey,
-        endpoint: data.azureOpenAIEndpoint || currentAzureConfig.endpoint || '',
-        deployment: data.azureOpenAIDeployment || currentAzureConfig.deployment || '',
-      }),
-      systemSettingsRepository.updateEbayApiConfig({
-        appId: data.ebayAppId || currentEbayConfig.appId || '',
-        certId: newEbayCertId,
-        devId: data.ebayDevId || currentEbayConfig.devId || '',
-      }),
-      systemSettingsRepository.updateRapidApiKey(newRapidKey),
-      systemSettingsRepository.updateTavilyApiKey(newTavilyKey),
-    ]);
+    const currentSettings = await getCardSettingsData();
+    const updatedSettings = await updateCardSettingsData({
+      azureOpenAIApiKey:
+        data.azureOpenAIApiKey !== undefined && data.azureOpenAIApiKey !== '********'
+          ? data.azureOpenAIApiKey
+          : currentSettings.azureOpenAIApiKey,
+      azureOpenAIEndpoint: data.azureOpenAIEndpoint ?? currentSettings.azureOpenAIEndpoint,
+      azureOpenAIDeployment: data.azureOpenAIDeployment ?? currentSettings.azureOpenAIDeployment,
+      ebayAppId: data.ebayAppId ?? currentSettings.ebayAppId,
+      ebayCertId:
+        data.ebayCertId !== undefined && data.ebayCertId !== '********'
+          ? data.ebayCertId
+          : currentSettings.ebayCertId,
+      ebayDevId: data.ebayDevId ?? currentSettings.ebayDevId,
+      rapidApiKey:
+        data.rapidApiKey !== undefined && data.rapidApiKey !== '********'
+          ? data.rapidApiKey
+          : currentSettings.rapidApiKey,
+      tavilyApiKey:
+        data.tavilyApiKey !== undefined && data.tavilyApiKey !== '********'
+          ? data.tavilyApiKey
+          : currentSettings.tavilyApiKey,
+    });
 
     return {
       success: true,
-      data: await readMaskedCardSettings(),
+      data: maskCardSettings(updatedSettings),
     };
   } catch {
     return internalErrorResult('Failed to update card settings');

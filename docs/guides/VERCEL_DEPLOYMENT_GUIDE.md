@@ -1,376 +1,105 @@
-# Vercel 部署指南 / Vercel Deployment Guide
+# Vercel Deployment Guide
 
-## 🚀 代码已推送 / Code Pushed
+本指南对应当前 `2026.4.2` 版本。
 
-✅ 代码已成功推送到 GitHub
-✅ Code successfully pushed to GitHub
+## 部署前本地检查
 
-**Commit**: `feat: implement authentication system`
-**Branch**: `main`
-
----
-
-## 📋 Vercel 部署步骤 / Deployment Steps
-
-### 步骤 1: 配置环境变量 / Step 1: Configure Environment Variables
-
-在 Vercel 项目设置中添加以下环境变量：
-Add the following environment variables in your Vercel project settings:
-
-1. 访问 Vercel Dashboard: https://vercel.com/dashboard
-2. 选择您的项目 / Select your project: `qms-app`
-3. 进入 Settings → Environment Variables
-4. 添加以下变量 / Add these variables:
-
-```env
-# Authentication (Required)
-QMS_PASSWORD_HASH="$2b$12$uJRkfI6XXJ0Vuj9WAyPcK.gueJlNrOE5cJl5bnHq3Xvm4PxNs4IeK"
-QMS_JWT_SECRET="d0318b9da09951e8dd912ae21296b579c868f986e8f600719bf82c1fcdde91ff"
-
-# Database (Already configured)
-DATABASE_URL="your-neon-database-url"
-```
-
-**重要提示 / Important Notes:**
-
-- ⚠️ 这些是测试密码的哈希值 / These are test password hashes
-- ⚠️ 测试密码是：`TestPassword123`
-- ⚠️ 生产环境请使用更强的密码 / Use stronger password for production
-- ⚠️ 确保在所有环境（Production, Preview, Development）中添加
-
----
-
-### 步骤 2: 触发部署 / Step 2: Trigger Deployment
-
-Vercel 会自动检测到 GitHub 推送并开始部署。
-Vercel will automatically detect the GitHub push and start deployment.
-
-**检查部署状态 / Check Deployment Status:**
-
-1. 访问 Vercel Dashboard
-2. 查看 Deployments 标签
-3. 等待部署完成（通常 2-3 分钟）
-
-**或者手动触发 / Or manually trigger:**
+在推送代码前，先本地执行：
 
 ```bash
-# 如果安装了 Vercel CLI
+npm run lint:check
+npm run type-check
+npm test
+npm run build
+```
+
+## 1. 配置 Vercel 环境变量
+
+至少配置：
+
+```env
+DATABASE_URL=
+NEXTAUTH_SECRET=
+NEXTAUTH_URL=
+```
+
+如果使用 cards 模块的 AI 或第三方数据源，再补充对应可选变量。
+
+详细变量列表见 `VERCEL-ENV-SETUP.md`。
+
+## 2. 触发部署
+
+可以通过以下任一方式：
+
+- 推送到已连接的 Git 分支
+- 使用 Vercel Dashboard 触发 redeploy
+- 使用 Vercel CLI
+
+```bash
 vercel --prod
 ```
 
----
+## 3. 部署完成后的核心验证
 
-### 步骤 3: 验证部署 / Step 3: Verify Deployment
+### 基础访问
 
-部署完成后，访问您的生产 URL：
-After deployment completes, visit your production URL:
+- 首页可访问
+- `/login` 可访问
+- `/register` 可访问
 
-**生产 URL / Production URL:**
+### 认证与路由保护
 
-```
-https://your-app-domain.vercel.app
-```
+- 未登录访问受保护页面会跳转到 `/login`
+- 登录后可以返回原始目标页
+- 已登录访问 `/login` 或 `/register` 会被重定向回应用
 
-**预期行为 / Expected Behavior:**
+### 数据库连接
 
-1. ✅ 自动重定向到 `/login`
-2. ✅ 显示登录页面
-3. ✅ 可以使用密码登录：`TestPassword123`
-4. ✅ 登录后可以访问应用
+- 页面可以正常读取数据库数据
+- 没有出现 `DATABASE_URL` 缺失或连接失败错误
 
----
+## 4. 当前部署架构注意点
 
-## 🧪 测试清单 / Testing Checklist
+- Next.js 16 路由保护文件是项目根目录 `proxy.ts`
+- 不要再检查 `middleware.ts`
+- 不要再检查 `src/proxy.ts`
+- 内部 UI 的主读写路径是 `src/app/actions/*.ts` + `src/lib/data/*.ts`
 
-### 基础功能测试 / Basic Functionality
+## 5. 新环境初始化建议
 
-- [ ] **访问主页** - 自动重定向到登录页
+1. 先完成数据库 schema 部署
+2. 确认 Auth.js 环境变量已生效
+3. 访问 `/register` 创建首批用户
+4. 根据你的 bootstrap 流程准备至少一个管理员账号
 
-  ```
-  https://your-app-domain.vercel.app
-  ```
+普通注册用户默认角色是 `member`。
 
-- [ ] **登录功能** - 使用测试密码登录
-  - 密码：`TestPassword123`
-  - 应该成功登录并重定向到仪表板
+## 6. 常见问题
 
-- [ ] **路由保护** - 尝试直接访问受保护页面
+### 登录后立刻跳回登录页
 
-  ```
-  https://qms-app-omega.vercel.app/quilts
-  https://qms-app-omega.vercel.app/usage
-  https://qms-app-omega.vercel.app/settings
-  ```
+- 检查 `NEXTAUTH_SECRET`
+- 检查 `NEXTAUTH_URL`
+- 清理浏览器 cookies 后重试
 
-  - 未登录时应该重定向到登录页
+### 受保护页面没有被拦截
 
-- [ ] **登出功能** - 点击右上角登出按钮
-  - 应该清除 session 并重定向到登录页
+- 确认项目根目录存在 `proxy.ts`
+- 确认部署的是最新代码
+- 检查 Vercel build logs 是否使用了新构建结果
 
-- [ ] **错误密码** - 尝试使用错误密码登录
-  - 应该显示错误消息
+### 部署成功但页面读取不到数据
 
-- [ ] **速率限制** - 连续尝试 5 次错误密码
-  - 第 6 次应该显示速率限制消息
+- 检查 `DATABASE_URL`
+- 检查数据库 schema 是否已执行 `db:push` 或迁移
+- 查看 Vercel runtime logs
 
-### 双语支持测试 / Bilingual Support
+## 7. 已废弃的旧部署步骤
 
-- [ ] **中文界面** - 切换到中文
-  - 所有认证相关文本应该是中文
+以下内容不再适用于当前项目：
 
-- [ ] **英文界面** - 切换到英文
-  - 所有认证相关文本应该是英文
-
-### 安全测试 / Security Testing
-
-- [ ] **Cookie 设置** - 检查浏览器开发者工具
-  - Cookie 名称：`qms-session`
-  - 应该有 `HttpOnly` 标志
-  - 应该有 `Secure` 标志（生产环境）
-  - 应该有 `SameSite=Lax`
-
-- [ ] **Session 持久化** - 登录后关闭浏览器
-  - 重新打开应该仍然保持登录状态（如果勾选了"记住我"）
-
-- [ ] **API 保护** - 尝试直接访问 API
-
-  ```
-  https://qms-app-omega.vercel.app/api/quilts
-  ```
-
-  - 未登录时应该返回 401 Unauthorized
-
----
-
-## 🔧 故障排除 / Troubleshooting
-
-### 问题 1: 无法登录 / Cannot Login
-
-**症状 / Symptoms:**
-
-- 输入正确密码但无法登录
-- 显示"Authentication is not configured"错误
-
-**解决方案 / Solution:**
-
-1. 检查 Vercel 环境变量是否已设置
-2. 确认 `QMS_PASSWORD_HASH` 和 `QMS_JWT_SECRET` 已添加
-3. 重新部署项目
-
-**验证环境变量 / Verify Environment Variables:**
-
-```bash
-# 在 Vercel Dashboard 中
-Settings → Environment Variables → 检查是否存在
-```
-
----
-
-### 问题 2: 一直重定向到登录页 / Keeps Redirecting to Login
-
-**症状 / Symptoms:**
-
-- 登录成功但立即重定向回登录页
-- 无法访问任何页面
-
-**解决方案 / Solution:**
-
-1. 清除浏览器 cookies
-2. 检查 JWT secret 是否正确配置
-3. 查看浏览器控制台错误
-4. 检查 Vercel 部署日志
-
----
-
-### 问题 3: 环境变量未生效 / Environment Variables Not Working
-
-**症状 / Symptoms:**
-
-- 环境变量已添加但应用无法读取
-
-**解决方案 / Solution:**
-
-1. 确保环境变量添加到正确的环境（Production）
-2. 重新部署项目（环境变量更改需要重新部署）
-3. 检查变量名称是否正确（区分大小写）
-
-**重新部署 / Redeploy:**
-
-```bash
-# 方法 1: 在 Vercel Dashboard 中点击 "Redeploy"
-# 方法 2: 推送一个新的 commit
-git commit --allow-empty -m "chore: trigger redeploy"
-git push origin main
-```
-
----
-
-### 问题 4: Proxy 配置 / Proxy Configuration
-
-**症状 / Symptoms:**
-
-- 路由保护不工作
-- 认证重定向问题
-
-**解决方案 / Solution:**
-
-- ✅ 检查 `src/proxy.ts` 文件存在
-- ✅ 确认 proxy 函数正确导出
-- ✅ 验证受保护路由配置正确
-
----
-
-## 📊 部署后检查 / Post-Deployment Checks
-
-### 1. 检查部署日志 / Check Deployment Logs
-
-在 Vercel Dashboard 中：
-
-1. 进入 Deployments
-2. 点击最新的部署
-3. 查看 Build Logs
-4. 确认没有错误
-
-### 2. 检查运行时日志 / Check Runtime Logs
-
-在 Vercel Dashboard 中：
-
-1. 进入 Logs 标签
-2. 查看实时日志
-3. 测试登录时观察日志输出
-
-### 3. 性能检查 / Performance Check
-
-使用 Lighthouse 或 Vercel Analytics：
-
-- 页面加载速度
-- 首次内容绘制（FCP）
-- 最大内容绘制（LCP）
-- 累积布局偏移（CLS）
-
----
-
-## 🔐 生产环境安全建议 / Production Security Recommendations
-
-### 1. 更改测试密码 / Change Test Password
-
-**当前测试密码 / Current Test Password:**
-
-```
-TestPassword123
-```
-
-**生成新密码 / Generate New Password:**
-
-```bash
-# 本地运行
-npm run setup-password "YourStrongProductionPassword123!"
-
-# 复制输出的哈希值到 Vercel 环境变量
-```
-
-### 2. 定期轮换密钥 / Rotate Keys Regularly
-
-建议每 3-6 个月更换：
-
-- JWT Secret
-- 密码哈希
-
-### 3. 监控登录尝试 / Monitor Login Attempts
-
-- 查看 Vercel 日志中的失败登录尝试
-- 设置告警（如果有异常活动）
-
-### 4. 启用 HTTPS / Enable HTTPS
-
-- ✅ Vercel 自动提供 HTTPS
-- ✅ 确保所有请求都使用 HTTPS
-
----
-
-## 📈 监控和分析 / Monitoring and Analytics
-
-### Vercel Analytics
-
-启用 Vercel Analytics 以监控：
-
-- 页面访问量
-- 性能指标
-- 用户行为
-
-### 自定义监控 / Custom Monitoring
-
-考虑添加：
-
-- Sentry（错误追踪）
-- LogRocket（会话重放）
-- Google Analytics（用户分析）
-
----
-
-## 🎯 下一步 / Next Steps
-
-部署成功后：
-
-1. ✅ **测试所有功能** - 使用测试清单
-2. ✅ **更改生产密码** - 使用强密码
-3. ✅ **配置监控** - 设置错误追踪
-4. ✅ **文档更新** - 更新 README 中的部署信息
-5. ✅ **团队通知** - 通知团队新的认证系统
-
----
-
-## 📞 支持 / Support
-
-如果遇到问题：
-
-1. **查看文档**
-   - `AUTH_IMPLEMENTATION_SUMMARY.md`
-   - `AUTH_TEST_GUIDE.md`
-   - `PASSWORD-MIGRATION-GUIDE.md`
-
-2. **检查日志**
-   - Vercel 部署日志
-   - 浏览器控制台
-   - Network 标签
-
-3. **验证配置**
-   - 环境变量
-   - Git 提交
-   - 部署状态
-
----
-
-## ✅ 部署完成检查清单 / Deployment Completion Checklist
-
-- [ ] 代码已推送到 GitHub
-- [ ] Vercel 环境变量已配置
-- [ ] 部署成功完成
-- [ ] 登录功能正常工作
-- [ ] 路由保护正常工作
-- [ ] 登出功能正常工作
-- [ ] 双语支持正常工作
-- [ ] 性能指标良好
-- [ ] 安全设置正确
-- [ ] 文档已更新
-
----
-
-**部署时间 / Deployment Time**: 2025-01-XX
-**版本 / Version**: 1.0.0 with Authentication
-**状态 / Status**: 🚀 Ready for Testing
-
----
-
-## 🎉 恭喜！/ Congratulations!
-
-认证系统已成功部署到 Vercel！
-Authentication system successfully deployed to Vercel!
-
-**生产 URL / Production URL:**
-https://qms-app-omega.vercel.app
-
-**测试密码 / Test Password:**
-TestPassword123
-
-**开始测试！/ Start Testing!** 🚀
+- 配置 `QMS_PASSWORD_HASH`
+- 配置 `QMS_JWT_SECRET`
+- 使用测试密码 `TestPassword123`
+- 运行 `npm run setup-password`
+- 检查 `src/proxy.ts`

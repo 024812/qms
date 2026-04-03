@@ -1,11 +1,12 @@
 import { cacheLife, cacheTag, revalidateTag } from 'next/cache';
-import { and, asc, count, desc, eq, ilike, ne, or, sql, type SQL } from 'drizzle-orm';
+import { and, asc, count, desc, eq, ilike, isNotNull, ne, or, sql, type SQL } from 'drizzle-orm';
 
 import { db } from '@/db';
 import { cards, type Card, type NewCard } from '@/db/schema';
 import { dbLogger } from '@/lib/logger';
 import { cardsCacheTags } from '@/modules/cards/blueprint';
 import type { CardItem } from '@/modules/cards/schema';
+import { systemSettingsRepository } from '@/lib/repositories/system-settings.repository';
 
 export interface CardListInput {
   search?: string;
@@ -88,6 +89,28 @@ export interface ActivityItem {
   amount: number;
   brand: string;
   year: number;
+}
+
+export interface CardSettingsData {
+  azureOpenAIApiKey: string;
+  azureOpenAIEndpoint: string;
+  azureOpenAIDeployment: string;
+  ebayAppId: string;
+  ebayCertId: string;
+  ebayDevId: string;
+  rapidApiKey: string;
+  tavilyApiKey: string;
+}
+
+export interface UpdateCardSettingsData {
+  azureOpenAIApiKey: string;
+  azureOpenAIEndpoint: string;
+  azureOpenAIDeployment: string;
+  ebayAppId: string;
+  ebayCertId: string;
+  ebayDevId: string;
+  rapidApiKey: string;
+  tavilyApiKey: string;
 }
 
 const VALID_SPORTS = ['BASKETBALL', 'SOCCER', 'OTHER'] as const;
@@ -413,6 +436,69 @@ function invalidateCardCaches(params: {
   }
 }
 
+export async function getCardSettings(): Promise<CardSettingsData> {
+  const [azureConfig, ebayConfig, rapidApiKey, tavilyApiKey] = await Promise.all([
+    systemSettingsRepository.getAzureOpenAIConfig(),
+    systemSettingsRepository.getEbayApiConfig(),
+    systemSettingsRepository.getRapidApiKey(),
+    systemSettingsRepository.getTavilyApiKey(),
+  ]);
+
+  return {
+    azureOpenAIApiKey: azureConfig.apiKey || '',
+    azureOpenAIEndpoint: azureConfig.endpoint || '',
+    azureOpenAIDeployment: azureConfig.deployment || '',
+    ebayAppId: ebayConfig.appId || '',
+    ebayCertId: ebayConfig.certId || '',
+    ebayDevId: ebayConfig.devId || '',
+    rapidApiKey: rapidApiKey || '',
+    tavilyApiKey: tavilyApiKey || '',
+  };
+}
+
+export async function updateCardSettings(input: UpdateCardSettingsData): Promise<CardSettingsData> {
+  return db.transaction(async tx => {
+    await Promise.all([
+      systemSettingsRepository.updateAzureOpenAIConfig(
+        {
+          apiKey: input.azureOpenAIApiKey,
+          endpoint: input.azureOpenAIEndpoint,
+          deployment: input.azureOpenAIDeployment,
+        },
+        tx
+      ),
+      systemSettingsRepository.updateEbayApiConfig(
+        {
+          appId: input.ebayAppId,
+          certId: input.ebayCertId,
+          devId: input.ebayDevId,
+        },
+        tx
+      ),
+      systemSettingsRepository.updateRapidApiKey(input.rapidApiKey, tx),
+      systemSettingsRepository.updateTavilyApiKey(input.tavilyApiKey, tx),
+    ]);
+
+    const [azureConfig, ebayConfig, rapidApiKey, tavilyApiKey] = await Promise.all([
+      systemSettingsRepository.getAzureOpenAIConfig(tx),
+      systemSettingsRepository.getEbayApiConfig(tx),
+      systemSettingsRepository.getRapidApiKey(tx),
+      systemSettingsRepository.getTavilyApiKey(tx),
+    ]);
+
+    return {
+      azureOpenAIApiKey: azureConfig.apiKey || '',
+      azureOpenAIEndpoint: azureConfig.endpoint || '',
+      azureOpenAIDeployment: azureConfig.deployment || '',
+      ebayAppId: ebayConfig.appId || '',
+      ebayCertId: ebayConfig.certId || '',
+      ebayDevId: ebayConfig.devId || '',
+      rapidApiKey: rapidApiKey || '',
+      tavilyApiKey: tavilyApiKey || '',
+    };
+  });
+}
+
 export async function getCardById(id: string): Promise<CardItem | null> {
   'use cache';
   cacheLife('minutes');
@@ -565,36 +651,56 @@ export async function getCardStats(): Promise<CardStats> {
   cacheLife('seconds');
   cacheTag(cardsCacheTags.root, cardsCacheTags.slice('overview', 'stats'));
 
-  const allCards = await db.select().from(cards);
+  const [stats] = await db
+    .select({
+      totalCards: count(),
+      collectionCost: sql<number>`
+        COALESCE(
+          SUM(
+            CASE
+              WHEN ${cards.status} <> 'SOLD' THEN COALESCE(${cards.purchasePrice}::numeric, 0)
+              ELSE 0
+            END
+          ),
+          0
+        )
+      `.mapWith(Number),
+      totalSpend: sql<number>`
+        COALESCE(SUM(COALESCE(${cards.purchasePrice}::numeric, 0)), 0)
+      `.mapWith(Number),
+      totalSold: sql<number>`
+        COALESCE(
+          SUM(
+            CASE
+              WHEN ${cards.status} = 'SOLD' THEN COALESCE(${cards.soldPrice}::numeric, 0)
+              ELSE 0
+            END
+          ),
+          0
+        )
+      `.mapWith(Number),
+      totalProfit: sql<number>`
+        COALESCE(
+          SUM(
+            CASE
+              WHEN ${cards.status} = 'SOLD' THEN
+                COALESCE(${cards.soldPrice}::numeric, 0) - COALESCE(${cards.purchasePrice}::numeric, 0)
+              ELSE 0
+            END
+          ),
+          0
+        )
+      `.mapWith(Number),
+    })
+    .from(cards);
 
-  return allCards.reduce(
-    (acc, card) => {
-      const purchasePrice = Number(card.purchasePrice) || 0;
-      const soldPrice = Number(card.soldPrice) || 0;
-      const isSold = card.status === 'SOLD';
-
-      acc.totalSpend += purchasePrice;
-
-      if (!isSold) {
-        acc.collectionCost += purchasePrice;
-      }
-
-      if (isSold) {
-        acc.totalSold += soldPrice;
-        acc.totalProfit += soldPrice - purchasePrice;
-      }
-
-      acc.totalCards += 1;
-      return acc;
-    },
-    {
-      totalCards: 0,
-      collectionCost: 0,
-      totalSpend: 0,
-      totalSold: 0,
-      totalProfit: 0,
-    }
-  );
+  return {
+    totalCards: Number(stats?.totalCards ?? 0),
+    collectionCost: Number(stats?.collectionCost ?? 0),
+    totalSpend: Number(stats?.totalSpend ?? 0),
+    totalSold: Number(stats?.totalSold ?? 0),
+    totalProfit: Number(stats?.totalProfit ?? 0),
+  };
 }
 
 export async function getMonthlyBuySellData(): Promise<MonthlyBuySellData[]> {
@@ -602,39 +708,50 @@ export async function getMonthlyBuySellData(): Promise<MonthlyBuySellData[]> {
   cacheLife('seconds');
   cacheTag(cardsCacheTags.root, cardsCacheTags.slice('overview', 'monthly'));
 
-  const allCards = await db.select().from(cards);
   const now = new Date();
+  const windowStart = new Date(now.getFullYear(), now.getMonth() - 11, 1);
   const months: MonthlyBuySellData[] = [];
+
+  const [purchaseRows, soldRows] = await Promise.all([
+    db
+      .select({
+        month: sql<string>`TO_CHAR(DATE_TRUNC('month', ${cards.purchaseDate}::timestamp), 'YYYY-MM')`,
+        total: sql<number>`
+          COALESCE(SUM(COALESCE(${cards.purchasePrice}::numeric, 0)), 0)
+        `.mapWith(Number),
+      })
+      .from(cards)
+      .where(and(isNotNull(cards.purchaseDate), sql`${cards.purchaseDate} >= ${windowStart}`))
+      .groupBy(sql`DATE_TRUNC('month', ${cards.purchaseDate}::timestamp)`),
+    db
+      .select({
+        month: sql<string>`TO_CHAR(DATE_TRUNC('month', ${cards.soldDate}::timestamp), 'YYYY-MM')`,
+        total: sql<number>`
+          COALESCE(SUM(COALESCE(${cards.soldPrice}::numeric, 0)), 0)
+        `.mapWith(Number),
+      })
+      .from(cards)
+      .where(
+        and(
+          eq(cards.status, 'SOLD'),
+          isNotNull(cards.soldDate),
+          sql`${cards.soldDate} >= ${windowStart}`
+        )
+      )
+      .groupBy(sql`DATE_TRUNC('month', ${cards.soldDate}::timestamp)`),
+  ]);
+
+  const purchasesByMonth = new Map(purchaseRows.map(row => [row.month, row.total]));
+  const soldByMonth = new Map(soldRows.map(row => [row.month, row.total]));
 
   for (let index = 11; index >= 0; index -= 1) {
     const date = new Date(now.getFullYear(), now.getMonth() - index, 1);
-    const year = date.getFullYear();
-    const month = date.getMonth();
-    const monthLabel = `${year}-${String(month + 1).padStart(2, '0')}`;
-
-    let bought = 0;
-    let sold = 0;
-
-    for (const card of allCards) {
-      if (card.purchaseDate) {
-        const purchaseDate = new Date(card.purchaseDate);
-        if (purchaseDate.getFullYear() === year && purchaseDate.getMonth() === month) {
-          bought += Number(card.purchasePrice) || 0;
-        }
-      }
-
-      if (card.status === 'SOLD' && card.soldDate) {
-        const soldDate = new Date(card.soldDate);
-        if (soldDate.getFullYear() === year && soldDate.getMonth() === month) {
-          sold += Number(card.soldPrice) || 0;
-        }
-      }
-    }
+    const month = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
 
     months.push({
-      month: monthLabel,
-      bought: Math.round(bought * 100) / 100,
-      sold: Math.round(sold * 100) / 100,
+      month,
+      bought: purchasesByMonth.get(month) ?? 0,
+      sold: soldByMonth.get(month) ?? 0,
     });
   }
 
@@ -646,32 +763,56 @@ export async function getRecentActivity(limit = 10): Promise<ActivityItem[]> {
   cacheLife('seconds');
   cacheTag(cardsCacheTags.root, cardsCacheTags.slice('overview', 'activity'));
 
-  const allCards = await db.select().from(cards);
-  const activities: ActivityItem[] = [];
+  const [recentAdded, recentSold] = await Promise.all([
+    db
+      .select({
+        id: cards.id,
+        playerName: cards.playerName,
+        date: cards.createdAt,
+        amount: cards.purchasePrice,
+        brand: cards.brand,
+        year: cards.year,
+      })
+      .from(cards)
+      .orderBy(desc(cards.createdAt))
+      .limit(limit),
+    db
+      .select({
+        id: cards.id,
+        playerName: cards.playerName,
+        date: cards.soldDate,
+        amount: cards.soldPrice,
+        brand: cards.brand,
+        year: cards.year,
+      })
+      .from(cards)
+      .where(and(eq(cards.status, 'SOLD'), isNotNull(cards.soldDate)))
+      .orderBy(desc(cards.soldDate))
+      .limit(limit),
+  ]);
 
-  for (const card of allCards) {
-    activities.push({
+  const activities: ActivityItem[] = [
+    ...recentAdded.map(card => ({
       id: `add-${card.id}`,
-      type: 'added',
+      type: 'added' as const,
       playerName: card.playerName,
-      date: card.createdAt.toISOString(),
-      amount: Number(card.purchasePrice) || 0,
+      date: card.date.toISOString(),
+      amount: Number(card.amount) || 0,
       brand: card.brand,
       year: card.year,
-    });
-
-    if (card.status === 'SOLD' && card.soldDate) {
-      activities.push({
+    })),
+    ...recentSold
+      .filter((card): card is typeof card & { date: string } => card.date !== null)
+      .map(card => ({
         id: `sold-${card.id}`,
-        type: 'sold',
+        type: 'sold' as const,
         playerName: card.playerName,
-        date: new Date(card.soldDate).toISOString(),
-        amount: Number(card.soldPrice) || 0,
+        date: new Date(card.date).toISOString(),
+        amount: Number(card.amount) || 0,
         brand: card.brand,
         year: card.year,
-      });
-    }
-  }
+      })),
+  ];
 
   activities.sort((left, right) => new Date(right.date).getTime() - new Date(left.date).getTime());
 

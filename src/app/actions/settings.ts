@@ -1,6 +1,5 @@
 'use server';
 
-import { updateTag } from 'next/cache';
 import { z } from 'zod';
 
 import {
@@ -79,12 +78,6 @@ function zodFieldErrors(error: z.ZodError): Record<string, string[]> {
   return error.flatten().fieldErrors as unknown as Record<string, string[]>;
 }
 
-function refreshSettingsCaches() {
-  updateTag('settings');
-  updateTag('settings-app');
-  updateTag('settings-system-info');
-}
-
 export async function getAppSettingsAction(): Promise<ActionResult<AppSettings>> {
   try {
     return {
@@ -112,7 +105,6 @@ export async function updateAppSettingsAction(
     }
 
     const settings = await updateAppSettingsData(validationResult.data);
-    refreshSettingsCaches();
 
     return {
       success: true,

@@ -3,6 +3,11 @@ declare global {
     interface ProcessEnv {
       // Database
       DATABASE_URL: string;
+
+      // Authentication
+      AUTH_SECRET?: string;
+      NEXTAUTH_SECRET?: string;
+      NEXTAUTH_URL?: string;
       
       // Next.js
       NODE_ENV: 'development' | 'production' | 'test';

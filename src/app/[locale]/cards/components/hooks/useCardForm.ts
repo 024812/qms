@@ -12,7 +12,7 @@
 import { useCallback, useRef, useEffect, useReducer } from 'react';
 import { useForm, type UseFormReturn } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useRouter } from 'next/navigation';
+import { useRouter } from '@/i18n/routing';
 import { toast } from 'sonner';
 import { useTranslations, useLocale } from 'next-intl';
 import { formSchema, type FormValues } from '../form-schema';

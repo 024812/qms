@@ -22,15 +22,16 @@ import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 
 /**
  * Login form component
  */
 export function LoginForm() {
   const t = useTranslations('auth');
+  const locale = useLocale();
   const searchParams = useSearchParams();
-  const callbackUrl = searchParams.get('callbackUrl') || '/';
+  const callbackUrl = searchParams.get('callbackUrl') || `/${locale}`;
 
   const [state, formAction, isPending] = useActionState<LoginActionState | null, FormData>(
     loginUser,

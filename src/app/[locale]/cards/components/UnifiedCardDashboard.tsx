@@ -11,7 +11,7 @@
  */
 
 import { useState, useCallback } from 'react';
-import { useRouter } from 'next/navigation';
+import { Link, useRouter } from '@/i18n/routing';
 import { FormProvider } from 'react-hook-form';
 import { useTranslations, useLocale } from 'next-intl';
 import { toast } from 'sonner';
@@ -69,8 +69,6 @@ import type {
   GradingAnalysisResult,
   PlayerStatsAnalysisResult,
 } from '@/modules/cards/services/ai-card-service';
-import { Link } from '@/i18n/routing';
-
 interface UnifiedCardDashboardProps {
   initialData: Partial<FormValues> & { id: string };
 }

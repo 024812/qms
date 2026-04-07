@@ -9,7 +9,6 @@ import { ConditionalLayout } from '@/components/layout/ConditionalLayout';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { Toaster as SonnerToaster } from 'sonner';
 import { GlobalErrorHandler } from '@/components/GlobalErrorHandler';
-import { ServiceWorkerCleaner } from '@/components/ServiceWorkerCleaner';
 import { NextIntlClientProvider } from 'next-intl';
 import { getMessages, setRequestLocale } from 'next-intl/server';
 import { notFound } from 'next/navigation';
@@ -79,7 +78,6 @@ export default async function LocaleLayout({
               <NextIntlClientProvider messages={messages}>
                 <QueryProvider>
                   <GlobalErrorHandler />
-                  <ServiceWorkerCleaner />
                   <Suspense fallback={null}>
                     <ConditionalLayout>{children}</ConditionalLayout>
                   </Suspense>

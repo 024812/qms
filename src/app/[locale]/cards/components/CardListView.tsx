@@ -29,7 +29,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { HighlightText } from '@/components/ui/highlight-text';
 import type { CardItem } from '@/modules/cards/schema';
-import { useRouter } from 'next/navigation';
+import { useRouter } from '@/i18n/routing';
 import { useTranslations } from 'next-intl';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';

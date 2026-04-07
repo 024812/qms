@@ -10,7 +10,7 @@
 'use client';
 
 import { ItemCard } from './ItemCard';
-import { useRouter } from 'next/navigation';
+import { useRouter } from '@/i18n/routing';
 import { getModule } from '@/modules/registry';
 
 /**

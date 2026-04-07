@@ -2,6 +2,14 @@
 
 import { signOut } from '@/auth';
 
-export async function logoutUser() {
-    await signOut({ redirectTo: '/login' });
+function normalizeRedirectPath(redirectTo?: string): string {
+  if (!redirectTo || !redirectTo.startsWith('/') || redirectTo.startsWith('//')) {
+    return '/login';
+  }
+
+  return redirectTo;
+}
+
+export async function logoutUser(redirectTo?: string) {
+  await signOut({ redirectTo: normalizeRedirectPath(redirectTo) });
 }

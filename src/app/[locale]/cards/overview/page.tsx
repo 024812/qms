@@ -6,7 +6,7 @@ import {
 import { auth } from '@/auth';
 import { CreditCard, DollarSign, TrendingUp, ShoppingCart } from 'lucide-react';
 import { getTranslations, setRequestLocale } from 'next-intl/server';
-import { redirect } from 'next/navigation';
+import { redirect } from '@/i18n/routing';
 import { MonthlyChart } from '@/components/cards/MonthlyChart';
 import { RecentActivityList } from '@/components/cards/RecentActivityList';
 
@@ -27,7 +27,9 @@ export default async function CardOverviewPage({ params }: Props) {
   const t = await getTranslations('cards.overview');
 
   const session = await auth();
-  if (!session?.user?.id) return redirect('/api/auth/signin');
+  if (!session?.user?.id) {
+    redirect({ href: '/login', locale });
+  }
 
   const [statsResult, monthlyDataResult, recentActivitiesResult] = await Promise.all([
     getCardStatsAction(),

@@ -15,7 +15,7 @@
 import { useActionState, useEffect } from 'react';
 import { registerUser } from '@/app/actions/auth';
 import type { RegisterResult } from '@/app/actions/auth.types';
-import { useRouter } from 'next/navigation';
+import { useRouter } from '@/i18n/routing';
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';

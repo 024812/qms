@@ -20,7 +20,7 @@
 'use client';
 
 import { useActionState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter } from '@/i18n/routing';
 import { getModule } from '@/modules/registry';
 import { FormFieldConfig } from '@/modules/types';
 import { Input } from '@/components/ui/input';

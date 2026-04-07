@@ -1,27 +1,28 @@
 /**
  * Module Selector Page
- * 
+ *
  * Displays all available modules and allows users to subscribe/unsubscribe.
- * 
+ *
  * Requirements: 5.1, 8.2
  */
 
 import { auth } from '@/auth';
-import { redirect } from 'next/navigation';
+import { redirect } from '@/i18n/routing';
 import { ModuleSelector } from './ModuleSelector';
 import { connection } from 'next/server';
-import { getTranslations } from 'next-intl/server';
+import { getTranslations, setRequestLocale } from 'next-intl/server';
 
+export default async function ModulesPage({ params }: { params: Promise<{ locale: string }> }) {
+  const { locale } = await params;
+  setRequestLocale(locale);
 
-export default async function ModulesPage() {
   // Opt-in to dynamic rendering for auth check
   await connection();
-  
+
   const session = await auth();
 
-
   if (!session?.user) {
-    redirect('/login');
+    redirect({ href: '/login', locale });
   }
 
   const t = await getTranslations('modules');
@@ -31,9 +32,7 @@ export default async function ModulesPage() {
       <div className="max-w-6xl mx-auto">
         <div className="mb-8">
           <h1 className="text-3xl font-bold mb-2">{t('title')}</h1>
-          <p className="text-muted-foreground">
-            {t('subtitle')}
-          </p>
+          <p className="text-muted-foreground">{t('subtitle')}</p>
         </div>
 
         <ModuleSelector />

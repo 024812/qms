@@ -2,7 +2,7 @@
 
 import { Link, usePathname } from '@/i18n/routing';
 import { useSession } from 'next-auth/react';
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import { useState, useEffect } from 'react';
 import {
   Package,
@@ -47,6 +47,7 @@ const moduleIcons: Record<string, LucideIcon> = {
 };
 
 export function AppSidebar() {
+  const locale = useLocale();
   const pathname = usePathname();
   const t = useTranslations();
   const { data: session, status } = useSession();
@@ -235,7 +236,7 @@ export function AppSidebar() {
                 <SidebarMenu>
                   <SidebarMenuItem>
                     <SidebarMenuButton asChild isActive={isModuleActive} tooltip={moduleName}>
-                      <Link href={`/${module.id}s`} prefetch={false}>
+                      <Link href={`/${module.id}`} prefetch={false}>
                         <IconComponent className="h-4 w-4" />
                         <span>{moduleName}</span>
                       </Link>
@@ -356,7 +357,7 @@ export function AppSidebar() {
                         asChild
                         className="text-red-600 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/20"
                       >
-                        <button type="button" onClick={() => logoutUser()}>
+                        <button type="button" onClick={() => logoutUser(`/${locale}/login`)}>
                           <LogOut className="h-4 w-4" />
                           <span>{t('auth.signOut')}</span>
                         </button>
@@ -370,7 +371,7 @@ export function AppSidebar() {
         ) : (
           <div className="p-2">
             <div className="w-full group-data-[collapsible=icon]:hidden">
-              <Link href="/api/auth/signin">
+              <Link href="/login">
                 <div className="flex items-center gap-2 p-2 rounded-md bg-primary/10 text-primary hover:bg-primary/20 transition-colors justify-center">
                   <span className="text-sm font-medium">{t('auth.signIn')}</span>
                 </div>
@@ -378,7 +379,7 @@ export function AppSidebar() {
             </div>
             {/* Icon only for collapsed state */}
             <div className="hidden group-data-[collapsible=icon]:flex justify-center">
-              <Link href="/api/auth/signin" title={t('auth.signIn')}>
+              <Link href="/login" title={t('auth.signIn')}>
                 <div className="h-8 w-8 rounded-md bg-primary/10 flex items-center justify-center text-primary">
                   <LogOut className="h-4 w-4 rotate-180" />
                 </div>

@@ -1383,6 +1383,10 @@
       }
     }
   },
+  "header": {
+    "commandPaletteTrigger": "搜索...",
+    "commandPaletteTriggerCompact": "搜索"
+  },
   "welcome": {
     "title": "欢迎来到 QMS",
     "subtitle": "简单、智能的收藏管理系统。",

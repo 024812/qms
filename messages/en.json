@@ -1334,6 +1334,10 @@
       }
     }
   },
+  "header": {
+    "commandPaletteTrigger": "Search...",
+    "commandPaletteTriggerCompact": "Search"
+  },
   "welcome": {
     "title": "Welcome to QMS",
     "subtitle": "Simple, intelligent collection management.",

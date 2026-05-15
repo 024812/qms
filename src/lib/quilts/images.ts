@@ -2,7 +2,7 @@ import type { Quilt } from '@/lib/validations/quilt';
 
 type QuiltImageFields = Pick<Quilt, 'mainImage' | 'attachmentImages'>;
 
-const MAX_IMAGE_BYTES = 80 * 1024; // 80KB per image
+const MAX_IMAGE_BYTES = 200 * 1024; // 200KB per image
 
 export function normalizeQuiltImage(image?: string | null): string | null {
   if (!image) {

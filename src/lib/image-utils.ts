@@ -17,9 +17,9 @@ export interface ImageValidationResult {
 }
 
 const DEFAULT_OPTIONS: Required<ImageCompressionOptions> = {
-  maxWidth: 800,
-  maxHeight: 800,
-  quality: 0.75,
+  maxWidth: 1200,
+  maxHeight: 1200,
+  quality: 0.82,
   outputFormat: 'image/webp',
 };
 
@@ -107,9 +107,9 @@ export async function compressAndEncodeImage(
           // Convert to Base64 with iterative quality reduction
           let quality = opts.quality;
           let base64 = canvas.toDataURL(opts.outputFormat, quality);
-          const maxBytes = 50 * 1024 * (4 / 3); // 50KB target in base64 chars
+          const maxBytes = 200 * 1024 * (4 / 3); // 200KB target in base64 chars
 
-          while (base64.length > maxBytes && quality > 0.3) {
+          while (base64.length > maxBytes && quality > 0.4) {
             quality -= 0.05;
             base64 = canvas.toDataURL(opts.outputFormat, quality);
           }

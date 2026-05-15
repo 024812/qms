@@ -28,6 +28,7 @@ import { Loader2 } from 'lucide-react';
 import { Quilt, QuiltFormData } from '@/types/quilt';
 import {
   areQuiltImageListsEqual,
+  ensureImagesCompressed,
   getQuiltImageList,
   getQuiltImagePayload,
 } from '@/lib/quilts/images';
@@ -158,7 +159,8 @@ export function QuiltDialog({ open, onOpenChange, quilt, onSave }: QuiltDialogPr
       const imagesChanged = !areQuiltImageListsEqual(images, originalImages);
 
       if (!quilt || imagesChanged) {
-        const imagePayload = getQuiltImagePayload(images);
+        const compressed = await ensureImagesCompressed(images);
+        const imagePayload = getQuiltImagePayload(compressed);
         data.mainImage = imagePayload.mainImage;
         data.attachmentImages = imagePayload.attachmentImages;
       }

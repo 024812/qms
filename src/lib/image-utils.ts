@@ -17,9 +17,9 @@ export interface ImageValidationResult {
 }
 
 const DEFAULT_OPTIONS: Required<ImageCompressionOptions> = {
-  maxWidth: 800,
+  maxWidth: 600,
   maxHeight: 600,
-  quality: 0.85,
+  quality: 0.6,
   outputFormat: 'image/jpeg',
 };
 
@@ -104,15 +104,14 @@ export async function compressAndEncodeImage(
           // Draw image on canvas
           ctx.drawImage(img, 0, 0, width, height);
 
-          // Convert to Base64
-          const base64 = canvas.toDataURL(opts.outputFormat, opts.quality);
+          // Convert to Base64 with iterative quality reduction
+          let quality = opts.quality;
+          let base64 = canvas.toDataURL(opts.outputFormat, quality);
+          const maxBytes = 30 * 1024 * (4 / 3); // 30KB target in base64 chars
 
-          // Check compressed size (Base64 is ~33% larger than binary)
-          const compressedSize = (base64.length * 3) / 4;
-          const targetSize = 200 * 1024; // 200KB
-
-          if (compressedSize > targetSize) {
-            // Image size exceeds target after compression
+          while (base64.length > maxBytes && quality > 0.2) {
+            quality -= 0.1;
+            base64 = canvas.toDataURL(opts.outputFormat, quality);
           }
 
           resolve(base64);

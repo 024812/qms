@@ -625,25 +625,37 @@ export async function saveQuilt(
 ): Promise<{ quilt: Quilt; usageRecord?: UsageRecordSyncResult }> {
   try {
     if (isQuiltUpdateData(data)) {
-      return await db.transaction(async tx => {
+      const imageFields: Record<string, unknown> = {};
+      const dataWithoutImages = { ...data };
+
+      if (dataWithoutImages.mainImage !== undefined) {
+        imageFields.mainImage = dataWithoutImages.mainImage;
+        delete dataWithoutImages.mainImage;
+      }
+      if (dataWithoutImages.attachmentImages !== undefined) {
+        imageFields.attachmentImages = dataWithoutImages.attachmentImages;
+        delete dataWithoutImages.attachmentImages;
+      }
+
+      const result = await db.transaction(async tx => {
         const currentRows = await tx.select().from(quilts).where(eq(quilts.id, data.id));
         if (currentRows.length === 0) {
           throw new Error('Quilt not found');
         }
 
         const currentQuilt = currentRows[0] as unknown as Quilt;
-        const nextStatus = data.currentStatus ?? currentQuilt.currentStatus;
+        const nextStatus = dataWithoutImages.currentStatus ?? currentQuilt.currentStatus;
         const usageRecord = await syncUsageRecordForStatusChange(
           tx,
           data.id,
           currentQuilt.currentStatus,
           nextStatus,
-          data.usageType ?? 'REGULAR',
-          data.usageNotes
+          dataWithoutImages.usageType ?? 'REGULAR',
+          dataWithoutImages.usageNotes
         );
 
         const updateValues = buildQuiltUpdateValues({
-          ...data,
+          ...dataWithoutImages,
           currentStatus: nextStatus,
         });
 
@@ -675,6 +687,15 @@ export async function saveQuilt(
 
         return { quilt: updatedQuilt, usageRecord };
       });
+
+      if (Object.keys(imageFields).length > 0) {
+        await db
+          .update(quilts)
+          .set({ ...imageFields, updatedAt: new Date() })
+          .where(eq(quilts.id, data.id));
+      }
+
+      return result;
     }
 
     return await db.transaction(async tx => {

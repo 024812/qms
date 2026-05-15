@@ -563,6 +563,23 @@ export async function updateQuilt(
 
     const updateValues = buildQuiltUpdateValues(data);
 
+    const hasImageUpdate =
+      updateValues.mainImage !== undefined || updateValues.attachmentImages !== undefined;
+
+    if (hasImageUpdate) {
+      const imageValues: Record<string, unknown> = { updatedAt: new Date() };
+      if (updateValues.mainImage !== undefined) {
+        imageValues.mainImage = updateValues.mainImage;
+        delete updateValues.mainImage;
+      }
+      if (updateValues.attachmentImages !== undefined) {
+        imageValues.attachmentImages = updateValues.attachmentImages;
+        delete updateValues.attachmentImages;
+      }
+
+      await db.update(quilts).set(imageValues).where(eq(quilts.id, id));
+    }
+
     const result = await db.update(quilts).set(updateValues).where(eq(quilts.id, id)).returning();
 
     if (result.length === 0) return null;

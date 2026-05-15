@@ -21,7 +21,7 @@
 
 import { cacheLife, cacheTag, revalidateTag } from 'next/cache';
 
-import { db, dbHttp, Tx } from '@/db';
+import { db, Tx } from '@/db';
 import { quilts, usageRecords } from '@/db/schema';
 import { eq, sql, desc, and, isNull, like, or } from 'drizzle-orm';
 import { dbLogger } from '@/lib/logger';
@@ -563,23 +563,6 @@ export async function updateQuilt(
 
     const updateValues = buildQuiltUpdateValues(data);
 
-    const hasImageUpdate =
-      updateValues.mainImage !== undefined || updateValues.attachmentImages !== undefined;
-
-    if (hasImageUpdate) {
-      const imageValues: Record<string, unknown> = { updatedAt: new Date() };
-      if (updateValues.mainImage !== undefined) {
-        imageValues.mainImage = updateValues.mainImage;
-        delete updateValues.mainImage;
-      }
-      if (updateValues.attachmentImages !== undefined) {
-        imageValues.attachmentImages = updateValues.attachmentImages;
-        delete updateValues.attachmentImages;
-      }
-
-      await dbHttp.update(quilts).set(imageValues).where(eq(quilts.id, id));
-    }
-
     const result = await db.update(quilts).set(updateValues).where(eq(quilts.id, id)).returning();
 
     if (result.length === 0) return null;
@@ -625,18 +608,6 @@ export async function saveQuilt(
 ): Promise<{ quilt: Quilt; usageRecord?: UsageRecordSyncResult }> {
   try {
     if (isQuiltUpdateData(data)) {
-      const imageFields: Record<string, unknown> = {};
-      const dataWithoutImages = { ...data };
-
-      if (dataWithoutImages.mainImage !== undefined) {
-        imageFields.mainImage = dataWithoutImages.mainImage;
-        delete dataWithoutImages.mainImage;
-      }
-      if (dataWithoutImages.attachmentImages !== undefined) {
-        imageFields.attachmentImages = dataWithoutImages.attachmentImages;
-        delete dataWithoutImages.attachmentImages;
-      }
-
       const result = await db.transaction(async tx => {
         const currentRows = await tx.select().from(quilts).where(eq(quilts.id, data.id));
         if (currentRows.length === 0) {
@@ -644,18 +615,18 @@ export async function saveQuilt(
         }
 
         const currentQuilt = currentRows[0] as unknown as Quilt;
-        const nextStatus = dataWithoutImages.currentStatus ?? currentQuilt.currentStatus;
+        const nextStatus = data.currentStatus ?? currentQuilt.currentStatus;
         const usageRecord = await syncUsageRecordForStatusChange(
           tx,
           data.id,
           currentQuilt.currentStatus,
           nextStatus,
-          dataWithoutImages.usageType ?? 'REGULAR',
-          dataWithoutImages.usageNotes
+          data.usageType ?? 'REGULAR',
+          data.usageNotes
         );
 
         const updateValues = buildQuiltUpdateValues({
-          ...dataWithoutImages,
+          ...data,
           currentStatus: nextStatus,
         });
 
@@ -687,13 +658,6 @@ export async function saveQuilt(
 
         return { quilt: updatedQuilt, usageRecord };
       });
-
-      if (Object.keys(imageFields).length > 0) {
-        await dbHttp
-          .update(quilts)
-          .set({ ...imageFields, updatedAt: new Date() })
-          .where(eq(quilts.id, data.id));
-      }
 
       return result;
     }

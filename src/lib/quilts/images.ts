@@ -2,7 +2,7 @@ import type { Quilt } from '@/lib/validations/quilt';
 
 type QuiltImageFields = Pick<Quilt, 'mainImage' | 'attachmentImages'>;
 
-const MAX_IMAGE_BYTES = 50 * 1024; // 50KB per image
+const MAX_IMAGE_BYTES = 80 * 1024; // 80KB per image
 
 export function normalizeQuiltImage(image?: string | null): string | null {
   if (!image) {
@@ -26,7 +26,7 @@ export async function compressDataUrl(dataUrl: string): Promise<string> {
     const img = new Image();
     img.onload = () => {
       const canvas = document.createElement('canvas');
-      const maxDim = 600;
+      const maxDim = 800;
       let { width, height } = img;
       if (width > maxDim || height > maxDim) {
         const ratio = Math.min(maxDim / width, maxDim / height);

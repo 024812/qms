@@ -34,7 +34,6 @@ export function QuiltUsageDetailPageClient({
   const router = useRouter();
   const locale = useLocale();
   const t = useTranslations();
-  const isZh = locale === 'zh';
 
   const handleBack = () => {
     router.push(from === 'quilts' ? '/quilts' : '/usage');
@@ -44,10 +43,8 @@ export function QuiltUsageDetailPageClient({
     return (
       <div className="flex flex-col items-center justify-center py-12">
         <Package className="mb-4 h-16 w-16 text-muted-foreground" />
-        <h2 className="mb-2 text-xl font-semibold">{isZh ? '被子不存在' : 'Quilt Not Found'}</h2>
-        <p className="mb-4 text-muted-foreground">
-          {isZh ? '找不到指定的被子' : 'The specified quilt could not be found'}
-        </p>
+        <h2 className="mb-2 text-xl font-semibold">{t('usage.details.notFoundTitle')}</h2>
+        <p className="mb-4 text-muted-foreground">{t('usage.details.notFoundDescription')}</p>
         <Button onClick={handleBack}>
           <ArrowLeft className="mr-2 h-4 w-4" />
           {t('common.back')}
@@ -96,7 +93,7 @@ export function QuiltUsageDetailPageClient({
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Package className="h-5 w-5" />
-            {isZh ? '被子信息' : 'Quilt Information'}
+            {t('usage.details.quiltInformation')}
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -180,7 +177,7 @@ export function QuiltUsageDetailPageClient({
                   <Calendar className="h-4 w-4 text-muted-foreground" />
                   <span className="text-muted-foreground">{t('quilts.form.purchaseDate')}:</span>
                   <span className="font-medium">
-                    {new Date(quilt.purchaseDate).toLocaleDateString(isZh ? 'zh-CN' : 'en-US')}
+                    {new Date(quilt.purchaseDate).toLocaleDateString(locale)}
                   </span>
                 </div>
               )}
@@ -200,7 +197,7 @@ export function QuiltUsageDetailPageClient({
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Calendar className="h-5 w-5" />
-            {isZh ? '使用历史' : 'Usage History'}
+            {t('usage.details.history')}
           </CardTitle>
         </CardHeader>
         <CardContent>

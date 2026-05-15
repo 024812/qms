@@ -87,6 +87,7 @@ export function QuiltFilters({
   filteredCount,
 }: QuiltFiltersProps) {
   const t = useTranslations('quilts.filters');
+  const tRoot = useTranslations();
   const [localFilters, setLocalFilters] = useState<QuiltFiltersInput>(filters);
   const [isOpen, setIsOpen] = useState(false);
 
@@ -158,7 +159,7 @@ export function QuiltFilters({
                 className={cn('h-8', !isActive && option.color)}
               >
                 <Icon className="w-3 h-3 mr-1" />
-                {option.label}
+                {tRoot(`season.${option.value}`)}
               </Button>
             );
           })}
@@ -179,7 +180,7 @@ export function QuiltFilters({
                 onClick={() => updateFilter('status', isActive ? undefined : option.value)}
                 className={cn('h-8', !isActive && option.color)}
               >
-                {option.label}
+                {tRoot(`status.${option.value}`)}
               </Button>
             );
           })}

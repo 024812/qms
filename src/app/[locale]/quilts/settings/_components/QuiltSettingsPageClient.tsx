@@ -1,6 +1,6 @@
 'use client';
 
-import { useLocale } from 'next-intl';
+import { useTranslations } from 'next-intl';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -26,8 +26,8 @@ export function QuiltSettingsPageClient({
   initialAppSettings,
   isAdmin,
 }: QuiltSettingsPageClientProps) {
-  const locale = useLocale();
-  const isZh = locale === 'zh';
+  const t = useTranslations('quilts.settingsPage');
+  const tRoot = useTranslations();
   const { data: appSettings, isLoading } = useAppSettings({
     initialData: initialAppSettings ?? undefined,
   });
@@ -38,16 +38,15 @@ export function QuiltSettingsPageClient({
 
   const handleSave = async (
     values: Partial<Pick<AppSettings, 'doubleClickAction' | 'usageDoubleClickAction'>>,
-    successTitle: string,
     successMessage: string
   ) => {
     try {
       await updateSettings.mutateAsync(values);
-      toast.success(successTitle, successMessage);
+      toast.success(tRoot('settings.actions.saved'), successMessage);
     } catch (error) {
       toast.error(
-        isZh ? '保存失败' : 'Save failed',
-        error instanceof Error ? error.message : isZh ? '请重试' : 'Please try again'
+        tRoot('actions.failedToSave'),
+        error instanceof Error ? error.message : tRoot('actions.pleaseTryAgain')
       );
     }
   };
@@ -71,13 +70,9 @@ export function QuiltSettingsPageClient({
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-destructive">
                 <ShieldAlert className="h-6 w-6" />
-                {isZh ? '访问被拒绝' : 'Access Denied'}
+                {t('accessDeniedTitle')}
               </CardTitle>
-              <CardDescription>
-                {isZh
-                  ? '只有管理员可以访问被子管理设置。'
-                  : 'Only administrators can access quilt management settings.'}
-              </CardDescription>
+              <CardDescription>{t('accessDeniedDescription')}</CardDescription>
             </CardHeader>
           </Card>
         </div>
@@ -91,39 +86,28 @@ export function QuiltSettingsPageClient({
         <div className="mb-8">
           <h1 className="mb-2 flex items-center gap-3 text-3xl font-bold">
             <Settings className="h-8 w-8" />
-            {isZh ? '被子管理设置' : 'Quilt Management Settings'}
+            {t('title')}
           </h1>
-          <p className="text-muted-foreground">
-            {isZh
-              ? '配置被子管理模块的交互行为（仅管理员）'
-              : 'Configure quilt management module behavior (Admin only)'}
-          </p>
+          <p className="text-muted-foreground">{t('subtitle')}</p>
         </div>
 
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center space-x-2">
               <MousePointerClick className="h-5 w-5" />
-              <span>{isZh ? '交互行为' : 'Interaction Behavior'}</span>
+              <span>{t('sections.interaction.title')}</span>
             </CardTitle>
-            <CardDescription>
-              {isZh
-                ? '配置被子列表和使用记录的默认双击行为'
-                : 'Configure default double-click behavior'}
-            </CardDescription>
+            <CardDescription>{t('sections.interaction.description')}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
             <div className="space-y-2">
-              <Label htmlFor="double-click-action">
-                {isZh ? '被子列表双击行为' : 'Quilt List Double-click Behavior'}
-              </Label>
+              <Label htmlFor="double-click-action">{t('fields.quiltDoubleClick.label')}</Label>
               <Select
                 value={doubleClickAction}
                 onValueChange={value =>
                   handleSave(
                     { doubleClickAction: value as AppSettings['doubleClickAction'] },
-                    isZh ? '设置已保存' : 'Settings saved',
-                    isZh ? '双击行为已更新' : 'Double-click behavior updated'
+                    t('toasts.quiltDoubleClickUpdated')
                   )
                 }
               >
@@ -131,30 +115,25 @@ export function QuiltSettingsPageClient({
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="none">{isZh ? '无动作' : 'No Action'}</SelectItem>
-                  <SelectItem value="view">{isZh ? '查看详情' : 'View Details'}</SelectItem>
-                  <SelectItem value="status">{isZh ? '修改状态' : 'Change Status'}</SelectItem>
-                  <SelectItem value="edit">{isZh ? '编辑被子' : 'Edit Quilt'}</SelectItem>
+                  <SelectItem value="none">{t('options.none')}</SelectItem>
+                  <SelectItem value="view">{t('options.view')}</SelectItem>
+                  <SelectItem value="status">{t('options.status')}</SelectItem>
+                  <SelectItem value="edit">{t('options.editQuilt')}</SelectItem>
                 </SelectContent>
               </Select>
-              <p className="text-xs text-muted-foreground">
-                {isZh
-                  ? '设置在被子列表中双击行时的默认行为'
-                  : 'Set the default behavior when double-clicking a row in the quilt list'}
-              </p>
+              <p className="text-xs text-muted-foreground">{t('fields.quiltDoubleClick.help')}</p>
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="usage-double-click-action">
-                {isZh ? '使用记录双击行为' : 'Usage Record Double-click Behavior'}
+                {t('fields.usageDoubleClick.label')}
               </Label>
               <Select
                 value={usageDoubleClickAction}
                 onValueChange={value =>
                   handleSave(
                     { usageDoubleClickAction: value as AppSettings['usageDoubleClickAction'] },
-                    isZh ? '设置已保存' : 'Settings saved',
-                    isZh ? '使用记录双击行为已更新' : 'Usage record double-click behavior updated'
+                    t('toasts.usageDoubleClickUpdated')
                   )
                 }
               >
@@ -162,16 +141,12 @@ export function QuiltSettingsPageClient({
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="none">{isZh ? '无动作' : 'No Action'}</SelectItem>
-                  <SelectItem value="view">{isZh ? '查看详情' : 'View Details'}</SelectItem>
-                  <SelectItem value="edit">{isZh ? '编辑记录' : 'Edit Record'}</SelectItem>
+                  <SelectItem value="none">{t('options.none')}</SelectItem>
+                  <SelectItem value="view">{t('options.view')}</SelectItem>
+                  <SelectItem value="edit">{t('options.editRecord')}</SelectItem>
                 </SelectContent>
               </Select>
-              <p className="text-xs text-muted-foreground">
-                {isZh
-                  ? '设置在使用记录列表中双击行时的默认行为'
-                  : 'Set the default behavior when double-clicking a row in the usage record list'}
-              </p>
+              <p className="text-xs text-muted-foreground">{t('fields.usageDoubleClick.help')}</p>
             </div>
           </CardContent>
         </Card>

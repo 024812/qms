@@ -52,8 +52,6 @@ function createQueryClient() {
         },
         refetchOnWindowFocus: false,
         refetchOnReconnect: true,
-        refetchOnMount: false,
-        networkMode: 'online',
       },
       mutations: {
         retry: (failureCount, error) => {

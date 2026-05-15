@@ -1,12 +1,15 @@
 'use client';
 
 import { Search } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import { Button } from '@/components/ui/button';
 import { SidebarTrigger } from '@/components/ui/sidebar';
 import { Separator } from '@/components/ui/separator';
 import { AppBreadcrumb } from './AppBreadcrumb';
 
 export function AppHeader() {
+  const t = useTranslations('header');
+
   return (
     <header className="sticky top-0 z-40 flex h-16 shrink-0 items-center gap-2 border-b bg-background px-4">
       <SidebarTrigger className="-ml-1" />
@@ -33,8 +36,8 @@ export function AppHeader() {
           }}
         >
           <Search className="mr-2 h-4 w-4" />
-          <span className="hidden sm:inline">Search system...</span>
-          <span className="sm:hidden">Search...</span>
+          <span className="hidden sm:inline">{t('commandPaletteTrigger')}</span>
+          <span className="sm:hidden">{t('commandPaletteTriggerCompact')}</span>
           <kbd className="pointer-events-none absolute right-2 hidden h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium opacity-100 sm:flex">
             <span className="text-xs">Ctrl</span>K
           </kbd>

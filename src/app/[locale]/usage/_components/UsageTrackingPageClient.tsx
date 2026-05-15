@@ -71,7 +71,6 @@ export function UsageTrackingPageClient({
 
   const [sortField, setSortField] = useState<string | null>(null);
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
-  const isZh = locale === 'zh';
 
   const handleRecordClick = (record: UsageHistoryRecord) => {
     router.push(`/usage/${record.quiltId}?from=usage`);
@@ -105,7 +104,7 @@ export function UsageTrackingPageClient({
       const date = new Date(dateString);
       if (Number.isNaN(date.getTime())) return 'Invalid Date';
 
-      return date.toLocaleDateString(isZh ? 'zh-CN' : 'en-US', {
+      return date.toLocaleDateString(locale, {
         year: 'numeric',
         month: 'short',
         day: 'numeric',
@@ -117,8 +116,8 @@ export function UsageTrackingPageClient({
 
   const formatDuration = (days: number | null | undefined) => {
     if (days === null || days === undefined) return '-';
-    if (days === 0) return isZh ? '不到1天' : '<1 day';
-    return isZh ? `${days}天` : `${days} days`;
+    if (days === 0) return t('usage.history.lessThanOneDay');
+    return t('usage.history.durationDays', { days });
   };
 
   const handleSort = (field: string) => {
@@ -309,7 +308,7 @@ export function UsageTrackingPageClient({
                     data-record-id={record.id}
                     onDoubleClick={() => handleRecordDoubleClick(record)}
                     className="cursor-pointer hover:bg-muted/50"
-                    title={isZh ? '双击执行操作' : 'Double-click to perform action'}
+                    title={t('quilts.card.actions.doubleClick')}
                   >
                     <TableCell className="text-center font-medium">#{record.itemNumber}</TableCell>
                     <TableCell className="text-center font-medium">{record.quiltName}</TableCell>
@@ -333,7 +332,7 @@ export function UsageTrackingPageClient({
                           variant="ghost"
                           size="sm"
                           onClick={() => handleRecordClick(record)}
-                          title={isZh ? '查看详情' : 'View Details'}
+                          title={t('common.viewDetails')}
                         >
                           <Eye className="h-4 w-4" />
                         </Button>

@@ -21,7 +21,7 @@
 
 import { cacheLife, cacheTag, revalidateTag } from 'next/cache';
 
-import { db, Tx } from '@/db';
+import { db, dbHttp, Tx } from '@/db';
 import { quilts, usageRecords } from '@/db/schema';
 import { eq, sql, desc, and, isNull, like, or } from 'drizzle-orm';
 import { dbLogger } from '@/lib/logger';
@@ -577,7 +577,7 @@ export async function updateQuilt(
         delete updateValues.attachmentImages;
       }
 
-      await db.update(quilts).set(imageValues).where(eq(quilts.id, id));
+      await dbHttp.update(quilts).set(imageValues).where(eq(quilts.id, id));
     }
 
     const result = await db.update(quilts).set(updateValues).where(eq(quilts.id, id)).returning();
@@ -689,7 +689,7 @@ export async function saveQuilt(
       });
 
       if (Object.keys(imageFields).length > 0) {
-        await db
+        await dbHttp
           .update(quilts)
           .set({ ...imageFields, updatedAt: new Date() })
           .where(eq(quilts.id, data.id));

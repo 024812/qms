@@ -163,7 +163,7 @@ export const quilts = pgTable(
     imageUrl: text('image_url'),
     thumbnailUrl: text('thumbnail_url'),
     mainImage: text('main_image'),
-    attachmentImages: jsonb('attachment_images').$type<string[]>().default([]),
+    attachmentImages: text('attachment_images').array().default([]),
 
     // Timestamps
     createdAt: timestamp('created_at').notNull().defaultNow(),

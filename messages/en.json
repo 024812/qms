@@ -1349,7 +1349,9 @@
     "cards": {
       "title": "Trading Cards",
       "desc": "View, value, and track your card collection."
-    }
+    },
+    "noModules": "You haven't subscribed to any modules yet",
+    "subscribeModules": "Subscribe to Modules"
   },
   "common": {
     "appName": "QMS",

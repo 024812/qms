@@ -1,50 +1,65 @@
 'use client';
 
-/**
- * Welcome Page Component
- *
- * A clean, concise dashboard homepage for authenticated users.
- * Focuses on quick access to core modules and minimal system status.
- */
-
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Package, BarChart3, Settings, ArrowRight, Plus, Search } from 'lucide-react';
+import {
+  Package,
+  BarChart3,
+  Calendar,
+  CreditCard,
+  Bed,
+  ArrowRight,
+  type LucideIcon,
+} from 'lucide-react';
 import { Link } from '@/i18n/routing';
 import { useTranslations } from 'next-intl';
+import { useSession } from 'next-auth/react';
+import { getAllModules } from '@/modules/registry';
+
+const moduleIcons: Record<string, LucideIcon> = {
+  Bed,
+  CreditCard,
+  Package,
+};
+
+interface SubNavItem {
+  name: string;
+  href: string;
+  icon: LucideIcon;
+}
 
 export function WelcomePage() {
   const t = useTranslations();
+  const { data: session } = useSession();
 
-  const quickLinks = [
-    {
-      title: t('welcome.cards.title'),
-      description: t('welcome.cards.desc'),
-      icon: Package,
-      href: '/modules',
-      color: 'text-primary',
-      bgColor: 'bg-primary/10',
-      action: t('welcome.actions.viewList'),
-    },
-    {
-      title: t('navigation.analytics'),
-      description: t('welcome.actions.viewReports'),
-      icon: BarChart3,
-      href: '/analytics',
-      color: 'text-cta',
-      bgColor: 'bg-cta/10',
-      action: t('welcome.actions.viewReports'),
-    },
-    {
-      title: t('navigation.settings'),
-      description: t('welcome.actions.configure'),
-      icon: Settings,
-      href: '/settings',
-      color: 'text-secondary',
-      bgColor: 'bg-secondary/10',
-      action: t('welcome.actions.configure'),
-    },
-  ];
+  const allModules = getAllModules();
+  const activeModuleIds = (session?.user?.activeModules as string[]) || [];
+  const subscribedModules = allModules.filter(m => activeModuleIds.includes(m.id));
+
+  const getModuleNavigation = (moduleId: string): SubNavItem[] => {
+    switch (moduleId) {
+      case 'quilts':
+        return [
+          { name: t('sidebar.quiltsList'), href: '/quilts', icon: Package },
+          { name: t('navigation.usage'), href: '/usage', icon: Calendar },
+          { name: t('navigation.analytics'), href: '/analytics', icon: BarChart3 },
+        ];
+      case 'cards':
+        return [
+          { name: t('sidebar.cardOverview'), href: '/cards/overview', icon: BarChart3 },
+          { name: t('sidebar.cardsList'), href: '/cards', icon: CreditCard },
+          { name: t('sidebar.soldCards'), href: '/cards/sold', icon: CreditCard },
+        ];
+      default:
+        return [];
+    }
+  };
+
+  const moduleColorMap: Record<string, { text: string; bg: string }> = {
+    blue: { text: 'text-blue-600', bg: 'bg-blue-100' },
+    purple: { text: 'text-purple-600', bg: 'bg-purple-100' },
+    green: { text: 'text-green-600', bg: 'bg-green-100' },
+  };
 
   return (
     <div className="container mx-auto py-12 px-4 max-w-5xl">
@@ -58,69 +73,66 @@ export function WelcomePage() {
         </p>
       </div>
 
-      {/* Main Action Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
-        {quickLinks.map(link => (
-          <Card
-            key={link.href}
-            className="group hover:shadow-md transition-all duration-200 border-muted/60"
-          >
-            <CardHeader>
-              <div
-                className={`w-12 h-12 rounded-xl ${link.bgColor} flex items-center justify-center mb-4 transition-transform group-hover:scale-105`}
-              >
-                <link.icon className={`w-6 h-6 ${link.color}`} />
-              </div>
-              <CardTitle className="text-xl font-heading">{link.title}</CardTitle>
-              <CardDescription className="line-clamp-2">{link.description}</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Button
-                variant="ghost"
-                className="group/btn p-0 h-auto hover:bg-transparent hover:text-primary"
-                asChild
-              >
-                <Link href={link.href} className="flex items-center">
-                  {link.action}
-                  <ArrowRight className="w-4 h-4 ml-2 transition-transform group-hover/btn:translate-x-1" />
-                </Link>
-              </Button>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+      {/* Subscribed Modules */}
+      {subscribedModules.length > 0 ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {subscribedModules.map(module => {
+            const IconComponent = moduleIcons[module.icon] || Package;
+            const colors = moduleColorMap[module.color] || moduleColorMap.blue;
+            const navItems = getModuleNavigation(module.id);
 
-      {/* Secondary Actions / Shortcuts */}
-      <div className="rounded-2xl border bg-muted/30 p-8 flex flex-col md:flex-row items-center justify-between gap-6">
-        <div className="space-y-1 text-center md:text-left">
-          <h3 className="font-semibold text-foreground">{t('welcome.actions.commonTitle')}</h3>
-          <p className="text-sm text-muted-foreground">{t('welcome.actions.commonDesc')}</p>
+            return (
+              <Card
+                key={module.id}
+                className="group hover:shadow-md transition-all duration-200 border-muted/60"
+              >
+                <CardHeader>
+                  <div className="flex items-center gap-3 mb-2">
+                    <div
+                      className={`w-10 h-10 rounded-lg ${colors.bg} flex items-center justify-center`}
+                    >
+                      <IconComponent className={`w-5 h-5 ${colors.text}`} />
+                    </div>
+                    <div>
+                      <CardTitle className="text-lg font-heading">{module.name}</CardTitle>
+                      <CardDescription className="text-xs">{module.description}</CardDescription>
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardContent className="pt-0">
+                  <div className="space-y-1">
+                    {navItems.map(item => (
+                      <Button
+                        key={item.href}
+                        variant="ghost"
+                        size="sm"
+                        className="w-full justify-start text-muted-foreground hover:text-foreground"
+                        asChild
+                      >
+                        <Link href={item.href}>
+                          <item.icon className="w-4 h-4 mr-2" />
+                          {item.name}
+                          <ArrowRight className="w-3 h-3 ml-auto opacity-0 group-hover:opacity-100 transition-opacity" />
+                        </Link>
+                      </Button>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          })}
         </div>
-
-        <div className="flex gap-4">
-          <Button
-            variant="outline"
-            className="bg-background shadow-sm hover:border-primary/50"
-            asChild
-          >
-            <Link href="/modules?action=add">
-              <Plus className="w-4 h-4 mr-2" />
-              {t('welcome.actions.addItem')}
-            </Link>
-          </Button>
-          <Button
-            variant="outline"
-            className="bg-background shadow-sm hover:border-primary/50"
-            asChild
-          >
-            {/* Assuming a search functionality or page mainly exists at /modules with query */}
-            <Link href="/modules?focus=search">
-              <Search className="w-4 h-4 mr-2" />
-              {t('welcome.actions.search')}
-            </Link>
-          </Button>
-        </div>
-      </div>
+      ) : (
+        <Card className="border-dashed">
+          <CardContent className="py-12 text-center">
+            <Package className="w-12 h-12 mx-auto mb-4 text-muted-foreground/50" />
+            <p className="text-muted-foreground mb-4">{t('welcome.noModules')}</p>
+            <Button asChild>
+              <Link href="/modules">{t('welcome.subscribeModules')}</Link>
+            </Button>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }

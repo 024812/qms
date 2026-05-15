@@ -1398,7 +1398,9 @@
     "cards": {
       "title": "球星卡管理",
       "desc": "浏览、评价和跟踪您的球星卡收藏。"
-    }
+    },
+    "noModules": "您还没有订阅任何模块",
+    "subscribeModules": "前往订阅模块"
   },
   "common": {
     "appName": "QMS",

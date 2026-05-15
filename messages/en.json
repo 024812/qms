@@ -695,6 +695,7 @@
       "endTemp": "End Temp",
       "duration": "Duration",
       "lessThanOneDay": "<1 day",
+      "durationDays": "{days} days",
       "completed": "Completed"
     },
     "calendar": {

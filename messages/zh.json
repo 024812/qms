@@ -744,6 +744,7 @@
       "endTemp": "结束温度",
       "duration": "持续时间",
       "lessThanOneDay": "不到1天",
+      "durationDays": "{days}天",
       "completed": "已完成"
     },
     "calendar": {

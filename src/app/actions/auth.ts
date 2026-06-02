@@ -40,6 +40,68 @@ function normalizeCallbackUrl(value: FormDataEntryValue | null): string {
   return value;
 }
 
+async function ensureLegacyUserCanUseBetterAuth(email: string, password: string) {
+  const [legacyUser] = await db
+    .select({
+      id: users.id,
+      name: users.name,
+      email: users.email,
+      hashedPassword: users.hashedPassword,
+      createdAt: users.createdAt,
+      updatedAt: users.updatedAt,
+    })
+    .from(users)
+    .where(eq(users.email, email))
+    .limit(1);
+
+  if (!legacyUser) return false;
+
+  const passwordMatches = await bcrypt.compare(password, legacyUser.hashedPassword);
+  if (!passwordMatches) return false;
+
+  await db.transaction(async tx => {
+    await tx
+      .insert(authUser)
+      .values({
+        id: legacyUser.id,
+        name: legacyUser.name,
+        email: legacyUser.email,
+        emailVerified: false,
+        createdAt: legacyUser.createdAt,
+        updatedAt: legacyUser.updatedAt,
+      })
+      .onConflictDoUpdate({
+        target: authUser.id,
+        set: {
+          name: legacyUser.name,
+          email: legacyUser.email,
+          updatedAt: new Date(),
+        },
+      });
+
+    await tx
+      .insert(authAccount)
+      .values({
+        id: `credential_${legacyUser.id}`,
+        accountId: legacyUser.id,
+        providerId: 'credential',
+        userId: legacyUser.id,
+        password: legacyUser.hashedPassword,
+        createdAt: legacyUser.createdAt,
+        updatedAt: legacyUser.updatedAt,
+      })
+      .onConflictDoUpdate({
+        target: [authAccount.providerId, authAccount.accountId],
+        set: {
+          password: legacyUser.hashedPassword,
+          updatedAt: new Date(),
+        },
+      });
+  });
+
+  return true;
+}
+
 export async function registerUser(
   _prevState: RegisterResult | null | undefined,
   formData: FormData
@@ -145,11 +207,12 @@ export async function loginUser(
   }
 
   const { email, password } = validationResult.data;
+  const normalizedEmail = email.toLowerCase();
 
   try {
     await betterAuthInstance.api.signInEmail({
       body: {
-        email: email.toLowerCase(),
+        email: normalizedEmail,
         password,
       },
       headers: await headers(),
@@ -159,6 +222,33 @@ export async function loginUser(
   } catch (error) {
     if (isRedirectError(error)) {
       throw error;
+    }
+
+    const migrated = await ensureLegacyUserCanUseBetterAuth(normalizedEmail, password).catch(
+      error => {
+        if (process.env.NODE_ENV === 'development') {
+          console.error('Legacy auth migration error:', error);
+        }
+        return false;
+      }
+    );
+
+    if (migrated) {
+      try {
+        await betterAuthInstance.api.signInEmail({
+          body: {
+            email: normalizedEmail,
+            password,
+          },
+          headers: await headers(),
+        });
+
+        redirect(callbackUrl);
+      } catch (retryError) {
+        if (isRedirectError(retryError)) {
+          throw retryError;
+        }
+      }
     }
 
     return {

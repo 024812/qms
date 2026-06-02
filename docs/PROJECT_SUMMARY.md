@@ -1,6 +1,6 @@
 # QMS Project Summary
 
-当前版本：`2026.4.2`
+当前版本：`2026.6.2`
 
 ## 当前定位
 
@@ -32,9 +32,25 @@ QMS 已经从“单项目堆功能”收敛为“可复制子模块平台”。�
 
 ### 4. 路由和鉴权
 
-- Next.js 16 路由保护使用项目根目录 `proxy.ts`
-- Auth.js v5 负责登录、注册、会话和权限扩展
+- Next.js 16 路由保护使用 `src/proxy.ts`
+- Better Auth 负责登录、注册、会话和权限扩展
 - 用户角色和启用模块保存在 `users.preferences`
+
+### 5. Agent API
+
+- 外部 AI agent 使用 `/api/agent/openapi.json` 获取受限 OpenAPI 描述
+- 所有 agent 调用集中到 `/api/agent/tools`
+- 写入操作必须提供 `confirm=true` 和 `idempotencyKey`，也可以使用 `dryRun=true` 预览计划
+- agent 权限通过 `AGENT_API_KEYS` 和 scope 控制，不暴露通用数据库访问
+
+## 2026.6.2 这次收口的重点
+
+- 将认证从 Auth.js/NextAuth 迁移到 Better Auth
+- 新增 Better Auth Drizzle schema 和迁移，保留 `users` 作为应用用户资料与权限来源
+- 新增面向 OpenClaw/AI agent 的受限 Agent OpenAPI 和工具调用入口
+- 升级 Next.js、React、TypeScript、Better Auth、Drizzle、Tailwind、React Query 等依赖到当前可用版本
+- 修复 Agent API key scope 解析，支持 `read:quilts` 这类带冒号的 scope
+- 更新 README、部署、认证、密码迁移和安全审计文档
 
 ## 2026.4.2 这次收口的重点
 

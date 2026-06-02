@@ -5,10 +5,10 @@ import { countQuilts, getQuilts } from '@/lib/data/quilts';
 import { getSimpleUsageStats } from '@/lib/data/stats';
 import { getUsageRecords } from '@/lib/data/usage';
 import { systemSettingsRepository } from '@/lib/repositories/system-settings.repository';
-import { db, type Tx } from '@/db';
-import { sql } from 'drizzle-orm';
+import { authAccount, db, type Tx, users } from '@/db';
 import { hashPassword, verifyPassword } from '@/lib/auth/password';
 import { cacheLife, cacheTag, revalidateTag } from 'next/cache';
+import { and, eq } from 'drizzle-orm';
 
 import type {
   AppSettings,
@@ -104,28 +104,36 @@ export async function changePassword(
     throw new Error('Please sign in first');
   }
 
-  const userResult = await db.execute(sql`
-    SELECT hashed_password FROM users WHERE id = ${session.user.id} LIMIT 1
-  `);
+  const [account] = await db
+    .select({ password: authAccount.password })
+    .from(authAccount)
+    .where(and(eq(authAccount.userId, session.user.id), eq(authAccount.providerId, 'credential')))
+    .limit(1);
 
-  const user = userResult.rows[0] as { hashed_password: string | null } | undefined;
-
-  if (!user?.hashed_password) {
+  if (!account?.password) {
     throw new Error('Password is not configured for this user');
   }
 
-  const isValid = await verifyPassword(input.currentPassword, user.hashed_password);
+  const isValid = await verifyPassword(input.currentPassword, account.password);
   if (!isValid) {
     throw new Error('Current password is incorrect');
   }
 
   const newHash = await hashPassword(input.newPassword);
 
-  await db.execute(sql`
-    UPDATE users
-    SET hashed_password = ${newHash}, updated_at = NOW()
-    WHERE id = ${session.user.id}
-  `);
+  await db.transaction(async tx => {
+    await tx
+      .update(authAccount)
+      .set({ password: newHash, updatedAt: new Date() })
+      .where(
+        and(eq(authAccount.userId, session.user.id), eq(authAccount.providerId, 'credential'))
+      );
+
+    await tx
+      .update(users)
+      .set({ hashedPassword: newHash, updatedAt: new Date() })
+      .where(eq(users.id, session.user.id));
+  });
 
   return {
     changed: true,

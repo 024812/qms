@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import { useTheme } from 'next-themes';
-import { useSession } from 'next-auth/react';
+import { useSession } from '@/lib/auth/client';
 import { useTranslations } from 'next-intl';
 import {
   BarChart3,
@@ -52,7 +52,7 @@ export function CommandPalette() {
     () => session?.user?.activeModules || [],
     [session?.user?.activeModules]
   );
-  const isAdmin = session?.user?.role === 'ADMIN';
+  const isAdmin = session?.user?.role === 'admin';
 
   const canAccess = React.useCallback(
     (moduleName: string) => {

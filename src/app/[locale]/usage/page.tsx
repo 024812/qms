@@ -1,9 +1,12 @@
 import { getAppSettingsAction } from '@/app/actions/settings';
 import { getSimpleUsageStats } from '@/lib/data/stats';
 import { getUsageRecordsWithQuilts } from '@/lib/data/usage';
+import { connection } from 'next/server';
 import { UsageTrackingPageClient } from './_components/UsageTrackingPageClient';
 
 export default async function UsageTrackingPage() {
+  await connection();
+
   const [stats, appSettingsResult] = await Promise.all([
     getSimpleUsageStats(),
     getAppSettingsAction(),

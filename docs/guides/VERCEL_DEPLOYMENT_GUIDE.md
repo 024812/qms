@@ -1,6 +1,6 @@
 # Vercel Deployment Guide
 
-本指南对应当前 `2026.4.2` 版本。
+本指南对应当前 `2026.6.2` 版本。
 
 ## 部署前本地检查
 
@@ -19,8 +19,9 @@ npm run build
 
 ```env
 DATABASE_URL=
-NEXTAUTH_SECRET=
-NEXTAUTH_URL=
+BETTER_AUTH_SECRET=
+BETTER_AUTH_URL=
+NEXT_PUBLIC_BETTER_AUTH_URL=
 ```
 
 如果使用 cards 模块的 AI 或第三方数据源，再补充对应可选变量。
@@ -60,15 +61,15 @@ vercel --prod
 
 ## 4. 当前部署架构注意点
 
-- Next.js 16 路由保护文件是项目根目录 `proxy.ts`
+- Next.js 16 路由保护文件是 `src/proxy.ts`
 - 不要再检查 `middleware.ts`
-- 不要再检查 `src/proxy.ts`
+- 不要再检查根目录 `proxy.ts`
 - 内部 UI 的主读写路径是 `src/app/actions/*.ts` + `src/lib/data/*.ts`
 
 ## 5. 新环境初始化建议
 
 1. 先完成数据库 schema 部署
-2. 确认 Auth.js 环境变量已生效
+2. 确认 Better Auth 环境变量已生效
 3. 访问 `/register` 创建首批用户
 4. 根据你的 bootstrap 流程准备至少一个管理员账号
 
@@ -78,13 +79,14 @@ vercel --prod
 
 ### 登录后立刻跳回登录页
 
-- 检查 `NEXTAUTH_SECRET`
-- 检查 `NEXTAUTH_URL`
+- 检查 `BETTER_AUTH_SECRET`
+- 检查 `BETTER_AUTH_URL`
+- 检查 `NEXT_PUBLIC_BETTER_AUTH_URL`
 - 清理浏览器 cookies 后重试
 
 ### 受保护页面没有被拦截
 
-- 确认项目根目录存在 `proxy.ts`
+- 确认项目中存在 `src/proxy.ts`
 - 确认部署的是最新代码
 - 检查 Vercel build logs 是否使用了新构建结果
 

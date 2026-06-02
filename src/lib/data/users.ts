@@ -4,7 +4,7 @@ import { cacheLife, cacheTag } from 'next/cache';
 import { and, asc, eq, ne } from 'drizzle-orm';
 
 import { db } from '@/db';
-import { users, type User } from '@/db/schema';
+import { authAccount, authSession, authUser, users, type User } from '@/db/schema';
 
 export const usersCacheTag = 'users';
 
@@ -95,19 +95,40 @@ export async function isUserEmailTaken(email: string, excludeUserId?: string): P
 }
 
 export async function createUser(data: CreateUserData): Promise<UserSummary> {
-  const [createdUser] = await db
-    .insert(users)
-    .values({
-      id: `user_${randomUUID()}`,
+  const createdUser = await db.transaction(async tx => {
+    const userId = `user_${randomUUID()}`;
+
+    await tx.insert(authUser).values({
+      id: userId,
       name: data.name,
       email: data.email,
-      hashedPassword: data.hashedPassword,
-      preferences: {
-        role: data.role,
-        activeModules: [...new Set(data.activeModules)],
-      },
-    })
-    .returning();
+      emailVerified: false,
+    });
+
+    await tx.insert(authAccount).values({
+      id: `account_${randomUUID()}`,
+      accountId: userId,
+      providerId: 'credential',
+      userId,
+      password: data.hashedPassword,
+    });
+
+    const [user] = await tx
+      .insert(users)
+      .values({
+        id: userId,
+        name: data.name,
+        email: data.email,
+        hashedPassword: data.hashedPassword,
+        preferences: {
+          role: data.role,
+          activeModules: [...new Set(data.activeModules)],
+        },
+      })
+      .returning();
+
+    return user;
+  });
 
   return toUserSummary(createdUser);
 }
@@ -121,30 +142,57 @@ export async function updateUser(data: UpdateUserData): Promise<UserSummary | nu
 
   const existingPreferences = existingUser.preferences ?? {};
 
-  const [updatedUser] = await db
-    .update(users)
-    .set({
-      name: data.name ?? existingUser.name,
-      email: data.email ?? existingUser.email,
-      ...(data.hashedPassword ? { hashedPassword: data.hashedPassword } : {}),
-      preferences: {
-        ...existingPreferences,
-        ...(data.role ? { role: data.role } : {}),
-        ...(data.activeModules
-          ? {
-              activeModules: [...new Set(data.activeModules)],
-            }
-          : {}),
-      },
-      updatedAt: new Date(),
-    })
-    .where(eq(users.id, data.id))
-    .returning();
+  const [updatedUser] = await db.transaction(async tx => {
+    const now = new Date();
+
+    await tx
+      .update(authUser)
+      .set({
+        name: data.name ?? existingUser.name,
+        email: data.email ?? existingUser.email,
+        updatedAt: now,
+      })
+      .where(eq(authUser.id, data.id));
+
+    if (data.hashedPassword) {
+      await tx
+        .update(authAccount)
+        .set({ password: data.hashedPassword, updatedAt: now })
+        .where(and(eq(authAccount.userId, data.id), eq(authAccount.providerId, 'credential')));
+    }
+
+    return tx
+      .update(users)
+      .set({
+        name: data.name ?? existingUser.name,
+        email: data.email ?? existingUser.email,
+        ...(data.hashedPassword ? { hashedPassword: data.hashedPassword } : {}),
+        preferences: {
+          ...existingPreferences,
+          ...(data.role ? { role: data.role } : {}),
+          ...(data.activeModules
+            ? {
+                activeModules: [...new Set(data.activeModules)],
+              }
+            : {}),
+        },
+        updatedAt: now,
+      })
+      .where(eq(users.id, data.id))
+      .returning();
+  });
 
   return updatedUser ? toUserSummary(updatedUser) : null;
 }
 
 export async function deleteUser(id: string): Promise<boolean> {
-  const deletedUsers = await db.delete(users).where(eq(users.id, id)).returning({ id: users.id });
+  const deletedUsers = await db.transaction(async tx => {
+    await tx.delete(authSession).where(eq(authSession.userId, id));
+    await tx.delete(authAccount).where(eq(authAccount.userId, id));
+    await tx.delete(authUser).where(eq(authUser.id, id));
+
+    return tx.delete(users).where(eq(users.id, id)).returning({ id: users.id });
+  });
+
   return deletedUsers.length > 0;
 }

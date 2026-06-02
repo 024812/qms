@@ -15,6 +15,7 @@ import {
   createNotFoundResponse,
   createInternalErrorResponse,
 } from '@/lib/api/response';
+import { requireApiSession } from '@/lib/api/route-auth';
 
 // Input validation schema
 const endUsageRecordSchema = z.object({
@@ -35,6 +36,9 @@ const endUsageRecordSchema = z.object({
  */
 export async function POST(request: NextRequest) {
   try {
+    const authResult = await requireApiSession();
+    if (!authResult.ok) return authResult.response;
+
     const rawBody = await request.json();
 
     // Sanitize input to prevent XSS (Requirements: 11.1)

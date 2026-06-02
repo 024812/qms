@@ -1,6 +1,6 @@
 # Vercel Environment Setup
 
-本指南对应当前 `2026.4.2` 版本的真实环境变量需求。
+本指南对应当前 `2026.6.2` 版本的真实环境变量需求。
 
 ## 必填环境变量
 
@@ -8,18 +8,21 @@
 
 ```env
 DATABASE_URL=
-NEXTAUTH_SECRET=
-NEXTAUTH_URL=
+BETTER_AUTH_SECRET=
+BETTER_AUTH_URL=
+NEXT_PUBLIC_BETTER_AUTH_URL=
 ```
 
 说明：
 
 - `DATABASE_URL`
   Neon PostgreSQL 连接串
-- `NEXTAUTH_SECRET`
-  Auth.js 会话签名密钥
-- `NEXTAUTH_URL`
+- `BETTER_AUTH_SECRET`
+  Better Auth 会话签名密钥
+- `BETTER_AUTH_URL`
   当前环境实际访问域名，例如 `https://your-app.vercel.app`
+- `NEXT_PUBLIC_BETTER_AUTH_URL`
+  Browser-side Better Auth client URL，通常与 `BETTER_AUTH_URL` 相同
 
 ## 推荐可选变量
 
@@ -51,7 +54,15 @@ EBAY_ENVIRONMENT=production
 - 某些卡片提供商配置也可以在应用设置页写入数据库
 - 环境变量仍然适合做初始化值或服务端兜底
 
-## 生成 `NEXTAUTH_SECRET`
+## Agent API 可选变量
+
+```env
+AGENT_API_KEYS="openclaw-dev:read:quilts,read:usage,read:cards;openclaw-admin:*"
+```
+
+格式为分号分隔的 key 列表，每个 key 使用逗号分隔 scopes。可用 scopes 见 `.env.example`。
+
+## 生成 `BETTER_AUTH_SECRET`
 
 ```bash
 node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"
@@ -60,7 +71,7 @@ node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"
 ## 配置建议
 
 - Production、Preview、Development 三个环境分开配置
-- `NEXTAUTH_URL` 应该与对应环境的真实域名一致
+- `BETTER_AUTH_URL` 和 `NEXT_PUBLIC_BETTER_AUTH_URL` 应该与对应环境的真实域名一致
 - 修改环境变量后，需要重新部署才会生效
 
 ## 已废弃变量
@@ -69,6 +80,8 @@ node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"
 
 - `QMS_PASSWORD_HASH`
 - `QMS_JWT_SECRET`
+- `NEXTAUTH_URL`
+- `NEXTAUTH_SECRET`
 - `NEXT_PUBLIC_APP_VERSION`
 
 版本号已经直接从 `package.json` 读取。

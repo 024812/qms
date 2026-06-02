@@ -5,8 +5,13 @@ declare global {
       DATABASE_URL: string;
 
       // Authentication
+      BETTER_AUTH_SECRET?: string;
+      BETTER_AUTH_URL?: string;
+      NEXT_PUBLIC_BETTER_AUTH_URL?: string;
       AUTH_SECRET?: string;
+      /** @deprecated Better Auth uses BETTER_AUTH_SECRET or AUTH_SECRET. */
       NEXTAUTH_SECRET?: string;
+      /** @deprecated Better Auth uses BETTER_AUTH_URL. */
       NEXTAUTH_URL?: string;
       
       // Next.js

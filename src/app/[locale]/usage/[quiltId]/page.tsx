@@ -1,5 +1,6 @@
 import { getQuiltById } from '@/lib/data/quilts';
 import { getUsageHistory } from '@/lib/data/usage';
+import { connection } from 'next/server';
 import { QuiltUsageDetailPageClient } from './_components/QuiltUsageDetailPageClient';
 
 type RawSearchParams = Record<string, string | string[] | undefined>;
@@ -24,6 +25,8 @@ export default async function QuiltUsageDetailPage({
   params,
   searchParams,
 }: QuiltUsageDetailPageProps) {
+  await connection();
+
   const [{ quiltId }, resolvedSearchParams] = await Promise.all([params, searchParams]);
   const from = getParam(resolvedSearchParams ?? {}, 'from') === 'quilts' ? 'quilts' : 'usage';
 

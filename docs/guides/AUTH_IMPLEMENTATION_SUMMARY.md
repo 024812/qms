@@ -1,101 +1,110 @@
 # Authentication Implementation Summary
 
-当前认证方案已经统一到 Auth.js v5 + Credentials Provider。
+The current authentication implementation uses Better Auth with email/password login, Drizzle, and PostgreSQL.
 
-## 当前认证入口
+## Current Entry Points
 
 - `src/auth.ts`
-  Auth.js 配置、Credentials Provider、JWT/session 回调、`auth()`/`signIn()`/`signOut()` 导出
+  Configures Better Auth, the Drizzle adapter, email/password hashing, session settings, and the exported `auth()` helper.
+- `src/app/api/auth/[...all]/route.ts`
+  Exposes the Better Auth route handler under `/api/auth/*`.
 - `src/app/actions/auth.ts`
-  登录和注册的 server actions
-- `src/app/api/auth/[...nextauth]/route.ts`
-  Auth.js handler 暴露
-- `src/app/[locale]/login/page.tsx`
-  本地化登录页
-- `src/app/[locale]/register/page.tsx`
-  本地化注册页
-- `proxy.ts`
-  Next.js 16 路由保护入口
+  Handles localized login and registration server actions.
+- `src/app/actions/logout.ts`
+  Handles sign-out through Better Auth.
+- `src/lib/auth/client.ts`
+  Provides the Better Auth React client and `useSession()` hook.
+- `src/proxy.ts`
+  Applies Next.js 16 route protection and locale routing.
 
-## 当前实现方式
+## Data Model
 
-### 1. 用户存储
+Better Auth stores authentication records in dedicated tables:
 
-- 用户记录保存在 `users` 表
-- 密码哈希保存在 `users.hashed_password`
-- 角色和已启用模块保存在 `users.preferences`
+- `auth_user`
+- `auth_session`
+- `auth_account`
+- `auth_verification`
 
-### 2. 登录方式
+The application still keeps domain user data in `users`:
 
-- 使用 Auth.js v5 Credentials Provider
-- 登录时在 `src/auth.ts` 中校验邮箱和密码
-- 密码使用 `bcryptjs` 校验
-- session 采用 JWT strategy
+- `users.id` matches `auth_user.id`.
+- `users.hashed_password` is kept for compatibility with settings/password workflows.
+- `users.preferences.role` stores `admin` or `member`.
+- `users.preferences.activeModules` stores enabled modules.
 
-### 3. 注册方式
+Registration creates both the Better Auth user and the application `users` record. If the app user insert fails, the server action removes the partially created Better Auth records.
 
-- 注册通过 `src/app/actions/auth.ts` 中的 `registerUser()` 完成
-- 创建用户后会自动调用 `signIn('credentials')`
-- 默认新注册用户角色为 `member`
+## Session Shape
 
-### 4. 权限与会话
+`auth()` returns this application-facing session shape:
 
-- `jwt` 回调把 `id`、`role`、`activeModules` 写入 token
-- `session` 回调把这些字段同步到 `session.user`
-- 需要管理员权限的 action 会显式检查 `session.user.role === 'admin'`
+```ts
+type Session = {
+  user: {
+    id: string;
+    name: string;
+    email: string;
+    image?: string | null;
+    role: 'admin' | 'member';
+    activeModules: string[];
+  };
+  expires: string;
+};
+```
 
-### 5. 路由保护
+The extra `role` and `activeModules` fields are loaded from `users.preferences` through Better Auth's `customSession` plugin.
 
-- Next.js 16 官方约定使用项目根目录 `proxy.ts`
-- `proxy.ts` 负责：
-  - `next-intl` locale 路由处理
-  - 未登录用户重定向到 `/login`
-  - 已登录用户访问 `/login` 或 `/register` 时重定向回应用首页
-  - 单模块用户进入根路由时自动跳转到对应模块
-
-## 必需环境变量
+## Required Environment Variables
 
 ```env
 DATABASE_URL=
-NEXTAUTH_SECRET=
-NEXTAUTH_URL=
+BETTER_AUTH_SECRET=
+BETTER_AUTH_URL=
+NEXT_PUBLIC_BETTER_AUTH_URL=
 ```
 
-说明：
+`AUTH_SECRET` is supported as a fallback alias. `NEXTAUTH_SECRET` is only accepted as a last-resort legacy fallback and should not be used for new deployments.
 
-- `DATABASE_URL` 用于读取用户与业务数据
-- `NEXTAUTH_SECRET` 用于 Auth.js 会话签名
-- `NEXTAUTH_URL` 在部署环境应设置为实际站点 URL
+## Route Protection
 
-## 运维说明
+`src/proxy.ts` protects non-API application routes:
 
-### 新环境初始化
+- Unauthenticated users are redirected to the localized `/login` page.
+- Authenticated users visiting `/login` or `/register` are redirected back into the app.
+- Single-module users entering the root route are redirected to their only enabled module.
+- `/api/**`, Next.js assets, and static files are excluded from proxy protection.
 
-1. 配置数据库与 Auth.js 环境变量
-2. 执行 `npm run db:push`
-3. 启动应用并访问 `/register`
-4. 根据你的启动流程创建或提升至少一个管理员账号
+API routes that need authentication use explicit helpers such as `requireApiSession()` and `requireApiAdmin()`.
 
-### 管理员账号
+## Database Migration
 
-- 普通注册用户默认是 `member`
-- 需要访问用户管理、卡片设置等管理员功能时，必须确保对应用户角色为 `admin`
+Apply the Better Auth schema with Drizzle migrations before deploying this release:
 
-## 已废弃的旧方案
+```bash
+npm run db:migrate
+```
 
-以下内容不再属于当前认证实现：
+For environments managed through direct SQL migration scripts, apply `migrations/011_migrate_users_to_better_auth.sql` after the existing user schema is present.
 
+## Verification Checklist
+
+- Visiting a protected page while signed out redirects to `/login`.
+- Registering a new user creates matching records in `auth_user` and `users`.
+- Correct credentials create a session and redirect to the requested callback URL.
+- Wrong credentials are rejected without exposing internal errors.
+- `session.user` includes `id`, `role`, and `activeModules`.
+- Admin-only API routes reject non-admin users.
+- Changing auth environment variables is followed by clearing cookies and restarting/redeploying.
+
+## Deprecated Auth Paths
+
+These are no longer part of the current implementation:
+
+- `src/app/api/auth/[...nextauth]/route.ts`
+- `src/types/next-auth.d.ts`
+- Auth.js/NextAuth.js session callbacks
+- `NEXTAUTH_URL` for new deployments
+- `NEXTAUTH_SECRET` for new deployments
 - `QMS_PASSWORD_HASH`
 - `QMS_JWT_SECRET`
-- `scripts/setup-password.ts`
-- `npm run setup-password`
-- `src/proxy.ts`
-- `middleware.ts`
-
-## 推荐验证项
-
-- 访问未登录受保护页面时会跳转到 `/login`
-- 注册后能自动登录
-- 正确密码可以登录，错误密码会被拒绝
-- `session.user` 中包含 `id`、`role`、`activeModules`
-- 管理员页面对非 admin 用户会拒绝访问

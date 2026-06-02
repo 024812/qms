@@ -1,7 +1,7 @@
 'use client';
 
 import { Link, usePathname } from '@/i18n/routing';
-import { useSession } from 'next-auth/react';
+import { useSession } from '@/lib/auth/client';
 import { useLocale, useTranslations } from 'next-intl';
 import { useState, useEffect } from 'react';
 import {
@@ -50,7 +50,7 @@ export function AppSidebar() {
   const locale = useLocale();
   const pathname = usePathname();
   const t = useTranslations();
-  const { data: session, status } = useSession();
+  const { data: session, isPending } = useSession();
 
   const allModules = getAllModules();
 
@@ -109,7 +109,7 @@ export function AppSidebar() {
   // Initialize open states on mount and when pathname or session changes
   useEffect(() => {
     // Wait for session to be loaded
-    if (status === 'loading') return;
+    if (isPending) return;
 
     const newOpenStates: Record<string, boolean> = {};
 
@@ -129,10 +129,10 @@ export function AppSidebar() {
         isHomePage
     );
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pathname, currentModuleId, isHomePage, status]);
+  }, [pathname, currentModuleId, isHomePage, isPending]);
 
   // Loading state
-  if (status === 'loading') {
+  if (isPending) {
     return (
       <Sidebar collapsible="icon">
         <SidebarHeader className="border-b border-sidebar-border">

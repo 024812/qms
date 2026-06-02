@@ -6,18 +6,17 @@
  *
  * Architecture:
  * - Standalone async functions
- * - 'use cache' for persistent caching
- * - React cache() for request deduplication
+ * - Runtime database reads for user-specific operational data
+ * - React cache() wrappers available for request deduplication
  * - Cache invalidation with revalidateTag(, 'max')
  *
  * Cache Strategy:
- * - Individual records: 5 minutes
- * - Lists/History: 2 minutes (120 seconds)
- * - Tags: 'usage', 'usage-{id}', 'usage-quilt-{quiltId}'
+ * - Client-side React Query handles freshness for UI reads
+ * - Server-side writes invalidate related tags for any cached consumers
  */
 
 import { cache } from 'react';
-import { cacheLife, cacheTag, revalidateTag } from 'next/cache';
+import { revalidateTag } from 'next/cache';
 import { db } from '@/db';
 import { usageRecords, quilts } from '@/db/schema';
 import { eq, desc, and, isNull, sql } from 'drizzle-orm';
@@ -55,10 +54,6 @@ export interface UpdateUsageRecordData {
  * Tags: 'usage', 'usage-{id}'
  */
 export async function getUsageRecordById(id: string): Promise<UsageRecord | null> {
-  'use cache';
-  cacheLife('minutes'); // 5 minutes
-  cacheTag('usage', `usage-${id}`);
-
   try {
     const result = await db.select().from(usageRecords).where(eq(usageRecords.id, id));
     return result[0] ? (result[0] as unknown as UsageRecord) : null;
@@ -75,10 +70,6 @@ export async function getUsageRecordById(id: string): Promise<UsageRecord | null
  * Tags: 'usage', 'usage-quilt-{quiltId}'
  */
 export async function getUsageHistory(quiltId: string): Promise<UsageRecord[]> {
-  'use cache';
-  cacheLife('seconds'); // 2 minutes
-  cacheTag('usage', `usage-quilt-${quiltId}`);
-
   try {
     const result = await db
       .select()
@@ -100,10 +91,6 @@ export async function getUsageHistory(quiltId: string): Promise<UsageRecord[]> {
  * Tags: 'usage', 'usage-quilt-{quiltId}'
  */
 export async function getActiveUsageRecord(quiltId: string): Promise<UsageRecord | null> {
-  'use cache';
-  cacheLife('seconds'); // 2 minutes
-  cacheTag('usage', `usage-quilt-${quiltId}`);
-
   try {
     const result = await db
       .select()
@@ -124,10 +111,6 @@ export async function getActiveUsageRecord(quiltId: string): Promise<UsageRecord
  * Tags: 'usage', 'usage-active'
  */
 export async function getAllActiveUsageRecords(): Promise<UsageRecord[]> {
-  'use cache';
-  cacheLife('seconds'); // 2 minutes
-  cacheTag('usage', 'usage-active');
-
   try {
     const result = await db
       .select()
@@ -149,10 +132,6 @@ export async function getAllActiveUsageRecords(): Promise<UsageRecord[]> {
  * Tags: 'usage', 'usage-list'
  */
 export async function getUsageRecords(): Promise<UsageRecord[]> {
-  'use cache';
-  cacheLife('seconds'); // 2 minutes
-  cacheTag('usage', 'usage-list');
-
   try {
     const result = await db.select().from(usageRecords).orderBy(desc(usageRecords.startDate));
 
@@ -191,10 +170,6 @@ export interface UsageRecordWithQuilt {
 export async function getUsageRecordsWithQuilts(
   filters: { quiltId?: string; limit?: number; offset?: number } = {}
 ): Promise<UsageRecordWithQuilt[]> {
-  'use cache';
-  cacheLife('seconds'); // 2 minutes
-  cacheTag('usage', 'usage-list');
-
   try {
     const { quiltId, limit = 50, offset = 0 } = filters;
 
@@ -266,10 +241,6 @@ export async function getUsageRecordsWithQuilts(
 export async function getUsageStats(
   quiltId: string
 ): Promise<{ totalDays: number; usageCount: number }> {
-  'use cache';
-  cacheLife('seconds'); // 2 minutes
-  cacheTag('usage', `usage-quilt-${quiltId}`);
-
   try {
     const result = await db
       .select({

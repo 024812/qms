@@ -8,9 +8,13 @@
 
 import packageJson from '../../../../../package.json';
 import { createSuccessResponse, createInternalErrorResponse } from '@/lib/api/response';
+import { requireApiAdmin } from '@/lib/api/route-auth';
 
 export async function GET() {
   try {
+    const authResult = await requireApiAdmin();
+    if (!authResult.ok) return authResult.response;
+
     return createSuccessResponse({
       systemInfo: {
         version: packageJson.version,

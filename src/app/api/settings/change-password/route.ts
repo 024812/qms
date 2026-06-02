@@ -1,98 +1,82 @@
-/**
- * Change Password REST API
- *
- * POST /api/settings/change-password - Change user password
- *
- * Requirements: 1.2, 1.3 - REST API for settings
- * Requirements: 5.3 - Consistent API response format
- * Requirements: 11.5 - Rate limiting
- */
-
 import { NextRequest } from 'next/server';
 import { z } from 'zod';
+import { and, eq } from 'drizzle-orm';
+
 import { auth } from '@/auth';
-import { db } from '@/db';
-import { sql } from 'drizzle-orm';
+import { authAccount, db, users } from '@/db';
 import { hashPassword, verifyPassword } from '@/lib/auth/password';
 import { withRateLimit, rateLimiters } from '@/lib/rate-limit';
 import {
-  createSuccessResponse,
-  createValidationErrorResponse,
-  createUnauthorizedResponse,
   createInternalErrorResponse,
+  createSuccessResponse,
+  createUnauthorizedResponse,
+  createValidationErrorResponse,
 } from '@/lib/api/response';
 
-// Input schema for password change
 const changePasswordSchema = z.object({
   currentPassword: z.string().min(1),
   newPassword: z.string().min(8),
 });
 
-/**
- * POST /api/settings/change-password
- *
- * Change the user password.
- *
- * Request Body:
- * - currentPassword: Current password for verification
- * - newPassword: New password (min 8 characters)
- */
 export async function POST(request: NextRequest) {
   return withRateLimit(request, rateLimiters.auth, async () => {
     try {
-      // Get current user session
       const session = await auth();
+
       if (!session?.user?.id) {
-        return createUnauthorizedResponse('请先登录');
+        return createUnauthorizedResponse('Please sign in first');
       }
 
-      const body = await request.json();
-
-      // Validate input using Zod schema
-      const validationResult = changePasswordSchema.safeParse(body);
+      const validationResult = changePasswordSchema.safeParse(await request.json());
 
       if (!validationResult.success) {
         return createValidationErrorResponse(
-          '密码数据验证失败',
+          'Password validation failed',
           validationResult.error.flatten().fieldErrors as Record<string, string[]>
         );
       }
 
       const { currentPassword, newPassword } = validationResult.data;
+      const [account] = await db
+        .select({ password: authAccount.password })
+        .from(authAccount)
+        .where(
+          and(eq(authAccount.userId, session.user.id), eq(authAccount.providerId, 'credential'))
+        )
+        .limit(1);
 
-      // Get current user's password hash from users table
-      const userResult = await db.execute(sql`
-        SELECT hashed_password FROM users WHERE id = ${session.user.id} LIMIT 1
-      `);
-
-      const user = userResult.rows[0] as { hashed_password: string | null } | undefined;
-
-      if (!user || !user.hashed_password) {
-        return createInternalErrorResponse('用户密码未设置');
+      if (!account?.password) {
+        return createInternalErrorResponse('Password is not configured for this user');
       }
 
-      // Verify current password
-      const isValid = await verifyPassword(currentPassword, user.hashed_password);
+      const isValid = await verifyPassword(currentPassword, account.password);
+
       if (!isValid) {
-        return createUnauthorizedResponse('当前密码不正确');
+        return createUnauthorizedResponse('Current password is incorrect');
       }
 
-      // Generate new hash
       const newHash = await hashPassword(newPassword);
 
-      // Update password in users table
-      await db.execute(sql`
-        UPDATE users 
-        SET hashed_password = ${newHash}, updated_at = NOW()
-        WHERE id = ${session.user.id}
-      `);
+      await db.transaction(async tx => {
+        await tx
+          .update(authAccount)
+          .set({ password: newHash, updatedAt: new Date() })
+          .where(
+            and(eq(authAccount.userId, session.user.id), eq(authAccount.providerId, 'credential'))
+          );
+
+        await tx
+          .update(users)
+          .set({ hashedPassword: newHash, updatedAt: new Date() })
+          .where(eq(users.id, session.user.id));
+      });
 
       return createSuccessResponse({
         changed: true,
-        message: '密码修改成功',
+        message: 'Password changed successfully',
       });
     } catch (error) {
-      return createInternalErrorResponse('修改密码失败', error);
+      return createInternalErrorResponse('Failed to change password', error);
     }
   });
 }

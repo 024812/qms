@@ -1,100 +1,98 @@
 # Password Migration Guide
 
-本指南说明如何从历史的“环境变量密码方案”迁移到当前的 Auth.js 用户表方案。
+This guide covers migration from older QMS password/auth setups to the current Better Auth implementation.
 
-## 当前状态
+## Current State
 
-QMS 当前使用的是：
+QMS now uses:
 
-- `users.hashed_password` 存储 bcrypt 哈希
-- Auth.js v5 Credentials Provider 负责登录
-- `NEXTAUTH_SECRET` 负责 session 签名
+- Better Auth email/password login.
+- Better Auth tables: `auth_user`, `auth_session`, `auth_account`, `auth_verification`.
+- Application user table: `users`.
+- `users.id` aligned with `auth_user.id`.
+- `users.hashed_password` retained for account settings and compatibility workflows.
 
-以下旧环境变量已经不再是当前方案的一部分：
+The old environment-variable password model is no longer part of the runtime path.
+
+## Deprecated Inputs
+
+Remove these from new deployments:
 
 - `QMS_PASSWORD_HASH`
 - `QMS_JWT_SECRET`
+- `NEXTAUTH_URL`
+- `NEXTAUTH_SECRET`
 
-## 需要迁移的场景
-
-如果你的旧部署仍然依赖环境变量密码，而不是 `users` 表中的账号密码，请执行迁移。
-
-## 迁移目标
-
-把旧密码方案迁移为：
-
-1. 在 `users` 表中存在真实用户
-2. 用户密码写入 `users.hashed_password`
-3. 登录统一走 `/login` + Auth.js
-4. 删除旧的密码环境变量
-
-## 推荐迁移步骤
-
-### 1. 确认数据库已初始化
-
-```bash
-npm run db:push
-```
-
-### 2. 创建或准备目标用户
-
-确保 `users` 表中存在目标账号，并且包含：
-
-- `name`
-- `email`
-- `hashed_password`
-- `preferences`
-
-### 3. 生成新的 bcrypt 哈希
-
-可以用 Node 一次性生成：
-
-```bash
-node -e "require('bcryptjs').hash(process.argv[1], 10).then(console.log)" "YourStrongPassword123!"
-```
-
-### 4. 写入 `users.hashed_password`
-
-把上一步生成的哈希写入目标用户记录。
-
-### 5. 配置 Auth.js 环境变量
+Use these instead:
 
 ```env
 DATABASE_URL=
-NEXTAUTH_SECRET=
-NEXTAUTH_URL=
+BETTER_AUTH_SECRET=
+BETTER_AUTH_URL=
+NEXT_PUBLIC_BETTER_AUTH_URL=
 ```
 
-### 6. 删除旧环境变量
+## Migration Targets
 
-迁移完成后，从 Vercel 或其他部署环境中删除：
+A migrated user should have:
 
-- `QMS_PASSWORD_HASH`
-- `QMS_JWT_SECRET`
+1. A row in `auth_user`.
+2. A matching row in `users` with the same `id`.
+3. A bcrypt password hash stored in the Better Auth credential account and in `users.hashed_password` where needed.
+4. Role and active modules stored in `users.preferences`.
 
-### 7. 重启或重新部署
+## Recommended Migration Path
 
-Auth.js 和环境变量更新后需要重新部署或重启服务。
+1. Apply the schema migration.
 
-## 迁移完成后的验证
+```bash
+npm run db:migrate
+```
 
-- 访问 `/login`
-- 用迁移后的邮箱和密码登录
-- 确认不再依赖任何旧密码环境变量
-- 确认注册、登录、登出都正常
+2. Register or recreate users through the application UI when possible.
 
-## 常见问题
+This is the safest path because the registration action creates both Better Auth and application user records.
 
-### 登录失败但数据库里已经有用户
+3. For existing users, verify ID alignment.
 
-- 检查 `users.hashed_password` 是否为 bcrypt 哈希
-- 检查邮箱是否和登录时输入的一致
-- 检查 `NEXTAUTH_SECRET` 和 `NEXTAUTH_URL`
+```sql
+select u.id, u.email, au.id as auth_user_id
+from users u
+left join auth_user au on au.id = u.id;
+```
 
-### 需要提升管理员权限
+4. Set roles and modules in `users.preferences`.
 
-注册用户默认是 `member`。如果要访问管理员功能，需要把对应用户角色设置为 `admin`。
+Example shape:
 
-### 能否继续保留旧环境变量兜底
+```json
+{
+  "role": "admin",
+  "activeModules": ["quilts", "cards"]
+}
+```
 
-不建议。当前代码路径已经以 Auth.js + `users` 表为准，继续保留旧变量只会增加未来维护成本和文档歧义。
+5. Redeploy or restart the app after changing auth environment variables.
+
+## Verification
+
+- `/register` creates a user that can immediately sign in.
+- `/login` accepts the migrated user's email and password.
+- Protected pages redirect to `/login` when signed out.
+- Admin pages reject users whose `users.preferences.role` is not `admin`.
+- The sidebar and module routing reflect `users.preferences.activeModules`.
+- No deployment environment still depends on `QMS_PASSWORD_HASH` or `QMS_JWT_SECRET`.
+
+## Troubleshooting
+
+### Login succeeds but permissions or modules are wrong
+
+Check `users.preferences`. Better Auth owns the session, but app permissions are read from `users`.
+
+### Login fails after environment changes
+
+Check `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL`, and `NEXT_PUBLIC_BETTER_AUTH_URL`, then clear browser cookies and retry.
+
+### A user exists in `users` but cannot sign in
+
+Create the corresponding Better Auth records by registering the account again in a controlled environment, or migrate the user through a dedicated script that writes both Better Auth and application user records.

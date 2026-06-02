@@ -12,6 +12,7 @@ import { connection } from 'next/server';
 import { countQuilts } from '@/lib/data/quilts';
 import { getSimpleUsageStats } from '@/lib/data/stats';
 import { createSuccessResponse, createInternalErrorResponse } from '@/lib/api/response';
+import { requireApiAdmin } from '@/lib/api/route-auth';
 
 /**
  * GET /api/settings/database-stats
@@ -24,6 +25,9 @@ import { createSuccessResponse, createInternalErrorResponse } from '@/lib/api/re
  */
 export async function GET() {
   try {
+    const authResult = await requireApiAdmin();
+    if (!authResult.ok) return authResult.response;
+
     await connection();
 
     const [quiltCount, usageStats] = await Promise.all([countQuilts(), getSimpleUsageStats()]);

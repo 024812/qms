@@ -5,6 +5,29 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project uses npm-compatible date-based semantic versions in `YYYY.M.D` form.
 
+## [2026.6.2] - 2026-06-02
+
+### Changed
+
+- Migrated authentication from Auth.js/NextAuth to Better Auth with Drizzle-backed auth tables.
+- Updated runtime dependencies to the current working stack, including Next.js `16.2.7`, React `19.2.7`, TypeScript `6.0.3`, Better Auth `1.6.13`, Tailwind CSS `4.3.0`, and TanStack React Query `5.100.14`.
+- Added a restricted Agent OpenAPI surface for OpenClaw or similar AI agents at `/api/agent/openapi.json` and `/api/agent/tools`.
+- Updated environment variable documentation to use `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL`, and `NEXT_PUBLIC_BETTER_AUTH_URL`.
+
+### Fixed
+
+- Fixed Agent API key scope parsing so scopes containing colons, such as `read:quilts` and `write:cards`, are parsed correctly.
+- Updated route-protection documentation to point to the current `src/proxy.ts` entry point.
+- Replaced stale Auth.js/NextAuth references in active authentication, deployment, password migration, and security audit docs.
+
+### Verification
+
+- `npm audit`
+- `npm run lint:check`
+- `npm run type-check`
+- `npm test`
+- `npm run build`
+
 ## [2026.4.2] - 2026-04-02
 
 ### Changed

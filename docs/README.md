@@ -2,7 +2,7 @@
 
 本目录保存 QMS 当前仍然生效的项目文档。
 
-当前版本：`2026.4.2`
+当前版本：`2026.6.2`
 
 ## 核心文档
 
@@ -34,7 +34,7 @@
 - `BACKUP_RESTORE_GUIDE.md`
   备份与恢复详细说明。
 - `PASSWORD-MIGRATION-GUIDE.md`
-  旧密码存储方案迁移到当前 Auth.js 用户表方案的说明。
+  旧密码存储方案迁移到当前 Better Auth + `users` 表方案的说明。
 - `SECURITY_AUDIT_SUMMARY.md`
   安全审计总结。
 - `USAGE_TRACKING_IMPLEMENTATION.md`
@@ -42,9 +42,10 @@
 
 ## 文档约定
 
-- Next.js 16 路由保护统一使用项目根目录 `proxy.ts`，不再使用 `middleware.ts`
+- Next.js 16 路由保护统一使用 `src/proxy.ts`，不再使用 `middleware.ts` 或根目录 `proxy.ts`
 - 内部页面和客户端交互以 `src/app/actions/*.ts` + `src/lib/data/*.ts` 为主路径
 - `/api/**` 路由保留给兼容层、外部 HTTP 访问和第三方集成
+- `/api/agent/**` 是面向 AI agent 的受限 OpenAPI/工具调用表面，使用 `AGENT_API_KEYS` 控制 scopes
 
 ## 历史文档
 

@@ -20,7 +20,7 @@
     "isolatedModules": true,
     "allowSyntheticDefaultImports": true,
     "forceConsistentCasingInFileNames": true,
-    "jsx": "preserve",
+    "jsx": "react-jsx",
     "ignoreDeprecations": "6.0",
     // Optimized incremental compilation settings
     "incremental": true,

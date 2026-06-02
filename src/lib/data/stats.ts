@@ -6,22 +6,19 @@
  *
  * Architecture:
  * - Standalone async functions (not classes)
- * - 'use cache' directive for persistent caching
- * - React cache() for request-level deduplication
+ * - Runtime database reads for user-specific operational data
+ * - React cache() wrappers available for request-level deduplication
  * - Serializable data only (no class instances, no undefined)
  * - Cache invalidation with revalidateTag(, 'max')
  *
  * Cache Strategy:
- * - Dashboard stats: 1 minute (60 seconds)
- * - Analytics data: 2 minutes (120 seconds)
- * - Reports: 5 minutes
- * - Tags: 'stats', 'stats-dashboard', 'stats-analytics', 'stats-reports'
+ * - Client-side React Query handles freshness for UI reads
+ * - Server-side writes invalidate related tags for any cached consumers
  *
  * Requirements: 2.1-2.6, 3.1-3.6 from Next.js 16 Best Practices Migration spec
  */
 
 import { cache } from 'react';
-import { cacheLife, cacheTag } from 'next/cache';
 import { db } from '@/db';
 import { quilts, usageRecords } from '@/db/schema';
 import { sql, eq, desc, isNull } from 'drizzle-orm';
@@ -138,10 +135,6 @@ interface UsageByMonthRow {
  * Tags: 'stats', 'stats-dashboard'
  */
 export async function getStatusCounts(): Promise<StatusCounts> {
-  'use cache';
-  cacheLife('seconds'); // 1 minute (60 seconds)
-  cacheTag('stats', 'stats-dashboard');
-
   const result = await db
     .select({
       status: quilts.currentStatus,
@@ -168,10 +161,6 @@ export async function getStatusCounts(): Promise<StatusCounts> {
  * Tags: 'stats', 'stats-dashboard'
  */
 export async function getSeasonalCounts(): Promise<SeasonalCounts> {
-  'use cache';
-  cacheLife('seconds'); // 1 minute (60 seconds)
-  cacheTag('stats', 'stats-dashboard');
-
   const result = await db
     .select({
       season: quilts.season,
@@ -197,10 +186,6 @@ export async function getSeasonalCounts(): Promise<SeasonalCounts> {
  * Tags: 'stats', 'stats-dashboard'
  */
 export async function getInUseQuilts(): Promise<InUseQuilt[]> {
-  'use cache';
-  cacheLife('seconds'); // 1 minute (60 seconds)
-  cacheTag('stats', 'stats-dashboard');
-
   const result = await db
     .select({
       id: quilts.id,
@@ -235,10 +220,6 @@ export async function getHistoricalUsage(
   currentMonth: number,
   currentDay: number
 ): Promise<HistoricalUsage[]> {
-  'use cache';
-  cacheLife('seconds'); // 1 minute (60 seconds)
-  cacheTag('stats', 'stats-dashboard');
-
   // Complex date logic is best kept as raw SQL for now, using Drizzle's sql template
   const result = await db.execute(sql`
     SELECT 
@@ -289,10 +270,6 @@ export async function getHistoricalUsage(
  * Tags: 'stats', 'stats-dashboard'
  */
 export async function getDashboardStats(): Promise<DashboardStats> {
-  'use cache';
-  cacheLife('seconds'); // 1 minute (60 seconds)
-  cacheTag('stats', 'stats-dashboard');
-
   const today = new Date();
   const currentMonth = today.getMonth() + 1;
   const currentDay = today.getDate();
@@ -325,10 +302,6 @@ export async function getDashboardStats(): Promise<DashboardStats> {
  * Tags: 'stats', 'stats-analytics'
  */
 export async function getUsageStats(): Promise<UsageStats> {
-  'use cache';
-  cacheLife('seconds'); // 2 minutes (120 seconds)
-  cacheTag('stats', 'stats-analytics');
-
   const result = await db
     .select({
       totalPeriods: sql<number>`COUNT(*)::int`,
@@ -363,10 +336,6 @@ export async function getUsageStats(): Promise<UsageStats> {
  * Tags: 'stats', 'stats-analytics'
  */
 export async function getUsageBySeason(): Promise<SeasonalCounts> {
-  'use cache';
-  cacheLife('seconds'); // 2 minutes (120 seconds)
-  cacheTag('stats', 'stats-analytics');
-
   const result = await db
     .select({
       season: quilts.season,
@@ -393,10 +362,6 @@ export async function getUsageBySeason(): Promise<SeasonalCounts> {
  * Tags: 'stats', 'stats-analytics'
  */
 export async function getMostUsedQuilts(limit: number = 5): Promise<MostUsedQuilt[]> {
-  'use cache';
-  cacheLife('seconds'); // 2 minutes (120 seconds)
-  cacheTag('stats', 'stats-analytics');
-
   const result = await db
     .select({
       quiltId: usageRecords.quiltId,
@@ -432,10 +397,6 @@ export async function getMostUsedQuilts(limit: number = 5): Promise<MostUsedQuil
  * Tags: 'stats', 'stats-analytics'
  */
 export async function getUsageByYear(): Promise<UsageByPeriod[]> {
-  'use cache';
-  cacheLife('seconds'); // 2 minutes (120 seconds)
-  cacheTag('stats', 'stats-analytics');
-
   const result = await db.execute(sql`
     SELECT 
       EXTRACT(YEAR FROM start_date)::int as year,
@@ -458,10 +419,6 @@ export async function getUsageByYear(): Promise<UsageByPeriod[]> {
  * Tags: 'stats', 'stats-analytics'
  */
 export async function getUsageByMonth(): Promise<UsageByPeriod[]> {
-  'use cache';
-  cacheLife('seconds'); // 2 minutes (120 seconds)
-  cacheTag('stats', 'stats-analytics');
-
   const result = await db.execute(sql`
     SELECT 
       TO_CHAR(start_date, 'YYYY-MM') as month,
@@ -499,10 +456,6 @@ export async function getUsageByMonth(): Promise<UsageByPeriod[]> {
  * Tags: 'stats', 'stats-analytics'
  */
 export async function getCurrentUsageCount(): Promise<number> {
-  'use cache';
-  cacheLife('seconds'); // 1 minute (60 seconds)
-  cacheTag('stats', 'stats-analytics');
-
   const result = await db
     .select({ count: sql<number>`count(*)::int` })
     .from(usageRecords)
@@ -518,10 +471,6 @@ export async function getCurrentUsageCount(): Promise<number> {
  * Tags: 'stats', 'stats-analytics'
  */
 export async function getAnalyticsData(): Promise<AnalyticsData> {
-  'use cache';
-  cacheLife('seconds'); // 2 minutes (120 seconds)
-  cacheTag('stats', 'stats-analytics');
-
   const [
     statusCounts,
     seasonalCounts,
@@ -570,10 +519,6 @@ export async function getSimpleUsageStats(): Promise<{
   active: number;
   completed: number;
 }> {
-  'use cache';
-  cacheLife('seconds'); // 1 minute (60 seconds)
-  cacheTag('stats', 'stats-analytics');
-
   const [totalResult, activeResult] = await Promise.all([
     db.select({ count: sql<number>`count(*)::int` }).from(usageRecords),
     db

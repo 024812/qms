@@ -10,6 +10,7 @@ import {
   getSystemInfo as getSystemInfoData,
   updateAppSettings as updateAppSettingsData,
 } from '@/lib/data/settings';
+import { auth } from '@/auth';
 import { sanitizeApiInput } from '@/lib/sanitization';
 import type {
   AppSettings,
@@ -78,8 +79,31 @@ function zodFieldErrors(error: z.ZodError): Record<string, string[]> {
   return error.flatten().fieldErrors as unknown as Record<string, string[]>;
 }
 
+function unauthorizedResult(message = 'Unauthorized'): ActionResult<never> {
+  return {
+    success: false,
+    error: {
+      code: 'UNAUTHORIZED',
+      message,
+    },
+  };
+}
+
+async function requireAuthenticatedUser() {
+  const session = await auth();
+  return session?.user?.id ? session : null;
+}
+
+async function requireAdmin() {
+  const session = await requireAuthenticatedUser();
+  return session?.user?.role === 'admin' ? session : null;
+}
+
 export async function getAppSettingsAction(): Promise<ActionResult<AppSettings>> {
   try {
+    const session = await requireAuthenticatedUser();
+    if (!session) return unauthorizedResult();
+
     return {
       success: true,
       data: await getAppSettingsData(),
@@ -93,6 +117,9 @@ export async function updateAppSettingsAction(
   input: UpdateAppSettingsInput
 ): Promise<ActionResult<AppSettings>> {
   try {
+    const session = await requireAdmin();
+    if (!session) return unauthorizedResult('Requires admin privileges');
+
     const validationResult = updateAppSettingsSchema.safeParse(
       sanitizeApiInput(input as unknown as Record<string, unknown>)
     );
@@ -117,6 +144,9 @@ export async function updateAppSettingsAction(
 
 export async function getDatabaseStatsAction(): Promise<ActionResult<DatabaseStats>> {
   try {
+    const session = await requireAdmin();
+    if (!session) return unauthorizedResult('Requires admin privileges');
+
     return {
       success: true,
       data: await getDatabaseStatsData(),
@@ -128,6 +158,9 @@ export async function getDatabaseStatsAction(): Promise<ActionResult<DatabaseSta
 
 export async function getSystemInfoAction(): Promise<ActionResult<SystemInfo>> {
   try {
+    const session = await requireAdmin();
+    if (!session) return unauthorizedResult('Requires admin privileges');
+
     return {
       success: true,
       data: await getSystemInfoData(),
@@ -169,6 +202,9 @@ export async function changePasswordAction(
 
 export async function getExportDataAction(): Promise<ActionResult<ExportData>> {
   try {
+    const session = await requireAdmin();
+    if (!session) return unauthorizedResult('Requires admin privileges');
+
     return {
       success: true,
       data: await getExportDataData(),

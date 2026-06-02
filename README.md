@@ -1,8 +1,8 @@
 # QMS
 
-QMS is a modular family item management system built with Next.js 16, React 19, Auth.js v5, Neon Serverless PostgreSQL, Drizzle ORM, and Vercel.
+QMS is a modular family item management system built with Next.js 16, React 19, Better Auth, Neon Serverless PostgreSQL, Drizzle ORM, and Vercel.
 
-Current release: `2026.4.2`
+Current release: `2026.6.2`
 
 ## What Is Standardized
 
@@ -11,7 +11,8 @@ Current release: `2026.4.2`
 - Each module keeps one canonical server action surface in `src/app/actions/<module>.ts`.
 - Each module page follows a `Server Page -> private client shell` split under `src/app/[locale]/<module>`.
 - Route Handlers remain compatibility or external HTTP surfaces, not the internal source of truth.
-- Route protection follows the Next.js 16 `proxy.ts` convention at the project root.
+- Route protection follows the Next.js 16 `src/proxy.ts` convention.
+- External AI agents can use the restricted Agent OpenAPI surface instead of general-purpose database access.
 
 For the module blueprint rules, see `docs/MODULE_BLUEPRINT_V2.md`.
 
@@ -35,24 +36,23 @@ For the module blueprint rules, see `docs/MODULE_BLUEPRINT_V2.md`.
 
 ## Tech Stack
 
-- Next.js `16.2.2`
-- React `19.2.4`
-- TypeScript `5.9.3`
-- next-intl `4.8.4`
-- Auth.js / NextAuth.js v5 (`next-auth@5.0.0-beta.30`)
+- Next.js `16.2.7`
+- React `19.2.7`
+- TypeScript `6.0.3`
+- next-intl `4.13.0`
+- Better Auth `1.6.13`
 - Neon Serverless PostgreSQL
 - Drizzle ORM `0.45.2`
-- Zod `4.3.6`
-- Tailwind CSS `4.2.2`
-- TanStack React Query `5.96.0`
-- Zustand `5.0.12`
+- Zod `4.4.3`
+- Tailwind CSS `4.3.0`
+- TanStack React Query `5.100.14`
 - Vercel deployment
 
 ## Repository Layout
 
 ```text
-proxy.ts
 src/
+  proxy.ts
   app/
     [locale]/
       quilts/
@@ -86,11 +86,12 @@ Copy `.env.example` to `.env.local` and keep only the values your deployment act
 
 ```env
 DATABASE_URL=
-NEXTAUTH_SECRET=
-NEXTAUTH_URL=
+BETTER_AUTH_SECRET=
+BETTER_AUTH_URL=
+NEXT_PUBLIC_BETTER_AUTH_URL=
 ```
 
-`NEXTAUTH_URL` is required for deployed environments and recommended locally.
+`BETTER_AUTH_URL` is required for deployed environments and recommended locally.
 
 ### Optional Platform And Infrastructure
 
@@ -118,6 +119,14 @@ EBAY_ENVIRONMENT=production
 ```
 
 Some card-provider settings can also be managed from the application settings UI and stored in the database. Environment variables remain useful for bootstrap and server-only fallback cases.
+
+### Optional Agent API
+
+```env
+AGENT_API_KEYS="openclaw-dev:read:quilts,read:usage,read:cards;openclaw-admin:*"
+```
+
+The Agent API exposes a narrow OpenAPI surface at `/api/agent/openapi.json` and a single tool endpoint at `/api/agent/tools`. Write tools require `confirm=true` and an `idempotencyKey`; use `dryRun=true` to preview planned writes.
 
 ## Local Development
 
@@ -174,6 +183,8 @@ npm run build
 - English docs index: `docs/README.md`
 - Module standard: `docs/MODULE_STANDARD.md`
 - Active module blueprint: `docs/MODULE_BLUEPRINT_V2.md`
+- Authentication summary: `docs/guides/AUTH_IMPLEMENTATION_SUMMARY.md`
+- Deployment env guide: `docs/guides/VERCEL-ENV-SETUP.md`
 - Changelog: `CHANGELOG.md`
 
 ## License

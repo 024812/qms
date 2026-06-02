@@ -13,7 +13,7 @@ import {
 } from 'lucide-react';
 import { Link } from '@/i18n/routing';
 import { useTranslations } from 'next-intl';
-import { useSession } from 'next-auth/react';
+import { useSession } from '@/lib/auth/client';
 import { getAllModules } from '@/modules/registry';
 
 const moduleIcons: Record<string, LucideIcon> = {

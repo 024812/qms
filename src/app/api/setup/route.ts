@@ -12,10 +12,14 @@ import { NextRequest } from 'next/server';
 import { countQuilts, createQuilt } from '@/lib/data/quilts';
 import { withRateLimit, rateLimiters } from '@/lib/rate-limit';
 import { createSuccessResponse, createInternalErrorResponse } from '@/lib/api/response';
+import { requireApiAdmin } from '@/lib/api/route-auth';
 
 export async function POST(request: NextRequest) {
   return withRateLimit(request, rateLimiters.database, async () => {
     try {
+      const authResult = await requireApiAdmin();
+      if (!authResult.ok) return authResult.response;
+
       // Schema is managed by Drizzle Kit (npm run db:push), so we skip table creation here.
       // We only handle seeding if the database is empty.
 
@@ -95,6 +99,9 @@ export async function POST(request: NextRequest) {
 export async function GET(request: NextRequest) {
   return withRateLimit(request, rateLimiters.api, async () => {
     try {
+      const authResult = await requireApiAdmin();
+      if (!authResult.ok) return authResult.response;
+
       // Check database status using data access layer
       const quiltCount = await countQuilts();
 

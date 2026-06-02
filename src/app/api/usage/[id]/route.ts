@@ -15,6 +15,7 @@ import {
   createNotFoundResponse,
   createInternalErrorResponse,
 } from '@/lib/api/response';
+import { requireApiSession } from '@/lib/api/route-auth';
 
 // Input validation schema for updates
 const updateUsageRecordSchema = z.object({
@@ -41,6 +42,9 @@ interface RouteParams {
  */
 export async function GET(request: NextRequest, { params }: RouteParams) {
   try {
+    const authResult = await requireApiSession();
+    if (!authResult.ok) return authResult.response;
+
     const { id } = await params;
 
     const record = await getUsageRecordById(id);
@@ -67,6 +71,9 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
  */
 export async function PUT(request: NextRequest, { params }: RouteParams) {
   try {
+    const authResult = await requireApiSession();
+    if (!authResult.ok) return authResult.response;
+
     const { id } = await params;
     const rawBody = await request.json();
 
@@ -109,6 +116,9 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
  */
 export async function DELETE(request: NextRequest, { params }: RouteParams) {
   try {
+    const authResult = await requireApiSession();
+    if (!authResult.ok) return authResult.response;
+
     const { id } = await params;
 
     // Check if record exists

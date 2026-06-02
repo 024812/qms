@@ -6,6 +6,7 @@ import {
   createSuccessResponse,
   createValidationErrorResponse,
 } from '@/lib/api/response';
+import { requireApiAdmin, requireApiSession } from '@/lib/api/route-auth';
 import { getAppSettings, updateAppSettings } from '@/lib/data/settings';
 import { sanitizeApiInput } from '@/lib/sanitization';
 
@@ -20,6 +21,9 @@ const updateAppSettingsSchema = z.object({
 
 export async function GET() {
   try {
+    const authResult = await requireApiSession();
+    if (!authResult.ok) return authResult.response;
+
     return createSuccessResponse({
       settings: await getAppSettings(),
     });
@@ -30,6 +34,9 @@ export async function GET() {
 
 export async function PUT(request: NextRequest) {
   try {
+    const authResult = await requireApiAdmin();
+    if (!authResult.ok) return authResult.response;
+
     const rawBody = await request.json();
     const body = sanitizeApiInput(rawBody);
     const validationResult = updateAppSettingsSchema.safeParse(body);

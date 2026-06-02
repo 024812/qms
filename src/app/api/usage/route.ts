@@ -18,6 +18,7 @@ import {
   createSuccessResponse,
   createCreatedResponse,
 } from '@/lib/api/response';
+import { requireApiSession } from '@/lib/api/route-auth';
 
 // Input validation schemas
 const createUsageRecordSchema = z.object({
@@ -46,6 +47,9 @@ const createUsageRecordSchema = z.object({
  */
 export async function GET(request: NextRequest) {
   try {
+    const authResult = await requireApiSession();
+    if (!authResult.ok) return authResult.response;
+
     const { searchParams } = new URL(request.url);
 
     // Parse query parameters
@@ -89,6 +93,9 @@ export async function GET(request: NextRequest) {
  */
 export async function POST(request: NextRequest) {
   try {
+    const authResult = await requireApiSession();
+    if (!authResult.ok) return authResult.response;
+
     const rawBody = await request.json();
 
     // Sanitize input to prevent XSS (Requirements: 11.1)

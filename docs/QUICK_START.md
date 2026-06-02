@@ -24,8 +24,9 @@ Minimum recommended values:
 
 ```env
 DATABASE_URL=
-NEXTAUTH_SECRET=
-NEXTAUTH_URL=http://localhost:3000
+BETTER_AUTH_SECRET=
+BETTER_AUTH_URL=http://localhost:3000
+NEXT_PUBLIC_BETTER_AUTH_URL=http://localhost:3000
 ```
 
 ## 3. Apply The Database Schema
@@ -53,8 +54,8 @@ npm test
 ## Current Project Shape
 
 ```text
-proxy.ts
 src/
+  proxy.ts
   app/
     [locale]/
     actions/
@@ -70,7 +71,7 @@ docs/
 
 ## Architecture Notes
 
-- Route protection lives in the root `proxy.ts` file.
+- Route protection lives in `src/proxy.ts`.
 - Internal reads and writes should go through `src/app/actions/*.ts` and `src/lib/data/*.ts`.
 - React Query is used as a client-side interaction wrapper, not as the primary data truth layer.
 
@@ -94,8 +95,9 @@ npm run db:studio
 
 ### Authentication issues
 
-- Verify `NEXTAUTH_SECRET`
-- Verify `NEXTAUTH_URL`
+- Verify `BETTER_AUTH_SECRET`
+- Verify `BETTER_AUTH_URL`
+- Verify `NEXT_PUBLIC_BETTER_AUTH_URL`
 - Clear cookies after changing auth configuration
 
 ### Build issues

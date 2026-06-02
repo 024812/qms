@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { NextRequest, NextResponse } from 'next/server';
 
 import { auth } from '@/auth';
-import { proxy } from '../../proxy';
+import { proxy } from '../proxy';
 
 vi.mock('@/auth', () => ({
   auth: vi.fn(),

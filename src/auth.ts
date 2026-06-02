@@ -4,7 +4,7 @@ import { customSession } from 'better-auth/plugins';
 import { nextCookies } from 'better-auth/next-js';
 import bcrypt from 'bcryptjs';
 import { headers } from 'next/headers';
-import { sql } from 'drizzle-orm';
+import { eq, sql } from 'drizzle-orm';
 
 import { db } from '@/db';
 import * as schema from '@/db/schema';
@@ -32,6 +32,22 @@ function normalizeRole(value: unknown): UserRole {
 
 function normalizeModules(value: unknown): string[] {
   return Array.isArray(value) ? value.filter(item => typeof item === 'string') : [];
+}
+
+async function findAppUserForSession(user: { id: string; email: string }) {
+  const [userById] = await db.select().from(users).where(eq(users.id, user.id)).limit(1);
+
+  if (userById) {
+    return userById;
+  }
+
+  const [userByEmail] = await db
+    .select()
+    .from(users)
+    .where(sql`lower(${users.email}) = ${user.email.toLowerCase()}`)
+    .limit(1);
+
+  return userByEmail;
 }
 
 export const betterAuthInstance = betterAuth({
@@ -76,11 +92,7 @@ export const betterAuthInstance = betterAuth({
   },
   plugins: [
     customSession(async ({ user, session }) => {
-      const [appUser] = await db
-        .select()
-        .from(users)
-        .where(sql`${users.id} = ${user.id} OR lower(${users.email}) = ${user.email.toLowerCase()}`)
-        .limit(1);
+      const appUser = await findAppUserForSession(user);
       const preferences = appUser?.preferences ?? {};
 
       return {

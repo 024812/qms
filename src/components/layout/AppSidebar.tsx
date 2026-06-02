@@ -59,7 +59,9 @@ export function AppSidebar() {
   const isAdmin = session?.user?.role === 'admin';
 
   // Filter modules based on user's subscriptions
-  const subscribedModules = allModules.filter(module => activeModuleIds.includes(module.id));
+  const subscribedModules = isAdmin
+    ? allModules
+    : allModules.filter(module => activeModuleIds.includes(module.id));
 
   // Module-specific navigation items (Memoized or created inside render to access 't')
   // We'll create a helper function or object inside the component

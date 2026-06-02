@@ -19,6 +19,12 @@ export default async function DashboardPage(props: { params: Promise<{ locale: s
     redirect({ href: '/login', locale });
   }
 
+  if (!session) {
+    throw new Error('Unauthenticated');
+  }
+
+  const authenticatedSession = session;
+
   // Show welcome page for all users
-  return <WelcomePage />;
+  return <WelcomePage initialSession={authenticatedSession} />;
 }

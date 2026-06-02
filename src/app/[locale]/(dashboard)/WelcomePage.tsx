@@ -15,6 +15,7 @@ import { Link } from '@/i18n/routing';
 import { useTranslations } from 'next-intl';
 import { useSession } from '@/lib/auth/client';
 import { getAllModules } from '@/modules/registry';
+import type { AppSession } from '@/auth';
 
 const moduleIcons: Record<string, LucideIcon> = {
   Bed,
@@ -28,13 +29,17 @@ interface SubNavItem {
   icon: LucideIcon;
 }
 
-export function WelcomePage() {
+export function WelcomePage({ initialSession }: { initialSession: AppSession }) {
   const t = useTranslations();
   const { data: session } = useSession();
+  const currentSession = session ?? initialSession;
 
   const allModules = getAllModules();
-  const activeModuleIds = (session?.user?.activeModules as string[]) || [];
-  const subscribedModules = allModules.filter(m => activeModuleIds.includes(m.id));
+  const activeModuleIds = currentSession.user.activeModules;
+  const subscribedModules =
+    currentSession.user.role === 'admin'
+      ? allModules
+      : allModules.filter(m => activeModuleIds.includes(m.id));
 
   const getModuleNavigation = (moduleId: string): SubNavItem[] => {
     switch (moduleId) {

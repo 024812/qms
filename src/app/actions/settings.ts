@@ -10,6 +10,13 @@ import {
   getSystemInfo as getSystemInfoData,
   updateAppSettings as updateAppSettingsData,
 } from '@/lib/data/settings';
+import {
+  createUserApiKey,
+  listUserApiKeys,
+  revokeUserApiKey,
+  type CreatedUserApiKey,
+  type UserApiKeySummary,
+} from '@/lib/data/user-api-keys';
 import { auth } from '@/auth';
 import { sanitizeApiInput } from '@/lib/sanitization';
 import type {
@@ -49,6 +56,14 @@ const updateAppSettingsSchema = z.object({
 const changePasswordSchema = z.object({
   currentPassword: z.string().min(1, 'Current password is required'),
   newPassword: z.string().min(8, 'New password must be at least 8 characters'),
+});
+
+const createApiKeySchema = z.object({
+  name: z.string().trim().min(1, 'Name is required').max(80, 'Name is too long'),
+});
+
+const revokeApiKeySchema = z.object({
+  id: z.string().min(1),
 });
 
 function validationErrorResult(
@@ -211,5 +226,73 @@ export async function getExportDataAction(): Promise<ActionResult<ExportData>> {
     };
   } catch {
     return internalErrorResult('Failed to export data');
+  }
+}
+
+export async function listUserApiKeysAction(): Promise<ActionResult<UserApiKeySummary[]>> {
+  try {
+    const session = await requireAuthenticatedUser();
+    if (!session) return unauthorizedResult();
+
+    return {
+      success: true,
+      data: await listUserApiKeys(session.user.id),
+    };
+  } catch {
+    return internalErrorResult('Failed to load API keys');
+  }
+}
+
+export async function createUserApiKeyAction(input: {
+  name: string;
+}): Promise<ActionResult<CreatedUserApiKey>> {
+  try {
+    const session = await requireAuthenticatedUser();
+    if (!session) return unauthorizedResult();
+
+    const validationResult = createApiKeySchema.safeParse(
+      sanitizeApiInput(input as unknown as Record<string, unknown>)
+    );
+
+    if (!validationResult.success) {
+      return validationErrorResult(
+        'API key input is invalid',
+        zodFieldErrors(validationResult.error)
+      );
+    }
+
+    return {
+      success: true,
+      data: await createUserApiKey(session.user.id, validationResult.data.name),
+    };
+  } catch {
+    return internalErrorResult('Failed to create API key');
+  }
+}
+
+export async function revokeUserApiKeyAction(input: {
+  id: string;
+}): Promise<ActionResult<boolean>> {
+  try {
+    const session = await requireAuthenticatedUser();
+    if (!session) return unauthorizedResult();
+
+    const validationResult = revokeApiKeySchema.safeParse(
+      sanitizeApiInput(input as unknown as Record<string, unknown>)
+    );
+
+    if (!validationResult.success) {
+      return validationErrorResult(
+        'API key input is invalid',
+        zodFieldErrors(validationResult.error)
+      );
+    }
+
+    return {
+      success: true,
+      data: await revokeUserApiKey(session.user.id, validationResult.data.id),
+    };
+  } catch {
+    return internalErrorResult('Failed to revoke API key');
   }
 }

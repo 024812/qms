@@ -213,7 +213,7 @@ export async function POST(request: NextRequest) {
   if (!parsedRequest.success) return validationResponse(parsedRequest.error);
 
   const toolRequest = parsedRequest.data;
-  const authResult = requireAgent(request, scopeByTool[toolRequest.tool]);
+  const authResult = await requireAgent(request, scopeByTool[toolRequest.tool]);
   if (!authResult.ok) return authResult.response;
 
   const confirmationError = requireWriteConfirmation(toolRequest);

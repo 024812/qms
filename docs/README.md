@@ -45,7 +45,7 @@
 - Next.js 16 路由保护统一使用 `src/proxy.ts`，不再使用 `middleware.ts` 或根目录 `proxy.ts`
 - 内部页面和客户端交互以 `src/app/actions/*.ts` + `src/lib/data/*.ts` 为主路径
 - `/api/**` 路由保留给兼容层、外部 HTTP 访问和第三方集成
-- `/api/agent/**` 是面向 AI agent 的受限 OpenAPI/工具调用表面，使用 `AGENT_API_KEYS` 控制 scopes
+- `/api/agent/**` is the restricted OpenAPI/tool surface for AI agents. Users create personal keys in Settings -> Agent API Keys; permissions inherit from the owning user.
 
 ## 历史文档
 

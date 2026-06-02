@@ -1,6 +1,7 @@
 import { NextRequest } from 'next/server';
 
 import { createForbiddenResponse, createUnauthorizedResponse } from '@/lib/api/response';
+import { findUserByApiKey } from '@/lib/data/user-api-keys';
 
 export type AgentScope =
   | '*'
@@ -15,6 +16,9 @@ export type AgentScope =
 
 export interface AgentIdentity {
   id: string;
+  userId: string;
+  userName: string;
+  userEmail: string;
   scopes: AgentScope[];
 }
 
@@ -24,32 +28,6 @@ type AgentAuthResult =
       ok: false;
       response: ReturnType<typeof createUnauthorizedResponse | typeof createForbiddenResponse>;
     };
-
-function parseAgentKeys() {
-  const raw = process.env.AGENT_API_KEYS || '';
-
-  return raw
-    .split(';')
-    .map(entry => entry.trim())
-    .filter(Boolean)
-    .map(entry => {
-      const separatorIndex = entry.indexOf(':');
-      const key = separatorIndex === -1 ? entry : entry.slice(0, separatorIndex);
-      const scopesRaw = separatorIndex === -1 ? '' : entry.slice(separatorIndex + 1);
-      const scopes = scopesRaw
-        .split(',')
-        .map(scope => scope.trim())
-        .filter(Boolean) as AgentScope[];
-
-      const defaultScopes: AgentScope[] = ['read:quilts', 'read:usage', 'read:cards'];
-
-      return {
-        key,
-        scopes: scopes.length ? scopes : defaultScopes,
-      };
-    })
-    .filter(entry => entry.key);
-}
 
 function readBearerToken(request: NextRequest) {
   const authorization = request.headers.get('authorization');
@@ -61,22 +39,47 @@ export function hasAgentScope(agent: AgentIdentity, scope: AgentScope) {
   return agent.scopes.includes('*') || agent.scopes.includes(scope);
 }
 
-export function requireAgent(request: NextRequest, requiredScope: AgentScope): AgentAuthResult {
+function scopesForUser(user: Awaited<ReturnType<typeof findUserByApiKey>>): AgentScope[] {
+  if (!user) return [];
+  if (user.role === 'admin') return ['*'];
+
+  const scopes = new Set<AgentScope>();
+  if (user.activeModules.includes('quilts')) {
+    scopes.add('read:quilts');
+    scopes.add('write:quilts');
+    scopes.add('read:usage');
+    scopes.add('write:usage');
+  }
+  if (user.activeModules.includes('cards')) {
+    scopes.add('read:cards');
+    scopes.add('write:cards');
+  }
+
+  return [...scopes];
+}
+
+export async function requireAgent(
+  request: NextRequest,
+  requiredScope: AgentScope
+): Promise<AgentAuthResult> {
   const token = readBearerToken(request);
 
   if (!token) {
     return { ok: false, response: createUnauthorizedResponse('Missing agent bearer token') };
   }
 
-  const match = parseAgentKeys().find(entry => entry.key === token);
+  const user = await findUserByApiKey(token);
 
-  if (!match) {
+  if (!user) {
     return { ok: false, response: createUnauthorizedResponse('Invalid agent bearer token') };
   }
 
   const agent: AgentIdentity = {
-    id: `agent-${token.slice(0, 8)}`,
-    scopes: match.scopes,
+    id: `agent-key-${user.apiKeyId}`,
+    userId: user.userId,
+    userName: user.name,
+    userEmail: user.email,
+    scopes: scopesForUser(user),
   };
 
   if (!hasAgentScope(agent, requiredScope)) {

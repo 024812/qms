@@ -202,6 +202,28 @@ export const authVerification = pgTable(
   })
 );
 
+export const userApiKeys = pgTable(
+  'user_api_keys',
+  {
+    id: text('id')
+      .primaryKey()
+      .$defaultFn(() => crypto.randomUUID()),
+    userId: text('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    name: text('name').notNull(),
+    keyHash: text('key_hash').notNull().unique(),
+    keyPrefix: text('key_prefix').notNull(),
+    lastUsedAt: timestamp('last_used_at'),
+    createdAt: timestamp('created_at').notNull().defaultNow(),
+    revokedAt: timestamp('revoked_at'),
+  },
+  table => ({
+    userIdx: index('user_api_keys_user_idx').on(table.userId),
+    keyHashIdx: uniqueIndex('user_api_keys_key_hash_idx').on(table.keyHash),
+  })
+);
+
 /**
  * Quilts table (Independent Table Architecture)
  * Stores quilt collection data with native columns

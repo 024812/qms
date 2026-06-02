@@ -120,13 +120,11 @@ EBAY_ENVIRONMENT=production
 
 Some card-provider settings can also be managed from the application settings UI and stored in the database. Environment variables remain useful for bootstrap and server-only fallback cases.
 
-### Optional Agent API
+### Agent API
 
-```env
-AGENT_API_KEYS="openclaw-dev:read:quilts,read:usage,read:cards;openclaw-admin:*"
-```
+Users create their own Agent API keys from **Settings -> Agent API Keys**. Keys inherit the same subsystem access as the user who created them, so an AI agent can only operate on modules that user can access.
 
-The Agent API exposes a narrow OpenAPI surface at `/api/agent/openapi.json` and a single tool endpoint at `/api/agent/tools`. Write tools require `confirm=true` and an `idempotencyKey`; use `dryRun=true` to preview planned writes.
+The public agent guide is available at `/AGENT_API.md`. The Agent API exposes a narrow OpenAPI surface at `/api/agent/openapi.json` and a single tool endpoint at `/api/agent/tools`. Write tools require `confirm=true` and an `idempotencyKey`; use `dryRun=true` to preview planned writes.
 
 ## Local Development
 

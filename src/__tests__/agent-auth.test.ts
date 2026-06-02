@@ -1,6 +1,12 @@
 import { describe, expect, it, vi } from 'vitest';
 import { NextRequest } from 'next/server';
 
+const findUserByApiKey = vi.fn();
+
+vi.mock('@/lib/data/user-api-keys', () => ({
+  findUserByApiKey,
+}));
+
 function createRequest(token?: string) {
   return new NextRequest('http://localhost/api/agent/tools', {
     headers: token ? { Authorization: `Bearer ${token}` } : {},
@@ -8,41 +14,71 @@ function createRequest(token?: string) {
 }
 
 describe('agent auth', () => {
-  it('parses scoped API keys whose scopes contain colons', async () => {
-    vi.stubEnv('AGENT_API_KEYS', 'openclaw-dev:read:quilts,read:usage,read:cards;openclaw-admin:*');
+  it('inherits quilt and usage scopes from the owning user modules', async () => {
+    findUserByApiKey.mockResolvedValue({
+      apiKeyId: 'key-1',
+      userId: 'user-1',
+      name: 'Member',
+      email: 'member@example.com',
+      role: 'member',
+      activeModules: ['quilts'],
+    });
     const { requireAgent } = await import('@/lib/agent/auth');
 
-    const result = requireAgent(createRequest('openclaw-dev'), 'read:quilts');
+    const result = await requireAgent(createRequest('user-key'), 'write:usage');
 
     expect(result.ok).toBe(true);
     if (result.ok) {
-      expect(result.agent.scopes).toEqual(['read:quilts', 'read:usage', 'read:cards']);
+      expect(result.agent.userId).toBe('user-1');
+      expect(result.agent.scopes).toEqual([
+        'read:quilts',
+        'write:quilts',
+        'read:usage',
+        'write:usage',
+      ]);
     }
   });
 
-  it('uses default read scopes when no explicit scopes are configured', async () => {
-    vi.stubEnv('AGENT_API_KEYS', 'readonly-key');
+  it('rejects tools outside the owning user modules', async () => {
+    findUserByApiKey.mockResolvedValue({
+      apiKeyId: 'key-1',
+      userId: 'user-1',
+      name: 'Member',
+      email: 'member@example.com',
+      role: 'member',
+      activeModules: ['quilts'],
+    });
     const { requireAgent } = await import('@/lib/agent/auth');
 
-    const result = requireAgent(createRequest('readonly-key'), 'read:cards');
+    const result = await requireAgent(createRequest('user-key'), 'read:cards');
 
-    expect(result.ok).toBe(true);
+    expect(result.ok).toBe(false);
   });
 
-  it('allows wildcard scoped API keys', async () => {
-    vi.stubEnv('AGENT_API_KEYS', 'admin-key:*');
+  it('allows admin user API keys to access all tools', async () => {
+    findUserByApiKey.mockResolvedValue({
+      apiKeyId: 'key-2',
+      userId: 'admin-1',
+      name: 'Admin',
+      email: 'admin@example.com',
+      role: 'admin',
+      activeModules: [],
+    });
     const { requireAgent } = await import('@/lib/agent/auth');
 
-    const result = requireAgent(createRequest('admin-key'), 'write:cards');
+    const result = await requireAgent(createRequest('admin-key'), 'write:cards');
 
     expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.agent.scopes).toEqual(['*']);
+    }
   });
 
   it('rejects missing and invalid bearer tokens', async () => {
-    vi.stubEnv('AGENT_API_KEYS', 'known-key:read:quilts');
+    findUserByApiKey.mockResolvedValue(null);
     const { requireAgent } = await import('@/lib/agent/auth');
 
-    expect(requireAgent(createRequest(), 'read:quilts').ok).toBe(false);
-    expect(requireAgent(createRequest('wrong-key'), 'read:quilts').ok).toBe(false);
+    expect((await requireAgent(createRequest(), 'read:quilts')).ok).toBe(false);
+    expect((await requireAgent(createRequest('wrong-key'), 'read:quilts')).ok).toBe(false);
   });
 });

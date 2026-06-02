@@ -54,13 +54,9 @@ EBAY_ENVIRONMENT=production
 - 某些卡片提供商配置也可以在应用设置页写入数据库
 - 环境变量仍然适合做初始化值或服务端兜底
 
-## Agent API 可选变量
+## Agent API
 
-```env
-AGENT_API_KEYS="openclaw-dev:read:quilts,read:usage,read:cards;openclaw-admin:*"
-```
-
-格式为分号分隔的 key 列表，每个 key 使用逗号分隔 scopes。可用 scopes 见 `.env.example`。
+Agent API keys are created in Settings -> Agent API Keys and are stored in the database as hashes. No Vercel environment variable is required for agent keys. The public agent guide is served at `/AGENT_API.md`.
 
 ## 生成 `BETTER_AUTH_SECRET`
 

@@ -28,9 +28,9 @@ Audit date: `2026-06-02`
 
 - Added a restricted Agent OpenAPI surface at `/api/agent/openapi.json`.
 - Added a single scoped tool endpoint at `/api/agent/tools`.
-- Agent access is controlled by bearer tokens from `AGENT_API_KEYS`.
+- Agent access is controlled by user-created bearer tokens stored as database hashes; keys inherit the owning user permissions.
 - Write tools require `confirm=true` and an `idempotencyKey` unless `dryRun=true` is used.
-- Fixed scope parsing for scoped keys such as `read:quilts` and `write:cards`.
+- User API keys now inherit scopes from the owning user's role and active modules.
 
 ### Dependency Upgrades
 
@@ -51,7 +51,7 @@ The project was upgraded to current working versions across the stack, including
 
 - Apply the Better Auth database migration before deploying this release.
 - Rotate or generate a fresh `BETTER_AUTH_SECRET` for production; do not reuse old development secrets.
-- Keep `AGENT_API_KEYS` scoped narrowly. Prefer read-only keys for OpenClaw or similar agents until write workflows are validated.
+- Agent access is controlled by user-created bearer tokens stored as database hashes; keys inherit the owning user permissions.
 - Treat `/api/agent/tools` as an external integration endpoint and monitor audit logs for unexpected tool usage.
 
 ## Recommended Release Gate

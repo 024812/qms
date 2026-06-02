@@ -120,13 +120,11 @@ EBAY_ENVIRONMENT=production
 
 部分卡片提供商设置也可以在应用内设置页维护并存入数据库。环境变量主要用于初始化和服务端兜底。
 
-### 可选的 Agent API 配置
+### Agent API
 
-```env
-AGENT_API_KEYS="openclaw-dev:read:quilts,read:usage,read:cards;openclaw-admin:*"
-```
+用户在 **设置 -> Agent API Keys** 中创建自己的 API key。key 继承创建用户的子系统访问权限，AI agent 只能操作该用户可访问的模块。
 
-Agent API 的 OpenAPI 描述位于 `/api/agent/openapi.json`，工具调用入口为 `/api/agent/tools`。写入工具必须提供 `confirm=true` 和 `idempotencyKey`；使用 `dryRun=true` 可以预览写入计划。
+公开 Agent 指南位于 `/AGENT_API.md`。Agent API 的 OpenAPI 描述位于 `/api/agent/openapi.json`，工具调用入口为 `/api/agent/tools`。写入工具必须提供 `confirm=true` 和 `idempotencyKey`；使用 `dryRun=true` 可以预览写入计划。
 
 ## 本地开发
 

@@ -2,7 +2,7 @@
 -- Run after drizzle/0004_glorious_nightmare.sql has created auth_user/auth_account.
 
 INSERT INTO auth_user (id, name, email, email_verified, created_at, updated_at)
-SELECT id, name, email, false, created_at, updated_at
+SELECT id, name, lower(email), false, created_at, updated_at
 FROM users
 ON CONFLICT (id) DO UPDATE SET
   name = EXCLUDED.name,

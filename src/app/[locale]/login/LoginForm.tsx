@@ -71,7 +71,6 @@ export function LoginForm() {
               type="password"
               autoComplete="current-password"
               required
-              minLength={6}
               placeholder={t('passwordPlaceholder')}
               disabled={isPending}
               className="w-full"

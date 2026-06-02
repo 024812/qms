@@ -75,3 +75,4 @@ desktop.ini
 
 # Documentation Artifacts
 design_system_output.md
+.env*.local

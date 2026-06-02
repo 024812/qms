@@ -5,7 +5,7 @@ import { db } from '@/db';
 import { authAccount, authSession, authUser, users } from '@/db/schema';
 import type { LoginActionState, RegisterResult } from './auth.types';
 import bcrypt from 'bcryptjs';
-import { eq } from 'drizzle-orm';
+import { eq, sql } from 'drizzle-orm';
 import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { isRedirectError } from 'next/dist/client/components/redirect-error';
@@ -25,7 +25,7 @@ const registerSchema = z
 
 const loginSchema = z.object({
   email: z.string().email('Invalid email address'),
-  password: z.string().min(6, 'Password must be at least 6 characters'),
+  password: z.string().min(1, 'Password is required'),
 });
 
 function normalizeCallbackUrl(value: FormDataEntryValue | null): string {
@@ -40,8 +40,86 @@ function normalizeCallbackUrl(value: FormDataEntryValue | null): string {
   return value;
 }
 
+async function ensureBetterAuthTables() {
+  await db.execute(sql`
+    CREATE TABLE IF NOT EXISTS auth_user (
+      id text PRIMARY KEY NOT NULL,
+      name text NOT NULL,
+      email text NOT NULL UNIQUE,
+      email_verified boolean DEFAULT false NOT NULL,
+      image text,
+      created_at timestamp DEFAULT now() NOT NULL,
+      updated_at timestamp DEFAULT now() NOT NULL
+    )
+  `);
+
+  await db.execute(sql`
+    CREATE TABLE IF NOT EXISTS auth_account (
+      id text PRIMARY KEY NOT NULL,
+      account_id text NOT NULL,
+      provider_id text NOT NULL,
+      user_id text NOT NULL REFERENCES auth_user(id) ON DELETE cascade,
+      access_token text,
+      refresh_token text,
+      id_token text,
+      access_token_expires_at timestamp,
+      refresh_token_expires_at timestamp,
+      scope text,
+      password text,
+      created_at timestamp DEFAULT now() NOT NULL,
+      updated_at timestamp DEFAULT now() NOT NULL
+    )
+  `);
+
+  await db.execute(sql`
+    CREATE TABLE IF NOT EXISTS auth_session (
+      id text PRIMARY KEY NOT NULL,
+      expires_at timestamp NOT NULL,
+      token text NOT NULL UNIQUE,
+      created_at timestamp DEFAULT now() NOT NULL,
+      updated_at timestamp DEFAULT now() NOT NULL,
+      ip_address text,
+      user_agent text,
+      user_id text NOT NULL REFERENCES auth_user(id) ON DELETE cascade
+    )
+  `);
+
+  await db.execute(sql`
+    CREATE TABLE IF NOT EXISTS auth_verification (
+      id text PRIMARY KEY NOT NULL,
+      identifier text NOT NULL,
+      value text NOT NULL,
+      expires_at timestamp NOT NULL,
+      created_at timestamp DEFAULT now() NOT NULL,
+      updated_at timestamp DEFAULT now() NOT NULL
+    )
+  `);
+
+  await db.execute(sql`
+    CREATE INDEX IF NOT EXISTS auth_user_email_idx ON auth_user USING btree (email)
+  `);
+  await db.execute(sql`
+    CREATE INDEX IF NOT EXISTS auth_account_user_idx ON auth_account USING btree (user_id)
+  `);
+  await db.execute(sql`
+    CREATE UNIQUE INDEX IF NOT EXISTS auth_account_provider_account_idx
+      ON auth_account USING btree (provider_id, account_id)
+  `);
+  await db.execute(sql`
+    CREATE INDEX IF NOT EXISTS auth_session_token_idx ON auth_session USING btree (token)
+  `);
+  await db.execute(sql`
+    CREATE INDEX IF NOT EXISTS auth_session_user_idx ON auth_session USING btree (user_id)
+  `);
+  await db.execute(sql`
+    CREATE INDEX IF NOT EXISTS auth_verification_identifier_idx
+      ON auth_verification USING btree (identifier)
+  `);
+}
+
 async function ensureLegacyUserCanUseBetterAuth(email: string, password: string) {
-  const [legacyUser] = await db
+  const normalizedEmail = email.toLowerCase();
+  const legacyRows = await db
     .select({
       id: users.id,
       name: users.name,
@@ -51,41 +129,62 @@ async function ensureLegacyUserCanUseBetterAuth(email: string, password: string)
       updatedAt: users.updatedAt,
     })
     .from(users)
-    .where(eq(users.email, email))
+    .where(sql`lower(${users.email}) = ${normalizedEmail}`)
     .limit(1);
+  const legacyUser = legacyRows[0];
 
   if (!legacyUser) return false;
 
   const passwordMatches = await bcrypt.compare(password, legacyUser.hashedPassword);
   if (!passwordMatches) return false;
 
+  await ensureBetterAuthTables();
+
   await db.transaction(async tx => {
-    await tx
-      .insert(authUser)
-      .values({
-        id: legacyUser.id,
-        name: legacyUser.name,
-        email: legacyUser.email,
-        emailVerified: false,
-        createdAt: legacyUser.createdAt,
-        updatedAt: legacyUser.updatedAt,
-      })
-      .onConflictDoUpdate({
-        target: authUser.id,
-        set: {
+    const [existingAuthUser] = await tx
+      .select({ id: authUser.id })
+      .from(authUser)
+      .where(sql`lower(${authUser.email}) = ${normalizedEmail}`)
+      .limit(1);
+    const authUserId = existingAuthUser?.id ?? legacyUser.id;
+
+    if (existingAuthUser) {
+      await tx
+        .update(authUser)
+        .set({
           name: legacyUser.name,
-          email: legacyUser.email,
+          email: normalizedEmail,
           updatedAt: new Date(),
-        },
-      });
+        })
+        .where(eq(authUser.id, authUserId));
+    } else {
+      await tx
+        .insert(authUser)
+        .values({
+          id: authUserId,
+          name: legacyUser.name,
+          email: normalizedEmail,
+          emailVerified: false,
+          createdAt: legacyUser.createdAt,
+          updatedAt: legacyUser.updatedAt,
+        })
+        .onConflictDoUpdate({
+          target: authUser.id,
+          set: {
+            name: legacyUser.name,
+            email: normalizedEmail,
+            updatedAt: new Date(),
+          },
+        });
+    }
 
     await tx
       .insert(authAccount)
       .values({
-        id: `credential_${legacyUser.id}`,
-        accountId: legacyUser.id,
+        id: `credential_${authUserId}`,
+        accountId: authUserId,
         providerId: 'credential',
-        userId: legacyUser.id,
+        userId: authUserId,
         password: legacyUser.hashedPassword,
         createdAt: legacyUser.createdAt,
         updatedAt: legacyUser.updatedAt,

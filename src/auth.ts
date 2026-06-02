@@ -4,7 +4,7 @@ import { customSession } from 'better-auth/plugins';
 import { nextCookies } from 'better-auth/next-js';
 import bcrypt from 'bcryptjs';
 import { headers } from 'next/headers';
-import { eq } from 'drizzle-orm';
+import { sql } from 'drizzle-orm';
 
 import { db } from '@/db';
 import * as schema from '@/db/schema';
@@ -76,13 +76,20 @@ export const betterAuthInstance = betterAuth({
   },
   plugins: [
     customSession(async ({ user, session }) => {
-      const [appUser] = await db.select().from(users).where(eq(users.id, user.id)).limit(1);
+      const [appUser] = await db
+        .select()
+        .from(users)
+        .where(sql`${users.id} = ${user.id} OR lower(${users.email}) = ${user.email.toLowerCase()}`)
+        .limit(1);
       const preferences = appUser?.preferences ?? {};
 
       return {
         session,
         user: {
           ...user,
+          id: appUser?.id ?? user.id,
+          name: appUser?.name ?? user.name,
+          email: appUser?.email ?? user.email,
           role: normalizeRole(preferences.role),
           activeModules: normalizeModules(preferences.activeModules),
         },

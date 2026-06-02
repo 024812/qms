@@ -56,7 +56,7 @@ CREATE INDEX "auth_user_email_idx" ON "auth_user" USING btree ("email");--> stat
 CREATE INDEX "auth_verification_identifier_idx" ON "auth_verification" USING btree ("identifier");
 --> statement-breakpoint
 INSERT INTO "auth_user" ("id", "name", "email", "email_verified", "created_at", "updated_at")
-SELECT "id", "name", "email", false, "created_at", "updated_at"
+SELECT "id", "name", lower("email"), false, "created_at", "updated_at"
 FROM "users"
 ON CONFLICT ("id") DO UPDATE SET
   "name" = EXCLUDED."name",

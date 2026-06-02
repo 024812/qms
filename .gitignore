@@ -62,6 +62,11 @@ venv.bak/
 
 
 .agent/
+.claude/settings.local.json
+
+# Local database probes
+scripts/test-db.ts
+scripts/test-col-type.ts
 
 # System Files
 desktop.ini

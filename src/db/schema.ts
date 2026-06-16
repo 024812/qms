@@ -231,10 +231,8 @@ export const userApiKeys = pgTable(
 export const quilts = pgTable(
   'quilts',
   {
-    // Production quilts use text IDs, not UUID-typed columns.
-    id: text('id')
-      .primaryKey()
-      .$defaultFn(() => crypto.randomUUID()),
+    // UUID type for consistency with cards table
+    id: uuid('id').defaultRandom().primaryKey(),
     itemNumber: serial('item_number').notNull().unique(),
 
     // Core details
@@ -285,10 +283,8 @@ export const quilts = pgTable(
 export const usageRecords = pgTable(
   'usage_records',
   {
-    id: text('id')
-      .primaryKey()
-      .$defaultFn(() => crypto.randomUUID()),
-    quiltId: text('quilt_id')
+    id: uuid('id').defaultRandom().primaryKey(),
+    quiltId: uuid('quilt_id')
       .notNull()
       .references(() => quilts.id, { onDelete: 'cascade' }),
 
@@ -315,10 +311,8 @@ export const usageRecords = pgTable(
 export const maintenanceRecords = pgTable(
   'maintenance_records',
   {
-    id: text('id')
-      .primaryKey()
-      .$defaultFn(() => crypto.randomUUID()),
-    quiltId: text('quilt_id')
+    id: uuid('id').defaultRandom().primaryKey(),
+    quiltId: uuid('quilt_id')
       .notNull()
       .references(() => quilts.id, { onDelete: 'cascade' }),
 
@@ -450,9 +444,7 @@ export const auditLogs = pgTable(
  * Key-value store for application configuration
  */
 export const systemSettings = pgTable('system_settings', {
-  id: text('id')
-    .primaryKey()
-    .$defaultFn(() => crypto.randomUUID()),
+  id: uuid('id').defaultRandom().primaryKey(),
   key: text('key').notNull().unique(),
   value: text('value').notNull(),
   description: text('description'),
@@ -486,7 +478,7 @@ export const notifications = pgTable(
     priority: text('priority').notNull().default('medium'),
     title: text('title').notNull(),
     message: text('message').notNull(),
-    quiltId: text('quilt_id'), // optional reference
+    quiltId: uuid('quilt_id'), // updated to uuid to match quilts.id
     isRead: boolean('is_read').notNull().default(false),
     actionUrl: text('action_url'),
     metadata: jsonb('metadata').$type<Record<string, unknown>>().default({}),
@@ -509,7 +501,7 @@ export const notifications = pgTable(
 export const seasonalRecommendations = pgTable(
   'seasonal_recommendations',
   {
-    id: text('id').primaryKey(),
+    id: uuid('id').defaultRandom().primaryKey(),
     season: seasonEnum('season').notNull(),
     minWeight: integer('min_weight').notNull(),
     maxWeight: integer('max_weight').notNull(),
@@ -525,29 +517,10 @@ export const seasonalRecommendations = pgTable(
 );
 
 /**
- * Usage periods table (Legacy)
- * Historical usage tracking - retained for data compatibility
- * @deprecated Use usage_records for new implementations
+ * Usage periods table (Removed - Legacy)
+ * Historical usage tracking - data migrated to usage_records
+ * @deprecated Table removed in favor of usage_records
  */
-export const usagePeriods = pgTable(
-  'usage_periods',
-  {
-    id: text('id').primaryKey(),
-    quiltId: text('quilt_id').notNull(),
-    startDate: timestamp('start_date').notNull(),
-    endDate: timestamp('end_date'),
-    seasonUsed: text('season_used'),
-    usageType: usageTypeEnum('usage_type').notNull().default('REGULAR'),
-    notes: text('notes'),
-    durationDays: integer('duration_days'),
-    createdAt: timestamp('created_at').notNull().defaultNow(),
-  },
-  table => ({
-    quiltIdIdx: index('usage_periods_quilt_id_idx').on(table.quiltId),
-    startDateIdx: index('usage_periods_start_date_idx').on(table.startDate),
-    endDateIdx: index('usage_periods_end_date_idx').on(table.endDate),
-  })
-);
 
 /**
  * Analysis cache table
@@ -593,11 +566,6 @@ export type NewNotification = typeof notifications.$inferInsert;
 
 export type SeasonalRecommendation = typeof seasonalRecommendations.$inferSelect;
 export type NewSeasonalRecommendation = typeof seasonalRecommendations.$inferInsert;
-
-/** @deprecated Use UsageRecord instead */
-export type UsagePeriod = typeof usagePeriods.$inferSelect;
-/** @deprecated Use NewUsageRecord instead */
-export type NewUsagePeriod = typeof usagePeriods.$inferInsert;
 
 export type AnalysisCache = typeof analysisCache.$inferSelect;
 export type NewAnalysisCache = typeof analysisCache.$inferInsert;

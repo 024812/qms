@@ -2,10 +2,6 @@
   "framework": "nextjs",
   "buildCommand": "npm run build",
   "installCommand": "npm install",
-  "env": {
-    "CACHE_BUST": "2025-10-28-clean-deployment-v4",
-    "FORCE_REBUILD": "true"
-  },
   "headers": [
     {
       "source": "/(.*)",

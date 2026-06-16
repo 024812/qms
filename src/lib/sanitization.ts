@@ -197,31 +197,32 @@ export function sanitizeBoolean(input: unknown): boolean | null {
 
 /**
  * Sanitize URL input
+ *
+ * Protocol checks rely on the parsed `URL.protocol` rather than string prefix
+ * matching, so leading/embedded whitespace or control characters (e.g.
+ * "\tjavascript:alert(1)") cannot bypass the dangerous-protocol filter.
  */
+const SAFE_URL_PROTOCOLS = new Set(['http:', 'https:', 'mailto:', 'tel:']);
+
 export function sanitizeUrl(input: unknown): string | null {
   if (typeof input !== 'string') {
     return null;
   }
 
-  const url = input.trim();
+  // Strip whitespace and control characters that browsers tolerate but which
+  // can be used to smuggle dangerous protocols past naive prefix checks.
+  const url = input.replace(/[\u0000-\u001f\u007f-\u009f\s]/g, '');
 
-  // Check for dangerous protocols
-  // eslint-disable-next-line no-script-url
-  const dangerousProtocols = ['javascript:', 'data:', 'vbscript:', 'file:'];
-  const lowerUrl = url.toLowerCase();
-
-  for (const protocol of dangerousProtocols) {
-    if (lowerUrl.startsWith(protocol)) {
-      return null;
-    }
+  if (!url) {
+    return null;
   }
 
   // Basic URL validation
   try {
-    new URL(url);
-    return url;
+    const parsed = new URL(url);
+    return SAFE_URL_PROTOCOLS.has(parsed.protocol.toLowerCase()) ? url : null;
   } catch {
-    // If not a valid URL, check if it's a relative path
+    // If not a valid absolute URL, check if it's a safe relative path
     if (url.startsWith('/') && !url.startsWith('//')) {
       return url;
     }

@@ -170,6 +170,20 @@ function normalizeNumber(value: unknown): number | null {
   return null;
 }
 
+function normalizeNumericField(value: unknown): number | null {
+  // Handle PostgreSQL numeric type which Drizzle returns as string
+  if (typeof value === 'string' && value.trim() !== '') {
+    const parsed = parseFloat(value);
+    return Number.isFinite(parsed) ? parsed : null;
+  }
+
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    return value;
+  }
+
+  return null;
+}
+
 function normalizeDate(value: unknown): Date | null {
   if (value instanceof Date) {
     return Number.isNaN(value.getTime()) ? null : value;
@@ -233,14 +247,14 @@ function normalizeCardItem(card: unknown): CardItem {
     series: normalizeString(raw.series),
     cardNumber: normalizeString(raw.cardNumber),
     gradingCompany: normalizeEnumValue(raw.gradingCompany, VALID_GRADING_COMPANIES, 'UNGRADED'),
-    grade: normalizeNumber(raw.grade),
+    grade: normalizeNumericField(raw.grade),
     certificationNumber: normalizeString(raw.certificationNumber),
-    purchasePrice: normalizeNumber(raw.purchasePrice),
+    purchasePrice: normalizeNumericField(raw.purchasePrice),
     purchaseDate: normalizeDate(raw.purchaseDate),
-    currentValue: normalizeNumber(raw.currentValue),
-    estimatedValue: normalizeNumber(raw.estimatedValue),
+    currentValue: normalizeNumericField(raw.currentValue),
+    estimatedValue: normalizeNumericField(raw.estimatedValue),
     lastValueUpdate: normalizeDate(raw.lastValueUpdate ?? raw.valuationDate),
-    soldPrice: normalizeNumber(raw.soldPrice),
+    soldPrice: normalizeNumericField(raw.soldPrice),
     soldDate: normalizeDate(raw.soldDate),
     parallel: normalizeString(raw.parallel),
     serialNumber: normalizeString(raw.serialNumber),
@@ -258,12 +272,21 @@ function normalizeCardItem(card: unknown): CardItem {
   };
 }
 
-function cleanNumericToString(value: unknown): string | null {
+function cleanNumericField(value: unknown): string | null {
   if (value === null || value === undefined || value === '') return null;
-  const numericValue = typeof value === 'string' ? Number(value) : value;
-  return typeof numericValue === 'number' && Number.isFinite(numericValue)
-    ? String(numericValue)
-    : null;
+
+  // Direct number - convert to string for PostgreSQL numeric type
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    return String(value);
+  }
+
+  // String representation - validate and return
+  if (typeof value === 'string' && value.trim() !== '') {
+    const parsed = parseFloat(value);
+    return Number.isFinite(parsed) ? value : null;
+  }
+
+  return null;
 }
 
 function toCardQueryFilters(input: CardListInput): CardQueryFilters {
@@ -563,13 +586,13 @@ export async function saveCard(data: SaveCardData): Promise<CardItem> {
       series: data.series || null,
       cardNumber: data.cardNumber || null,
       gradingCompany: data.gradingCompany || 'UNGRADED',
-      grade: cleanNumericToString(data.grade),
+      grade: cleanNumericField(data.grade),
       certificationNumber: data.certificationNumber || null,
-      purchasePrice: cleanNumericToString(data.purchasePrice),
+      purchasePrice: cleanNumericField(data.purchasePrice),
       purchaseDate: data.purchaseDate || null,
-      currentValue: cleanNumericToString(data.currentValue),
-      estimatedValue: cleanNumericToString(data.estimatedValue),
-      soldPrice: cleanNumericToString(data.soldPrice),
+      currentValue: cleanNumericField(data.currentValue),
+      estimatedValue: cleanNumericField(data.estimatedValue),
+      soldPrice: cleanNumericField(data.soldPrice),
       soldDate: data.soldDate || null,
       valuationDate: data.valuationDate ? new Date(data.valuationDate) : null,
       valuationConfidence: data.valuationConfidence || null,

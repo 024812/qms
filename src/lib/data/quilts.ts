@@ -27,6 +27,7 @@ import { eq, sql, desc, and, isNull, like, or } from 'drizzle-orm';
 import { dbLogger } from '@/lib/logger';
 import { type Quilt } from '@/lib/database/types';
 import { QuiltStatus, Season, UsageType } from '@/lib/validations/quilt';
+import { quiltsCacheTags, usageCacheTags, statsCacheTags } from '@/modules/core/cache-tags';
 
 // ============================================================================
 // Types
@@ -244,12 +245,12 @@ async function syncUsageRecordForStatusChange(
 }
 
 function invalidateUsageAndStatsTags(quiltId: string) {
-  revalidateTag('usage', 'max');
-  revalidateTag('usage-list', 'max');
-  revalidateTag('usage-active', 'max');
-  revalidateTag(`usage-quilt-${quiltId}`, 'max');
-  revalidateTag('stats', 'max');
-  revalidateTag('stats-dashboard', 'max');
+  revalidateTag(usageCacheTags.root, 'max');
+  revalidateTag(usageCacheTags.list, 'max');
+  revalidateTag(usageCacheTags.slice('active', 'true'), 'max');
+  revalidateTag(usageCacheTags.slice('quilt', quiltId), 'max');
+  revalidateTag(statsCacheTags.root, 'max');
+  revalidateTag(statsCacheTags.slice('dashboard', 'main'), 'max');
 }
 
 // ============================================================================
@@ -300,7 +301,7 @@ async function getNextItemNumber(tx?: Tx): Promise<number> {
 export async function getQuiltById(id: string): Promise<Quilt | null> {
   'use cache';
   cacheLife('minutes'); // 5 minutes
-  cacheTag('quilts', `quilts-${id}`);
+  cacheTag(quiltsCacheTags.root, quiltsCacheTags.item(id));
 
   try {
     const result = await db.select().from(quilts).where(eq(quilts.id, id));
@@ -322,9 +323,9 @@ export async function getQuilts(filters: QuiltFilters = {}): Promise<Quilt[]> {
   cacheLife('seconds'); // 2 minutes (120 seconds)
 
   // Build cache tags based on filters
-  const tags = ['quilts', 'quilts-list'];
-  if (filters.status) tags.push(`quilts-status-${filters.status}`);
-  if (filters.season) tags.push(`quilts-season-${filters.season}`);
+  const tags = [quiltsCacheTags.root, quiltsCacheTags.list];
+  if (filters.status) tags.push(quiltsCacheTags.slice('status', filters.status));
+  if (filters.season) tags.push(quiltsCacheTags.slice('season', filters.season));
   cacheTag(...tags);
 
   try {
@@ -397,7 +398,7 @@ export async function getQuilts(filters: QuiltFilters = {}): Promise<Quilt[]> {
 export async function getQuiltsByStatus(status: QuiltStatus): Promise<Quilt[]> {
   'use cache';
   cacheLife('seconds'); // 2 minutes (120 seconds)
-  cacheTag('quilts', `quilts-status-${status}`);
+  cacheTag(quiltsCacheTags.root, quiltsCacheTags.slice('status', status));
 
   try {
     const result = await db
@@ -422,7 +423,7 @@ export async function getQuiltsByStatus(status: QuiltStatus): Promise<Quilt[]> {
 export async function getQuiltsBySeason(season: Season): Promise<Quilt[]> {
   'use cache';
   cacheLife('minutes'); // 5 minutes
-  cacheTag('quilts', `quilts-season-${season}`);
+  cacheTag(quiltsCacheTags.root, quiltsCacheTags.slice('season', season));
 
   try {
     const result = await db
@@ -525,12 +526,12 @@ export async function createQuilt(data: CreateQuiltData): Promise<Quilt> {
     const quilt = result[0] as unknown as Quilt;
 
     // Invalidate cache tags
-    revalidateTag('quilts', 'max');
-    revalidateTag('quilts-list', 'max');
-    revalidateTag(`quilts-status-${quilt.currentStatus}`, 'max');
-    revalidateTag(`quilts-season-${quilt.season}`, 'max');
-    revalidateTag('stats', 'max');
-    revalidateTag('stats-dashboard', 'max');
+    revalidateTag(quiltsCacheTags.root, 'max');
+    revalidateTag(quiltsCacheTags.list, 'max');
+    revalidateTag(quiltsCacheTags.slice('status', quilt.currentStatus), 'max');
+    revalidateTag(quiltsCacheTags.slice('season', quilt.season), 'max');
+    revalidateTag(statsCacheTags.root, 'max');
+    revalidateTag(statsCacheTags.slice('dashboard', 'main'), 'max');
 
     dbLogger.info('Quilt created successfully', { id: quilt.id, itemNumber });
     return quilt;
@@ -570,21 +571,21 @@ export async function updateQuilt(
     const updated = result[0] as unknown as Quilt;
 
     // Invalidate cache tags
-    revalidateTag('quilts', 'max');
-    revalidateTag('quilts-list', 'max');
-    revalidateTag(`quilts-${id}`, 'max');
+    revalidateTag(quiltsCacheTags.root, 'max');
+    revalidateTag(quiltsCacheTags.list, 'max');
+    revalidateTag(quiltsCacheTags.item(id), 'max');
 
     // Invalidate old and new status/season tags if they changed
     if (current.currentStatus !== updated.currentStatus) {
-      revalidateTag(`quilts-status-${current.currentStatus}`, 'max');
-      revalidateTag(`quilts-status-${updated.currentStatus}`, 'max');
+      revalidateTag(quiltsCacheTags.slice('status', current.currentStatus), 'max');
+      revalidateTag(quiltsCacheTags.slice('status', updated.currentStatus), 'max');
     }
     if (current.season !== updated.season) {
-      revalidateTag(`quilts-season-${current.season}`, 'max');
-      revalidateTag(`quilts-season-${updated.season}`, 'max');
+      revalidateTag(quiltsCacheTags.slice('season', current.season), 'max');
+      revalidateTag(quiltsCacheTags.slice('season', updated.season), 'max');
     }
-    revalidateTag('stats', 'max');
-    revalidateTag('stats-dashboard', 'max');
+    revalidateTag(statsCacheTags.root, 'max');
+    revalidateTag(statsCacheTags.slice('dashboard', 'main'), 'max');
 
     dbLogger.info('Quilt updated successfully', { id });
     return updated;
@@ -642,15 +643,15 @@ export async function saveQuilt(
 
         const updatedQuilt = updatedRows[0] as unknown as Quilt;
 
-        revalidateTag('quilts', 'max');
-        revalidateTag('quilts-list', 'max');
-        revalidateTag(`quilts-${data.id}`, 'max');
-        revalidateTag(`quilts-status-${currentQuilt.currentStatus}`, 'max');
-        revalidateTag(`quilts-status-${updatedQuilt.currentStatus}`, 'max');
-        revalidateTag(`quilts-season-${currentQuilt.season}`, 'max');
-        revalidateTag(`quilts-season-${updatedQuilt.season}`, 'max');
-        revalidateTag('stats', 'max');
-        revalidateTag('stats-dashboard', 'max');
+        revalidateTag(quiltsCacheTags.root, 'max');
+        revalidateTag(quiltsCacheTags.list, 'max');
+        revalidateTag(quiltsCacheTags.item(data.id), 'max');
+        revalidateTag(quiltsCacheTags.slice('status', currentQuilt.currentStatus), 'max');
+        revalidateTag(quiltsCacheTags.slice('status', updatedQuilt.currentStatus), 'max');
+        revalidateTag(quiltsCacheTags.slice('season', currentQuilt.season), 'max');
+        revalidateTag(quiltsCacheTags.slice('season', updatedQuilt.season), 'max');
+        revalidateTag(statsCacheTags.root, 'max');
+        revalidateTag(statsCacheTags.slice('dashboard', 'main'), 'max');
 
         if (currentQuilt.currentStatus !== updatedQuilt.currentStatus) {
           invalidateUsageAndStatsTags(data.id);
@@ -705,13 +706,13 @@ export async function saveQuilt(
         data.usageNotes
       );
 
-      revalidateTag('quilts', 'max');
-      revalidateTag('quilts-list', 'max');
-      revalidateTag(`quilts-${quilt.id}`, 'max');
-      revalidateTag(`quilts-status-${quilt.currentStatus}`, 'max');
-      revalidateTag(`quilts-season-${quilt.season}`, 'max');
-      revalidateTag('stats', 'max');
-      revalidateTag('stats-dashboard', 'max');
+      revalidateTag(quiltsCacheTags.root, 'max');
+      revalidateTag(quiltsCacheTags.list, 'max');
+      revalidateTag(quiltsCacheTags.item(quilt.id), 'max');
+      revalidateTag(quiltsCacheTags.slice('status', quilt.currentStatus), 'max');
+      revalidateTag(quiltsCacheTags.slice('season', quilt.season), 'max');
+      revalidateTag(statsCacheTags.root, 'max');
+      revalidateTag(statsCacheTags.slice('dashboard', 'main'), 'max');
 
       if (quilt.currentStatus === 'IN_USE') {
         invalidateUsageAndStatsTags(quilt.id);
@@ -752,15 +753,15 @@ export async function updateQuiltStatus(id: string, status: QuiltStatus): Promis
     const updated = result[0] as unknown as Quilt;
 
     // Invalidate cache tags
-    revalidateTag('quilts', 'max');
-    revalidateTag('quilts-list', 'max');
-    revalidateTag(`quilts-${id}`, 'max');
+    revalidateTag(quiltsCacheTags.root, 'max');
+    revalidateTag(quiltsCacheTags.list, 'max');
+    revalidateTag(quiltsCacheTags.item(id), 'max');
     if (oldStatus) {
-      revalidateTag(`quilts-status-${oldStatus}`, 'max');
+      revalidateTag(quiltsCacheTags.slice('status', oldStatus), 'max');
     }
-    revalidateTag(`quilts-status-${status}`, 'max');
-    revalidateTag('stats', 'max');
-    revalidateTag('stats-dashboard', 'max');
+    revalidateTag(quiltsCacheTags.slice('status', status), 'max');
+    revalidateTag(statsCacheTags.root, 'max');
+    revalidateTag(statsCacheTags.slice('dashboard', 'main'), 'max');
 
     dbLogger.info('Quilt status updated', { id, status });
     return updated;
@@ -822,13 +823,13 @@ export async function updateQuiltStatusWithUsageRecord(
       const updatedQuilt = updatedRows[0] as unknown as Quilt;
 
       // Invalidate cache tags
-      revalidateTag('quilts', 'max');
-      revalidateTag('quilts-list', 'max');
-      revalidateTag(`quilts-${id}`, 'max');
-      revalidateTag(`quilts-status-${previousStatus}`, 'max');
-      revalidateTag(`quilts-status-${newStatus}`, 'max');
-      revalidateTag('stats', 'max');
-      revalidateTag('stats-dashboard', 'max');
+      revalidateTag(quiltsCacheTags.root, 'max');
+      revalidateTag(quiltsCacheTags.list, 'max');
+      revalidateTag(quiltsCacheTags.item(id), 'max');
+      revalidateTag(quiltsCacheTags.slice('status', previousStatus), 'max');
+      revalidateTag(quiltsCacheTags.slice('status', newStatus), 'max');
+      revalidateTag(statsCacheTags.root, 'max');
+      revalidateTag(statsCacheTags.slice('dashboard', 'main'), 'max');
       invalidateUsageAndStatsTags(id);
 
       return { quilt: updatedQuilt, usageRecord: usageRecordData };
@@ -864,15 +865,15 @@ export async function deleteQuilt(id: string): Promise<boolean> {
     });
 
     // Invalidate
-    revalidateTag('quilts', 'max');
-    revalidateTag('quilts-list', 'max');
-    revalidateTag(`quilts-${id}`, 'max');
+    revalidateTag(quiltsCacheTags.root, 'max');
+    revalidateTag(quiltsCacheTags.list, 'max');
+    revalidateTag(quiltsCacheTags.item(id), 'max');
     if (quilt) {
-      revalidateTag(`quilts-status-${quilt.currentStatus}`, 'max');
-      revalidateTag(`quilts-season-${quilt.season}`, 'max');
+      revalidateTag(quiltsCacheTags.slice('status', quilt.currentStatus), 'max');
+      revalidateTag(quiltsCacheTags.slice('season', quilt.season), 'max');
     }
-    revalidateTag('stats', 'max');
-    revalidateTag('stats-dashboard', 'max');
+    revalidateTag(statsCacheTags.root, 'max');
+    revalidateTag(statsCacheTags.slice('dashboard', 'main'), 'max');
     invalidateUsageAndStatsTags(id);
 
     dbLogger.info('Quilt deleted successfully', { id });

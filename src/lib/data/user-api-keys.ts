@@ -1,6 +1,6 @@
 import crypto from 'crypto';
 
-import { and, eq, isNull, sql } from 'drizzle-orm';
+import { and, eq, isNull } from 'drizzle-orm';
 
 import { db } from '@/db';
 import { userApiKeys, users } from '@/db/schema';
@@ -52,33 +52,7 @@ function toSummary(row: typeof userApiKeys.$inferSelect): UserApiKeySummary {
   };
 }
 
-async function ensureUserApiKeysTable() {
-  await db.execute(sql`
-    CREATE TABLE IF NOT EXISTS user_api_keys (
-      id text PRIMARY KEY NOT NULL,
-      user_id text NOT NULL REFERENCES users(id) ON DELETE cascade,
-      name text NOT NULL,
-      key_hash text NOT NULL UNIQUE,
-      key_prefix text NOT NULL,
-      last_used_at timestamp,
-      created_at timestamp DEFAULT now() NOT NULL,
-      revoked_at timestamp
-    )
-  `);
-
-  await db.execute(sql`
-    CREATE INDEX IF NOT EXISTS user_api_keys_user_idx ON user_api_keys USING btree (user_id)
-  `);
-
-  await db.execute(sql`
-    CREATE UNIQUE INDEX IF NOT EXISTS user_api_keys_key_hash_idx
-      ON user_api_keys USING btree (key_hash)
-  `);
-}
-
 export async function listUserApiKeys(userId: string): Promise<UserApiKeySummary[]> {
-  await ensureUserApiKeysTable();
-
   const rows = await db
     .select()
     .from(userApiKeys)
@@ -88,8 +62,6 @@ export async function listUserApiKeys(userId: string): Promise<UserApiKeySummary
 }
 
 export async function createUserApiKey(userId: string, name: string): Promise<CreatedUserApiKey> {
-  await ensureUserApiKeysTable();
-
   const key = createPlaintextApiKey();
   const [row] = await db
     .insert(userApiKeys)
@@ -105,8 +77,6 @@ export async function createUserApiKey(userId: string, name: string): Promise<Cr
 }
 
 export async function revokeUserApiKey(userId: string, keyId: string): Promise<boolean> {
-  await ensureUserApiKeysTable();
-
   const revoked = await db
     .update(userApiKeys)
     .set({ revokedAt: new Date() })
@@ -119,8 +89,6 @@ export async function revokeUserApiKey(userId: string, keyId: string): Promise<b
 }
 
 export async function findUserByApiKey(key: string): Promise<ApiKeyUserIdentity | null> {
-  await ensureUserApiKeysTable();
-
   const [row] = await db
     .select({
       apiKeyId: userApiKeys.id,

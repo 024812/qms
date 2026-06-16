@@ -8,7 +8,11 @@ const handleI18nRouting = createMiddleware(routing);
 export async function proxy(req: NextRequest) {
   const { pathname, search } = req.nextUrl;
 
-  if (pathname.startsWith('/_next') || pathname.startsWith('/api')) {
+  if (
+    pathname.startsWith('/_next') ||
+    pathname.startsWith('/api') ||
+    pathname === '/AGENT_API.md'
+  ) {
     return NextResponse.next();
   }
 
@@ -55,6 +59,6 @@ export async function proxy(req: NextRequest) {
 
 export const config = {
   matcher: [
-    '/((?!api/|_next/static|_next/image|_next/data|favicon\\.ico|manifest\\.json|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|json|html)$).*)',
+    '/((?!api/|_next/static|_next/image|_next/data|favicon\\.ico|manifest\\.json|AGENT_API\\.md|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|json|html)$).*)',
   ],
 };

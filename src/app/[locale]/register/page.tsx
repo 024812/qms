@@ -1,9 +1,9 @@
 /**
  * User Registration Page
- * 
+ *
  * This page provides a registration form for new users using Next.js 16 Form component.
  * Implements progressive enhancement - works without JavaScript.
- * 
+ *
  * Requirements: 8.1 (User registration and authentication)
  */
 
@@ -14,14 +14,11 @@ import { RegisterForm } from './RegisterForm';
 import { setRequestLocale } from 'next-intl/server';
 import { connection } from 'next/server';
 
-
-export default async function RegisterPage(props: {
-  params: Promise<{ locale: string }>;
-}) {
+export default async function RegisterPage(props: { params: Promise<{ locale: string }> }) {
   const { locale } = await props.params;
   // Enable static rendering
   setRequestLocale(locale);
-  
+
   // Opt-in to dynamic rendering for auth check
   await connection();
 
@@ -51,15 +48,10 @@ export default async function RegisterPage(props: {
               />
             </svg>
           </div>
-          <h2 className="text-3xl font-extrabold text-foreground">
-            创建新账户
-          </h2>
+          <h2 className="text-3xl font-extrabold text-foreground">创建新账户</h2>
           <p className="mt-2 text-sm text-muted-foreground">
             或者{' '}
-            <Link
-              href="/login"
-              className="font-medium text-primary hover:text-primary/80"
-            >
+            <Link href="/login" className="font-medium text-primary hover:text-primary/80">
               登录已有账户
             </Link>
           </p>

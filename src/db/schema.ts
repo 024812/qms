@@ -439,6 +439,30 @@ export const auditLogs = pgTable(
   })
 );
 
+export const agentIdempotencyKeys = pgTable(
+  'agent_idempotency_keys',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    agentId: text('agent_id').notNull(),
+    idempotencyKey: text('idempotency_key').notNull(),
+    toolName: text('tool_name').notNull(),
+    inputHash: text('input_hash').notNull(),
+    status: text('status').notNull().default('in_progress'),
+    response: jsonb('response').$type<Record<string, unknown>>(),
+    errorMessage: text('error_message'),
+    createdAt: timestamp('created_at').notNull().defaultNow(),
+    updatedAt: timestamp('updated_at').notNull().defaultNow(),
+  },
+  table => ({
+    agentKeyIdx: uniqueIndex('agent_idempotency_keys_agent_key_idx').on(
+      table.agentId,
+      table.idempotencyKey
+    ),
+    agentIdx: index('agent_idempotency_keys_agent_idx').on(table.agentId),
+    createdAtIdx: index('agent_idempotency_keys_created_at_idx').on(table.createdAt),
+  })
+);
+
 /**
  * System settings table
  * Key-value store for application configuration
@@ -560,6 +584,9 @@ export type NewCard = typeof cards.$inferInsert;
 
 export type AuditLog = typeof auditLogs.$inferSelect;
 export type NewAuditLog = typeof auditLogs.$inferInsert;
+
+export type AgentIdempotencyKey = typeof agentIdempotencyKeys.$inferSelect;
+export type NewAgentIdempotencyKey = typeof agentIdempotencyKeys.$inferInsert;
 
 export type Notification = typeof notifications.$inferSelect;
 export type NewNotification = typeof notifications.$inferInsert;

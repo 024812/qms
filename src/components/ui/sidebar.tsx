@@ -246,8 +246,6 @@ function Sidebar({
   );
 }
 
-
-
 function SidebarTrigger({ className, onClick, ...props }: React.ComponentProps<typeof Button>) {
   const { toggleSidebar } = useSidebar();
   const t = useTranslations('common');

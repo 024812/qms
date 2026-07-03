@@ -12,6 +12,7 @@ import { connection } from 'next/server';
 
 import { getDashboardStats } from '@/lib/data/stats';
 import { createSuccessResponse, createInternalErrorResponse } from '@/lib/api/response';
+import { requireApiSession } from '@/lib/api/route-auth';
 
 /**
  * GET /api/dashboard
@@ -24,6 +25,9 @@ import { createSuccessResponse, createInternalErrorResponse } from '@/lib/api/re
  */
 export async function GET() {
   try {
+    const authResult = await requireApiSession();
+    if (!authResult.ok) return authResult.response;
+
     await connection();
 
     // Use data access layer for all database operations

@@ -1,6 +1,6 @@
 /**
  * Unit tests for Quilt Module Schema
- * 
+ *
  * These tests verify that the schema correctly wraps and preserves
  * all existing quilt functionality.
  */
@@ -147,7 +147,7 @@ describe('Quilt Module Schema', () => {
 
     it('should convert Quilt to QuiltItem', () => {
       const quiltItem = quiltToQuiltItem(mockQuilt);
-      
+
       expect(quiltItem.id).toBe(mockQuilt.id);
       expect(quiltItem.type).toBe('quilt');
       expect(quiltItem.itemNumber).toBe(mockQuilt.itemNumber);
@@ -160,7 +160,7 @@ describe('Quilt Module Schema', () => {
     it('should convert QuiltItem back to Quilt', () => {
       const quiltItem = quiltToQuiltItem(mockQuilt);
       const convertedBack = quiltItemToQuilt(quiltItem);
-      
+
       expect(convertedBack.id).toBe(mockQuilt.id);
       expect(convertedBack.itemNumber).toBe(mockQuilt.itemNumber);
       expect(convertedBack.name).toBe(mockQuilt.name);
@@ -172,7 +172,7 @@ describe('Quilt Module Schema', () => {
     it('should preserve all fields during conversion round-trip', () => {
       const quiltItem = quiltToQuiltItem(mockQuilt);
       const convertedBack = quiltItemToQuilt(quiltItem);
-      
+
       // Check all fields are preserved
       expect(convertedBack).toEqual(mockQuilt);
     });
@@ -218,7 +218,7 @@ describe('Quilt Module Schema', () => {
         createdAt: new Date(),
         updatedAt: new Date(),
       };
-      
+
       expect(quilt).toBeDefined();
     });
 
@@ -245,7 +245,7 @@ describe('Quilt Module Schema', () => {
         mainImage: null,
         attachmentImages: null,
       };
-      
+
       expect(attributes).toBeDefined();
     });
 
@@ -276,7 +276,7 @@ describe('Quilt Module Schema', () => {
         createdAt: new Date(),
         updatedAt: new Date(),
       };
-      
+
       expect(item).toBeDefined();
     });
   });

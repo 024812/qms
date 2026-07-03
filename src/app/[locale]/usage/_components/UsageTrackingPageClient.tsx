@@ -151,15 +151,9 @@ export function UsageTrackingPageClient({
 
     return records.sort((a, b) => {
       let aValue: string | number | boolean | null = a[sortField as keyof UsageHistoryRecord] as
-        | string
-        | number
-        | boolean
-        | null;
+        string | number | boolean | null;
       let bValue: string | number | boolean | null = b[sortField as keyof UsageHistoryRecord] as
-        | string
-        | number
-        | boolean
-        | null;
+        string | number | boolean | null;
 
       if (aValue == null) return 1;
       if (bValue == null) return -1;

@@ -22,6 +22,7 @@ import {
   createValidationErrorResponse,
   createInternalErrorResponse,
 } from '@/lib/api/response';
+import { requireApiSession } from '@/lib/api/route-auth';
 
 // Zod schema for report query parameters
 const reportQuerySchema = z.object({
@@ -42,6 +43,9 @@ type CsvCell = string | number | Date | null | undefined;
 // GET /api/reports - Get report data
 export async function GET(request: NextRequest) {
   try {
+    const authResult = await requireApiSession();
+    if (!authResult.ok) return authResult.response;
+
     const { searchParams } = new URL(request.url);
 
     // Validate query parameters using Zod
@@ -184,9 +188,15 @@ function convertToCSV(data: ReportDataByType[ReportType], reportType: ReportType
   }
 
   const csvContent = [
-    headers.join(','),
-    ...rows.map(row => row.map(cell => `"${cell ?? ''}"`).join(',')),
+    headers.map(escapeCsvCell).join(','),
+    ...rows.map(row => row.map(escapeCsvCell).join(',')),
   ].join('\n');
 
   return csvContent;
+}
+
+function escapeCsvCell(cell: CsvCell): string {
+  const value = cell instanceof Date ? cell.toISOString() : String(cell ?? '');
+  const safeValue = /^[=+\-@\t\r]/.test(value) ? `'${value}` : value;
+  return `"${safeValue.replaceAll('"', '""')}"`;
 }

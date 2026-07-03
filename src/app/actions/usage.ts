@@ -3,6 +3,7 @@
 import { updateTag } from 'next/cache';
 import { z } from 'zod';
 
+import { auth } from '@/auth';
 import {
   createUsageRecord as createUsageRecordData,
   deleteUsageRecord as deleteUsageRecordData,
@@ -166,10 +167,31 @@ function internalErrorResult(message: string): ActionResult<never> {
   };
 }
 
+function unauthorizedResult(): ActionResult<never> {
+  return {
+    success: false,
+    error: {
+      code: 'UNAUTHORIZED',
+      message: 'Unauthorized',
+    },
+  };
+}
+
+async function requireAuthenticatedUser() {
+  const session = await auth();
+  return session?.user?.id ? session : null;
+}
+
 export async function getUsageRecordsAction(
   filters?: UsageFilters
 ): Promise<ActionResult<{ records: UsageRecordWithQuilt[]; total: number; hasMore: boolean }>> {
   try {
+    const session = await requireAuthenticatedUser();
+
+    if (!session) {
+      return unauthorizedResult();
+    }
+
     const validationResult = usageFiltersSchema.safeParse(filters ?? {});
 
     if (!validationResult.success) {
@@ -197,6 +219,12 @@ export async function getUsageRecordsAction(
 
 export async function getUsageRecordAction(id: string): Promise<ActionResult<UsageRecord | null>> {
   try {
+    const session = await requireAuthenticatedUser();
+
+    if (!session) {
+      return unauthorizedResult();
+    }
+
     const validationResult = usageRecordIdSchema.safeParse(id);
 
     if (!validationResult.success) {
@@ -229,6 +257,12 @@ export async function getQuiltUsageRecordsAction(
   }>
 > {
   try {
+    const session = await requireAuthenticatedUser();
+
+    if (!session) {
+      return unauthorizedResult();
+    }
+
     const validationResult = quiltIdSchema.safeParse(quiltId);
 
     if (!validationResult.success) {
@@ -268,6 +302,12 @@ export async function getActiveUsageRecordAction(
   quiltId: string
 ): Promise<ActionResult<UsageRecord | null>> {
   try {
+    const session = await requireAuthenticatedUser();
+
+    if (!session) {
+      return unauthorizedResult();
+    }
+
     const validationResult = quiltIdSchema.safeParse(quiltId);
 
     if (!validationResult.success) {
@@ -289,6 +329,12 @@ export async function getAllActiveUsageRecordsAction(): Promise<
   ActionResult<{ records: UsageRecord[]; total: number }>
 > {
   try {
+    const session = await requireAuthenticatedUser();
+
+    if (!session) {
+      return unauthorizedResult();
+    }
+
     const records = await getAllActiveUsageRecords();
 
     return {
@@ -305,6 +351,12 @@ export async function getAllActiveUsageRecordsAction(): Promise<
 
 export async function getUsageStatsAction(quiltId: string): Promise<ActionResult<QuiltUsageStats>> {
   try {
+    const session = await requireAuthenticatedUser();
+
+    if (!session) {
+      return unauthorizedResult();
+    }
+
     const validationResult = quiltIdSchema.safeParse(quiltId);
 
     if (!validationResult.success) {
@@ -326,6 +378,12 @@ export async function getOverallUsageStatsAction(): Promise<
   ActionResult<{ total: number; active: number; completed: number }>
 > {
   try {
+    const session = await requireAuthenticatedUser();
+
+    if (!session) {
+      return unauthorizedResult();
+    }
+
     const stats = await getSimpleUsageStats();
 
     return {
@@ -345,6 +403,12 @@ export async function createUsageRecordAction(input: {
   notes?: string | null;
 }): Promise<ActionResult<UsageRecord>> {
   try {
+    const session = await requireAuthenticatedUser();
+
+    if (!session) {
+      return unauthorizedResult();
+    }
+
     const validationResult = createUsageRecordSchema.safeParse(sanitizeApiInput(input));
 
     if (!validationResult.success) {
@@ -374,6 +438,12 @@ export async function updateUsageRecordAction(input: {
   notes?: string | null;
 }): Promise<ActionResult<UsageRecord>> {
   try {
+    const session = await requireAuthenticatedUser();
+
+    if (!session) {
+      return unauthorizedResult();
+    }
+
     const validationResult = updateUsageRecordSchema.safeParse(sanitizeApiInput(input));
 
     if (!validationResult.success) {
@@ -425,6 +495,12 @@ export async function endUsageRecordAction(input: {
   notes?: string | null;
 }): Promise<ActionResult<UsageRecord>> {
   try {
+    const session = await requireAuthenticatedUser();
+
+    if (!session) {
+      return unauthorizedResult();
+    }
+
     const validationResult = endUsageRecordSchema.safeParse(sanitizeApiInput(input));
 
     if (!validationResult.success) {
@@ -479,6 +555,12 @@ export async function deleteUsageRecordAction(
   id: string
 ): Promise<ActionResult<{ deleted: true; id: string }>> {
   try {
+    const session = await requireAuthenticatedUser();
+
+    if (!session) {
+      return unauthorizedResult();
+    }
+
     const validationResult = usageRecordIdSchema.safeParse(id);
 
     if (!validationResult.success) {

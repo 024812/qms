@@ -1,6 +1,6 @@
 /**
  * QuiltDetail Component Tests
- * 
+ *
  * Tests for the QuiltDetail component to ensure it properly displays
  * all quilt information fields.
  */

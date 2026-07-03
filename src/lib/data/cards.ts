@@ -117,12 +117,7 @@ const VALID_SPORTS = ['BASKETBALL', 'SOCCER', 'OTHER'] as const;
 const VALID_GRADING_COMPANIES = ['UNGRADED', 'PSA', 'BGS', 'SGC', 'CGC'] as const;
 const VALID_CARD_STATUSES = ['COLLECTION', 'FOR_SALE', 'SOLD', 'GRADING', 'DISPLAY'] as const;
 type CardSortField =
-  | 'itemNumber'
-  | 'playerName'
-  | 'year'
-  | 'currentValue'
-  | 'createdAt'
-  | 'updatedAt';
+  'itemNumber' | 'playerName' | 'year' | 'currentValue' | 'createdAt' | 'updatedAt';
 type SortOrder = 'asc' | 'desc';
 
 interface CardQueryFilters {

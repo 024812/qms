@@ -2,10 +2,10 @@
 
 /**
  * Image Upload Service
- * 
+ *
  * This service handles image uploads by storing base64-encoded images
  * directly in the Neon PostgreSQL database as strings.
- * 
+ *
  * Requirements: 6.1 - Image upload and storage service
  */
 
@@ -20,13 +20,7 @@ const MAX_FILE_SIZE = 5 * 1024 * 1024;
 /**
  * Allowed image MIME types
  */
-const ALLOWED_MIME_TYPES = [
-  'image/jpeg',
-  'image/jpg',
-  'image/png',
-  'image/gif',
-  'image/webp',
-];
+const ALLOWED_MIME_TYPES = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
 
 /**
  * Image upload validation schema
@@ -41,10 +35,10 @@ const imageUploadSchema = z.object({
 
 /**
  * Upload an image
- * 
+ *
  * Accepts a base64-encoded image and returns a data URL that can be stored
  * in the database and used directly in img src attributes.
- * 
+ *
  * @param data - Image upload data
  * @returns Data URL string
  */
@@ -104,7 +98,7 @@ export async function uploadImage(data: {
 
 /**
  * Upload multiple images
- * 
+ *
  * @param images - Array of image upload data
  * @returns Array of data URLs
  */
@@ -132,11 +126,11 @@ export async function uploadImages(
 
 /**
  * Delete an image
- * 
+ *
  * Since images are stored as data URLs in the database, deletion is handled
  * by removing the URL from the database record. This function is a no-op
  * but provided for API consistency.
- * 
+ *
  * @param url - Image URL to delete
  * @returns Success status
  */
@@ -164,7 +158,7 @@ export async function deleteImage(url: string): Promise<{ success: boolean; erro
 
 /**
  * Validate image data URL
- * 
+ *
  * @param url - Data URL to validate
  * @returns Validation result
  */
@@ -197,7 +191,7 @@ export function validateImageUrl(url: string): { valid: boolean; error?: string 
 
 /**
  * Get image metadata from data URL
- * 
+ *
  * @param url - Data URL
  * @returns Image metadata
  */

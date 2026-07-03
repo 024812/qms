@@ -1,5 +1,6 @@
 'use server';
 
+import { auth } from '@/auth';
 import { getDashboardStats } from '@/lib/data/stats';
 import type { DashboardStatsView } from '@/lib/types/dashboard';
 
@@ -17,6 +18,21 @@ interface ActionError {
 }
 
 type ActionResult<T> = ActionSuccess<T> | ActionError;
+
+function unauthorizedResult(): ActionResult<never> {
+  return {
+    success: false,
+    error: {
+      code: 'UNAUTHORIZED',
+      message: 'Unauthorized',
+    },
+  };
+}
+
+async function requireAuthenticatedUser() {
+  const session = await auth();
+  return session?.user?.id ? session : null;
+}
 
 function buildDashboardStatsView(): Promise<DashboardStatsView> {
   return getDashboardStats().then(dashboardStats => {
@@ -60,6 +76,12 @@ function buildDashboardStatsView(): Promise<DashboardStatsView> {
 
 export async function getDashboardStatsAction(): Promise<ActionResult<DashboardStatsView>> {
   try {
+    const session = await requireAuthenticatedUser();
+
+    if (!session) {
+      return unauthorizedResult();
+    }
+
     return {
       success: true,
       data: await buildDashboardStatsView(),

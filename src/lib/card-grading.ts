@@ -1,16 +1,16 @@
 /**
  * Card Grading Management Service
- * 
+ *
  * This service provides functionality for managing sports card grading information.
  * It supports multiple grading companies (PSA, BGS, SGC, CGC) and provides
  * utilities for working with grading data.
- * 
+ *
  * Features:
  * - Support for multiple grading systems
  * - Grade validation and conversion
  * - Grading company information
  * - Grade quality assessment
- * 
+ *
  * Requirements: 5.2
  */
 
@@ -112,38 +112,31 @@ export const GRADING_COMPANIES: Record<GradingCompany, GradingCompanyInfo> = {
 
 /**
  * Get grading company information
- * 
+ *
  * @param company - The grading company
  * @returns Grading company information
  */
-export function getGradingCompanyInfo(
-  company: GradingCompany
-): GradingCompanyInfo {
+export function getGradingCompanyInfo(company: GradingCompany): GradingCompanyInfo {
   return GRADING_COMPANIES[company];
 }
 
 /**
  * Get all grading companies
- * 
+ *
  * @returns Array of all grading company information
  */
 export function getAllGradingCompanies(): GradingCompanyInfo[] {
-  return Object.values(GRADING_COMPANIES).filter(
-    (company) => company.id !== GradingCompany.UNGRADED
-  );
+  return Object.values(GRADING_COMPANIES).filter(company => company.id !== GradingCompany.UNGRADED);
 }
 
 /**
  * Validate grade for a grading company
- * 
+ *
  * @param company - The grading company
  * @param grade - The grade to validate
  * @returns True if valid, false otherwise
  */
-export function isValidGrade(
-  company: GradingCompany,
-  grade: number
-): boolean {
+export function isValidGrade(company: GradingCompany, grade: number): boolean {
   if (company === GradingCompany.UNGRADED) {
     return false;
   }
@@ -154,9 +147,9 @@ export function isValidGrade(
 
 /**
  * Get grade quality level
- * 
+ *
  * This function maps a numeric grade to a quality level descriptor.
- * 
+ *
  * @param grade - The numeric grade (1-10)
  * @returns Grade quality level
  */
@@ -174,7 +167,7 @@ export function getGradeQuality(grade: number): GradeQuality {
 
 /**
  * Get grade quality label in Chinese
- * 
+ *
  * @param quality - The grade quality level
  * @returns Chinese label
  */
@@ -195,15 +188,12 @@ export function getGradeQualityLabel(quality: GradeQuality): string {
 
 /**
  * Get grade description
- * 
+ *
  * @param company - The grading company
  * @param grade - The numeric grade
  * @returns Formatted grade description
  */
-export function getGradeDescription(
-  company: GradingCompany,
-  grade: number | null
-): string {
+export function getGradeDescription(company: GradingCompany, grade: number | null): string {
   if (!grade || company === GradingCompany.UNGRADED) {
     return '未评级';
   }
@@ -217,38 +207,35 @@ export function getGradeDescription(
 
 /**
  * Compare grades across different companies
- * 
+ *
  * This function provides a rough comparison of grades from different companies.
  * Note: This is approximate as grading standards vary between companies.
- * 
+ *
  * @param company - The grading company
  * @param grade - The grade
  * @returns Normalized grade (0-100 scale)
  */
-export function normalizeGrade(
-  company: GradingCompany,
-  grade: number
-): number {
+export function normalizeGrade(company: GradingCompany, grade: number): number {
   if (company === GradingCompany.UNGRADED) {
     return 0;
   }
 
   const info = GRADING_COMPANIES[company];
   const range = info.maxGrade - info.minGrade;
-  
+
   // Normalize to 0-100 scale
   return ((grade - info.minGrade) / range) * 100;
 }
 
 /**
  * Get grade color for UI display
- * 
+ *
  * @param grade - The numeric grade
  * @returns Tailwind CSS color class
  */
 export function getGradeColor(grade: number | null): string {
   if (!grade) return 'text-gray-500';
-  
+
   if (grade >= 9.5) return 'text-purple-600';
   if (grade >= 9) return 'text-blue-600';
   if (grade >= 8) return 'text-green-600';
@@ -259,13 +246,13 @@ export function getGradeColor(grade: number | null): string {
 
 /**
  * Get grade badge color for UI display
- * 
+ *
  * @param grade - The numeric grade
  * @returns Tailwind CSS badge color classes
  */
 export function getGradeBadgeColor(grade: number | null): string {
   if (!grade) return 'bg-gray-100 text-gray-800';
-  
+
   if (grade >= 9.5) return 'bg-purple-100 text-purple-800';
   if (grade >= 9) return 'bg-blue-100 text-blue-800';
   if (grade >= 8) return 'bg-green-100 text-green-800';
@@ -276,16 +263,16 @@ export function getGradeBadgeColor(grade: number | null): string {
 
 /**
  * Calculate estimated value multiplier based on grade
- * 
+ *
  * Higher grades typically command premium prices. This function provides
  * a rough multiplier estimate based on grade quality.
- * 
+ *
  * @param grade - The numeric grade
  * @returns Value multiplier (1.0 = base value)
  */
 export function getGradeValueMultiplier(grade: number | null): number {
   if (!grade) return 1.0;
-  
+
   if (grade >= 10) return 5.0;
   if (grade >= 9.5) return 3.5;
   if (grade >= 9) return 2.5;
@@ -297,7 +284,7 @@ export function getGradeValueMultiplier(grade: number | null): number {
 
 /**
  * Format certification number
- * 
+ *
  * @param certNumber - The certification number
  * @param company - The grading company
  * @returns Formatted certification number
@@ -315,7 +302,7 @@ export function formatCertificationNumber(
 
 /**
  * Get grading company website URL for certification lookup
- * 
+ *
  * @param company - The grading company
  * @param certNumber - The certification number
  * @returns URL for certification lookup (if available)
@@ -340,20 +327,18 @@ export function getCertificationLookupUrl(
 
 /**
  * Parse grade from string
- * 
+ *
  * This function attempts to parse a grade from various string formats.
- * 
+ *
  * @param gradeString - The grade string (e.g., "PSA 10", "BGS 9.5", "10")
  * @returns Parsed grade or null if invalid
  */
 export function parseGrade(gradeString: string): number | null {
   // Remove common prefixes
-  const cleaned = gradeString
-    .replace(/^(PSA|BGS|SGC|CGC)\s*/i, '')
-    .trim();
+  const cleaned = gradeString.replace(/^(PSA|BGS|SGC|CGC)\s*/i, '').trim();
 
   const grade = parseFloat(cleaned);
-  
+
   if (isNaN(grade) || grade < 1 || grade > 10) {
     return null;
   }
@@ -363,19 +348,17 @@ export function parseGrade(gradeString: string): number | null {
 
 /**
  * Get grading recommendations based on card condition
- * 
+ *
  * @param estimatedCondition - Estimated condition description
  * @returns Recommended grading companies and estimated grades
  */
-export function getGradingRecommendations(
-  estimatedCondition: string
-): Array<{
+export function getGradingRecommendations(estimatedCondition: string): Array<{
   company: GradingCompany;
   estimatedGrade: number;
   reason: string;
 }> {
   const condition = estimatedCondition.toLowerCase();
-  
+
   const recommendations: Array<{
     company: GradingCompany;
     estimatedGrade: number;
@@ -383,11 +366,7 @@ export function getGradingRecommendations(
   }> = [];
 
   // High-end cards (Mint or better)
-  if (
-    condition.includes('mint') ||
-    condition.includes('pristine') ||
-    condition.includes('gem')
-  ) {
+  if (condition.includes('mint') || condition.includes('pristine') || condition.includes('gem')) {
     recommendations.push({
       company: GradingCompany.PSA,
       estimatedGrade: 9.5,
@@ -399,12 +378,9 @@ export function getGradingRecommendations(
       reason: 'BGS提供详细的子评级，适合高端卡片',
     });
   }
-  
+
   // Mid-range cards
-  else if (
-    condition.includes('excellent') ||
-    condition.includes('near mint')
-  ) {
+  else if (condition.includes('excellent') || condition.includes('near mint')) {
     recommendations.push({
       company: GradingCompany.SGC,
       estimatedGrade: 8,
@@ -416,7 +392,7 @@ export function getGradingRecommendations(
       reason: 'CGC价格合理，评级透明',
     });
   }
-  
+
   // Lower grade cards
   else {
     recommendations.push({

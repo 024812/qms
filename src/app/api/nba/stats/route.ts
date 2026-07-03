@@ -1,7 +1,11 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextResponse } from 'next/server';
+import { requireApiSession } from '@/lib/api/route-auth';
 
 export async function GET(request: Request) {
+  const authResult = await requireApiSession();
+  if (!authResult.ok) return authResult.response;
+
   const { searchParams } = new URL(request.url);
   const playerId = searchParams.get('playerId'); // e.g., 1642258 for Risacher
 

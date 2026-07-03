@@ -1,9 +1,9 @@
 /**
  * StatusBadge Component
- * 
+ *
  * Displays item status with appropriate styling and labels.
  * Supports all item status types defined in the database schema.
- * 
+ *
  * Requirements: 4.1
  */
 
@@ -53,7 +53,7 @@ const STATUS_CONFIG: Record<
 
 /**
  * StatusBadge Component
- * 
+ *
  * Renders a badge with appropriate styling based on item status.
  * Falls back to secondary variant for unknown status values.
  */

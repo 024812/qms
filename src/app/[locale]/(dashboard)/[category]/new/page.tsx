@@ -24,7 +24,6 @@ import { ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 import { connection } from 'next/server';
 
-
 interface PageProps {
   params: Promise<{
     category: string;
@@ -34,10 +33,10 @@ interface PageProps {
 export default async function NewItemPage(props: PageProps) {
   // Await params (Next.js 15+ requirement)
   const params = await props.params;
-  
+
   // Opt-in to dynamic rendering for auth check
   await connection();
-  
+
   // Verify authentication
   const session = await auth();
 

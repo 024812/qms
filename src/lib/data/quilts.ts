@@ -34,12 +34,7 @@ import { quiltsCacheTags, usageCacheTags, statsCacheTags } from '@/modules/core/
 // ============================================================================
 
 export type QuiltSortField =
-  | 'itemNumber'
-  | 'name'
-  | 'season'
-  | 'weightGrams'
-  | 'createdAt'
-  | 'updatedAt';
+  'itemNumber' | 'name' | 'season' | 'weightGrams' | 'createdAt' | 'updatedAt';
 
 export type SortOrder = 'asc' | 'desc';
 

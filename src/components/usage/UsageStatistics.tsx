@@ -255,7 +255,10 @@ export function UsageStatistics({ usagePeriods, quiltName }: UsageStatisticsProp
                 <div className="flex items-center space-x-2">
                   <Award className="w-4 h-4 text-blue-600" />
                   <span className="text-sm font-medium text-blue-900">
-                    {t('mostCommon', { type: mostUsedType[0].replace('_', ' '), count: mostUsedType[1] })}
+                    {t('mostCommon', {
+                      type: mostUsedType[0].replace('_', ' '),
+                      count: mostUsedType[1],
+                    })}
                   </span>
                 </div>
               </div>
@@ -293,7 +296,10 @@ export function UsageStatistics({ usagePeriods, quiltName }: UsageStatisticsProp
                   <div className="flex items-center space-x-2">
                     <Target className="w-4 h-4 text-green-600" />
                     <span className="text-sm font-medium text-green-900">
-                      {t('mostUsedLocation', { location: mostUsedLocation[0], count: mostUsedLocation[1] })}
+                      {t('mostUsedLocation', {
+                        location: mostUsedLocation[0],
+                        count: mostUsedLocation[1],
+                      })}
                     </span>
                   </div>
                 </div>

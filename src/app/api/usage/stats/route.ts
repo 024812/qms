@@ -7,6 +7,7 @@
 
 import { getSimpleUsageStats } from '@/lib/data/stats';
 import { createSuccessResponse, createInternalErrorResponse } from '@/lib/api/response';
+import { requireApiSession } from '@/lib/api/route-auth';
 
 /**
  * GET /api/usage/stats
@@ -20,6 +21,9 @@ import { createSuccessResponse, createInternalErrorResponse } from '@/lib/api/re
  */
 export async function GET() {
   try {
+    const authResult = await requireApiSession();
+    if (!authResult.ok) return authResult.response;
+
     const stats = await getSimpleUsageStats();
 
     return createSuccessResponse({ stats });

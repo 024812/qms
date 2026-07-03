@@ -1,16 +1,16 @@
 /**
  * QuiltCard Component for Module System
- * 
+ *
  * This component displays a quilt card in the module system's list view.
  * It preserves the existing design and functionality from the original QuiltCard
  * while being compatible with the module registry system.
- * 
+ *
  * Key features:
  * - Displays key quilt information (name, size, warmth level, status)
  * - Shows status badge with appropriate colors
  * - Displays main image if available
  * - Compatible with both module system and existing routes
- * 
+ *
  * Requirements: 4.1
  */
 
@@ -81,7 +81,7 @@ function getStatusLabel(status: string): string {
 
 /**
  * QuiltCard Component
- * 
+ *
  * Displays a quilt item in a card format with:
  * - Main image (if available)
  * - Item number
@@ -89,7 +89,7 @@ function getStatusLabel(status: string): string {
  * - Season and status badges
  * - Dimensions and weight
  * - Fill material, color, and location
- * 
+ *
  * Note: This component does NOT include the Card wrapper - that's handled by the parent ItemCard component.
  */
 export function QuiltCard({ item }: QuiltCardProps) {
@@ -115,9 +115,7 @@ export function QuiltCard({ item }: QuiltCardProps) {
           <div className="flex-1">
             <div className="flex items-center gap-2 mb-1">
               <Package className="w-4 h-4 text-muted-foreground" />
-              <span className="text-xs text-muted-foreground">
-                #{item.itemNumber}
-              </span>
+              <span className="text-xs text-muted-foreground">#{item.itemNumber}</span>
             </div>
             <h3 className="font-semibold text-foreground">{item.name}</h3>
           </div>
@@ -136,17 +134,13 @@ export function QuiltCard({ item }: QuiltCardProps) {
         {/* Details: Dimensions, Weight, Material, Color, Location */}
         <div className="text-sm text-muted-foreground space-y-1">
           {/* Dimensions */}
-          <div>
-            {item.lengthCm && item.widthCm
-              ? `${item.lengthCm}×${item.widthCm}cm`
-              : '-'}
-          </div>
-          
+          <div>{item.lengthCm && item.widthCm ? `${item.lengthCm}×${item.widthCm}cm` : '-'}</div>
+
           {/* Weight and Fill Material */}
           <div>
             {item.weightGrams ? `${item.weightGrams}g` : '-'} · {item.fillMaterial}
           </div>
-          
+
           {/* Color and Location */}
           <div>
             {item.color} · {item.location}

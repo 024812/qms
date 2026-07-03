@@ -12,10 +12,14 @@
 import { NextRequest } from 'next/server';
 import { getAnalyticsData } from '@/lib/data/stats';
 import { createSuccessResponse, createInternalErrorResponse } from '@/lib/api/response';
+import { requireApiSession } from '@/lib/api/route-auth';
 
 // GET /api/analytics - Get comprehensive analytics data
 export async function GET(_request: NextRequest) {
   try {
+    const authResult = await requireApiSession();
+    if (!authResult.ok) return authResult.response;
+
     // Use data access layer for all database operations
     const analyticsData = await getAnalyticsData();
 

@@ -31,25 +31,16 @@ export function ImportUpload({ onFileUpload }: ImportUploadProps) {
           );
 
           onFileUpload(file.name, base64);
-          success(
-            t('toast.successTitle'),
-            t('toast.successDesc', { name: file.name })
-          );
+          success(t('toast.successTitle'), t('toast.successDesc', { name: file.name }));
         } catch {
-          error(
-            t('toast.failedTitle'),
-            t('toast.failedProcess')
-          );
+          error(t('toast.failedTitle'), t('toast.failedProcess'));
         } finally {
           setIsUploading(false);
         }
       };
 
       reader.onerror = () => {
-        error(
-          t('toast.failedTitle'),
-          t('toast.failedRead')
-        );
+        error(t('toast.failedTitle'), t('toast.failedRead'));
         setIsUploading(false);
       };
 
@@ -66,19 +57,13 @@ export function ImportUpload({ onFileUpload }: ImportUploadProps) {
 
       // Validate file type
       if (!file.name.toLowerCase().endsWith('.xlsx') && !file.name.toLowerCase().endsWith('.xls')) {
-        error(
-          t('toast.invalidTypeTitle'),
-          t('toast.invalidTypeDesc')
-        );
+        error(t('toast.invalidTypeTitle'), t('toast.invalidTypeDesc'));
         return;
       }
 
       // Validate file size (10MB limit)
       if (file.size > 10 * 1024 * 1024) {
-        error(
-          t('toast.tooLargeTitle'),
-          t('toast.tooLargeDesc')
-        );
+        error(t('toast.tooLargeTitle'), t('toast.tooLargeDesc'));
         return;
       }
 
@@ -147,9 +132,7 @@ export function ImportUpload({ onFileUpload }: ImportUploadProps) {
                 <p className="text-lg font-medium text-foreground">
                   {isUploading ? t('processingFile') : t('dropFile')}
                 </p>
-                <p className="text-sm text-muted-foreground mt-1">
-                  {t('orClickToBrowse')}
-                </p>
+                <p className="text-sm text-muted-foreground mt-1">{t('orClickToBrowse')}</p>
               </div>
 
               <div className="flex justify-center">
@@ -205,9 +188,7 @@ export function ImportUpload({ onFileUpload }: ImportUploadProps) {
               <div className="w-2 h-2 bg-blue-500 rounded-full mt-2"></div>
               <div>
                 <p className="font-medium">{t('expectedColumns')}</p>
-                <p className="text-sm text-muted-foreground">
-                  {t('columnDescription')}
-                </p>
+                <p className="text-sm text-muted-foreground">{t('columnDescription')}</p>
               </div>
             </div>
           </div>

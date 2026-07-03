@@ -42,7 +42,7 @@ interface PageProps {
 
 export default function ModulePage({ params, searchParams }: PageProps) {
   const { locale, category } = use(params);
-  
+
   // Enable static rendering
   setRequestLocale(locale);
   const t = useTranslations();
@@ -58,11 +58,9 @@ export default function ModulePage({ params, searchParams }: PageProps) {
       <div className="flex justify-between items-center mb-6">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">
-             {t(`users.modules.${moduleDef.id}`) || moduleDef.name}
+            {t(`users.modules.${moduleDef.id}`) || moduleDef.name}
           </h1>
-          <p className="text-muted-foreground mt-1">
-             {moduleDef.description}
-          </p>
+          <p className="text-muted-foreground mt-1">{moduleDef.description}</p>
         </div>
         <Button asChild>
           <Link href={`/${category}/new`}>
@@ -73,37 +71,29 @@ export default function ModulePage({ params, searchParams }: PageProps) {
       </div>
 
       <Suspense fallback={<Skeleton className="h-[400px] w-full" />}>
-        <ItemListContainer 
-            category={category} 
-            searchParams={searchParams}
-        />
+        <ItemListContainer category={category} searchParams={searchParams} />
       </Suspense>
     </div>
   );
 }
 
-async function ItemListContainer({ 
-    category, 
-    searchParams 
-}: { 
-    category: string, 
-    searchParams: Promise<{ page?: string; status?: string; search?: string }> 
+async function ItemListContainer({
+  category,
+  searchParams,
+}: {
+  category: string;
+  searchParams: Promise<{ page?: string; status?: string; search?: string }>;
 }) {
-    const params = await searchParams;
-    const page = Number(params.page) || 1;
-    const status = params.status;
-    const search = params.search;
+  const params = await searchParams;
+  const page = Number(params.page) || 1;
+  const status = params.status;
+  const search = params.search;
 
-    const result = await getItems(category, {
-        page,
-        status,
-        search
-    });
+  const result = await getItems(category, {
+    page,
+    status,
+    search,
+  });
 
-    return (
-        <ItemList 
-            items={result.data} 
-            moduleType={category}
-        />
-    );
+  return <ItemList items={result.data} moduleType={category} />;
 }

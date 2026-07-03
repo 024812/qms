@@ -77,6 +77,7 @@ This allows the core `ItemCard` component to dynamically render the QuiltCard wh
 ### Testing
 
 **Test Coverage**: 15 unit tests covering:
+
 - Rendering of all key information fields
 - Season and status badge display
 - Image handling (with and without images)
@@ -88,6 +89,7 @@ This allows the core `ItemCard` component to dynamically render the QuiltCard wh
 ### Compatibility
 
 The QuiltCard component is compatible with:
+
 - ✅ Module registry system
 - ✅ Core ItemCard component
 - ✅ Existing quilt schema and types
@@ -110,11 +112,13 @@ The next task (15.2) will implement the QuiltDetail component for displaying ful
 To verify the implementation:
 
 1. **Run Tests**:
+
    ```bash
    npx vitest run src/modules/quilts/ui/__tests__/QuiltCard.test.tsx
    ```
 
 2. **Check TypeScript**:
+
    ```bash
    npm run type-check
    ```

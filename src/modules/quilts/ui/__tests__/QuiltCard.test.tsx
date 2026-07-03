@@ -1,12 +1,12 @@
 /**
  * QuiltCard Component Tests
- * 
+ *
  * Unit tests for the QuiltCard component to verify:
  * - Correct rendering of quilt information
  * - Display of images when available
  * - Proper badge colors for season and status
  * - Handling of missing optional fields
- * 
+ *
  * Requirements: 4.1
  */
 

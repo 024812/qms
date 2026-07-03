@@ -186,7 +186,10 @@ export function UsageTimeline({ usagePeriods, quiltName, showStats = true }: Usa
             <span>{t('usage.timeline.title')}</span>
           </div>
           <Badge variant="outline">
-            {usagePeriods.length} {usagePeriods.length === 1 ? t('usage.timeline.period').replace('{count}', '1').split(' ')[1] : t('usage.timeline.periods').replace('{count}', '').trim()}
+            {usagePeriods.length}{' '}
+            {usagePeriods.length === 1
+              ? t('usage.timeline.period').replace('{count}', '1').split(' ')[1]
+              : t('usage.timeline.periods').replace('{count}', '').trim()}
           </Badge>
         </CardTitle>
         <CardDescription>{t('usage.timeline.description', { quiltName })}</CardDescription>
@@ -211,7 +214,9 @@ export function UsageTimeline({ usagePeriods, quiltName, showStats = true }: Usa
             {stats.avgSatisfaction > 0 && (
               <div className="text-center p-3 bg-yellow-50 rounded-lg">
                 <div className="text-2xl font-bold text-yellow-600">{stats.avgSatisfaction}</div>
-                <div className="text-xs text-yellow-600">{t('usage.statistics.avgSatisfaction')}</div>
+                <div className="text-xs text-yellow-600">
+                  {t('usage.statistics.avgSatisfaction')}
+                </div>
               </div>
             )}
           </div>
@@ -320,14 +325,18 @@ export function UsageTimeline({ usagePeriods, quiltName, showStats = true }: Usa
                       <div className="mt-4 p-4 bg-gray-50 rounded-lg space-y-3">
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
                           <div>
-                            <span className="font-medium text-gray-700">{t('usage.timeline.start')}:</span>
+                            <span className="font-medium text-gray-700">
+                              {t('usage.timeline.start')}:
+                            </span>
                             <span className="ml-2 text-gray-600">
                               {formatDateTime(period.startDate)}
                             </span>
                           </div>
                           {period.endDate && (
                             <div>
-                              <span className="font-medium text-gray-700">{t('usage.timeline.end')}:</span>
+                              <span className="font-medium text-gray-700">
+                                {t('usage.timeline.end')}:
+                              </span>
                               <span className="ml-2 text-gray-600">
                                 {formatDateTime(period.endDate)}
                               </span>
@@ -347,7 +356,9 @@ export function UsageTimeline({ usagePeriods, quiltName, showStats = true }: Usa
                           )}
                           {period.seasonUsed && (
                             <div>
-                              <span className="font-medium text-gray-700">{t('usage.timeline.season')}:</span>
+                              <span className="font-medium text-gray-700">
+                                {t('usage.timeline.season')}:
+                              </span>
                               <span className="ml-2 text-gray-600">{period.seasonUsed}</span>
                             </div>
                           )}
@@ -357,7 +368,9 @@ export function UsageTimeline({ usagePeriods, quiltName, showStats = true }: Usa
                           <div>
                             <div className="flex items-center space-x-2 mb-2">
                               <FileText className="w-4 h-4 text-gray-500" />
-                              <span className="font-medium text-gray-700">{t('usage.timeline.notes')}:</span>
+                              <span className="font-medium text-gray-700">
+                                {t('usage.timeline.notes')}:
+                              </span>
                             </div>
                             <p className="text-gray-600 text-sm pl-6">{period.notes}</p>
                           </div>

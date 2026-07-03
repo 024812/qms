@@ -8,6 +8,7 @@
 import { NextRequest } from 'next/server';
 import { getUsageHistory, getActiveUsageRecord, getUsageStats } from '@/lib/data/usage';
 import { createSuccessResponse, createInternalErrorResponse } from '@/lib/api/response';
+import { requireApiSession } from '@/lib/api/route-auth';
 
 interface RouteParams {
   params: Promise<{ quiltId: string }>;
@@ -23,6 +24,9 @@ interface RouteParams {
  */
 export async function GET(request: NextRequest, { params }: RouteParams) {
   try {
+    const authResult = await requireApiSession();
+    if (!authResult.ok) return authResult.response;
+
     const { quiltId } = await params;
     const { searchParams } = new URL(request.url);
     const includeStats = searchParams.get('includeStats') === 'true';

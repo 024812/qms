@@ -60,23 +60,22 @@ export function UsageCalendar({
     const d = new Date(2023, 0, 1); // Sunday
     const days = [];
     for (let i = 0; i < 7; i++) {
-        days.push(d.toLocaleDateString(locale, { weekday: 'short' }));
-        d.setDate(d.getDate() + 1);
+      days.push(d.toLocaleDateString(locale, { weekday: 'short' }));
+      d.setDate(d.getDate() + 1);
     }
     return days;
   }, [locale]);
 
-    // Create localized month names
+  // Create localized month names
   const monthNames = useMemo(() => {
     const d = new Date(2023, 0, 1);
     const months = [];
     for (let i = 0; i < 12; i++) {
-        months.push(d.toLocaleDateString(locale, { month: 'long' }));
-        d.setMonth(d.getMonth() + 1);
+      months.push(d.toLocaleDateString(locale, { month: 'long' }));
+      d.setMonth(d.getMonth() + 1);
     }
     return months;
   }, [locale]);
-
 
   // Create a map of dates to usage periods for quick lookup
   const usageMap = useMemo(() => {
@@ -174,7 +173,7 @@ export function UsageCalendar({
           <div className="text-sm font-medium">{day}</div>
           {periodsOnDate.length > 0 && (
             <div className="absolute bottom-1 left-1 right-1 flex space-x-0.5" aria-hidden="true">
-              {periodsOnDate.slice(0, 3).map((period) => (
+              {periodsOnDate.slice(0, 3).map(period => (
                 <div
                   key={period.id}
                   className={cn(
@@ -247,7 +246,10 @@ export function UsageCalendar({
         >
           <div className="font-medium text-sm">{monthNames[month]}</div>
           <div className="text-xs text-muted-foreground mt-1">
-            {monthUsage.length} {monthUsage.length === 1 ? t('usage.timeline.period').replace('{count}', '1').split(' ')[1] : t('usage.timeline.periods').replace('{count}', '').trim()}
+            {monthUsage.length}{' '}
+            {monthUsage.length === 1
+              ? t('usage.timeline.period').replace('{count}', '1').split(' ')[1]
+              : t('usage.timeline.periods').replace('{count}', '').trim()}
           </div>
           {monthUsage.length > 0 && (
             <div className="flex justify-center space-x-1 mt-2" aria-hidden="true">
@@ -332,7 +334,9 @@ export function UsageCalendar({
 
         {/* Legend */}
         <div className="flex flex-wrap items-center gap-4 pt-4 border-t border-border">
-          <span className="text-sm font-medium text-muted-foreground">{t('usage.calendar.usageTypes')}:</span>
+          <span className="text-sm font-medium text-muted-foreground">
+            {t('usage.calendar.usageTypes')}:
+          </span>
           {Object.entries(USAGE_TYPE_COLORS).map(([type, color]) => (
             <div key={type} className="flex items-center space-x-2">
               <div className={cn('w-3 h-3 rounded-full', color)} />
@@ -353,7 +357,7 @@ export function UsageCalendar({
               })}
             </h4>
             <div className="space-y-2">
-              {selectedDatePeriods.map((period) => (
+              {selectedDatePeriods.map(period => (
                 <button
                   type="button"
                   key={period.id}

@@ -1,7 +1,15 @@
 import { getRequestConfig } from 'next-intl/server';
+import type { AbstractIntlMessages } from 'next-intl';
+import enMessages from '../../messages/en.json';
+import zhMessages from '../../messages/zh.json';
 import { routing } from './routing';
 
 type AppLocale = (typeof routing.locales)[number];
+
+const messagesByLocale: Record<AppLocale, AbstractIntlMessages> = {
+  en: enMessages,
+  zh: zhMessages,
+};
 
 function isValidLocale(locale: string): locale is AppLocale {
   return routing.locales.includes(locale as AppLocale);
@@ -9,15 +17,14 @@ function isValidLocale(locale: string): locale is AppLocale {
 
 export default getRequestConfig(async ({ requestLocale }) => {
   // This typically corresponds to the `[locale]` segment
-  let locale = await requestLocale;
+  const requestedLocale = await requestLocale;
 
   // Ensure that a valid locale is used
-  if (!locale || !isValidLocale(locale)) {
-    locale = routing.defaultLocale;
-  }
+  const locale =
+    requestedLocale && isValidLocale(requestedLocale) ? requestedLocale : routing.defaultLocale;
 
   return {
     locale,
-    messages: (await import(`../../messages/${locale}.json`)).default,
+    messages: messagesByLocale[locale],
   };
 });

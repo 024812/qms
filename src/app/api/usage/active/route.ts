@@ -7,6 +7,7 @@
 
 import { getAllActiveUsageRecords } from '@/lib/data/usage';
 import { createSuccessResponse, createInternalErrorResponse } from '@/lib/api/response';
+import { requireApiSession } from '@/lib/api/route-auth';
 
 /**
  * GET /api/usage/active
@@ -16,6 +17,9 @@ import { createSuccessResponse, createInternalErrorResponse } from '@/lib/api/re
  */
 export async function GET() {
   try {
+    const authResult = await requireApiSession();
+    if (!authResult.ok) return authResult.response;
+
     const records = await getAllActiveUsageRecords();
 
     return createSuccessResponse({ records }, { total: records.length, hasMore: false });

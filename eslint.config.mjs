@@ -79,6 +79,8 @@ const eslintConfig = defineConfig([
       'react-hooks/purity': 'off',
       'react-hooks/refs': 'off',
       'react-hooks/incompatible-library': 'off',
+      'react-hooks/set-state-in-effect': 'off',
+      'react-hooks/static-components': 'off',
 
       // Import/Export rules (relaxed for now)
       'import/no-duplicates': 'error',

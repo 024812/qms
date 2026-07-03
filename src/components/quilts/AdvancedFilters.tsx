@@ -147,17 +147,13 @@ export function AdvancedFilters({
       <SheetContent className="w-full sm:max-w-md overflow-y-auto">
         <SheetHeader>
           <SheetTitle>{t('quilts.filters.advancedFilters')}</SheetTitle>
-          <SheetDescription>
-            {t('quilts.filters.advancedDescription')}
-          </SheetDescription>
+          <SheetDescription>{t('quilts.filters.advancedDescription')}</SheetDescription>
         </SheetHeader>
 
         <div className="space-y-6 py-6">
           {/* Season Filter */}
           <div className="space-y-3">
-            <Label className="text-base font-semibold">
-              {t('quilts.filters.season')}
-            </Label>
+            <Label className="text-base font-semibold">{t('quilts.filters.season')}</Label>
             <div className="space-y-2">
               {['WINTER', 'SPRING_AUTUMN', 'SUMMER'].map(season => (
                 <div key={season} className="flex items-center space-x-2">
@@ -179,9 +175,7 @@ export function AdvancedFilters({
 
           {/* Status Filter */}
           <div className="space-y-3">
-            <Label className="text-base font-semibold">
-              {t('quilts.filters.status')}
-            </Label>
+            <Label className="text-base font-semibold">{t('quilts.filters.status')}</Label>
             <div className="space-y-2">
               {['IN_USE', 'STORAGE', 'MAINTENANCE'].map(status => (
                 <div key={status} className="flex items-center space-x-2">
@@ -203,9 +197,7 @@ export function AdvancedFilters({
 
           {/* Weight Range */}
           <div className="space-y-3">
-            <Label className="text-base font-semibold">
-              {t('quilts.filters.weightRange')}
-            </Label>
+            <Label className="text-base font-semibold">{t('quilts.filters.weightRange')}</Label>
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <Label htmlFor="minWeight" className="text-xs text-gray-500">
@@ -246,9 +238,7 @@ export function AdvancedFilters({
 
           {/* Size Range - Length */}
           <div className="space-y-3">
-            <Label className="text-base font-semibold">
-              {t('quilts.filters.lengthRange')}
-            </Label>
+            <Label className="text-base font-semibold">{t('quilts.filters.lengthRange')}</Label>
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <Label htmlFor="minLength" className="text-xs text-gray-500">
@@ -289,9 +279,7 @@ export function AdvancedFilters({
 
           {/* Size Range - Width */}
           <div className="space-y-3">
-            <Label className="text-base font-semibold">
-              {t('quilts.filters.widthRange')}
-            </Label>
+            <Label className="text-base font-semibold">{t('quilts.filters.widthRange')}</Label>
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <Label htmlFor="minWidth" className="text-xs text-gray-500">
@@ -333,9 +321,7 @@ export function AdvancedFilters({
           {/* Color Filter */}
           {availableColors.length > 0 && (
             <div className="space-y-3">
-              <Label className="text-base font-semibold">
-                {t('quilts.filters.color')}
-              </Label>
+              <Label className="text-base font-semibold">{t('quilts.filters.color')}</Label>
               <div className="space-y-2 max-h-40 overflow-y-auto">
                 {availableColors.map(color => (
                   <div key={color} className="flex items-center space-x-2">
@@ -359,9 +345,7 @@ export function AdvancedFilters({
           {/* Material Filter */}
           {availableMaterials.length > 0 && (
             <div className="space-y-3">
-              <Label className="text-base font-semibold">
-                {t('quilts.filters.fillMaterial')}
-              </Label>
+              <Label className="text-base font-semibold">{t('quilts.filters.fillMaterial')}</Label>
               <div className="space-y-2 max-h-40 overflow-y-auto">
                 {availableMaterials.map(material => (
                   <div key={material} className="flex items-center space-x-2">

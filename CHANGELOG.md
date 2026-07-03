@@ -5,6 +5,39 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project uses npm-compatible date-based semantic versions in `YYYY.M.D` form.
 
+## [2026.7.3] - 2026-07-03
+
+### Changed
+
+- Updated the working stack to Next.js `16.2.10`, next-intl `4.13.1`, Better Auth `1.6.23`, Tailwind CSS `4.3.2`, TanStack React Query `5.101.2`, Vitest `4.1.9`, OpenAI `6.45.0`, Lucide React `1.23.0`, and Node types `26.1.0`.
+- Restored tracked locale message files and changed next-intl request config to a static locale-message map for Turbopack-compatible builds.
+- Updated Drizzle config to load `.env` and `.env.local`, with `.env.local` taking precedence for Neon deployments.
+- Refreshed README and documentation around Neon-only migrations and the current release baseline.
+
+### Security
+
+- Added explicit session checks to dashboard, analytics, reports, NBA stats, and usage aggregate API routes.
+- Added session checks to dashboard and usage server actions while preserving the family-shared data model.
+- Added CSV formula-injection protection to report exports.
+- Hardened SVG image handling by forcing attachment disposition.
+- Added durable Agent write-tool idempotency with the `agent_idempotency_keys` table.
+- Cleared `npm audit --omit=optional` to 0 known vulnerabilities.
+
+### Database
+
+- Added migration `0006_agent_idempotency_keys`.
+- Added missing Drizzle journal entry for `0005_create_user_api_keys`.
+- Baselined existing Neon migration records through `0005` and applied `0006` to Neon.
+
+### Verification
+
+- `npm run lint:check`
+- `npm run type-check`
+- `npm test`
+- `npm run build`
+- `npm audit --omit=optional`
+- `npm run db:migrate`
+
 ## [2026.6.2] - 2026-06-02
 
 ### Changed

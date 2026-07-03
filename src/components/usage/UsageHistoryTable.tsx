@@ -60,29 +60,27 @@ export function UsageHistoryTable({
     }
   };
 
-
-
-  // Improved duration formatting to handle pluralization properly via translations if possible, 
+  // Improved duration formatting to handle pluralization properly via translations if possible,
   // but for now keeping it simple or using the existing helper with keys.
   // Actually, I have "duration": "{days} day | {days} days" in usage.timeline.
   // I can use t('usage.timeline.duration', {days: days}) which handles pluralization if configured.
   // usage.timeline.duration is "{days} day | {days} days" (ICU syntax).
-  
+
   const formatDurationICU = (startDate: Date, endDate?: Date | null) => {
-      if (!endDate) return '-';
-      try {
-        const start = new Date(startDate);
-        const end = new Date(endDate);
-        const days = Math.floor((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
-        // ICU message: "{days} day | {days} days" works with pluralization? 
-        // Or "duration": "{days, plural, =0 {<1 day} one {# day} other {# days}}"
-        // My JSON has: "duration": "{days} day | {days} days" which might be simple pipe or just incorrect.
-        // Let's use manual logic for now to be safe as I didn't verify ICU setup.
-        if (days === 0) return t('usage.history.lessThanOneDay');
-        return startDate ? `${days} ${locale === 'zh' ? '天' : (days === 1 ? 'day' : 'days')}` : '-'; 
-      } catch {
-        return '-';
-      }
+    if (!endDate) return '-';
+    try {
+      const start = new Date(startDate);
+      const end = new Date(endDate);
+      const days = Math.floor((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
+      // ICU message: "{days} day | {days} days" works with pluralization?
+      // Or "duration": "{days, plural, =0 {<1 day} one {# day} other {# days}}"
+      // My JSON has: "duration": "{days} day | {days} days" which might be simple pipe or just incorrect.
+      // Let's use manual logic for now to be safe as I didn't verify ICU setup.
+      if (days === 0) return t('usage.history.lessThanOneDay');
+      return startDate ? `${days} ${locale === 'zh' ? '天' : days === 1 ? 'day' : 'days'}` : '-';
+    } catch {
+      return '-';
+    }
   };
 
   if (isLoading) {
@@ -95,7 +93,7 @@ export function UsageHistoryTable({
         icon={PackageOpen}
         title={t('usage.calendar.noHistory')}
         description={
-            locale === 'zh' ? '这个被子还没有使用记录' : 'This quilt has no usage records yet'
+          locale === 'zh' ? '这个被子还没有使用记录' : 'This quilt has no usage records yet'
         }
       />
     );
@@ -162,9 +160,7 @@ export function UsageHistoryTable({
                 </TableCell>
                 <TableCell className="text-center">
                   <Badge variant={!record.endDate ? 'default' : 'secondary'}>
-                    {!record.endDate
-                      ? t('usage.labels.active')
-                      : t('usage.history.completed')}
+                    {!record.endDate ? t('usage.labels.active') : t('usage.history.completed')}
                   </Badge>
                 </TableCell>
                 <TableCell className="text-center">

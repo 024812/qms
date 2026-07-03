@@ -1,10 +1,15 @@
 import { NextRequest } from 'next/server';
+import crypto from 'crypto';
+import { and, eq } from 'drizzle-orm';
 import { z } from 'zod';
 
+import { db } from '@/db';
+import { agentIdempotencyKeys } from '@/db/schema';
 import { requireAgent, type AgentScope } from '@/lib/agent/auth';
 import { recordAgentAudit } from '@/lib/agent/audit';
 import {
   createBadRequestResponse,
+  createConflictResponse,
   createSuccessResponse,
   createValidationErrorResponse,
 } from '@/lib/api/response';
@@ -182,6 +187,19 @@ const writeTools = new Set([
   'cards.update',
 ]);
 
+type ToolRequest = z.infer<typeof toolSchema>;
+type ToolSuccessPayload = {
+  tool: ToolRequest['tool'];
+  dryRun: boolean;
+  result: unknown;
+  idempotentReplay?: boolean;
+};
+
+type IdempotencyReservation =
+  | { kind: 'none' }
+  | { kind: 'reserved'; inputHash: string }
+  | { kind: 'response'; response: ReturnType<typeof createSuccessResponse> };
+
 function validationResponse(error: z.ZodError) {
   return createValidationErrorResponse(
     'Agent tool input validation failed',
@@ -198,6 +216,144 @@ function requireWriteConfirmation(request: z.infer<typeof toolSchema>) {
     return createBadRequestResponse('Write tools require idempotencyKey');
   }
   return null;
+}
+
+function stableStringify(value: unknown): string {
+  if (value === undefined) {
+    return '"[undefined]"';
+  }
+
+  if (value === null || typeof value !== 'object') {
+    return JSON.stringify(value);
+  }
+
+  if (Array.isArray(value)) {
+    return `[${value.map(item => stableStringify(item)).join(',')}]`;
+  }
+
+  const record = value as Record<string, unknown>;
+  return `{${Object.keys(record)
+    .sort()
+    .map(key => `${JSON.stringify(key)}:${stableStringify(record[key])}`)
+    .join(',')}}`;
+}
+
+function hashToolInput(request: ToolRequest) {
+  return crypto
+    .createHash('sha256')
+    .update(stableStringify({ input: request.input, tool: request.tool }))
+    .digest('hex');
+}
+
+function idempotencyKeyWhere(agentId: string, idempotencyKey: string) {
+  return and(
+    eq(agentIdempotencyKeys.agentId, agentId),
+    eq(agentIdempotencyKeys.idempotencyKey, idempotencyKey)
+  );
+}
+
+async function reserveIdempotencyKey(
+  agentId: string,
+  request: ToolRequest
+): Promise<IdempotencyReservation> {
+  if (!writeTools.has(request.tool) || request.dryRun) {
+    return { kind: 'none' };
+  }
+
+  const idempotencyKey = request.idempotencyKey;
+
+  if (!idempotencyKey) {
+    return { kind: 'none' };
+  }
+
+  const inputHash = hashToolInput(request);
+  const [inserted] = await db
+    .insert(agentIdempotencyKeys)
+    .values({
+      agentId,
+      idempotencyKey,
+      toolName: request.tool,
+      inputHash,
+      status: 'in_progress',
+    })
+    .onConflictDoNothing({
+      target: [agentIdempotencyKeys.agentId, agentIdempotencyKeys.idempotencyKey],
+    })
+    .returning({ id: agentIdempotencyKeys.id });
+
+  if (inserted) {
+    return { kind: 'reserved', inputHash };
+  }
+
+  const [existing] = await db
+    .select()
+    .from(agentIdempotencyKeys)
+    .where(idempotencyKeyWhere(agentId, idempotencyKey))
+    .limit(1);
+
+  if (!existing) {
+    return {
+      kind: 'response',
+      response: createConflictResponse('Idempotency key could not be reserved'),
+    };
+  }
+
+  if (existing.toolName !== request.tool || existing.inputHash !== inputHash) {
+    return {
+      kind: 'response',
+      response: createConflictResponse('Idempotency key was already used for a different request'),
+    };
+  }
+
+  if (existing.status === 'succeeded' && existing.response) {
+    const replayPayload = {
+      ...existing.response,
+      idempotentReplay: true,
+    } as ToolSuccessPayload;
+    return { kind: 'response', response: createSuccessResponse(replayPayload) };
+  }
+
+  return {
+    kind: 'response',
+    response: createConflictResponse('Idempotency key is already in use or previously failed', {
+      status: existing.status,
+    }),
+  };
+}
+
+async function markIdempotencySucceeded(
+  agentId: string,
+  idempotencyKey: string | undefined,
+  payload: ToolSuccessPayload
+) {
+  if (!idempotencyKey) return;
+
+  await db
+    .update(agentIdempotencyKeys)
+    .set({
+      status: 'succeeded',
+      response: payload as Record<string, unknown>,
+      errorMessage: null,
+      updatedAt: new Date(),
+    })
+    .where(idempotencyKeyWhere(agentId, idempotencyKey));
+}
+
+async function markIdempotencyFailed(
+  agentId: string,
+  idempotencyKey: string | undefined,
+  error: unknown
+) {
+  if (!idempotencyKey) return;
+
+  await db
+    .update(agentIdempotencyKeys)
+    .set({
+      status: 'failed',
+      errorMessage: error instanceof Error ? error.message : String(error),
+      updatedAt: new Date(),
+    })
+    .where(idempotencyKeyWhere(agentId, idempotencyKey));
 }
 
 export async function POST(request: NextRequest) {
@@ -219,8 +375,31 @@ export async function POST(request: NextRequest) {
   const confirmationError = requireWriteConfirmation(toolRequest);
   if (confirmationError) return confirmationError;
 
+  const idempotencyReservation = await reserveIdempotencyKey(authResult.agent.id, toolRequest);
+  if (idempotencyReservation.kind === 'response') {
+    await recordAgentAudit({
+      agent: authResult.agent,
+      toolName: toolRequest.tool,
+      action: 'replay',
+      success: true,
+      metadata: { idempotencyKey: toolRequest.idempotencyKey, input: toolRequest.input },
+    });
+
+    return idempotencyReservation.response;
+  }
+
   try {
     const result = await callTool(toolRequest);
+    const payload: ToolSuccessPayload = {
+      tool: toolRequest.tool,
+      dryRun: toolRequest.dryRun,
+      result,
+    };
+
+    if (idempotencyReservation.kind === 'reserved') {
+      await markIdempotencySucceeded(authResult.agent.id, toolRequest.idempotencyKey, payload);
+    }
+
     await recordAgentAudit({
       agent: authResult.agent,
       toolName: toolRequest.tool,
@@ -229,8 +408,12 @@ export async function POST(request: NextRequest) {
       metadata: { idempotencyKey: toolRequest.idempotencyKey, input: toolRequest.input },
     });
 
-    return createSuccessResponse({ tool: toolRequest.tool, dryRun: toolRequest.dryRun, result });
+    return createSuccessResponse(payload);
   } catch (error) {
+    if (idempotencyReservation.kind === 'reserved') {
+      await markIdempotencyFailed(authResult.agent.id, toolRequest.idempotencyKey, error);
+    }
+
     await recordAgentAudit({
       agent: authResult.agent,
       toolName: toolRequest.tool,

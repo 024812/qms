@@ -1,8 +1,8 @@
 /**
  * Module Subscription Server Actions
- * 
+ *
  * Handles user module subscription management.
- * 
+ *
  * Requirements: 5.1, 8.2
  */
 
@@ -33,11 +33,7 @@ export async function subscribeToModule(moduleId: string) {
   }
 
   // Get current user
-  const [user] = await db
-    .select()
-    .from(users)
-    .where(eq(users.id, session.user.id))
-    .limit(1);
+  const [user] = await db.select().from(users).where(eq(users.id, session.user.id)).limit(1);
 
   if (!user) {
     throw new Error('User not found');
@@ -83,11 +79,7 @@ export async function unsubscribeFromModule(moduleId: string) {
   }
 
   // Get current user
-  const [user] = await db
-    .select()
-    .from(users)
-    .where(eq(users.id, session.user.id))
-    .limit(1);
+  const [user] = await db.select().from(users).where(eq(users.id, session.user.id)).limit(1);
 
   if (!user) {
     throw new Error('User not found');
@@ -95,7 +87,7 @@ export async function unsubscribeFromModule(moduleId: string) {
 
   // Remove module from activeModules in preferences
   const currentModules = user.preferences?.activeModules || [];
-  const updatedModules = currentModules.filter((m) => m !== moduleId);
+  const updatedModules = currentModules.filter(m => m !== moduleId);
   const updatedPreferences = {
     ...user.preferences,
     activeModules: updatedModules,
@@ -134,11 +126,7 @@ export async function toggleModuleSubscription(moduleId: string) {
   }
 
   // Get current user
-  const [user] = await db
-    .select()
-    .from(users)
-    .where(eq(users.id, session.user.id))
-    .limit(1);
+  const [user] = await db.select().from(users).where(eq(users.id, session.user.id)).limit(1);
 
   if (!user) {
     throw new Error('User not found');
@@ -149,7 +137,7 @@ export async function toggleModuleSubscription(moduleId: string) {
   const isSubscribed = currentModules.includes(moduleId);
 
   const updatedModules = isSubscribed
-    ? currentModules.filter((m) => m !== moduleId)
+    ? currentModules.filter(m => m !== moduleId)
     : [...currentModules, moduleId];
 
   const updatedPreferences = {

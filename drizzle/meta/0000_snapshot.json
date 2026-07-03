@@ -144,12 +144,8 @@
           "name": "items_owner_id_users_id_fk",
           "tableFrom": "items",
           "tableTo": "users",
-          "columnsFrom": [
-            "owner_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["owner_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -256,12 +252,8 @@
           "name": "usage_logs_item_id_items_id_fk",
           "tableFrom": "usage_logs",
           "tableTo": "items",
-          "columnsFrom": [
-            "item_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["item_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -269,12 +261,8 @@
           "name": "usage_logs_user_id_users_id_fk",
           "tableFrom": "usage_logs",
           "tableTo": "users",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -367,9 +355,7 @@
         "users_email_unique": {
           "name": "users_email_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "email"
-          ]
+          "columns": ["email"]
         }
       },
       "policies": {},
@@ -381,30 +367,17 @@
     "public.item_status": {
       "name": "item_status",
       "schema": "public",
-      "values": [
-        "in_use",
-        "storage",
-        "maintenance",
-        "lost"
-      ]
+      "values": ["in_use", "storage", "maintenance", "lost"]
     },
     "public.item_type": {
       "name": "item_type",
       "schema": "public",
-      "values": [
-        "quilt",
-        "card",
-        "shoe",
-        "racket"
-      ]
+      "values": ["quilt", "card", "shoe", "racket"]
     },
     "public.user_role": {
       "name": "user_role",
       "schema": "public",
-      "values": [
-        "admin",
-        "member"
-      ]
+      "values": ["admin", "member"]
     }
   },
   "schemas": {},

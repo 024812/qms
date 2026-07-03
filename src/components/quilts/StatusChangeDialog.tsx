@@ -54,7 +54,8 @@ export function StatusChangeDialog({
 
   // Get active usage record if quilt is currently in use
   const { data: activeUsageData } = useActiveUsageRecord(quilt?.id || '');
-  const activeUsage = (activeUsageData as { json?: { startDate?: string } })?.json || activeUsageData; // Safer typing
+  const activeUsage =
+    (activeUsageData as { json?: { startDate?: string } })?.json || activeUsageData; // Safer typing
 
   // Reset form when dialog opens or quilt changes
   useEffect(() => {
@@ -89,9 +90,7 @@ export function StatusChangeDialog({
       await onStatusChange(quilt.id, newStatus, options);
       onOpenChange(false);
     } catch (error) {
-      toast.error(
-        error instanceof Error ? error.message : t('quilts.dialogs.statusUpdateFailed')
-      );
+      toast.error(error instanceof Error ? error.message : t('quilts.dialogs.statusUpdateFailed'));
     } finally {
       setLoading(false);
     }
@@ -156,7 +155,10 @@ export function StatusChangeDialog({
 
           <div className="space-y-2">
             <Label htmlFor="newStatus">{t('quilts.dialogs.newStatus')}</Label>
-            <Select value={newStatus} onValueChange={(value) => setNewStatus(value as Quilt['currentStatus'])}>
+            <Select
+              value={newStatus}
+              onValueChange={value => setNewStatus(value as Quilt['currentStatus'])}
+            >
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>

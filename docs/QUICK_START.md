@@ -32,8 +32,10 @@ NEXT_PUBLIC_BETTER_AUTH_URL=http://localhost:3000
 ## 3. Apply The Database Schema
 
 ```bash
-npm run db:push
+npm run db:migrate
 ```
+
+Migrations target Neon Postgres. Put the real Neon `DATABASE_URL` in `.env.local`; do not point this project at a local `localhost:5432` database.
 
 ## 4. Start The App
 
@@ -91,7 +93,7 @@ npm run db:studio
 ### Database connection issues
 
 - Verify `DATABASE_URL` in `.env.local`
-- Re-run `npm run db:push`
+- Re-run `npm run db:migrate`
 
 ### Authentication issues
 

@@ -5,6 +5,30 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project uses npm-compatible date-based semantic versions in `YYYY.M.D` form.
 
+## [2026.7.7] - 2026-07-07
+
+### Added
+
+- Added `CLAUDE.md` with build/test commands and the module blueprint architecture for future contributors.
+
+### Changed
+
+- Bumped release baseline to `2026.7.7` across `package.json`, docs, and deployment guides.
+- Moved the dated `UPGRADE_REPORT_2026_06_16.md` out of the repository root into `docs/`.
+
+### Security
+
+- Hardened CSV formula-injection escaping in report exports to also neutralize leading-whitespace formula triggers.
+
+### Fixed
+
+- Restored tracked files that were incorrectly staged for deletion: `messages/en.json`, `messages/zh.json`, `drizzle/0006_agent_idempotency_keys.sql`, and `docs/guides/DATABASE_MIGRATIONS.md`.
+
+### Verification
+
+- `npm run type-check`
+- `npm run build` (release-level, verified in an isolated build directory)
+
 ## [2026.7.3] - 2026-07-03
 
 ### Changed

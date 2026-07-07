@@ -2,7 +2,7 @@
 
 This directory contains the active documentation for QMS.
 
-Current release: `2026.7.3`
+Current release: `2026.7.7`
 
 ## Core Docs
 

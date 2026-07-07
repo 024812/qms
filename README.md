@@ -2,7 +2,7 @@
 
 QMS is a modular family item management system built with Next.js 16, React 19, Better Auth, Neon Serverless PostgreSQL, Drizzle ORM, and Vercel.
 
-Current release: `2026.7.3`
+Current release: `2026.7.7`
 
 ## What Is Standardized
 

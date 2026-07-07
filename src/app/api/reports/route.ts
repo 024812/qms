@@ -197,6 +197,8 @@ function convertToCSV(data: ReportDataByType[ReportType], reportType: ReportType
 
 function escapeCsvCell(cell: CsvCell): string {
   const value = cell instanceof Date ? cell.toISOString() : String(cell ?? '');
-  const safeValue = /^[=+\-@\t\r]/.test(value) ? `'${value}` : value;
+  // Prefix a leading formula trigger with a single quote to neutralize CSV/Excel
+  // formula injection. Also covers leading whitespace before a trigger character.
+  const safeValue = /^[\s]*[=+\-@\t\r]/.test(value) ? `'${value}` : value;
   return `"${safeValue.replaceAll('"', '""')}"`;
 }

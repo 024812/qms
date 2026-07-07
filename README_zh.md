@@ -2,7 +2,7 @@
 
 QMS 是一个模块化的家庭物品管理系统，基于 Next.js 16、React 19、Better Auth、Neon Serverless PostgreSQL、Drizzle ORM 和 Vercel 构建。
 
-当前版本：`2026.7.3`
+当前版本：`2026.7.7`
 
 ## 当前标准
 

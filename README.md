@@ -39,7 +39,7 @@ For the module blueprint rules, see `docs/MODULE_BLUEPRINT_V2.md`.
 - Next.js `16.2.10`
 - React `19.2.7`
 - TypeScript `6.0.3`
-- next-intl `4.13.1`
+- next-intl `4.13.2`
 - Better Auth `1.6.23`
 - Neon Serverless PostgreSQL
 - Drizzle ORM `0.45.2`
@@ -123,6 +123,8 @@ Some card-provider settings can also be managed from the application settings UI
 ### Agent API
 
 Users create their own Agent API keys from **Settings -> Agent API Keys**. Keys inherit the same subsystem access as the user who created them, so an AI agent can only operate on modules that user can access.
+
+QMS uses a household-shared business data model: module records are shared by authenticated household members rather than isolated per login. A record or Agent `userId` is retained for provenance and audit attribution. See `docs/PROJECT_SUMMARY.md` for the review decision and security boundaries.
 
 The public agent guide is available at `/AGENT_API.md`. The Agent API exposes a narrow OpenAPI surface at `/api/agent/openapi.json` and a single tool endpoint at `/api/agent/tools`. Write tools require `confirm=true` and an `idempotencyKey`; successful writes are recorded in `agent_idempotency_keys` so repeated requests can be safely replayed.
 

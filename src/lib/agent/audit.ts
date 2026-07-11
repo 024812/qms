@@ -62,7 +62,7 @@ export async function recordAgentAudit(input: AgentAuditInput) {
     const sanitizedMetadata = sanitizeAuditValue(input.metadata ?? {}) as Record<string, unknown>;
 
     await db.insert(auditLogs).values({
-      userId: null,
+      userId: input.agent.userId,
       eventType: input.success ? 'access_granted' : 'access_denied',
       resource: 'agent',
       action: input.action,
@@ -71,6 +71,7 @@ export async function recordAgentAudit(input: AgentAuditInput) {
       metadata: {
         actorType: 'agent',
         agentId: input.agent.id,
+        actorUserId: input.agent.userId,
         scopes: input.agent.scopes,
         toolName: input.toolName,
         ...sanitizedMetadata,

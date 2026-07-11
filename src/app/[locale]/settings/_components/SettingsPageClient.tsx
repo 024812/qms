@@ -317,6 +317,7 @@ export function SettingsPageClient({
                   </code>
                   <Button size="icon" variant="outline" onClick={handleCopyCreatedApiKey}>
                     <Copy className="h-4 w-4" />
+                    <span className="sr-only">复制 API key</span>
                   </Button>
                 </div>
               </div>
@@ -348,6 +349,7 @@ export function SettingsPageClient({
                       onClick={() => handleRevokeApiKey(apiKey.id)}
                     >
                       <Trash2 className="h-4 w-4" />
+                      <span className="sr-only">撤销 {apiKey.name}</span>
                     </Button>
                   </div>
                 ))

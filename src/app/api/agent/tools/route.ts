@@ -5,7 +5,7 @@ import { z } from 'zod';
 
 import { db } from '@/db';
 import { agentIdempotencyKeys } from '@/db/schema';
-import { requireAgent, type AgentScope } from '@/lib/agent/auth';
+import { requireAgent, type AgentIdentity, type AgentScope } from '@/lib/agent/auth';
 import { recordAgentAudit } from '@/lib/agent/audit';
 import {
   createBadRequestResponse,
@@ -389,7 +389,7 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const result = await callTool(toolRequest);
+    const result = await callTool(toolRequest, authResult.agent);
     const payload: ToolSuccessPayload = {
       tool: toolRequest.tool,
       dryRun: toolRequest.dryRun,
@@ -429,7 +429,7 @@ export async function POST(request: NextRequest) {
   }
 }
 
-async function callTool(request: z.infer<typeof toolSchema>) {
+async function callTool(request: z.infer<typeof toolSchema>, agent: AgentIdentity) {
   switch (request.tool) {
     case 'quilts.search': {
       const input = quiltSearchSchema.parse(request.input);
@@ -510,7 +510,12 @@ async function callTool(request: z.infer<typeof toolSchema>) {
         throw new Error('Create input cannot include id');
       if (request.tool === 'cards.update' && !input.id) throw new Error('Update input requires id');
       if (request.dryRun) return { planned: input };
-      return { card: await saveCard(input) };
+      return {
+        card: await saveCard({
+          ...input,
+          ...(request.tool === 'cards.create' ? { userId: agent.userId } : {}),
+        }),
+      };
     }
     case 'settings.read': {
       const [settings, databaseStats, systemInfo] = await Promise.all([

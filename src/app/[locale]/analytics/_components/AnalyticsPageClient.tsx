@@ -525,13 +525,13 @@ export function AnalyticsPageClient({
                       filteredStats.map((stat, index) => (
                         <TableRow
                           key={stat.quiltId}
-                          className={`transition-colors hover:bg-gray-50 ${
+                          className={`transition-colors hover:bg-muted/60 ${
                             stat.recommendation === 'consider_removal'
-                              ? 'bg-red-50 hover:bg-red-100'
+                              ? 'bg-destructive/10 hover:bg-destructive/15'
                               : ''
                           } ${
                             stat.recommendation === 'low_usage'
-                              ? 'bg-yellow-50 hover:bg-yellow-100'
+                              ? 'bg-warning/10 hover:bg-warning/15'
                               : ''
                           }`}
                         >
@@ -555,10 +555,10 @@ export function AnalyticsPageClient({
                             <span
                               className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ${
                                 stat.recommendation === 'keep'
-                                  ? 'bg-green-100 text-green-800'
+                                  ? 'bg-success/15 text-emerald-800 dark:text-emerald-300'
                                   : stat.recommendation === 'low_usage'
-                                    ? 'bg-yellow-100 text-yellow-800'
-                                    : 'bg-red-100 text-red-800'
+                                    ? 'bg-warning/15 text-amber-800 dark:text-amber-300'
+                                    : 'bg-destructive/15 text-red-800 dark:text-red-300'
                               }`}
                             >
                               {stat.recommendationReason}

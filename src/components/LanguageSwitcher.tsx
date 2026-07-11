@@ -11,9 +11,9 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Languages, Check } from 'lucide-react';
 
-const localeNames: Record<string, { flag: string; name: string }> = {
-  zh: { flag: '🇨🇳', name: '中文' },
-  en: { flag: '🇺🇸', name: 'English' },
+const localeNames: Record<string, { code: string; name: string }> = {
+  zh: { code: '中', name: '中文' },
+  en: { code: 'EN', name: 'English' },
 };
 
 export function LanguageSwitcher() {
@@ -33,20 +33,22 @@ export function LanguageSwitcher() {
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" size="sm" className="gap-2">
           <Languages className="h-4 w-4" />
-          <span className="hidden sm:inline">
-            {current.flag} {current.name}
+          <span className="hidden sm:inline">{current.name}</span>
+          <span className="sm:hidden" aria-hidden="true">
+            {current.code}
           </span>
-          <span className="sm:hidden">{current.flag}</span>
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
-        {Object.entries(localeNames).map(([key, { flag, name }]) => (
+        {Object.entries(localeNames).map(([key, { code, name }]) => (
           <DropdownMenuItem
             key={key}
             onClick={() => handleLanguageChange(key)}
             className="gap-2 cursor-pointer"
           >
-            <span>{flag}</span>
+            <span className="w-6 text-center text-xs font-semibold" aria-hidden="true">
+              {code}
+            </span>
             <span>{name}</span>
             {key === locale && <Check className="ml-auto h-4 w-4" />}
           </DropdownMenuItem>

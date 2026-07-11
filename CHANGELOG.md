@@ -5,6 +5,25 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project uses npm-compatible date-based semantic versions in `YYYY.M.D` form.
 
+## [Unreleased]
+
+### Changed
+
+- Documented the intentional household-shared business data model so per-user row isolation is not treated as a review defect.
+- Bound Agent tool execution and audit attribution to the owning API key user's ID.
+- Replaced the admin settings placeholder with a system health and management hub.
+- Improved icon-button labels, language-switcher semantics, and analytics dark-mode colors.
+- Updated compatible dependency releases while retaining ESLint 9 and TypeScript 6 until their parser/tooling ecosystem supports the next majors together.
+
+### Verification
+
+- `npm audit`
+- `npm run format:check`
+- `npm run lint:check`
+- `npm run type-check`
+- `npm test`
+- `npm run build` (isolated `C:\temp\qms` copy with non-sensitive build placeholders)
+
 ## [2026.7.7] - 2026-07-07
 
 ### Added

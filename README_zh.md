@@ -39,7 +39,7 @@ Settings、dashboard、users、admin、analytics、reports、authentication 等�
 - Next.js `16.2.10`
 - React `19.2.7`
 - TypeScript `6.0.3`
-- next-intl `4.13.1`
+- next-intl `4.13.2`
 - Better Auth `1.6.23`
 - Neon Serverless PostgreSQL
 - Drizzle ORM `0.45.2`
@@ -66,6 +66,8 @@ NEXT_PUBLIC_BETTER_AUTH_URL=
 ## Agent API
 
 用户在 **Settings -> Agent API Keys** 中创建自己的 API key。Key 继承创建用户的模块访问权限。公开 Agent 指南位于 `/AGENT_API.md`，OpenAPI 描述位于 `/api/agent/openapi.json`，工具入口为 `/api/agent/tools`。
+
+QMS 采用家庭共享业务数据模型：模块记录由已认证的家庭成员共享，不按登录用户隔离。记录或 Agent 的 `userId` 用于来源追踪和审计归属。完整 review 决策和安全边界见 `docs/PROJECT_SUMMARY.md`。
 
 写入工具必须提供 `confirm=true` 和 `idempotencyKey`；成功写入会记录到 `agent_idempotency_keys`，重复请求可以安全重放。
 

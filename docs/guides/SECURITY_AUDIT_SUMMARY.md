@@ -11,6 +11,12 @@ Audit date: `2026-07-03`
 - `npm run build`: passed
 - `npm run db:migrate`: passed against Neon
 
+## Household Shared-Data Security Model
+
+QMS is deployed for one household and intentionally treats module records as a shared household dataset. `quilts`, `cards`, `usage`, analytics, and reports are not tenant-scoped by login user. The presence of a creator or actor `userId` is for provenance and auditing, not row-level access control. Reviews must not report the absence of per-user filters in these modules as a vulnerability unless the product is explicitly changed to support multiple households or untrusted tenants.
+
+Account-private records remain user-scoped: sessions, credentials, and personal Agent API keys. Authentication, admin-only operations, module scopes, external API boundaries, write confirmation, idempotency, and auditing remain mandatory.
+
 ## Major Security-Relevant Changes
 
 ### Authentication
@@ -32,6 +38,7 @@ Audit date: `2026-07-03`
 - Agent access is controlled by user-created bearer tokens stored as database hashes; keys inherit the owning user permissions.
 - Write tools require `confirm=true` and an `idempotencyKey` unless `dryRun=true` is used.
 - User API keys now inherit scopes from the owning user's role and active modules.
+- Agent audit rows store the API key owner's `userId`, and audit metadata includes `actorUserId` for direct attribution.
 - Successful write operations are recorded in `agent_idempotency_keys`, so retried write requests can safely replay the original response.
 
 ### API Route Hardening
@@ -47,14 +54,14 @@ The project was upgraded to current working versions across the stack, including
 - Next.js `16.2.10`
 - React `19.2.7`
 - TypeScript `6.0.3`
-- next-intl `4.13.1`
+- next-intl `4.13.2`
 - Better Auth `1.6.23`
 - Drizzle ORM `0.45.2`
 - Drizzle Kit `0.31.10`
 - Tailwind CSS `4.3.2`
 - TanStack React Query `5.101.2`
 - Zod `4.4.3`
-- Vitest `4.1.9`
+- Vitest `4.1.10`
 
 ## Remaining Operational Risks
 

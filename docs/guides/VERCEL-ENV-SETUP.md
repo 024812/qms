@@ -91,7 +91,7 @@ npm run db:migrate
 ## 配置完成后的检查
 
 - 应用可以正常连接 Neon 数据库。
-- `/login` 和 `/register` 可访问。
+- `/login` 可访问；`/register` 应重定向到 `/login`，公开注册必须保持关闭。
 - 受保护页面会被 `src/proxy.ts` 正确拦截。
 - 登录后 session 正常建立。
 - `npm run db:migrate` 在当前 Neon 目标上无待执行迁移或成功执行。

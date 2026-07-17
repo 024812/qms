@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { attachmentImagesSchema, imageReferenceSchema } from '@/lib/validations/image';
 
 // ============================================================================
 // Enum Definitions - Single Source of Truth
@@ -110,8 +111,8 @@ const baseQuiltSchemaObject = z.object({
   notes: z.string().max(1000, 'Notes too long (max 1000 characters)').optional(),
   imageUrl: z.union([z.url('Invalid image URL'), z.literal('')]).optional(),
   thumbnailUrl: z.union([z.url('Invalid thumbnail URL'), z.literal('')]).optional(),
-  mainImage: z.string().optional().nullable(),
-  attachmentImages: z.array(z.string()).optional().nullable(),
+  mainImage: imageReferenceSchema.optional().nullable(),
+  attachmentImages: attachmentImagesSchema.optional().nullable(),
 });
 
 // Create Quilt Schema with refinements

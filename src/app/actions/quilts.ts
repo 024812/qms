@@ -188,7 +188,7 @@ export async function saveQuiltAction(
       return notFoundErrorResult('被子不存在');
     }
 
-    return internalErrorResult(error instanceof Error ? error.message : '保存被子失败');
+    return internalErrorResult('保存被子失败');
   }
 }
 
@@ -226,7 +226,7 @@ export async function deleteQuiltAction(id: string): Promise<ActionResult<{ dele
     };
   } catch (error) {
     console.error('[Server Action] deleteQuiltAction error:', error);
-    return internalErrorResult(error instanceof Error ? error.message : '删除被子失败');
+    return internalErrorResult('删除被子失败');
   }
 }
 
@@ -281,7 +281,7 @@ export async function changeQuiltStatusAction(input: {
       }
     }
 
-    return internalErrorResult(error instanceof Error ? error.message : '更新被子状态失败');
+    return internalErrorResult('更新被子状态失败');
   }
 }
 
@@ -305,7 +305,7 @@ export async function getQuiltAction(id: string): Promise<ActionResult<Quilt | n
     };
   } catch (error) {
     console.error('[Server Action] getQuiltAction error:', error);
-    return internalErrorResult(error instanceof Error ? error.message : '获取被子详情失败');
+    return internalErrorResult('获取被子详情失败');
   }
 }
 
@@ -342,6 +342,6 @@ export async function getQuiltsAction(
     };
   } catch (error) {
     console.error('[Server Action] getQuiltsAction error:', error);
-    return internalErrorResult(error instanceof Error ? error.message : '获取被子列表失败');
+    return internalErrorResult('获取被子列表失败');
   }
 }

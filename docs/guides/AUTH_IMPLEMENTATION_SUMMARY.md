@@ -71,7 +71,8 @@ NEXT_PUBLIC_BETTER_AUTH_URL=
 `src/proxy.ts` protects non-API application routes:
 
 - Unauthenticated users are redirected to the localized `/login` page.
-- Authenticated users visiting `/login` or `/register` are redirected back into the app.
+- `/login` remains public; `/register` redirects to `/login` because public self-registration is disabled.
+- New accounts are created by administrators from the user-management page.
 - Single-module users entering the root route are redirected to their only enabled module.
 - `/api/**`, Next.js assets, and static files are excluded from proxy protection.
 

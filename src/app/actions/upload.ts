@@ -11,11 +11,12 @@
 
 import { auth } from '@/auth';
 import { z } from 'zod';
+import { MAX_STORED_IMAGE_BYTES } from '@/lib/validations/image';
 
 /**
  * Maximum file size: 5MB
  */
-const MAX_FILE_SIZE = 5 * 1024 * 1024;
+const MAX_FILE_SIZE = MAX_STORED_IMAGE_BYTES;
 
 /**
  * Allowed image MIME types

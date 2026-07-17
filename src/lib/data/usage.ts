@@ -17,7 +17,7 @@
 
 import { cache } from 'react';
 import { revalidateTag } from 'next/cache';
-import { db } from '@/db';
+import { db, type Tx } from '@/db';
 import { usageRecords, quilts } from '@/db/schema';
 import { eq, desc, and, isNull, sql } from 'drizzle-orm';
 import { dbLogger } from '@/lib/logger';
@@ -41,6 +41,37 @@ export interface UpdateUsageRecordData {
   endDate?: Date | null;
   usageType?: UsageType;
   notes?: string | null;
+}
+
+function assertValidUsageDates(startDate: Date, endDate?: Date | null) {
+  if (Number.isNaN(startDate.getTime()) || (endDate && Number.isNaN(endDate.getTime()))) {
+    throw new Error('Usage dates must be valid dates');
+  }
+
+  if (endDate && endDate < startDate) {
+    throw new Error('Usage end date cannot be before the start date');
+  }
+}
+
+async function syncQuiltStatusForUsage(tx: Tx, quiltId: string) {
+  const [activeRecord] = await tx
+    .select({ id: usageRecords.id })
+    .from(usageRecords)
+    .where(and(eq(usageRecords.quiltId, quiltId), isNull(usageRecords.endDate)))
+    .limit(1);
+
+  if (activeRecord) {
+    await tx
+      .update(quilts)
+      .set({ currentStatus: 'IN_USE', updatedAt: new Date() })
+      .where(eq(quilts.id, quiltId));
+    return;
+  }
+
+  await tx
+    .update(quilts)
+    .set({ currentStatus: 'STORAGE', updatedAt: new Date() })
+    .where(and(eq(quilts.id, quiltId), eq(quilts.currentStatus, 'IN_USE')));
 }
 
 // ============================================================================
@@ -277,20 +308,24 @@ export async function getUsageStats(
  */
 export async function createUsageRecord(data: CreateUsageRecordData): Promise<UsageRecord> {
   try {
+    assertValidUsageDates(data.startDate, data.endDate);
     dbLogger.info('Creating usage record', { quiltId: data.quiltId });
 
-    const result = await db
-      .insert(usageRecords)
-      .values({
-        quiltId: data.quiltId,
-        startDate: data.startDate,
-        endDate: data.endDate,
-        usageType: data.usageType,
-        notes: data.notes,
-      })
-      .returning();
+    const record = await db.transaction(async tx => {
+      const [created] = await tx
+        .insert(usageRecords)
+        .values({
+          quiltId: data.quiltId,
+          startDate: data.startDate,
+          endDate: data.endDate,
+          usageType: data.usageType,
+          notes: data.notes,
+        })
+        .returning();
 
-    const record = result[0] as unknown as UsageRecord;
+      await syncQuiltStatusForUsage(tx, data.quiltId);
+      return created as unknown as UsageRecord;
+    });
 
     revalidateTag('usage', 'max');
     revalidateTag(`usage-quilt-${data.quiltId}`, 'max');
@@ -319,22 +354,31 @@ export async function updateUsageRecord(
     const current = await getUsageRecordById(id);
     if (!current) return null;
 
+    const nextStartDate = data.startDate ?? current.startDate;
+    const nextEndDate = data.endDate === undefined ? current.endDate : data.endDate;
+    assertValidUsageDates(nextStartDate, nextEndDate);
+
     dbLogger.info('Updating usage record', { id });
 
-    const result = await db
-      .update(usageRecords)
-      .set({
-        startDate: data.startDate,
-        endDate: data.endDate,
-        usageType: data.usageType,
-        notes: data.notes,
-        updatedAt: new Date(),
-      })
-      .where(eq(usageRecords.id, id))
-      .returning();
+    const updated = await db.transaction(async tx => {
+      const [record] = await tx
+        .update(usageRecords)
+        .set({
+          startDate: data.startDate,
+          endDate: data.endDate,
+          usageType: data.usageType,
+          notes: data.notes,
+          updatedAt: new Date(),
+        })
+        .where(eq(usageRecords.id, id))
+        .returning();
 
-    if (result.length === 0) return null;
-    const updated = result[0] as unknown as UsageRecord;
+      if (!record) return null;
+      await syncQuiltStatusForUsage(tx, current.quiltId);
+      return record as unknown as UsageRecord;
+    });
+
+    if (!updated) return null;
 
     revalidateTag('usage', 'max');
     revalidateTag(`usage-${id}`, 'max');
@@ -360,19 +404,26 @@ export async function endUsageRecord(
     const current = await getUsageRecordById(id);
     if (!current) return null;
 
+    assertValidUsageDates(current.startDate, endDate);
+
     dbLogger.info('Ending usage record', { id });
 
-    const result = await db
-      .update(usageRecords)
-      .set({
-        endDate: endDate,
-        updatedAt: new Date(),
-      })
-      .where(eq(usageRecords.id, id))
-      .returning();
+    const updated = await db.transaction(async tx => {
+      const [record] = await tx
+        .update(usageRecords)
+        .set({
+          endDate,
+          updatedAt: new Date(),
+        })
+        .where(eq(usageRecords.id, id))
+        .returning();
 
-    if (result.length === 0) return null;
-    const updated = result[0] as unknown as UsageRecord;
+      if (!record) return null;
+      await syncQuiltStatusForUsage(tx, current.quiltId);
+      return record as unknown as UsageRecord;
+    });
+
+    if (!updated) return null;
 
     revalidateTag('usage', 'max');
     revalidateTag(`usage-${id}`, 'max');
@@ -397,7 +448,10 @@ export async function deleteUsageRecord(id: string): Promise<boolean> {
 
     dbLogger.info('Deleting usage record', { id });
 
-    await db.delete(usageRecords).where(eq(usageRecords.id, id));
+    await db.transaction(async tx => {
+      await tx.delete(usageRecords).where(eq(usageRecords.id, id));
+      await syncQuiltStatusForUsage(tx, current.quiltId);
+    });
 
     revalidateTag('usage', 'max');
     revalidateTag(`usage-${id}`, 'max');

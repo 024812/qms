@@ -39,7 +39,7 @@ const nextConfig: NextConfig = {
       '@radix-ui/react-tooltip',
     ],
     serverActions: {
-      bodySizeLimit: '2mb',
+      bodySizeLimit: '4mb',
     },
   },
   images: {
@@ -94,7 +94,8 @@ const nextConfig: NextConfig = {
             key: 'Content-Security-Policy',
             value: [
               "default-src 'self'",
-              "script-src 'self' 'unsafe-eval' 'unsafe-inline'",
+              `script-src 'self' 'unsafe-inline'${process.env.NODE_ENV === 'development' ? " 'unsafe-eval'" : ''}`,
+              "script-src-attr 'none'",
               "style-src 'self' 'unsafe-inline'",
               "img-src 'self' blob: data: https://i.ebayimg.com",
               "font-src 'self' data:",

@@ -9,6 +9,7 @@ import { ConditionalLayout } from '@/components/layout/ConditionalLayout';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { Toaster as SonnerToaster } from 'sonner';
 import { GlobalErrorHandler } from '@/components/GlobalErrorHandler';
+import { ServiceWorkerRegistration } from '@/components/mobile/ServiceWorkerRegistration';
 import { NextIntlClientProvider } from 'next-intl';
 import { getMessages, setRequestLocale } from 'next-intl/server';
 import { notFound } from 'next/navigation';
@@ -29,14 +30,13 @@ export const metadata: Metadata = {
     { url: '/icons/icon-192x192.svg', sizes: '192x192', type: 'image/svg+xml' },
     { url: '/icons/icon-512x512.svg', sizes: '512x512', type: 'image/svg+xml' },
   ],
+  manifest: '/manifest.json',
 };
 
 export const viewport: Viewport = {
   themeColor: '#3b82f6',
   width: 'device-width',
   initialScale: 1,
-  maximumScale: 1,
-  userScalable: false,
   viewportFit: 'cover',
 };
 
@@ -78,6 +78,7 @@ export default async function LocaleLayout({
               <NextIntlClientProvider messages={messages}>
                 <QueryProvider>
                   <GlobalErrorHandler />
+                  <ServiceWorkerRegistration />
                   <Suspense fallback={null}>
                     <ConditionalLayout>{children}</ConditionalLayout>
                   </Suspense>

@@ -8,7 +8,10 @@
  */
 
 import { z } from 'zod';
+import { NextRequest } from 'next/server';
 import { getCurrentWeather, getWeatherForecast } from '@/lib/weather-service';
+import { requireApiSession } from '@/lib/api/route-auth';
+import { rateLimiters, withRateLimit } from '@/lib/rate-limit';
 import {
   createSuccessResponse,
   createValidationErrorResponse,
@@ -35,45 +38,50 @@ const weatherQuerySchema = z.object({
   location: z.string().max(100).default(DEFAULT_LOCATION_NAME),
 });
 
-export async function GET(request: Request) {
-  try {
-    const { searchParams } = new URL(request.url);
+export async function GET(request: NextRequest) {
+  return withRateLimit(request, rateLimiters.api, async () => {
+    try {
+      const authResult = await requireApiSession();
+      if (!authResult.ok) return authResult.response;
 
-    // Validate query parameters using Zod
-    const validationResult = weatherQuerySchema.safeParse({
-      lat: searchParams.get('lat') || undefined,
-      lon: searchParams.get('lon') || undefined,
-      location: searchParams.get('location') || undefined,
-    });
+      const { searchParams } = new URL(request.url);
 
-    if (!validationResult.success) {
-      return createValidationErrorResponse(
-        '天气参数验证失败',
-        validationResult.error.flatten().fieldErrors as Record<string, string[]>
-      );
-    }
+      // Validate query parameters using Zod
+      const validationResult = weatherQuerySchema.safeParse({
+        lat: searchParams.get('lat') || undefined,
+        lon: searchParams.get('lon') || undefined,
+        location: searchParams.get('location') || undefined,
+      });
 
-    const { lat: latitude, lon: longitude, location: locationName } = validationResult.data;
+      if (!validationResult.success) {
+        return createValidationErrorResponse(
+          '天气参数验证失败',
+          validationResult.error.flatten().fieldErrors as Record<string, string[]>
+        );
+      }
 
-    // Fetch current weather
-    const currentWeather = await getCurrentWeather(latitude, longitude);
+      const { lat: latitude, lon: longitude, location: locationName } = validationResult.data;
 
-    // Fetch forecast
-    const forecast = await getWeatherForecast(latitude, longitude);
+      // Fetch current weather
+      const currentWeather = await getCurrentWeather(latitude, longitude);
 
-    return createSuccessResponse({
-      weather: {
-        current: currentWeather,
-        forecast,
-        location: {
-          name: locationName,
-          latitude,
-          longitude,
+      // Fetch forecast
+      const forecast = await getWeatherForecast(latitude, longitude);
+
+      return createSuccessResponse({
+        weather: {
+          current: currentWeather,
+          forecast,
+          location: {
+            name: locationName,
+            latitude,
+            longitude,
+          },
+          updatedAt: new Date().toISOString(),
         },
-        updatedAt: new Date().toISOString(),
-      },
-    });
-  } catch (error: unknown) {
-    return createInternalErrorResponse('获取天气数据失败', error);
-  }
+      });
+    } catch (error: unknown) {
+      return createInternalErrorResponse('获取天气数据失败', error);
+    }
+  });
 }

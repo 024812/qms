@@ -7,7 +7,7 @@
  * Requirements: 8.1 (User authentication)
  */
 
-import { Link, redirect } from '@/i18n/routing';
+import { redirect } from '@/i18n/routing';
 import { auth } from '@/auth';
 import { LoginForm } from './LoginForm';
 import { connection } from 'next/server';
@@ -45,12 +45,7 @@ export default async function LoginPage({ params }: { params: Promise<{ locale: 
             </svg>
           </div>
           <h2 className="text-3xl font-extrabold text-foreground">登录账户</h2>
-          <p className="mt-2 text-sm text-muted-foreground">
-            或者{' '}
-            <Link href="/register" className="font-medium text-primary hover:text-primary/80">
-              创建新账户
-            </Link>
-          </p>
+          <p className="mt-2 text-sm text-muted-foreground">新账户由管理员创建</p>
         </div>
         <LoginForm />
       </div>

@@ -84,9 +84,9 @@ export function ImportPreview({
         throw new Error('Preview failed');
       }
 
-      const data = await response.json();
-      setPreview(data.preview);
-      onPreviewComplete(data.preview);
+      const payload = await response.json();
+      setPreview(payload.data.preview);
+      onPreviewComplete(payload.data.preview);
     } catch (err) {
       error('Preview failed', err instanceof Error ? err.message : 'Unknown error');
     } finally {
@@ -108,9 +108,9 @@ export function ImportPreview({
         throw new Error('Import failed');
       }
 
-      const data = await response.json();
-      success('Import completed', `Successfully imported ${data.result.imported} quilts`);
-      onImportComplete(data.result as ImportResults);
+      const payload = await response.json();
+      success('Import completed', `Successfully imported ${payload.data.result.imported} quilts`);
+      onImportComplete(payload.data.result as ImportResults);
     } catch (err) {
       error('Import failed', err instanceof Error ? err.message : 'Unknown error');
     } finally {

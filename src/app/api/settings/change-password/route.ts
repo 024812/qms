@@ -3,10 +3,11 @@ import { z } from 'zod';
 import { and, eq } from 'drizzle-orm';
 
 import { auth } from '@/auth';
-import { authAccount, db, users } from '@/db';
+import { authAccount, authSession, db, users } from '@/db';
 import { hashPassword, verifyPassword } from '@/lib/auth/password';
 import { withRateLimit, rateLimiters } from '@/lib/rate-limit';
 import {
+  createBadRequestResponse,
   createInternalErrorResponse,
   createSuccessResponse,
   createUnauthorizedResponse,
@@ -58,6 +59,7 @@ export async function POST(request: NextRequest) {
       const newHash = await hashPassword(newPassword);
 
       await db.transaction(async tx => {
+        await tx.delete(authSession).where(eq(authSession.userId, session.user.id));
         await tx
           .update(authAccount)
           .set({ password: newHash, updatedAt: new Date() })
@@ -76,6 +78,9 @@ export async function POST(request: NextRequest) {
         message: 'Password changed successfully',
       });
     } catch (error) {
+      if (error instanceof SyntaxError) {
+        return createBadRequestResponse('Request body must be valid JSON');
+      }
       return createInternalErrorResponse('Failed to change password', error);
     }
   });

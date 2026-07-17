@@ -60,7 +60,7 @@ Uses Next.js `cacheComponents: true` (in `next.config.ts`) with the `'use cache'
 
 ### Auth
 
-Better Auth (`src/auth.ts`) with a Drizzle adapter over Neon. `auth()` returns the app session (`AppSession`) including `role` (`admin`/`member`) and `activeModules`, both derived from `users.preferences`. Route protection lives in `src/proxy.ts` (Next.js 16 proxy/middleware convention) — it redirects unauthenticated users to `/login`, redirects authenticated users away from public paths, and auto-routes to a single active module when there's only one. `/api/**` and `/AGENT_API.md` bypass the proxy.
+Better Auth (`src/auth.ts`) with a Drizzle adapter over Neon. `auth()` returns the app session (`AppSession`) including `role` (`admin`/`member`) and `activeModules`, both derived from `users.preferences`. Public self-registration is disabled at the Better Auth, Route Handler, Server Action, page, and proxy layers; administrators create accounts from the user-management page. Route protection lives in `src/proxy.ts` (Next.js 16 proxy/middleware convention) — it redirects unauthenticated users to `/login`, redirects authenticated users away from the public login path, and auto-routes to a single active module when there's only one. `/api/**` and `/AGENT_API.md` bypass the proxy, so API authorization must remain explicit.
 
 ### Agent API
 

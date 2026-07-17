@@ -57,13 +57,13 @@ vercel --prod
 
 - 首页可访问。
 - `/login` 可访问。
-- `/register` 可访问。
+- `/register` 重定向到 `/login`，不提供公开注册。
 
 ### 认证与路由保护
 
 - 未登录访问受保护页面会跳转到 `/login`。
 - 登录后可以返回原始目标页。
-- 已登录访问 `/login` 或 `/register` 会重定向回应用。
+- 已登录访问 `/login` 会重定向回应用；`/register` 始终不提供注册页面。
 
 ### 数据库连接
 
@@ -88,10 +88,10 @@ vercel --prod
 
 1. 配置 Vercel 环境变量。
 2. 对目标 Neon 数据库执行 `npm run db:migrate`。
-3. 访问 `/register` 创建首批用户。
-4. 根据 bootstrap 流程准备至少一个管理员账号。
+3. 通过受控的 bootstrap 流程准备至少一个管理员账号。
+4. 由管理员在用户管理页面创建其他账号。
 
-普通注册用户默认角色是 `member`。
+公开注册已关闭，不应通过 `/api/auth/sign-up/email` 创建账号。
 
 ## 7. 常见问题
 

@@ -8,7 +8,7 @@
   "theme_color": "#3b82f6",
   "orientation": "portrait-primary",
   "scope": "/",
-  "lang": "en",
+  "lang": "zh",
   "categories": ["productivity", "lifestyle"],
   "icons": [
     {
@@ -65,7 +65,7 @@
       "name": "Add New Quilt",
       "short_name": "Add Quilt",
       "description": "Quickly add a new quilt to your collection",
-      "url": "/quilts?action=add",
+      "url": "/zh/quilts?action=add",
       "icons": [
         {
           "src": "/icons/shortcut-add.svg",
@@ -78,7 +78,7 @@
       "name": "View Dashboard",
       "short_name": "Dashboard",
       "description": "View your quilt collection overview",
-      "url": "/",
+      "url": "/zh",
       "icons": [
         {
           "src": "/icons/shortcut-dashboard.svg",
@@ -91,7 +91,7 @@
       "name": "Search Quilts",
       "short_name": "Search",
       "description": "Search and filter your quilts",
-      "url": "/quilts",
+      "url": "/zh/quilts",
       "icons": [
         {
           "src": "/icons/shortcut-search.svg",
@@ -99,22 +99,6 @@
           "type": "image/svg+xml"
         }
       ]
-    }
-  ],
-  "screenshots": [
-    {
-      "src": "/screenshots/dashboard-desktop.png",
-      "sizes": "1280x720",
-      "type": "image/png",
-      "form_factor": "wide",
-      "label": "Dashboard view on desktop"
-    },
-    {
-      "src": "/screenshots/dashboard-mobile.png",
-      "sizes": "390x844",
-      "type": "image/png",
-      "form_factor": "narrow",
-      "label": "Dashboard view on mobile"
     }
   ],
   "related_applications": [],

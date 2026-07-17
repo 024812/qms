@@ -94,7 +94,15 @@ export class RateLimiter {
     resetTime: number;
     retryAfter?: number;
   }> {
-    const key = this.generateKey(request);
+    return this.checkKey(this.generateKey(request));
+  }
+
+  async checkKey(key: string): Promise<{
+    allowed: boolean;
+    remaining: number;
+    resetTime: number;
+    retryAfter?: number;
+  }> {
     const now = Date.now();
     const windowSeconds = Math.ceil(this.config.windowMs / 1000);
 
@@ -220,6 +228,12 @@ export const rateLimiters = {
   database: new RateLimiter({
     windowMs: 60 * 1000,
     maxRequests: 50,
+  }),
+
+  // Cost-bearing AI operations - 20 requests per user per hour
+  ai: new RateLimiter({
+    windowMs: 60 * 60 * 1000,
+    maxRequests: 20,
   }),
 
   // Health check - 30 requests per minute

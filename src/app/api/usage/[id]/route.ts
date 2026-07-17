@@ -10,6 +10,7 @@ import { z } from 'zod';
 import { getUsageRecordById, updateUsageRecord, deleteUsageRecord } from '@/lib/data/usage';
 import { sanitizeApiInput } from '@/lib/sanitization';
 import {
+  createBadRequestResponse,
   createSuccessResponse,
   createValidationErrorResponse,
   createNotFoundResponse,
@@ -19,16 +20,9 @@ import { requireApiSession } from '@/lib/api/route-auth';
 
 // Input validation schema for updates
 const updateUsageRecordSchema = z.object({
-  startDate: z
-    .string()
-    .transform(val => new Date(val))
-    .optional(),
-  endDate: z
-    .string()
-    .transform(val => new Date(val))
-    .optional()
-    .nullable(),
-  notes: z.string().optional().nullable(),
+  startDate: z.coerce.date().optional(),
+  endDate: z.coerce.date().optional().nullable(),
+  notes: z.string().max(500).optional().nullable(),
 });
 
 interface RouteParams {
@@ -96,6 +90,18 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
       return createNotFoundResponse('使用记录');
     }
 
+    const nextStartDate = validationResult.data.startDate ?? existingRecord.startDate;
+    const nextEndDate =
+      validationResult.data.endDate === undefined
+        ? existingRecord.endDate
+        : validationResult.data.endDate;
+
+    if (nextEndDate && nextEndDate < nextStartDate) {
+      return createValidationErrorResponse('使用记录数据验证失败', {
+        endDate: ['结束日期不能早于开始日期'],
+      });
+    }
+
     // Update the record
     const record = await updateUsageRecord(id, validationResult.data);
 
@@ -105,6 +111,9 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
 
     return createSuccessResponse({ record });
   } catch (error) {
+    if (error instanceof SyntaxError) {
+      return createBadRequestResponse('Request body must be valid JSON');
+    }
     return createInternalErrorResponse('更新使用记录失败', error);
   }
 }

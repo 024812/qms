@@ -84,6 +84,7 @@ export const betterAuthInstance = betterAuth({
   },
   emailAndPassword: {
     enabled: true,
+    disableSignUp: true,
     minPasswordLength: 6,
     password: {
       hash: password => bcrypt.hash(password, 10),

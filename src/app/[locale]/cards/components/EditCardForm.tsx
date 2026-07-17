@@ -14,7 +14,7 @@ import type { QuickAnalysisResult } from '@/modules/cards/services/ai-card-servi
 import { toast } from 'sonner';
 
 import { FormProvider } from 'react-hook-form';
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import { Button } from '@/components/ui/button';
 import { Loader2, Sparkles, ShieldCheck, TrendingUp, BarChart3 } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -35,7 +35,7 @@ interface EditCardFormProps {
 export function EditCardForm({ initialData, onSuccess }: EditCardFormProps) {
   const t = useTranslations('cards.form');
   const tCards = useTranslations('cards');
-  const locale = useTranslations()('locale') || 'en'; // Hack if locale is not directly exposed, or use a hook
+  const locale = useLocale();
 
   const {
     form,

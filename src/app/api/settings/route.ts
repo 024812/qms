@@ -2,6 +2,7 @@ import { NextRequest } from 'next/server';
 import { z } from 'zod';
 
 import {
+  createBadRequestResponse,
   createInternalErrorResponse,
   createSuccessResponse,
   createValidationErrorResponse,
@@ -55,6 +56,9 @@ export async function PUT(request: NextRequest) {
       settings,
     });
   } catch (error) {
+    if (error instanceof SyntaxError) {
+      return createBadRequestResponse('Request body must be valid JSON');
+    }
     return createInternalErrorResponse('Failed to update application settings', error);
   }
 }

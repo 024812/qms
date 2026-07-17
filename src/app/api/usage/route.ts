@@ -13,6 +13,7 @@ import {
 } from '@/lib/data/usage';
 import { sanitizeApiInput } from '@/lib/sanitization';
 import {
+  createBadRequestResponse,
   createValidationErrorResponse,
   createInternalErrorResponse,
   createSuccessResponse,
@@ -21,19 +22,20 @@ import {
 import { requireApiSession } from '@/lib/api/route-auth';
 
 // Input validation schemas
-const createUsageRecordSchema = z.object({
-  quiltId: z.string().trim().min(1, '无效的被子ID'),
-  startDate: z.string().transform(val => new Date(val)),
-  endDate: z
-    .string()
-    .transform(val => new Date(val))
-    .optional()
-    .nullable(),
-  usageType: z
-    .enum(['REGULAR', 'GUEST', 'SPECIAL_OCCASION', 'SEASONAL_ROTATION'])
-    .default('REGULAR'),
-  notes: z.string().optional().nullable(),
-});
+const createUsageRecordSchema = z
+  .object({
+    quiltId: z.string().trim().min(1, '无效的被子ID'),
+    startDate: z.coerce.date(),
+    endDate: z.coerce.date().optional().nullable(),
+    usageType: z
+      .enum(['REGULAR', 'GUEST', 'SPECIAL_OCCASION', 'SEASONAL_ROTATION'])
+      .default('REGULAR'),
+    notes: z.string().max(500).optional().nullable(),
+  })
+  .refine(input => !input.endDate || input.endDate >= input.startDate, {
+    message: '结束日期不能早于开始日期',
+    path: ['endDate'],
+  });
 
 /**
  * GET /api/usage
@@ -54,8 +56,10 @@ export async function GET(request: NextRequest) {
 
     // Parse query parameters
     const quiltId = searchParams.get('quiltId') || undefined;
-    const limit = Math.min(parseInt(searchParams.get('limit') || '50', 10), 100);
-    const offset = parseInt(searchParams.get('offset') || '0', 10);
+    const requestedLimit = Number.parseInt(searchParams.get('limit') || '50', 10);
+    const requestedOffset = Number.parseInt(searchParams.get('offset') || '0', 10);
+    const limit = Number.isFinite(requestedLimit) ? Math.min(Math.max(requestedLimit, 1), 100) : 50;
+    const offset = Number.isFinite(requestedOffset) ? Math.max(requestedOffset, 0) : 0;
 
     // Fetch usage records with quilt join (returns startedAt/endedAt format)
     // Uses 'use cache' for server-side caching
@@ -124,6 +128,9 @@ export async function POST(request: NextRequest) {
 
     return createCreatedResponse({ record });
   } catch (error) {
+    if (error instanceof SyntaxError) {
+      return createBadRequestResponse('Request body must be valid JSON');
+    }
     return createInternalErrorResponse('创建使用记录失败', error);
   }
 }

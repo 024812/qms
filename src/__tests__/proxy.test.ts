@@ -67,6 +67,14 @@ describe('proxy', () => {
     );
   });
 
+  it('redirects the disabled registration page to localized login without checking auth', async () => {
+    const response = await proxy(new NextRequest('http://localhost:3000/en/register'));
+
+    expect(response.status).toBe(307);
+    expect(response.headers.get('location')).toBe('http://localhost:3000/en/login');
+    expect(auth).not.toHaveBeenCalled();
+  });
+
   it('redirects authenticated users away from localized public routes', async () => {
     vi.mocked(auth).mockResolvedValue({
       user: {

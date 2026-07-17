@@ -5,7 +5,7 @@ import { countQuilts, getQuilts } from '@/lib/data/quilts';
 import { getSimpleUsageStats } from '@/lib/data/stats';
 import { getUsageRecords } from '@/lib/data/usage';
 import { systemSettingsRepository } from '@/lib/repositories/system-settings.repository';
-import { authAccount, db, type Tx, users } from '@/db';
+import { authAccount, authSession, db, type Tx, users } from '@/db';
 import { hashPassword, verifyPassword } from '@/lib/auth/password';
 import { cacheLife, cacheTag, revalidateTag } from 'next/cache';
 import { and, eq } from 'drizzle-orm';
@@ -122,6 +122,7 @@ export async function changePassword(
   const newHash = await hashPassword(input.newPassword);
 
   await db.transaction(async tx => {
+    await tx.delete(authSession).where(eq(authSession.userId, session.user.id));
     await tx
       .update(authAccount)
       .set({ password: newHash, updatedAt: new Date() })

@@ -9,6 +9,7 @@ import { Upload, Download, FileSpreadsheet, Database, Loader2 } from 'lucide-rea
 import { ImportUpload } from '@/components/import/ImportUpload';
 import { toast } from '@/lib/toast';
 import dynamic from 'next/dynamic';
+import { useSession } from '@/lib/auth/client';
 
 // Helper components for dynamic loading states to access translations
 function PreviewLoading() {
@@ -63,6 +64,8 @@ interface ImportData {
 
 export default function ImportExportPage() {
   const t = useTranslations();
+  const { data: session } = useSession();
+  const isAdmin = session?.user?.role === 'admin';
   const [activeTab, setActiveTab] = useState<'import' | 'export'>('export');
   const [loading, setLoading] = useState<string | null>(null);
 
@@ -150,11 +153,13 @@ export default function ImportExportPage() {
     <div className="space-y-6">
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={v => setActiveTab(v as 'import' | 'export')}>
-        <TabsList className="grid w-full max-w-md grid-cols-2">
-          <TabsTrigger value="import" className="flex items-center gap-2">
-            <Upload className="w-4 h-4" />
-            {t('reports.tabs.import')}
-          </TabsTrigger>
+        <TabsList className={`grid w-full max-w-md ${isAdmin ? 'grid-cols-2' : 'grid-cols-1'}`}>
+          {isAdmin && (
+            <TabsTrigger value="import" className="flex items-center gap-2">
+              <Upload className="w-4 h-4" />
+              {t('reports.tabs.import')}
+            </TabsTrigger>
+          )}
           <TabsTrigger value="export" className="flex items-center gap-2">
             <Download className="w-4 h-4" />
             {t('reports.tabs.export')}
@@ -162,27 +167,29 @@ export default function ImportExportPage() {
         </TabsList>
 
         {/* Import Tab */}
-        <TabsContent value="import" className="space-y-6 mt-6">
-          {currentStep === 'upload' && <ImportUpload onFileUpload={handleFileUpload} />}
+        {isAdmin && (
+          <TabsContent value="import" className="space-y-6 mt-6">
+            {currentStep === 'upload' && <ImportUpload onFileUpload={handleFileUpload} />}
 
-          {currentStep === 'preview' && importData && (
-            <ImportPreview
-              fileName={importData.fileName}
-              fileData={importData.fileData}
-              onPreviewComplete={handlePreviewComplete}
-              onImportComplete={handleImportComplete}
-            />
-          )}
+            {currentStep === 'preview' && importData && (
+              <ImportPreview
+                fileName={importData.fileName}
+                fileData={importData.fileData}
+                onPreviewComplete={handlePreviewComplete}
+                onImportComplete={handleImportComplete}
+              />
+            )}
 
-          {currentStep === 'results' && importData?.results && (
-            <ImportResults
-              results={importData.results}
-              fileName={importData.fileName}
-              onStartOver={handleStartOver}
-              onGoToDashboard={() => (window.location.href = '/')}
-            />
-          )}
-        </TabsContent>
+            {currentStep === 'results' && importData?.results && (
+              <ImportResults
+                results={importData.results}
+                fileName={importData.fileName}
+                onStartOver={handleStartOver}
+                onGoToDashboard={() => (window.location.href = '/')}
+              />
+            )}
+          </TabsContent>
+        )}
 
         {/* Export Tab */}
         <TabsContent value="export" className="space-y-6 mt-6">

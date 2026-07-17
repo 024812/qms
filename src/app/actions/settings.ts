@@ -204,12 +204,12 @@ export async function changePasswordAction(
       success: true,
       data: await changePasswordData(validationResult.data),
     };
-  } catch (error) {
+  } catch {
     return {
       success: false,
       error: {
         code: 'BAD_REQUEST',
-        message: error instanceof Error ? error.message : 'Failed to change password',
+        message: 'Failed to change password',
       },
     };
   }

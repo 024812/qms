@@ -10,6 +10,7 @@ import { z } from 'zod';
 import { getActiveUsageRecord, updateUsageRecord } from '@/lib/data/usage';
 import { sanitizeApiInput } from '@/lib/sanitization';
 import {
+  createBadRequestResponse,
   createSuccessResponse,
   createValidationErrorResponse,
   createNotFoundResponse,
@@ -20,8 +21,8 @@ import { requireApiSession } from '@/lib/api/route-auth';
 // Input validation schema
 const endUsageRecordSchema = z.object({
   quiltId: z.string().trim().min(1, '无效的被子ID'),
-  endDate: z.string().transform(val => new Date(val)),
-  notes: z.string().optional().nullable(),
+  endDate: z.coerce.date(),
+  notes: z.string().max(500).optional().nullable(),
 });
 
 /**
@@ -63,6 +64,12 @@ export async function POST(request: NextRequest) {
       return createNotFoundResponse('该被子的活跃使用记录');
     }
 
+    if (endDate < activeRecord.startDate) {
+      return createValidationErrorResponse('使用记录数据验证失败', {
+        endDate: ['结束日期不能早于开始日期'],
+      });
+    }
+
     // End the usage record
     const record = await updateUsageRecord(activeRecord.id, {
       endDate,
@@ -75,6 +82,9 @@ export async function POST(request: NextRequest) {
 
     return createSuccessResponse({ record });
   } catch (error) {
+    if (error instanceof SyntaxError) {
+      return createBadRequestResponse('Request body must be valid JSON');
+    }
     return createInternalErrorResponse('结束使用记录失败', error);
   }
 }

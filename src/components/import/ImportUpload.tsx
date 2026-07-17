@@ -56,13 +56,13 @@ export function ImportUpload({ onFileUpload }: ImportUploadProps) {
       const file = files[0];
 
       // Validate file type
-      if (!file.name.toLowerCase().endsWith('.xlsx') && !file.name.toLowerCase().endsWith('.xls')) {
+      if (!file.name.toLowerCase().endsWith('.xlsx')) {
         error(t('toast.invalidTypeTitle'), t('toast.invalidTypeDesc'));
         return;
       }
 
-      // Validate file size (10MB limit)
-      if (file.size > 10 * 1024 * 1024) {
+      // Keep the encoded request below platform body limits.
+      if (file.size > 2 * 1024 * 1024) {
         error(t('toast.tooLargeTitle'), t('toast.tooLargeDesc'));
         return;
       }
@@ -149,7 +149,7 @@ export function ImportUpload({ onFileUpload }: ImportUploadProps) {
               <input
                 id="file-input"
                 type="file"
-                accept=".xlsx,.xls"
+                accept=".xlsx"
                 onChange={handleFileInputChange}
                 className="hidden"
               />

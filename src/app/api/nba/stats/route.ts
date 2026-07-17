@@ -67,6 +67,6 @@ export async function GET(request: Request) {
     });
   } catch (error: any) {
     console.error('[NBA Proxy] Error:', error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ error: 'Failed to fetch NBA statistics' }, { status: 502 });
   }
 }

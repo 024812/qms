@@ -22,16 +22,25 @@ export async function proxy(req: NextRequest) {
     return response;
   }
 
-  const publicPaths = ['/login', '/register'];
   const pathSegments = pathname.split('/').filter(Boolean);
   const locale = routing.locales.includes(pathSegments[0] as (typeof routing.locales)[number])
     ? pathSegments[0]
     : null;
   const normalizedPathname = locale ? `/${pathSegments.slice(1).join('/')}` || '/' : pathname;
   const localePrefix = locale ? `/${locale}` : '';
+  const publicPaths = ['/login'];
+  const disabledPaths = ['/register'];
+  const isDisabledPath = disabledPaths.some(
+    path => normalizedPathname === path || normalizedPathname.startsWith(`${path}/`)
+  );
   const isPublicPath = publicPaths.some(
     path => normalizedPathname === path || normalizedPathname.startsWith(`${path}/`)
   );
+
+  if (isDisabledPath) {
+    return NextResponse.redirect(new URL(`${localePrefix}/login`, req.url));
+  }
+
   const session = await auth();
 
   if (!session && !isPublicPath) {

@@ -76,7 +76,7 @@ Example shape:
 
 ## Verification
 
-- `/register` creates a user that can immediately sign in.
+- `/register` is disabled; an administrator creates users from the user-management page.
 - `/login` accepts the migrated user's email and password.
 - Protected pages redirect to `/login` when signed out.
 - Admin pages reject users whose `users.preferences.role` is not `admin`.
@@ -95,4 +95,4 @@ Check `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL`, and `NEXT_PUBLIC_BETTER_AUTH_URL`
 
 ### A user exists in `users` but cannot sign in
 
-Create the corresponding Better Auth records by registering the account again in a controlled environment, or migrate the user through a dedicated script that writes both Better Auth and application user records.
+Create or update the account through the administrator user-management flow, or migrate the user through a dedicated script that writes both Better Auth and application user records. Public signup must remain disabled.

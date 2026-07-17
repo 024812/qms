@@ -466,6 +466,18 @@ export async function updateUsageRecordAction(input: {
       };
     }
 
+    const nextStartDate = validationResult.data.startDate ?? currentRecord.startDate;
+    const nextEndDate =
+      validationResult.data.endDate === undefined
+        ? currentRecord.endDate
+        : validationResult.data.endDate;
+
+    if (nextEndDate && nextEndDate < nextStartDate) {
+      return validationErrorResult('Usage record data is invalid', {
+        endDate: ['End date must be on or after start date'],
+      });
+    }
+
     const record = await updateUsageRecordData(id, updates);
 
     if (!record) {
@@ -520,6 +532,12 @@ export async function endUsageRecordAction(input: {
           message: 'Active usage record not found',
         },
       };
+    }
+
+    if (validationResult.data.endDate < activeRecord.startDate) {
+      return validationErrorResult('Usage record data is invalid', {
+        endDate: ['End date must be on or after start date'],
+      });
     }
 
     const record = await updateUsageRecordData(activeRecord.id, {

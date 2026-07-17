@@ -10,6 +10,7 @@ import { recordAgentAudit } from '@/lib/agent/audit';
 import {
   createBadRequestResponse,
   createConflictResponse,
+  createInternalErrorResponse,
   createSuccessResponse,
   createValidationErrorResponse,
 } from '@/lib/api/response';
@@ -28,6 +29,9 @@ import {
   getUsageRecordsWithQuilts,
   updateUsageRecord,
 } from '@/lib/data/usage';
+import { attachmentImagesSchema, imageReferenceSchema } from '@/lib/validations/image';
+
+const MAX_AGENT_REQUEST_CHARS = 1024 * 1024;
 
 const toolSchema = z.object({
   tool: z.enum([
@@ -81,8 +85,8 @@ const quiltWriteSchema = z.object({
   packagingInfo: z.string().nullable().optional(),
   currentStatus: z.enum(['IN_USE', 'MAINTENANCE', 'STORAGE']).optional(),
   notes: z.string().nullable().optional(),
-  mainImage: z.string().nullable().optional(),
-  attachmentImages: z.array(z.string()).nullable().optional(),
+  mainImage: imageReferenceSchema.nullable().optional(),
+  attachmentImages: attachmentImagesSchema.nullable().optional(),
 });
 
 const quiltStatusSchema = z.object({
@@ -157,8 +161,8 @@ const cardWriteSchema = z.object({
   status: z.enum(['COLLECTION', 'FOR_SALE', 'SOLD', 'GRADING', 'DISPLAY']).nullable().optional(),
   location: z.string().nullable().optional(),
   notes: z.string().nullable().optional(),
-  mainImage: z.string().nullable().optional(),
-  attachmentImages: z.array(z.string()).nullable().optional(),
+  mainImage: imageReferenceSchema.nullable().optional(),
+  attachmentImages: attachmentImagesSchema.nullable().optional(),
 });
 
 const scopeByTool: Record<z.infer<typeof toolSchema>['tool'], AgentScope> = {
@@ -360,7 +364,17 @@ export async function POST(request: NextRequest) {
   let body: unknown;
 
   try {
-    body = await request.json();
+    const declaredLength = Number(request.headers.get('content-length') ?? 0);
+    if (declaredLength > MAX_AGENT_REQUEST_CHARS) {
+      return createBadRequestResponse('Request body is too large');
+    }
+
+    const requestText = await request.text();
+    if (requestText.length > MAX_AGENT_REQUEST_CHARS) {
+      return createBadRequestResponse('Request body is too large');
+    }
+
+    body = JSON.parse(requestText);
   } catch {
     return createBadRequestResponse('Request body must be valid JSON');
   }
@@ -425,7 +439,7 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    throw error;
+    return createInternalErrorResponse('Agent tool execution failed', error);
   }
 }
 

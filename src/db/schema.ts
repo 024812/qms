@@ -29,7 +29,7 @@ import {
   serial,
   uniqueIndex,
 } from 'drizzle-orm/pg-core';
-import { relations } from 'drizzle-orm';
+import { relations, sql } from 'drizzle-orm';
 
 /**
  * User role enumeration
@@ -299,6 +299,9 @@ export const usageRecords = pgTable(
   },
   table => ({
     quiltIdx: index('usage_records_quilt_idx').on(table.quiltId),
+    activeQuiltUniqueIdx: uniqueIndex('usage_records_active_quilt_unique_idx')
+      .on(table.quiltId)
+      .where(sql`${table.endDate} IS NULL`),
     startDateIdx: index('usage_records_start_date_idx').on(table.startDate),
     endDateIdx: index('usage_records_end_date_idx').on(table.endDate),
   })

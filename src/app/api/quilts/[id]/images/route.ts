@@ -4,6 +4,7 @@ import { z } from 'zod';
 import { getQuiltAction, updateQuiltAction } from '@/app/actions/quilts';
 import { actionResultToApiResponse } from '@/lib/api/action-response';
 import { createBadRequestResponse, createNotFoundResponse } from '@/lib/api/response';
+import { attachmentImagesSchema, imageReferenceSchema } from '@/lib/validations/image';
 
 import { applyQuiltCompatibilityHeaders } from '../../_shared';
 
@@ -12,8 +13,8 @@ interface RouteParams {
 }
 
 const updateImagesSchema = z.object({
-  mainImage: z.string().nullable().optional(),
-  attachmentImages: z.array(z.string()).nullable().optional(),
+  mainImage: imageReferenceSchema.nullable().optional(),
+  attachmentImages: attachmentImagesSchema.nullable().optional(),
 });
 
 const deleteImageSchema = z.object({

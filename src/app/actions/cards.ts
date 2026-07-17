@@ -2,12 +2,7 @@
 
 import { z } from 'zod';
 
-import type {
-  CardSettings,
-  GetCardsActionInput,
-  GetCardsActionResult,
-  UpdateCardSettingsInput,
-} from './cards.types';
+import type { CardSettings, GetCardsActionInput, GetCardsActionResult } from './cards.types';
 import { auth } from '@/auth';
 import {
   deleteCard as deleteCardData,
@@ -26,6 +21,7 @@ import {
   type CardStats,
 } from '@/lib/data/cards';
 import type { CardItem } from '@/modules/cards/schema';
+import { attachmentImagesSchema, imageReferenceSchema } from '@/lib/validations/image';
 
 interface ActionSuccess<T> {
   success: true;
@@ -100,10 +96,10 @@ const cardInputSchema = z.object({
   storageType: z.string().optional().nullable(),
   condition: z.string().optional().nullable(),
   notes: z.string().optional().nullable(),
-  mainImage: z.string().optional().nullable(),
-  frontImage: z.string().optional().nullable(),
-  backImage: z.string().optional().nullable(),
-  attachmentImages: z.array(z.string()).optional().nullable(),
+  mainImage: imageReferenceSchema.optional().nullable(),
+  frontImage: imageReferenceSchema.optional().nullable(),
+  backImage: imageReferenceSchema.optional().nullable(),
+  attachmentImages: attachmentImagesSchema.optional().nullable(),
 });
 
 function zodFieldErrors(error: z.ZodError): Record<string, string[]> {
@@ -199,7 +195,7 @@ export async function getCardSettingsAction(): Promise<ActionResult<CardSettings
 }
 
 export async function updateCardSettingsAction(
-  input: UpdateCardSettingsInput
+  input: unknown
 ): Promise<ActionResult<CardSettings>> {
   try {
     const session = await requireAdmin();
@@ -271,12 +267,12 @@ export async function getCardsAction(
       success: true,
       data,
     };
-  } catch (error) {
+  } catch {
     return {
       success: false,
       error: {
         code: 'INTERNAL_ERROR',
-        message: error instanceof Error ? error.message : 'Failed to fetch cards',
+        message: 'Failed to fetch cards',
       },
     };
   }
@@ -300,12 +296,12 @@ export async function getCardAction(id: string): Promise<ActionResult<CardItem |
       success: true,
       data: card,
     };
-  } catch (error) {
+  } catch {
     return {
       success: false,
       error: {
         code: 'INTERNAL_ERROR',
-        message: error instanceof Error ? error.message : 'Failed to fetch card',
+        message: 'Failed to fetch card',
       },
     };
   }
@@ -334,12 +330,12 @@ export async function saveCardAction(data: unknown): Promise<ActionResult<{ card
       success: true,
       data: { card },
     };
-  } catch (error) {
+  } catch {
     return {
       success: false,
       error: {
         code: 'INTERNAL_ERROR',
-        message: error instanceof Error ? error.message : 'Failed to save card',
+        message: 'Failed to save card',
       },
     };
   }
@@ -363,12 +359,12 @@ export async function deleteCardAction(id: string): Promise<ActionResult<{ succe
       success: true,
       data: { success: true },
     };
-  } catch (error) {
+  } catch {
     return {
       success: false,
       error: {
         code: 'INTERNAL_ERROR',
-        message: error instanceof Error ? error.message : 'Failed to delete card',
+        message: 'Failed to delete card',
       },
     };
   }
@@ -386,12 +382,12 @@ export async function getCardStatsAction(): Promise<ActionResult<CardStats>> {
       success: true,
       data: await getCardStatsData(),
     };
-  } catch (error) {
+  } catch {
     return {
       success: false,
       error: {
         code: 'INTERNAL_ERROR',
-        message: error instanceof Error ? error.message : 'Failed to fetch card stats',
+        message: 'Failed to fetch card stats',
       },
     };
   }
@@ -413,12 +409,12 @@ export async function getMonthlyBuySellDataAction(
       success: true,
       data: typeof limit === 'number' ? data.slice(0, limit) : data,
     };
-  } catch (error) {
+  } catch {
     return {
       success: false,
       error: {
         code: 'INTERNAL_ERROR',
-        message: error instanceof Error ? error.message : 'Failed to fetch monthly card data',
+        message: 'Failed to fetch monthly card data',
       },
     };
   }
@@ -436,12 +432,12 @@ export async function getRecentActivityAction(limit = 10): Promise<ActionResult<
       success: true,
       data: await getRecentActivityData(limit),
     };
-  } catch (error) {
+  } catch {
     return {
       success: false,
       error: {
         code: 'INTERNAL_ERROR',
-        message: error instanceof Error ? error.message : 'Failed to fetch recent activity',
+        message: 'Failed to fetch recent activity',
       },
     };
   }

@@ -12,6 +12,7 @@ import { Quilt } from '@/lib/database/types';
 import { Card, auditLogs, cards } from '@/db/schema';
 import { eq, desc, and } from 'drizzle-orm';
 import { db } from '@/db';
+import { auth } from '@/auth';
 import { QuiltStatus } from '@/lib/validations/quilt';
 import {
   CreateItemFormState,
@@ -36,7 +37,17 @@ interface PaginatedResult<T> {
 type JsonObject = Record<string, unknown>;
 
 function getErrorMessage(error: unknown): string {
-  return error instanceof Error ? error.message : 'Unknown error';
+  console.error('Item action failed:', error);
+  return 'The item operation failed';
+}
+
+async function requireAuthenticatedUser() {
+  const session = await auth();
+  if (!session?.user?.id) {
+    throw new Error('Unauthorized');
+  }
+
+  return session;
 }
 
 /**
@@ -47,6 +58,7 @@ export async function getItems(
   type: string,
   options: GetItemsOptions = {}
 ): Promise<PaginatedResult<Quilt | Card>> {
+  const session = await requireAuthenticatedUser();
   const { page = 1, pageSize = 20, status } = options;
   const offset = (page - 1) * pageSize;
 
@@ -69,13 +81,7 @@ export async function getItems(
     };
   } else if (type === 'cards') {
     // Direct DB access since CardRepository was removed
-    const { auth } = await import('@/auth');
-    const session = await auth();
-    const userId = session?.user?.id;
-
-    if (!userId) {
-      return { data: [], totalPages: 0, totalCount: 0 };
-    }
+    const userId = session.user.id;
 
     // Build conditions for filtering
     const conditions = [eq(cards.userId, userId)];
@@ -114,6 +120,8 @@ export async function getItems(
  * Get usage/audit logs for an item
  */
 export async function getUsageLogs(itemId: string) {
+  await requireAuthenticatedUser();
+
   const logs = await db
     .select()
     .from(auditLogs)
@@ -126,6 +134,8 @@ export async function getUsageLogs(itemId: string) {
  * Get single item by ID
  */
 export async function getItemById(type: string, id: string): Promise<Quilt | Card | null> {
+  await requireAuthenticatedUser();
+
   if (type === 'quilts') {
     return getQuiltById(id);
   } else if (type === 'cards') {
@@ -143,6 +153,7 @@ export async function createItem(
   prevState: CreateItemFormState | undefined,
   formData: FormData
 ): Promise<CreateItemFormState> {
+  const session = await requireAuthenticatedUser();
   const type = formData.get('type') as string;
   const name = formData.get('name') as string;
   const attributesJson = formData.get('attributes') as string;
@@ -180,10 +191,6 @@ export async function createItem(
       };
       resultItem = await createQuilt(quiltData);
     } else if (type === 'cards') {
-      const { auth } = await import('@/auth');
-      const session = await auth();
-      if (!session?.user?.id) return { error: 'Unauthorized' };
-
       const { cards } = await import('@/db/schema');
 
       const cleanData: Partial<typeof cards.$inferInsert> & JsonObject = { ...data };
@@ -216,6 +223,7 @@ export async function updateItem(
   prevState: UpdateItemFormState | undefined,
   formData: FormData
 ): Promise<UpdateItemFormState> {
+  const session = await requireAuthenticatedUser();
   const type = formData.get('type') as string;
   const id = formData.get('id') as string;
   const name = formData.get('name') as string;
@@ -232,10 +240,6 @@ export async function updateItem(
     if (type === 'quilts') {
       resultItem = await updateQuilt(id, data as Parameters<typeof updateQuilt>[1]);
     } else if (type === 'cards') {
-      const { auth } = await import('@/auth');
-      const session = await auth();
-      if (!session?.user?.id) return { error: 'Unauthorized' };
-
       const { db } = await import('@/db');
       const { cards } = await import('@/db/schema');
       const { eq } = await import('drizzle-orm');
@@ -269,6 +273,7 @@ export async function deleteItem(
   prevState: DeleteItemFormState | undefined,
   formData: FormData
 ): Promise<DeleteItemFormState> {
+  await requireAuthenticatedUser();
   const type = formData.get('type') as string;
   const id = formData.get('id') as string;
 
@@ -276,10 +281,6 @@ export async function deleteItem(
     if (type === 'quilts') {
       await deleteQuilt(id);
     } else if (type === 'cards') {
-      const { auth } = await import('@/auth');
-      const session = await auth();
-      if (!session?.user?.id) return { error: 'Unauthorized' };
-
       const { db } = await import('@/db');
       const { cards } = await import('@/db/schema');
       const { eq } = await import('drizzle-orm');

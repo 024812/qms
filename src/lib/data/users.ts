@@ -161,6 +161,10 @@ export async function updateUser(data: UpdateUserData): Promise<UserSummary | nu
         .where(and(eq(authAccount.userId, data.id), eq(authAccount.providerId, 'credential')));
     }
 
+    if (data.email !== undefined || data.hashedPassword !== undefined || data.role !== undefined) {
+      await tx.delete(authSession).where(eq(authSession.userId, data.id));
+    }
+
     return tx
       .update(users)
       .set({

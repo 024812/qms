@@ -273,16 +273,6 @@ function generateQuiltName(data: CreateQuiltData): string {
 /**
  * Get the next available item number
  */
-async function getNextItemNumber(tx?: Tx): Promise<number> {
-  const connection = tx || db;
-  const result = await connection
-    .select({
-      next_number: sql<number>`COALESCE(MAX(${quilts.itemNumber}), 0) + 1`,
-    })
-    .from(quilts);
-  return result[0]?.next_number || 1;
-}
-
 // ============================================================================
 // READ OPERATIONS (with caching)
 // ============================================================================
@@ -485,57 +475,8 @@ export async function countQuilts(filters: QuiltFilters = {}): Promise<number> {
  * Invalidates: 'quilts', 'quilts-list', status and season specific tags
  */
 export async function createQuilt(data: CreateQuiltData): Promise<Quilt> {
-  try {
-    // Quilt IDs are stored as text in production; the schema generates them at runtime.
-    const itemNumber = await getNextItemNumber();
-    const name = data.name || generateQuiltName(data);
-
-    dbLogger.info('Creating quilt', { itemNumber, name });
-
-    const result = await db
-      .insert(quilts)
-      .values({
-        // id will be auto-generated
-        itemNumber,
-        name,
-        season: data.season,
-        lengthCm: data.lengthCm,
-        widthCm: data.widthCm,
-        weightGrams: data.weightGrams,
-        fillMaterial: data.fillMaterial,
-        materialDetails: data.materialDetails,
-        color: data.color,
-        brand: data.brand,
-        purchaseDate: data.purchaseDate ?? null,
-        location: data.location,
-        packagingInfo: data.packagingInfo,
-        currentStatus: data.currentStatus || 'STORAGE',
-        notes: data.notes,
-        imageUrl: data.imageUrl,
-        thumbnailUrl: data.thumbnailUrl,
-        mainImage: data.mainImage,
-        attachmentImages: data.attachmentImages ?? [],
-      })
-      .returning();
-
-    const quilt = result[0] as unknown as Quilt;
-
-    // Invalidate cache tags
-    revalidateTag(quiltsCacheTags.root, 'max');
-    revalidateTag(quiltsCacheTags.list, 'max');
-    revalidateTag(quiltsCacheTags.slice('status', quilt.currentStatus), 'max');
-    revalidateTag(quiltsCacheTags.slice('season', quilt.season), 'max');
-    revalidateTag(statsCacheTags.root, 'max');
-    revalidateTag(statsCacheTags.slice('dashboard', 'main'), 'max');
-
-    dbLogger.info('Quilt created successfully', { id: quilt.id, itemNumber });
-    return quilt;
-  } catch (error) {
-    logQuiltDataError('Error creating quilt', error, {
-      data: summarizeQuiltWriteData(data),
-    });
-    throw error;
-  }
+  const result = await saveQuilt(data);
+  return result.quilt;
 }
 
 /**
@@ -548,47 +489,10 @@ export async function updateQuilt(
   data: Partial<CreateQuiltData>
 ): Promise<Quilt | null> {
   try {
-    // Get current quilt for cache invalidation
-    const current = await getQuiltById(id);
-    if (!current) {
-      dbLogger.warn('Quilt not found for update', { id });
-      return null;
-    }
-
-    dbLogger.info('Updating quilt', { id });
-
-    const updateValues = buildQuiltUpdateValues(data);
-
-    const result = await db.update(quilts).set(updateValues).where(eq(quilts.id, id)).returning();
-
-    if (result.length === 0) return null;
-
-    const updated = result[0] as unknown as Quilt;
-
-    // Invalidate cache tags
-    revalidateTag(quiltsCacheTags.root, 'max');
-    revalidateTag(quiltsCacheTags.list, 'max');
-    revalidateTag(quiltsCacheTags.item(id), 'max');
-
-    // Invalidate old and new status/season tags if they changed
-    if (current.currentStatus !== updated.currentStatus) {
-      revalidateTag(quiltsCacheTags.slice('status', current.currentStatus), 'max');
-      revalidateTag(quiltsCacheTags.slice('status', updated.currentStatus), 'max');
-    }
-    if (current.season !== updated.season) {
-      revalidateTag(quiltsCacheTags.slice('season', current.season), 'max');
-      revalidateTag(quiltsCacheTags.slice('season', updated.season), 'max');
-    }
-    revalidateTag(statsCacheTags.root, 'max');
-    revalidateTag(statsCacheTags.slice('dashboard', 'main'), 'max');
-
-    dbLogger.info('Quilt updated successfully', { id });
-    return updated;
+    const result = await saveQuilt({ id, ...data });
+    return result.quilt;
   } catch (error) {
-    logQuiltDataError('Error updating quilt', error, {
-      id,
-      data: summarizeQuiltWriteData(data),
-    });
+    if (error instanceof Error && error.message === 'Quilt not found') return null;
     throw error;
   }
 }
@@ -659,13 +563,11 @@ export async function saveQuilt(
     }
 
     return await db.transaction(async tx => {
-      const itemNumber = await getNextItemNumber(tx);
       const name = data.name || generateQuiltName(data);
 
       const insertedRows = await tx
         .insert(quilts)
         .values({
-          itemNumber,
           name,
           season: data.season,
           lengthCm: data.lengthCm,
@@ -720,48 +622,6 @@ export async function saveQuilt(
       data: summarizeQuiltWriteData(data),
       id: isQuiltUpdateData(data) ? data.id : undefined,
     });
-    throw error;
-  }
-}
-
-/**
- * Update quilt status only (without usage record management)
- *
- * @deprecated Use updateQuiltStatusWithUsageRecord for atomic status changes with usage tracking
- */
-export async function updateQuiltStatus(id: string, status: QuiltStatus): Promise<Quilt | null> {
-  try {
-    const current = await getQuiltById(id);
-    const oldStatus = current?.currentStatus;
-
-    const result = await db
-      .update(quilts)
-      .set({
-        currentStatus: status,
-        updatedAt: new Date(),
-      })
-      .where(eq(quilts.id, id))
-      .returning();
-
-    if (result.length === 0) return null;
-
-    const updated = result[0] as unknown as Quilt;
-
-    // Invalidate cache tags
-    revalidateTag(quiltsCacheTags.root, 'max');
-    revalidateTag(quiltsCacheTags.list, 'max');
-    revalidateTag(quiltsCacheTags.item(id), 'max');
-    if (oldStatus) {
-      revalidateTag(quiltsCacheTags.slice('status', oldStatus), 'max');
-    }
-    revalidateTag(quiltsCacheTags.slice('status', status), 'max');
-    revalidateTag(statsCacheTags.root, 'max');
-    revalidateTag(statsCacheTags.slice('dashboard', 'main'), 'max');
-
-    dbLogger.info('Quilt status updated', { id, status });
-    return updated;
-  } catch (error) {
-    logQuiltDataError('Error updating quilt status', error, { id, status });
     throw error;
   }
 }

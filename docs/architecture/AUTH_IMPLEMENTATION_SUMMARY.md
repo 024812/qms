@@ -7,15 +7,17 @@ The current authentication implementation uses Better Auth with email/password l
 - `src/auth.ts`
   Configures Better Auth, the Drizzle adapter, email/password hashing, session settings, and the exported `auth()` helper.
 - `src/app/api/auth/[...all]/route.ts`
-  Exposes the Better Auth route handler under `/api/auth/*`.
+  Exposes the Better Auth route handler under `/api/auth/*` and explicitly rejects `/api/auth/sign-up/*`.
 - `src/app/actions/auth.ts`
-  Handles localized login and registration server actions.
+  Handles localized login; the legacy registration action always rejects public account creation.
+- `src/app/actions/users.ts`
+  Provides the administrator-only account creation, update, and deletion workflow.
 - `src/app/actions/logout.ts`
   Handles sign-out through Better Auth.
 - `src/lib/auth/client.ts`
   Provides the Better Auth React client and `useSession()` hook.
 - `src/proxy.ts`
-  Applies Next.js 16 route protection and locale routing.
+  Applies Next.js 16 route protection and locale routing; `/register` always redirects to `/login`.
 
 ## Data Model
 
@@ -33,7 +35,7 @@ The application still keeps domain user data in `users`:
 - `users.preferences.role` stores `admin` or `member`.
 - `users.preferences.activeModules` stores enabled modules.
 
-Registration creates both the Better Auth user and the application `users` record. If the app user insert fails, the server action removes the partially created Better Auth records.
+Administrator account creation writes the Better Auth user, credential account, and application `users` record in one database transaction. Public self-registration is not part of the account lifecycle.
 
 ## Session Shape
 
@@ -80,18 +82,19 @@ API routes that need authentication use explicit helpers such as `requireApiSess
 
 ## Database Migration
 
-Apply the Better Auth schema with Drizzle migrations before deploying this release:
+Apply all pending Drizzle migrations before deploying a release:
 
 ```bash
 npm run db:migrate
 ```
 
-For environments managed through direct SQL migration scripts, apply `migrations/011_migrate_users_to_better_auth.sql` after the existing user schema is present.
+The canonical schema is `src/db/schema.ts`, migration files live in `drizzle/`, and production changes use `npm run db:migrate` rather than `db:push` or ad-hoc SQL.
 
 ## Verification Checklist
 
 - Visiting a protected page while signed out redirects to `/login`.
-- Registering a new user creates matching records in `auth_user` and `users`.
+- `/register` and `/api/auth/sign-up/*` reject public account creation.
+- An administrator-created account has matching records in `auth_user`, `auth_account`, and `users`.
 - Correct credentials create a session and redirect to the requested callback URL.
 - Wrong credentials are rejected without exposing internal errors.
 - `session.user` includes `id`, `role`, and `activeModules`.

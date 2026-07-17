@@ -36,7 +36,7 @@ Release verification runs, in order: `lint:check`, `type-check`, `test`, `build`
 
 ## Architecture
 
-Next.js 16 App Router (React 19, TypeScript). The codebase follows a strict **module blueprint** documented in `docs/MODULE_BLUEPRINT_V2.md`. `quilts` and `cards` are the canonical template modules; new modules copy their structure rather than inventing new patterns.
+Next.js 16 App Router (React 19, TypeScript). The codebase follows a strict **module blueprint** documented in `docs/architecture/MODULE_BLUEPRINT_V2.md`. `quilts` and `cards` are the canonical template modules; new modules copy their structure rather than inventing new patterns.
 
 ### The five fixed rules (from the blueprint)
 

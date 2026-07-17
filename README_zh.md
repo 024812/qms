@@ -2,7 +2,7 @@
 
 QMS 是一个模块化的家庭物品管理系统，基于 Next.js 16、React 19、Better Auth、Neon Serverless PostgreSQL、Drizzle ORM 和 Vercel 构建。
 
-当前版本：`2026.7.7`
+当前版本：`2026.7.17`
 
 ## 当前标准
 
@@ -14,7 +14,7 @@ QMS 是一个模块化的家庭物品管理系统，基于 Next.js 16、React 19
 - 路由保护遵循 Next.js 16 的 `src/proxy.ts` 约定。
 - 外部 AI agent 使用受限 Agent OpenAPI，不直接访问数据库通用接口。
 
-模块蓝图规则见 `docs/MODULE_BLUEPRINT_V2.md`。
+模块蓝图规则见 `docs/architecture/MODULE_BLUEPRINT_V2.md`。
 
 ## 当前模块
 
@@ -111,9 +111,9 @@ npm audit --omit=optional
 ## 文档入口
 
 - 文档目录：`docs/README.md`
-- 模块蓝图：`docs/MODULE_BLUEPRINT_V2.md`
+- 模块蓝图：`docs/architecture/MODULE_BLUEPRINT_V2.md`
 - 数据库迁移：`docs/guides/DATABASE_MIGRATIONS.md`
-- 认证实现：`docs/guides/AUTH_IMPLEMENTATION_SUMMARY.md`
+- 认证实现：`docs/architecture/AUTH_IMPLEMENTATION_SUMMARY.md`
 - 部署环境变量：`docs/guides/VERCEL-ENV-SETUP.md`
 - 变更历史：`CHANGELOG.md`
 

@@ -1,6 +1,6 @@
 # Security Audit Summary
 
-Audit date: `2026-07-03`
+Audit date: `2026-07-17`
 
 ## Current Status
 
@@ -30,6 +30,8 @@ Account-private records remain user-scoped: sessions, credentials, and personal 
 - Kept application authorization data in `users.preferences`.
 - Updated environment variables to `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL`, and `NEXT_PUBLIC_BETTER_AUTH_URL`.
 - Kept `AUTH_SECRET` only as a fallback alias. `NEXTAUTH_SECRET` is legacy-only and should not be used for new deployments.
+- Disabled public sign-up in Better Auth and explicitly rejected `/api/auth/sign-up/*`; administrators are the only account creators.
+- Revoked active sessions when administrators change account email, password, or role, and after user password changes.
 
 ### Agent API
 
@@ -43,9 +45,17 @@ Account-private records remain user-scoped: sessions, credentials, and personal 
 
 ### API Route Hardening
 
-- Dashboard, analytics, reports, usage, and NBA stats route handlers now require an authenticated session.
+- Dashboard, analytics, reports, usage, NBA stats, weather, import, and settings route handlers now enforce session or administrator authorization as appropriate.
+- AI Server Actions require authentication and cards-module access, use per-user limits, and return sanitized errors.
 - Report CSV export now escapes values and blocks spreadsheet formula injection.
 - SVG image optimization responses are configured as attachments.
+- Stored images, attachments, import files, and Agent request bodies have explicit size and type limits.
+
+### Database Integrity
+
+- Migration `0007_gifted_morlocks` is applied to Neon.
+- A partial unique index prevents more than one active usage record per Quilt.
+- Quilt status and usage transitions are synchronized transactionally.
 
 ### Dependency Upgrades
 

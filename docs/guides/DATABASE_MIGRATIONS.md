@@ -32,18 +32,21 @@ Open Drizzle Studio:
 npm run db:studio
 ```
 
-## 2026-07-03 Migration Baseline
+## Current Migration State
 
-The existing Neon database already had tables but did not have Drizzle migration records. The migration history was baselined by recording migrations `0000` through `0005`, then migration `0006_agent_idempotency_keys` was applied.
+The existing Neon database originally had tables but did not have Drizzle migration records. Its history was baselined through `0005`; migrations `0006_agent_idempotency_keys` and `0007_gifted_morlocks` have since been applied normally.
 
 Verified state:
 
-- `drizzle.__drizzle_migrations` contains records for `0000` through `0006`.
+- `drizzle.__drizzle_migrations` contains records through `0007`.
 - `public.agent_idempotency_keys` exists.
+- `public.usage_records_active_quilt_unique_idx` exists.
+- There are no duplicate active usage records or Quilt/usage status mismatches after migration `0007`.
 - A follow-up `npm run db:migrate` reports `migrations applied successfully`.
 
 ## Notes
 
 - `0005_create_user_api_keys.sql` is now recorded in `drizzle/meta/_journal.json`.
 - `0006_agent_idempotency_keys.sql` creates durable replay protection for Agent write tools.
+- `0007_gifted_morlocks.sql` reconciles the Quilt item-number sequence and usage status data, then enforces one active usage record per Quilt.
 - Keep migration files and `drizzle/meta/_journal.json` in sync.

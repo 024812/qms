@@ -2,7 +2,7 @@
 
 QMS is a modular family item management system built with Next.js 16, React 19, Better Auth, Neon Serverless PostgreSQL, Drizzle ORM, and Vercel.
 
-Current release: `2026.7.7`
+Current release: `2026.7.17`
 
 ## What Is Standardized
 
@@ -14,7 +14,7 @@ Current release: `2026.7.7`
 - Route protection follows the Next.js 16 `src/proxy.ts` convention.
 - External AI agents can use the restricted Agent OpenAPI surface instead of general-purpose database access.
 
-For the module blueprint rules, see `docs/MODULE_BLUEPRINT_V2.md`.
+For the module blueprint rules, see `docs/architecture/MODULE_BLUEPRINT_V2.md`.
 
 ## Current Modules
 
@@ -76,6 +76,12 @@ src/
     cards/
   types/
 docs/
+  README.md
+  PROJECT_SUMMARY.md
+  architecture/
+  guides/
+  reports/
+  archive/
 ```
 
 ## Environment Variables
@@ -184,9 +190,9 @@ npm run build
 ## Documentation
 
 - English docs index: `docs/README.md`
-- Module standard: `docs/MODULE_STANDARD.md`
-- Active module blueprint: `docs/MODULE_BLUEPRINT_V2.md`
-- Authentication summary: `docs/guides/AUTH_IMPLEMENTATION_SUMMARY.md`
+- Legacy module standard: `docs/archive/MODULE_STANDARD.md`
+- Active module blueprint: `docs/architecture/MODULE_BLUEPRINT_V2.md`
+- Authentication summary: `docs/architecture/AUTH_IMPLEMENTATION_SUMMARY.md`
 - Deployment env guide: `docs/guides/VERCEL-ENV-SETUP.md`
 - Database migrations: `docs/guides/DATABASE_MIGRATIONS.md`
 - Changelog: `CHANGELOG.md`

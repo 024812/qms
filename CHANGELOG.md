@@ -7,22 +7,56 @@ and this project uses npm-compatible date-based semantic versions in `YYYY.M.D` 
 
 ## [Unreleased]
 
+No unreleased changes.
+
+## [2026.7.17] - 2026-07-17
+
+### Added
+
+- Added administrator-only `.xlsx` Quilt import preview and confirmation APIs with validation, duplicate detection, and import summaries.
+- Added PWA manifest metadata, production Service Worker registration, and static-asset-only caching.
+- Added regression coverage for disabled registration, AI action authorization, image validation, Quilt import, and usage-date validation.
+
 ### Changed
 
+- Bumped the date-based release version to `2026.7.17`.
+- Organized documentation into `architecture`, `guides`, `reports`, and `archive` directories and repaired stale links.
 - Documented the intentional household-shared business data model so per-user row isolation is not treated as a review defect.
 - Bound Agent tool execution and audit attribution to the owning API key user's ID.
 - Replaced the admin settings placeholder with a system health and management hub.
 - Improved icon-button labels, language-switcher semantics, and analytics dark-mode colors.
 - Updated compatible dependency releases while retaining ESLint 9 and TypeScript 6 until their parser/tooling ecosystem supports the next majors together.
 
+### Security
+
+- Disabled public registration in Better Auth, the authentication route, Server Actions, the registration page, and the proxy; accounts are now administrator-created only.
+- Removed the tracked production environment file and added it to `.gitignore`.
+- Added session checks and bounded inputs to legacy item actions, AI actions, NBA/weather endpoints, and compatibility APIs.
+- Added rate limits, image and attachment size limits, request-body limits, session revocation, and sanitized API error responses.
+- Removed production CSP `unsafe-eval` while preserving the current Cache Components-compatible script policy.
+
+### Database
+
+- Added and applied migration `0007_gifted_morlocks` to reconcile the Quilt item-number sequence and usage status data.
+- Enforced one active usage record per Quilt with a partial unique index.
+- Made Quilt status and usage-record create, update, end, and delete operations transactional.
+
+### Fixed
+
+- Rejected malformed JSON, invalid dates, inverted usage periods, unsafe image references, and oversized imports before they reach the data layer.
+- Fixed locale detection, English/Chinese message-key drift, mobile zoom restrictions, and stale PWA caching behavior.
+- Removed the unused public registration form and unsupported legacy `.xls` import claim.
+
 ### Verification
 
-- `npm audit`
+- `npm audit` (`0` vulnerabilities)
 - `npm run format:check`
 - `npm run lint:check`
 - `npm run type-check`
-- `npm test`
-- `npm run build` (isolated `C:\temp\qms` copy with non-sensitive build placeholders)
+- `npm test` (`139` tests)
+- `npm run build` (isolated `C:\temp\qms-test-env` copy with non-sensitive build placeholders)
+- `npm run db:generate` (no schema drift)
+- `npm run db:migrate` (Neon migration `0007` applied)
 
 ## [2026.7.7] - 2026-07-07
 

@@ -2,7 +2,7 @@
 
 本文件不再作为新增或重构子模块的执行标准。
 
-自 `2026-04-02` 起，QMS 统一以 [docs/MODULE_BLUEPRINT_V2.md](/c:/Users/sli/OneDrive/Projects/qms/docs/MODULE_BLUEPRINT_V2.md) 为准。
+自 `2026-04-02` 起，QMS 统一以[现行模块蓝图](../architecture/MODULE_BLUEPRINT_V2.md)为准。
 
 ## 废弃原因
 

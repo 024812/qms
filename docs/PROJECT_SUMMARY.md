@@ -1,6 +1,6 @@
 # QMS Project Summary
 
-当前版本：`2026.7.7`
+当前版本：`2026.7.17`
 
 ## 当前定位
 
@@ -30,7 +30,7 @@ QMS 是一个面向家庭共享使用的物品管理系统。系统刻意采用�
 - 生产和开发迁移目标均为 Neon Postgres。
 - 不使用本地 `localhost:5432` 数据库作为本项目迁移目标。
 - Drizzle schema 位于 `src/db/schema.ts`，SQL migrations 位于 `drizzle/`。
-- 当前 Neon 迁移历史已 baseline 到 `0005`，并已应用 `0006_agent_idempotency_keys`。
+- 当前 Neon 迁移历史已应用到 `0007_gifted_morlocks`；该迁移校正 Quilt 编号序列、清理重复活跃使用记录，并建立单 Quilt 单活跃记录唯一索引。
 - 标准迁移命令是 `npm run db:migrate`。
 
 ### 缓存策略
@@ -41,7 +41,7 @@ QMS 是一个面向家庭共享使用的物品管理系统。系统刻意采用�
 ### 路由与认证
 
 - Next.js 16 路由保护使用 `src/proxy.ts`。
-- Better Auth 负责登录、注册、会话和认证表。
+- Better Auth 负责登录、会话和认证表；公开注册已关闭，账号只能由管理员创建。
 - 用户角色和启用模块保存在 `users.preferences`。
 - 家庭共享业务数据不按用户隔离，这是产品设计，不是待修复问题。
 
@@ -54,17 +54,15 @@ QMS 是一个面向家庭共享使用的物品管理系统。系统刻意采用�
 - Agent API keys 存为数据库哈希，继承创建者的角色和模块权限，不暴露通用数据库访问能力。
 - 每次 Agent 调用都绑定 API key 所属 `userId`；审计日志的 `userId` 和 metadata 中的 `actorUserId` 用于追踪责任主体。该绑定用于权限继承和审计，不改变家庭业务数据共享模型。
 
-## 2026.7.3 收口重点
+## 2026.7.17 收口重点
 
-- 升级 Next.js、next-intl、Better Auth、Tailwind、TanStack Query、OpenAI SDK、Vitest、Vite 等依赖。
-- 保持 ESLint 9，因为 ESLint 10 与当前 Next ESLint 插件组合仍存在运行时兼容问题。
-- 恢复并静态导入 `messages/en.json` 和 `messages/zh.json`，修复 Next/Turbopack 构建下的 i18n 消息加载。
-- 为 dashboard、analytics、reports、usage、NBA stats 等 API route 加上会话校验。
-- 为 reports CSV 导出增加字段转义和公式注入防护。
-- 将 `next.config.ts` 的 SVG 图片响应配置为 attachment 下载。
-- 为 Agent 写工具加入数据库级幂等记录表。
-- 将 Drizzle 迁移流程固定为 Neon-only `db:migrate`。
-- 清理和重写乱码、过期文档，统一版本和部署说明。
+- 关闭公开注册页面、Server Action 和 `/api/auth/sign-up/*` 服务端入口，仅保留管理员创建账号。
+- 为 AI、天气、旧 items actions 和兼容 API 补齐会话校验、限流、输入边界与错误脱敏。
+- 将 Quilt 状态与使用记录变更收敛到事务路径，并在数据库层限制每个 Quilt 只能有一条活跃记录。
+- 增加管理员专用 `.xlsx` 导入预览与确认流程，限制文件大小并检测重复数据。
+- 删除被追踪的生产环境文件，统一图片、附件、日期和请求体校验。
+- 补齐 PWA manifest 与安全的静态资源 Service Worker，修复 i18n 和移动端缩放问题。
+- 整理文档目录，将架构、指南、报告和历史资料分开维护。
 
 ## 新模块复制时的最小模板
 

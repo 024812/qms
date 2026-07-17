@@ -329,6 +329,6 @@ React Query 不是模块默认层。
 
 后续新增模块直接参考：
 
-- [src/modules/core/blueprint.ts](/c:/Users/sli/OneDrive/Projects/qms/src/modules/core/blueprint.ts)
-- [src/modules/quilts/blueprint.ts](/c:/Users/sli/OneDrive/Projects/qms/src/modules/quilts/blueprint.ts)
-- [src/modules/cards/blueprint.ts](/c:/Users/sli/OneDrive/Projects/qms/src/modules/cards/blueprint.ts)
+- [`src/modules/core/blueprint.ts`](../../src/modules/core/blueprint.ts)
+- [`src/modules/quilts/blueprint.ts`](../../src/modules/quilts/blueprint.ts)
+- [`src/modules/cards/blueprint.ts`](../../src/modules/cards/blueprint.ts)

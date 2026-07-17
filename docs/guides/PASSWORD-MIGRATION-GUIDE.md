@@ -49,9 +49,9 @@ A migrated user should have:
 npm run db:migrate
 ```
 
-2. Register or recreate users through the application UI when possible.
+2. Recreate users through the administrator user-management page when necessary.
 
-This is the safest path because the registration action creates both Better Auth and application user records.
+This is the safest path because the administrator action creates the Better Auth and application user records transactionally while public registration remains disabled.
 
 3. For existing users, verify ID alignment.
 

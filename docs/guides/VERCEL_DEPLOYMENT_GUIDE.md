@@ -1,6 +1,6 @@
 # Vercel Deployment Guide
 
-本指南对应当前 `2026.7.7` 版本。
+本指南对应当前 `2026.7.17` 版本。
 
 ## 部署前本地检查
 
@@ -37,7 +37,7 @@ NEXT_PUBLIC_BETTER_AUTH_URL=
 npm run db:migrate
 ```
 
-当前 Neon 数据库已 baseline 到 `0005`，并已应用 `0006_agent_idempotency_keys`。后续迁移继续通过 Drizzle migration 文件推进。
+当前 Neon 数据库已应用到 `0007_gifted_morlocks`。后续迁移继续通过 Drizzle migration 文件推进。
 
 ## 3. 触发部署
 

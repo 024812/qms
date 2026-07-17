@@ -518,7 +518,7 @@ $env:PATH += ";C:\Program Files\PostgreSQL\16\bin"
 
 - [Neon 备份文档](https://neon.tech/docs/manage/backups)
 - [PostgreSQL 备份文档](https://www.postgresql.org/docs/current/backup.html)
-- [QMS 导入导出功能](./IMPORT_EXPORT_GUIDE.md)
+- 应用内 Quilt `.xlsx` 导入位于管理员报表页面；完整数据库恢复请以本指南中的 Neon/Drizzle 流程为准。
 
 ---
 

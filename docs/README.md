@@ -2,30 +2,36 @@
 
 This directory contains the active documentation for QMS.
 
-Current release: `2026.7.7`
+Current release: `2026.7.17`
 
-## Core Docs
+## Start Here
 
-- `QUICK_START.md` - shortest path to run the project.
-- `PROJECT_SUMMARY.md` - architecture, module standardization, and release overview.
-- `MODULE_BLUEPRINT_V2.md` - active copyable module blueprint.
-- `MODULE_STANDARD.md` - deprecated legacy module standard retained for historical context.
+- [Quick start](guides/QUICK_START.md) - shortest path to run the project.
+- [Project summary](PROJECT_SUMMARY.md) - product boundaries, architecture, and release overview.
+
+## Architecture
+
+- [Module blueprint](architecture/MODULE_BLUEPRINT_V2.md) - active copyable module blueprint.
+- [Authentication implementation](architecture/AUTH_IMPLEMENTATION_SUMMARY.md) - Better Auth architecture and account lifecycle.
+- [Legacy module standard](archive/MODULE_STANDARD.md) - deprecated standard retained for historical context.
 
 ## Guides
 
-Located in `docs/guides/`:
+- [Authentication test guide](guides/AUTH_TEST_GUIDE.md)
+- [Database migrations](guides/DATABASE_MIGRATIONS.md)
+- [Database initialization](guides/INITIALIZE-DATABASE.md)
+- [Vercel environment setup](guides/VERCEL-ENV-SETUP.md)
+- [Vercel deployment](guides/VERCEL_DEPLOYMENT_GUIDE.md)
+- [Backup quick start](guides/BACKUP_QUICK_START.md)
+- [Backup and restore](guides/BACKUP_RESTORE_GUIDE.md)
+- [Legacy password migration](guides/PASSWORD-MIGRATION-GUIDE.md)
 
-- `AUTH_IMPLEMENTATION_SUMMARY.md` - Better Auth implementation notes.
-- `AUTH_TEST_GUIDE.md` - authentication test checklist.
-- `DATABASE_MIGRATIONS.md` - Neon and Drizzle migration workflow.
-- `INITIALIZE-DATABASE.md` - sample-data initialization notes.
-- `VERCEL-ENV-SETUP.md` - Vercel environment variables.
-- `VERCEL_DEPLOYMENT_GUIDE.md` - deployment flow and checks.
-- `BACKUP_QUICK_START.md` - backup quick start.
-- `BACKUP_RESTORE_GUIDE.md` - detailed backup and restore guide.
-- `PASSWORD-MIGRATION-GUIDE.md` - legacy password storage migration notes.
-- `SECURITY_AUDIT_SUMMARY.md` - security audit summary.
-- `USAGE_TRACKING_IMPLEMENTATION.md` - usage module implementation notes.
+## Reports
+
+- [Security audit](reports/SECURITY_AUDIT_SUMMARY.md)
+- [Usage tracking implementation](reports/USAGE_TRACKING_IMPLEMENTATION.md)
+- [Card market-data implementation](reports/MARKET_DATA_IMPLEMENTATION.md)
+- [Dependency and schema upgrade report](reports/UPGRADE_REPORT_2026_06_16.md)
 
 ## Conventions
 

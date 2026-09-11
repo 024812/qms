@@ -31,9 +31,45 @@ QMS 是一个模块化的家庭物品管理系统，基于 Next.js 16、React 19
 - 支持 Azure OpenAI 兼容提供商以及外部市场/搜索数据源。
 - 结构已经对齐 quilts 的标准模块模式。
 
+### Paddles
+
+- 乒乓球底板与胶皮配置管理。
+- 支持底板参数（重量、握拍方式、速度/控制评分）、正反手胶皮及厚度、买入估值追踪。
+- 提供完整 Web UI CRUD、REST API 与 Agent API 工具。
+
+### Antiques
+
+- 古董与文玩收藏管理。
+- 支持多品类（玉器、木器、陶瓷、金属、石器、纸品等）、尺寸、年代/朝代、鉴定记录与价值追踪。
+- 提供完整 Web UI CRUD、REST API 与 Agent API 工具。
+
+### Maps
+
+- 历史地图与现代地图收藏管理。
+- 支持地图类型（地形图、道路图、城市图、历史地图等）、材质、出版年份、比例尺、地区与尺寸。
+- 提供完整 Web UI CRUD、REST API 与 Agent API 工具。
+
+### Spirits
+
+- 珍藏烈酒、葡萄酒与其他酒类收藏管理。
+- 支持酒类分类（威士忌、干邑、白酒、葡萄酒等）、产区/国家、年份/陈年、酒精度、桶型、封瓶状态与品鉴笔记。
+- 提供完整 Web UI CRUD、REST API 与 Agent API 工具。
+
 ### 共享区域
 
 Settings、dashboard、users、admin、analytics、reports、authentication 等区域都位于同一个 App Router 外壳内，并尽量复用 server-first 组织方式。
+
+## REST API
+
+每个业务模块均提供统一格式的外部 REST API，遵循规范的 JSON envelope、参数校验与错误码。完整参考见 [docs/API_REFERENCE.md](docs/API_REFERENCE.md)。
+
+- `GET /api/<module>` — 列表查询（支持 search、筛选、排序、分页）
+- `POST /api/<module>` — 创建记录
+- `GET /api/<module>/:id` — 查询单条详情
+- `PATCH /api/<module>/:id` — 部分更新（传 `null` 清空可空字段）
+- `DELETE /api/<module>/:id` — 删除记录
+
+支持模块：`quilts`、`cards`、`paddles`、`antiques`、`maps`、`spirits`。
 
 ## 技术栈
 

@@ -31,9 +31,45 @@ For the module blueprint rules, see `docs/architecture/MODULE_BLUEPRINT_V3.md`.
 - AI-assisted workflows with Azure OpenAI-compatible providers and external market/search services.
 - Standardized around the same module pattern used by quilts.
 
+### Paddles
+
+- Table tennis paddle, blade, and rubber configuration management.
+- Detailed physical characteristics (weight, handle type, speed/control ratings), rubber sponge thickness, and valuation tracking.
+- Complete Web UI CRUD, REST API, and Agent API tool support.
+
+### Antiques
+
+- Antique and cultural collectibles management across jade, woodwork, ceramics, metal, stone, and paper.
+- Dimensions, dynasty/era attribution, appraisal records, certification, and value appreciation tracking.
+- Complete Web UI CRUD, REST API, and Agent API tool support.
+
+### Maps
+
+- Historical and modern map collection management.
+- Map classification (topographic, road, city, historical, thematic), materials, publishers, cartographers, dimensions, and preservation status.
+- Complete Web UI CRUD, REST API, and Agent API tool support.
+
+### Spirits
+
+- Fine spirits, vintage wine, and alcohol collection management.
+- Categorization (whisky, cognac, baijiu, wine, etc.), region, vintage, age, ABV, cask types, bottle seal status, and tasting notes.
+- Complete Web UI CRUD, REST API, and Agent API tool support.
+
 ### Shared Areas
 
 - Settings, dashboard, users, admin, analytics, reports, and authentication all live inside the same App Router shell and reuse the same server-first principles where possible.
+
+## REST API
+
+All modules provide a uniform external REST API with standard `ApiResponse<T>` envelopes, Zod validation, and error contracts. See [docs/API_REFERENCE.md](docs/API_REFERENCE.md) for full documentation and curl examples.
+
+- `GET /api/<module>` — List records with filtering, search, sorting, and pagination
+- `POST /api/<module>` — Create a record
+- `GET /api/<module>/:id` — Get a single record
+- `PATCH /api/<module>/:id` — Partial update (send `null` to clear fields)
+- `DELETE /api/<module>/:id` — Delete a record
+
+Supported modules: `quilts`, `cards`, `paddles`, `antiques`, `maps`, `spirits`.
 
 ## Tech Stack
 
@@ -58,6 +94,10 @@ src/
     [locale]/
       quilts/
       cards/
+      paddles/
+      antiques/
+      maps/
+      spirits/
       settings/
       users/
       admin/
@@ -75,14 +115,12 @@ src/
     core/
     quilts/
     cards/
+    paddles/
+    antiques/
+    maps/
+    spirits/
   types/
 docs/
-  README.md
-  PROJECT_SUMMARY.md
-  architecture/
-  guides/
-  reports/
-  archive/
 ```
 
 ## Environment Variables

@@ -66,7 +66,7 @@ Better Auth (`src/auth.ts`) with a Drizzle adapter over Neon. `auth()` returns t
 
 External AI agents use a narrow surface instead of general DB access:
 
-- `POST /api/agent/tools` — single endpoint dispatching a fixed set of typed tools (`quilts.*`, `usage.*`, `cards.*`, `settings.read`).
+- `POST /api/agent/tools` — single endpoint dispatching a fixed set of typed tools (`quilts.*`, `usage.*`, `cards.*`, `paddles.*`, `antiques.*`, `maps.*`, `spirits.*`, `settings.read`).
 - `GET /api/agent/openapi.json` — the OpenAPI spec; public guide at `/AGENT_API.md`.
 
 Auth is via `Authorization: Bearer <key>` (`src/lib/agent/auth.ts`). Keys are user-owned (`Settings → Agent API Keys`) and **inherit the creating user's module access** — scopes are derived from `activeModules` (admins get `*`); there is no independent per-key scope narrowing. Write tools require `confirm=true` and an `idempotencyKey`; successful writes are recorded in `agent_idempotency_keys` (durable idempotency with stable input hashing and replay detection). All calls are audited via `src/lib/agent/audit.ts`.

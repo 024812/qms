@@ -70,7 +70,7 @@ export const paddleAttributesSchema = z.object({
     .number()
     .int('Blade weight must be an integer')
     .min(50, 'Blade weight too light')
-    .max(150, 'Blade weight too heavy')
+    .max(250, 'Blade weight too heavy')
     .optional()
     .nullable(),
 

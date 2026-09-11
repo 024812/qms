@@ -221,7 +221,7 @@ const paddleWriteSchema = z.object({
   name: z.string().min(1),
   bladeBrand: z.string().nullable().optional(),
   bladeModel: z.string().nullable().optional(),
-  bladeWeightG: z.coerce.number().int().min(50).max(150).nullable().optional(),
+  bladeWeightG: z.coerce.number().int().min(50).max(250).nullable().optional(),
   handleType: z.enum(['FL', 'ST', 'CS', 'AN']).nullable().optional(),
   forehandRubber: z.string().nullable().optional(),
   backhandRubber: z.string().nullable().optional(),

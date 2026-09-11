@@ -7,7 +7,11 @@ import './src/lib/env';
 const withNextIntl = createNextIntlPlugin();
 
 const nextConfig: NextConfig = {
-  output: 'standalone',
+  output: process.env.VERCEL
+    ? undefined
+    : process.env.BUILD_STANDALONE === 'true'
+      ? 'standalone'
+      : undefined,
   poweredByHeader: false,
   cacheComponents: true,
 

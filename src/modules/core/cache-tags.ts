@@ -53,6 +53,10 @@ export function createModuleCacheTags(module: string): ModuleCacheTags {
  */
 export const quiltsCacheTags = createModuleCacheTags('quilts');
 export const cardsCacheTags = createModuleCacheTags('cards');
+export const spiritsCacheTags = createModuleCacheTags('spirits');
+export const paddlesCacheTags = createModuleCacheTags('paddles');
+export const antiquesCacheTags = createModuleCacheTags('antiques');
+export const mapsCacheTags = createModuleCacheTags('maps');
 export const usageCacheTags = createModuleCacheTags('usage');
 export const statsCacheTags = createModuleCacheTags('stats');
 export const usersCacheTags = createModuleCacheTags('users');

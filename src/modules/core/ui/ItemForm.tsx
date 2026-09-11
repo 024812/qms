@@ -166,7 +166,7 @@ export function ItemForm({
       />
 
       {/* Dynamic module-specific fields with inline errors */}
-      {moduleConfig.formFields.map(fieldConfig => (
+      {moduleConfig.formFields.map((fieldConfig: FormFieldConfig) => (
         <div key={fieldConfig.name} className="space-y-2">
           <Label htmlFor={fieldConfig.name}>
             {fieldConfig.label}

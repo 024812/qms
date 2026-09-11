@@ -66,10 +66,102 @@ export const cardStatusEnum = pgEnum('card_status_type', [
 ]);
 
 /**
+ * Antique category enumeration
+ */
+export const antiqueCategoryEnum = pgEnum('antique_category', [
+  'JADE',
+  'WOOD',
+  'CERAMIC',
+  'METAL',
+  'STONE',
+  'PAPER',
+  'OTHER',
+]);
+
+/**
+ * Antique status enumeration
+ */
+export const antiqueStatusEnum = pgEnum('antique_status', [
+  'COLLECTION',
+  'FOR_SALE',
+  'SOLD',
+  'DISPLAY',
+  'APPRAISAL',
+]);
+
+/**
  * Quilt specific enums
  */
 export const seasonEnum = pgEnum('season', ['WINTER', 'SPRING_AUTUMN', 'SUMMER']);
 export const quiltStatusEnum = pgEnum('quilt_status', ['IN_USE', 'MAINTENANCE', 'STORAGE', 'LOST']);
+
+/**
+ * Map specific enums
+ */
+export const mapTypeEnum = pgEnum('map_type', [
+  'TOPOGRAPHIC',
+  'ROAD',
+  'CITY',
+  'HISTORICAL',
+  'THEMATIC',
+  'NAUTICAL',
+  'AERONAUTICAL',
+  'OTHER',
+]);
+
+export const mapMaterialEnum = pgEnum('map_material', ['PAPER', 'CLOTH', 'DIGITAL', 'OTHER']);
+
+export const mapStatusEnum = pgEnum('map_status', [
+  'COLLECTION',
+  'FOR_SALE',
+  'SOLD',
+  'DISPLAY',
+  'FRAMED',
+]);
+
+/**
+ * Paddle status enumeration
+ */
+export const paddleStatusEnum = pgEnum('paddle_status', [
+  'ACTIVE',
+  'RETIRED',
+  'FOR_SALE',
+  'SOLD',
+  'DISPLAY',
+]);
+
+/**
+ * Spirit type enumeration
+ */
+export const spiritTypeEnum = pgEnum('spirit_type', [
+  'WHISKY',
+  'COGNAC',
+  'BRANDY',
+  'RUM',
+  'VODKA',
+  'GIN',
+  'TEQUILA',
+  'BAIJIU',
+  'WINE',
+  'OTHER',
+]);
+
+/**
+ * Spirit status enumeration
+ */
+export const spiritStatusEnum = pgEnum('spirit_status', [
+  'COLLECTION',
+  'AGING',
+  'FOR_SALE',
+  'SOLD',
+  'OPENED',
+  'EMPTY',
+]);
+
+/**
+ * Bottle status enumeration
+ */
+export const bottleStatusEnum = pgEnum('bottle_status', ['SEALED', 'OPENED', 'EMPTY']);
 
 /**
  * Audit event type enumeration
@@ -336,6 +428,130 @@ export const maintenanceRecords = pgTable(
 );
 
 /**
+ * Antiques table (Independent Table Architecture)
+ * Stores antique collection data with native columns
+ */
+export const antiques = pgTable(
+  'antiques',
+  {
+    // Primary identification
+    id: uuid('id').defaultRandom().primaryKey(),
+    itemNumber: serial('item_number').notNull().unique(),
+
+    // Basic information
+    name: text('name').notNull(),
+    category: antiqueCategoryEnum('category').notNull(),
+    material: text('material'),
+    era: text('era'),
+    dynasty: text('dynasty'),
+
+    // Dimensions
+    lengthCm: numeric('length_cm', { precision: 10, scale: 2 }),
+    widthCm: numeric('width_cm', { precision: 10, scale: 2 }),
+    heightCm: numeric('height_cm', { precision: 10, scale: 2 }),
+    weightG: numeric('weight_g', { precision: 10, scale: 2 }),
+
+    // Condition and certification
+    condition: text('condition'),
+    certificate: text('certificate'),
+    appraisalDate: date('appraisal_date'),
+    appraisalBy: text('appraisal_by'),
+
+    // Value information
+    purchasePrice: numeric('purchase_price', { precision: 10, scale: 2 }),
+    acquiredFrom: text('acquired_from'),
+    acquiredDate: date('acquired_date'),
+    currentValue: numeric('current_value', { precision: 10, scale: 2 }),
+    estimatedValue: numeric('estimated_value', { precision: 10, scale: 2 }),
+
+    // Storage and status
+    status: antiqueStatusEnum('status').default('COLLECTION').notNull(),
+    location: text('location'),
+    notes: text('notes'),
+
+    // Images
+    mainImage: text('main_image'),
+    attachmentImages: jsonb('attachment_images').$type<string[]>().default([]),
+
+    // Timestamps
+    createdAt: timestamp('created_at').notNull().defaultNow(),
+    updatedAt: timestamp('updated_at')
+      .notNull()
+      .defaultNow()
+      .$onUpdate(() => new Date()),
+  },
+  table => ({
+    statusIdx: index('antiques_status_idx').on(table.status),
+    categoryIdx: index('antiques_category_idx').on(table.category),
+    eraIdx: index('antiques_era_idx').on(table.era),
+    itemNumberIdx: index('antiques_item_number_idx').on(table.itemNumber),
+  })
+);
+
+/**
+ * Maps table (Independent Table Architecture)
+ * Stores map collection data with native columns
+ */
+export const maps = pgTable(
+  'maps',
+  {
+    // Primary identification
+    id: uuid('id').defaultRandom().primaryKey(),
+    itemNumber: serial('item_number').notNull().unique(),
+
+    // Basic information
+    name: text('name').notNull(),
+    mapType: mapTypeEnum('map_type').notNull(),
+    scale: text('scale'),
+    publishedYear: integer('published_year'),
+    publisher: text('publisher'),
+
+    // Material and dimensions
+    material: mapMaterialEnum('material').default('PAPER').notNull(),
+    widthCm: numeric('width_cm', { precision: 10, scale: 2 }),
+    heightCm: numeric('height_cm', { precision: 10, scale: 2 }),
+
+    // Geographic information
+    region: text('region'),
+    country: text('country'),
+    language: text('language'),
+
+    // Condition and authenticity
+    condition: text('condition'),
+    isOriginal: boolean('is_original').default(true).notNull(),
+    edition: text('edition'),
+
+    // Acquisition information
+    acquiredDate: date('acquired_date'),
+    purchasePrice: numeric('purchase_price', { precision: 10, scale: 2 }),
+    currentValue: numeric('current_value', { precision: 10, scale: 2 }),
+
+    // Status and storage
+    status: mapStatusEnum('status').default('COLLECTION').notNull(),
+    location: text('location'),
+    notes: text('notes'),
+
+    // Images
+    mainImage: text('main_image'),
+    attachmentImages: jsonb('attachment_images').$type<string[]>().default([]),
+
+    // Timestamps
+    createdAt: timestamp('created_at').notNull().defaultNow(),
+    updatedAt: timestamp('updated_at')
+      .notNull()
+      .defaultNow()
+      .$onUpdate(() => new Date()),
+  },
+  table => ({
+    statusIdx: index('maps_status_idx').on(table.status),
+    mapTypeIdx: index('maps_map_type_idx').on(table.mapType),
+    publishedYearIdx: index('maps_published_year_idx').on(table.publishedYear),
+    regionIdx: index('maps_region_idx').on(table.region),
+    itemNumberIdx: index('maps_item_number_idx').on(table.itemNumber),
+  })
+);
+
+/**
  * Cards table (Independent Table Architecture)
  * Stores sports card collection data with native columns
  */
@@ -411,6 +627,131 @@ export const cards = pgTable(
     statusIdx: index('cards_status_idx').on(table.status),
     sportGradeIdx: index('cards_sport_grade_idx').on(table.sport, table.grade),
     itemNumberIdx: index('cards_item_number_idx').on(table.itemNumber),
+  })
+);
+
+/**
+ * Paddles table (Independent Table Architecture)
+ * Stores table tennis paddle collection data with native columns
+ */
+export const paddles = pgTable(
+  'paddles',
+  {
+    // Primary identification
+    id: uuid('id').defaultRandom().primaryKey(),
+    itemNumber: serial('item_number').notNull().unique(),
+
+    // Basic information
+    name: text('name').notNull(),
+    bladeBrand: text('blade_brand'),
+    bladeModel: text('blade_model'),
+
+    // Physical characteristics
+    bladeWeightG: integer('blade_weight_g'),
+    handleType: text('handle_type'), // FL/ST/CS/AN
+
+    // Rubber configuration
+    forehandRubber: text('forehand_rubber'),
+    backhandRubber: text('backhand_rubber'),
+    rubberThicknessMm: numeric('rubber_thickness_mm', { precision: 3, scale: 1 }),
+
+    // Performance ratings (1-10 scale)
+    bladeSpeed: integer('blade_speed'),
+    bladeControl: integer('blade_control'),
+
+    // Purchase and value
+    purchaseDate: date('purchase_date'),
+    purchasePrice: numeric('purchase_price', { precision: 10, scale: 2 }),
+    currentValue: numeric('current_value', { precision: 10, scale: 2 }),
+
+    // Status and condition
+    status: paddleStatusEnum('status').default('ACTIVE').notNull(),
+    condition: text('condition'),
+    location: text('location'),
+    notes: text('notes'),
+
+    // Images
+    mainImage: text('main_image'),
+    attachmentImages: jsonb('attachment_images').$type<string[]>().default([]),
+
+    // Timestamps
+    createdAt: timestamp('created_at').notNull().defaultNow(),
+    updatedAt: timestamp('updated_at')
+      .notNull()
+      .defaultNow()
+      .$onUpdate(() => new Date()),
+  },
+  table => ({
+    statusIdx: index('paddles_status_idx').on(table.status),
+    bladeBrandIdx: index('paddles_blade_brand_idx').on(table.bladeBrand),
+    itemNumberIdx: index('paddles_item_number_idx').on(table.itemNumber),
+  })
+);
+
+/**
+ * Spirits table (Independent Table Architecture)
+ * Stores fine spirits collection data with native columns
+ */
+export const spirits = pgTable(
+  'spirits',
+  {
+    // Primary identification
+    id: uuid('id').defaultRandom().primaryKey(),
+    itemNumber: serial('item_number').notNull().unique(),
+
+    // Basic information
+    name: text('name').notNull(),
+    spiritType: spiritTypeEnum('spirit_type').notNull(),
+    brand: text('brand'),
+    distillery: text('distillery'),
+    region: text('region'),
+    country: text('country'),
+
+    // Vintage and age
+    vintage: integer('vintage'),
+    age: integer('age'),
+    abv: numeric('abv', { precision: 4, scale: 2 }),
+    volumeMl: integer('volume_ml'),
+
+    // Bottle details
+    bottleNumber: text('bottle_number'),
+    limitedEdition: boolean('limited_edition').default(false).notNull(),
+    caskType: text('cask_type'),
+    bottlingDate: date('bottling_date'),
+
+    // Acquisition and value
+    acquiredDate: date('acquired_date'),
+    purchasePrice: numeric('purchase_price', { precision: 10, scale: 2 }),
+    currentValue: numeric('current_value', { precision: 10, scale: 2 }),
+    estimatedValue: numeric('estimated_value', { precision: 10, scale: 2 }),
+
+    // Status and condition
+    status: spiritStatusEnum('status').default('COLLECTION').notNull(),
+    bottleStatus: bottleStatusEnum('bottle_status').default('SEALED').notNull(),
+    storageCondition: text('storage_condition'),
+    location: text('location'),
+
+    // Tasting and notes
+    tastingNotes: text('tasting_notes'),
+    notes: text('notes'),
+
+    // Images
+    mainImage: text('main_image'),
+    attachmentImages: jsonb('attachment_images').$type<string[]>().default([]),
+
+    // Timestamps
+    createdAt: timestamp('created_at').notNull().defaultNow(),
+    updatedAt: timestamp('updated_at')
+      .notNull()
+      .defaultNow()
+      .$onUpdate(() => new Date()),
+  },
+  table => ({
+    statusIdx: index('spirits_status_idx').on(table.status),
+    spiritTypeIdx: index('spirits_spirit_type_idx').on(table.spiritType),
+    vintageIdx: index('spirits_vintage_idx').on(table.vintage),
+    brandIdx: index('spirits_brand_idx').on(table.brand),
+    itemNumberIdx: index('spirits_item_number_idx').on(table.itemNumber),
   })
 );
 
@@ -584,6 +925,9 @@ export type NewMaintenanceRecord = typeof maintenanceRecords.$inferInsert;
 
 export type Card = typeof cards.$inferSelect;
 export type NewCard = typeof cards.$inferInsert;
+
+export type Antique = typeof antiques.$inferSelect;
+export type NewAntique = typeof antiques.$inferInsert;
 
 export type AuditLog = typeof auditLogs.$inferSelect;
 export type NewAuditLog = typeof auditLogs.$inferInsert;

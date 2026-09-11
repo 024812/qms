@@ -11,6 +11,14 @@ export type AgentScope =
   | 'write:usage'
   | 'read:cards'
   | 'write:cards'
+  | 'read:spirits'
+  | 'write:spirits'
+  | 'read:paddles'
+  | 'write:paddles'
+  | 'read:antiques'
+  | 'write:antiques'
+  | 'read:maps'
+  | 'write:maps'
   | 'read:settings'
   | 'admin:settings';
 
@@ -53,6 +61,22 @@ function scopesForUser(user: Awaited<ReturnType<typeof findUserByApiKey>>): Agen
   if (user.activeModules.includes('cards')) {
     scopes.add('read:cards');
     scopes.add('write:cards');
+  }
+  if (user.activeModules.includes('spirits')) {
+    scopes.add('read:spirits');
+    scopes.add('write:spirits');
+  }
+  if (user.activeModules.includes('paddles')) {
+    scopes.add('read:paddles');
+    scopes.add('write:paddles');
+  }
+  if (user.activeModules.includes('antiques')) {
+    scopes.add('read:antiques');
+    scopes.add('write:antiques');
+  }
+  if (user.activeModules.includes('maps')) {
+    scopes.add('read:maps');
+    scopes.add('write:maps');
   }
 
   return [...scopes];

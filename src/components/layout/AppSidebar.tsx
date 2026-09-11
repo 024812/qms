@@ -17,6 +17,10 @@ import {
   ChevronRight,
   LucideIcon,
   LogOut,
+  Wine,
+  Disc3,
+  Gem,
+  Map,
 } from 'lucide-react';
 import packageJson from '../../../package.json';
 import { getAllModules } from '@/modules/registry';
@@ -79,6 +83,14 @@ export function AppSidebar() {
           { name: t('sidebar.cardsList'), href: '/cards', icon: CreditCard },
           { name: t('sidebar.soldCards'), href: '/cards/sold', icon: CreditCard },
         ];
+      case 'spirits':
+        return [{ name: t('navigation.spirits'), href: '/spirits', icon: Wine }];
+      case 'paddles':
+        return [{ name: t('navigation.paddles'), href: '/paddles', icon: Disc3 }];
+      case 'antiques':
+        return [{ name: t('navigation.antiques'), href: '/antiques', icon: Gem }];
+      case 'maps':
+        return [{ name: t('navigation.maps'), href: '/maps', icon: Map }];
       default:
         return [];
     }
@@ -95,6 +107,18 @@ export function AppSidebar() {
     }
     if (pathname.startsWith('/cards')) {
       return 'cards';
+    }
+    if (pathname.startsWith('/spirits')) {
+      return 'spirits';
+    }
+    if (pathname.startsWith('/paddles')) {
+      return 'paddles';
+    }
+    if (pathname.startsWith('/antiques')) {
+      return 'antiques';
+    }
+    if (pathname.startsWith('/maps')) {
+      return 'maps';
     }
     return null;
   };

@@ -3,6 +3,7 @@
 import { z } from 'zod';
 import { auth } from '@/auth';
 import { ModuleAccessError, requireModuleAccess } from '@/lib/module-access';
+import { sanitizeApiInput } from '@/lib/sanitization';
 import {
   countMaps,
   createMap,
@@ -202,7 +203,8 @@ export async function getMapsAction(
       },
     };
   } catch (error) {
-    return internalErrorResult(error instanceof Error ? error.message : 'Failed to retrieve maps');
+    console.error('[Server Action] getMapsAction error:', error);
+    return internalErrorResult('Failed to retrieve maps');
   }
 }
 
@@ -232,7 +234,8 @@ export async function getMapAction(id: string): Promise<ActionResult<MapDTO>> {
       data: map,
     };
   } catch (error) {
-    return internalErrorResult(error instanceof Error ? error.message : 'Failed to retrieve map');
+    console.error('[Server Action] getMapAction error:', error);
+    return internalErrorResult('Failed to retrieve map');
   }
 }
 
@@ -248,7 +251,7 @@ export async function createMapAction(input: CreateMapInput): Promise<ActionResu
     }
 
     // Validate input
-    const parseResult = CreateMapInputSchema.safeParse(input);
+    const parseResult = CreateMapInputSchema.safeParse(sanitizeApiInput(input));
     if (!parseResult.success) {
       return validationErrorResult(
         'Invalid map data',
@@ -258,25 +261,16 @@ export async function createMapAction(input: CreateMapInput): Promise<ActionResu
 
     const validatedData = parseResult.data;
 
-    // Convert date strings to Date objects if needed
-    const createData = {
-      ...validatedData,
-      acquiredDate:
-        validatedData.acquiredDate instanceof Date
-          ? validatedData.acquiredDate
-          : validatedData.acquiredDate
-            ? new Date(validatedData.acquiredDate)
-            : null,
-    };
-
-    const map = await createMap(createData);
+    // The schema coerces date strings, so pass validated data straight through.
+    const map = await createMap(validatedData);
 
     return {
       success: true,
       data: map,
     };
   } catch (error) {
-    return internalErrorResult(error instanceof Error ? error.message : 'Failed to create map');
+    console.error('[Server Action] createMapAction error:', error);
+    return internalErrorResult('Failed to create map');
   }
 }
 
@@ -292,7 +286,7 @@ export async function updateMapAction(input: UpdateMapInput): Promise<ActionResu
     }
 
     // Validate input
-    const parseResult = UpdateMapInputSchema.safeParse(input);
+    const parseResult = UpdateMapInputSchema.safeParse(sanitizeApiInput(input));
     if (!parseResult.success) {
       return validationErrorResult(
         'Invalid map data',
@@ -302,18 +296,9 @@ export async function updateMapAction(input: UpdateMapInput): Promise<ActionResu
 
     const validatedData = parseResult.data;
 
-    // Convert date strings to Date objects if needed
-    const updateData = {
-      ...validatedData,
-      acquiredDate:
-        validatedData.acquiredDate instanceof Date
-          ? validatedData.acquiredDate
-          : validatedData.acquiredDate
-            ? new Date(validatedData.acquiredDate)
-            : undefined,
-    };
-
-    const map = await updateMap(updateData);
+    // The schema coerces date strings; pass validated data straight through so
+    // untouched optional fields stay undefined (not cleared) on partial updates.
+    const map = await updateMap(validatedData);
 
     return {
       success: true,
@@ -323,7 +308,7 @@ export async function updateMapAction(input: UpdateMapInput): Promise<ActionResu
     if (error instanceof Error && error.message === 'Map not found') {
       return notFoundErrorResult('Map not found');
     }
-    return internalErrorResult(error instanceof Error ? error.message : 'Failed to update map');
+    return internalErrorResult('Failed to update map');
   }
 }
 
@@ -352,6 +337,6 @@ export async function deleteMapAction(id: string): Promise<ActionResult<{ id: st
     if (error instanceof Error && error.message === 'Map not found') {
       return notFoundErrorResult('Map not found');
     }
-    return internalErrorResult(error instanceof Error ? error.message : 'Failed to delete map');
+    return internalErrorResult('Failed to delete map');
   }
 }

@@ -90,56 +90,61 @@ export const mapAttributesSchema = z.object({
 
   mapType: MapTypeSchema,
 
-  scale: z.string().max(100, 'Scale too long').optional(),
+  scale: z.string().max(100, 'Scale too long').optional().nullable(),
 
   publishedYear: z
     .number()
     .int('Year must be an integer')
     .min(1400, 'Year too old')
     .max(new Date().getFullYear(), 'Year cannot be in the future')
-    .optional(),
+    .optional()
+    .nullable(),
 
-  publisher: z.string().max(200, 'Publisher name too long').optional(),
+  publisher: z.string().max(200, 'Publisher name too long').optional().nullable(),
 
   // Material and Dimensions
   material: MapMaterialSchema.optional().default('PAPER'),
 
-  widthCm: z.number().positive('Width must be positive').optional(),
+  widthCm: z.number().positive('Width must be positive').optional().nullable(),
 
-  heightCm: z.number().positive('Height must be positive').optional(),
+  heightCm: z.number().positive('Height must be positive').optional().nullable(),
 
   // Geographic Information
-  region: z.string().max(200, 'Region name too long').optional(),
+  region: z.string().max(200, 'Region name too long').optional().nullable(),
 
-  country: z.string().max(100, 'Country name too long').optional(),
+  country: z.string().max(100, 'Country name too long').optional().nullable(),
 
-  language: z.string().max(100, 'Language too long').optional(),
+  language: z.string().max(100, 'Language too long').optional().nullable(),
 
   // Condition and Authenticity
-  condition: z.string().max(500, 'Condition description too long').optional(),
+  condition: z.string().max(500, 'Condition description too long').optional().nullable(),
 
   isOriginal: z.boolean().optional().default(true),
 
-  edition: z.string().max(100, 'Edition too long').optional(),
+  edition: z.string().max(100, 'Edition too long').optional().nullable(),
 
   // Acquisition Information
-  acquiredDate: z.date().max(new Date(), 'Acquired date cannot be in the future').optional(),
+  acquiredDate: z.coerce
+    .date()
+    .max(new Date(), 'Acquired date cannot be in the future')
+    .optional()
+    .nullable(),
 
-  purchasePrice: z.number().min(0, 'Purchase price cannot be negative').optional(),
+  purchasePrice: z.number().min(0, 'Purchase price cannot be negative').optional().nullable(),
 
-  currentValue: z.number().min(0, 'Current value cannot be negative').optional(),
+  currentValue: z.number().min(0, 'Current value cannot be negative').optional().nullable(),
 
   // Status and Storage
   status: MapStatusSchema.optional().default('COLLECTION'),
 
-  location: z.string().max(200, 'Location too long').optional(),
+  location: z.string().max(200, 'Location too long').optional().nullable(),
 
-  notes: z.string().max(2000, 'Notes too long').optional(),
+  notes: z.string().max(2000, 'Notes too long').optional().nullable(),
 
   // Images
-  mainImage: z.string().optional(),
+  mainImage: z.string().optional().nullable(),
 
-  attachmentImages: z.array(z.string()).optional(),
+  attachmentImages: z.array(z.string()).optional().nullable(),
 });
 
 /**

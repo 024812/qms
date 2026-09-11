@@ -48,6 +48,10 @@ const moduleIcons: Record<string, LucideIcon> = {
   Bed,
   CreditCard,
   Package,
+  Wine,
+  Disc3,
+  Gem,
+  Map,
 };
 
 export function AppSidebar() {

@@ -55,6 +55,34 @@ describe('agent auth', () => {
     expect(result.ok).toBe(false);
   });
 
+  it('inherits collection module scopes from the owning user modules', async () => {
+    findUserByApiKey.mockResolvedValue({
+      apiKeyId: 'key-3',
+      userId: 'user-3',
+      name: 'Collector',
+      email: 'collector@example.com',
+      role: 'member',
+      activeModules: ['paddles', 'antiques', 'maps', 'spirits'],
+    });
+    const { requireAgent } = await import('@/lib/agent/auth');
+
+    const result = await requireAgent(createRequest('collector-key'), 'write:spirits');
+
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.agent.scopes).toEqual([
+        'read:spirits',
+        'write:spirits',
+        'read:paddles',
+        'write:paddles',
+        'read:antiques',
+        'write:antiques',
+        'read:maps',
+        'write:maps',
+      ]);
+    }
+  });
+
   it('allows admin user API keys to access all tools', async () => {
     findUserByApiKey.mockResolvedValue({
       apiKeyId: 'key-2',

@@ -1,14 +1,18 @@
 import { Metadata } from 'next';
+import { getTranslations } from 'next-intl/server';
 import { auth } from '@/auth';
 import { requirePageModuleAccess } from '@/lib/module-access';
-import { getSpirits } from '@/lib/data/spirits';
+import { getSpiritsAction } from '@/app/actions/spirits';
 import { SpiritsPageClient } from './_components/SpiritsPageClient';
-import type { SpiritFilters } from '@/lib/data/spirits';
+import type { SpiritSearchInput } from '@/modules/spirits/schema';
 
-export const metadata: Metadata = {
-  title: '藏酒管理 - QMS',
-  description: '管理珍藏烈酒、葡萄酒和其他酒类收藏',
-};
+export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
+  const { locale } = await params;
+  const t = await getTranslations({ locale, namespace: 'spirits' });
+  return {
+    title: `${t('title')} - QMS`,
+  };
+}
 
 interface SearchParams {
   page?: string;
@@ -29,52 +33,101 @@ interface PageProps {
   searchParams: Promise<SearchParams>;
 }
 
-export default async function SpiritsPage({ params: _params, searchParams }: PageProps) {
+const SPIRIT_TYPES = [
+  'WHISKY',
+  'COGNAC',
+  'BRANDY',
+  'RUM',
+  'VODKA',
+  'GIN',
+  'TEQUILA',
+  'BAIJIU',
+  'WINE',
+  'OTHER',
+] as const;
+
+const SPIRIT_STATUSES = ['COLLECTION', 'AGING', 'FOR_SALE', 'SOLD', 'OPENED', 'EMPTY'] as const;
+
+const BOTTLE_STATUSES = ['SEALED', 'OPENED', 'EMPTY'] as const;
+
+const ALLOWED_SORT_FIELDS = [
+  'itemNumber',
+  'name',
+  'spiritType',
+  'vintage',
+  'age',
+  'createdAt',
+  'updatedAt',
+] as const;
+
+function parsePositiveInt(value: string | undefined, fallback: number): number {
+  if (!value) return fallback;
+  const parsed = Number.parseInt(value, 10);
+  return Number.isFinite(parsed) && parsed >= 1 ? parsed : fallback;
+}
+
+function pickEnum<T extends readonly string[]>(
+  allowed: T,
+  value: string | undefined
+): T[number] | undefined {
+  return value && (allowed as readonly string[]).includes(value) ? (value as T[number]) : undefined;
+}
+
+export default async function SpiritsPage({ searchParams }: PageProps) {
   // Auth check
-  const session = await auth();
-  requirePageModuleAccess(session, 'spirits');
+  requirePageModuleAccess(await auth(), 'spirits');
 
   // Parse search params
   const resolvedParams = await searchParams;
-  const page = parseInt(resolvedParams.page ?? '1', 10);
-  const pageSize = Math.min(parseInt(resolvedParams.pageSize ?? '24', 10), 100);
+  const page = parsePositiveInt(resolvedParams.page, 1);
+  const pageSize = Math.min(parsePositiveInt(resolvedParams.pageSize, 24), 100);
   const offset = (page - 1) * pageSize;
 
-  // Parse sort
+  // Parse sort with whitelist
   const sortParam = resolvedParams.sort ?? 'createdAt.desc';
-  const [sortBy = 'createdAt', sortOrder = 'desc'] = sortParam.split('.') as [
-    string,
-    'asc' | 'desc',
-  ];
+  const [sortByRaw, sortOrderRaw] = sortParam.split('.');
+  const sortBy = pickEnum(ALLOWED_SORT_FIELDS, sortByRaw) ?? 'createdAt';
+  const sortOrder = sortOrderRaw === 'asc' ? ('asc' as const) : ('desc' as const);
 
-  // Build filters
-  const filters: SpiritFilters = {
-    limit: pageSize,
-    offset,
-    sortBy: sortBy as SpiritFilters['sortBy'],
+  const searchInput: SpiritSearchInput = {
+    filters: {
+      ...(resolvedParams.search ? { search: resolvedParams.search } : {}),
+      ...(pickEnum(SPIRIT_TYPES, resolvedParams.spiritType)
+        ? { spiritType: pickEnum(SPIRIT_TYPES, resolvedParams.spiritType) }
+        : {}),
+      ...(pickEnum(SPIRIT_STATUSES, resolvedParams.status)
+        ? { status: pickEnum(SPIRIT_STATUSES, resolvedParams.status) }
+        : {}),
+      ...(pickEnum(BOTTLE_STATUSES, resolvedParams.bottleStatus)
+        ? { bottleStatus: pickEnum(BOTTLE_STATUSES, resolvedParams.bottleStatus) }
+        : {}),
+      ...(resolvedParams.brand ? { brand: resolvedParams.brand } : {}),
+      ...(resolvedParams.country ? { country: resolvedParams.country } : {}),
+      ...(resolvedParams.region ? { region: resolvedParams.region } : {}),
+      ...(resolvedParams.limitedEdition
+        ? { limitedEdition: resolvedParams.limitedEdition === 'true' }
+        : {}),
+    },
+    sortBy,
     sortOrder,
-    ...(resolvedParams.search ? { search: resolvedParams.search } : {}),
-    ...(resolvedParams.spiritType
-      ? { spiritType: resolvedParams.spiritType as SpiritFilters['spiritType'] }
-      : {}),
-    ...(resolvedParams.status ? { status: resolvedParams.status as SpiritFilters['status'] } : {}),
-    ...(resolvedParams.bottleStatus
-      ? { bottleStatus: resolvedParams.bottleStatus as SpiritFilters['bottleStatus'] }
-      : {}),
-    ...(resolvedParams.brand ? { brand: resolvedParams.brand } : {}),
-    ...(resolvedParams.country ? { country: resolvedParams.country } : {}),
-    ...(resolvedParams.region ? { region: resolvedParams.region } : {}),
-    ...(resolvedParams.limitedEdition
-      ? { limitedEdition: resolvedParams.limitedEdition === 'true' }
-      : {}),
+    skip: offset,
+    take: pageSize,
   };
 
-  // Fetch initial data
-  const spirits = await getSpirits(filters);
+  // Fetch initial data through the actions layer
+  const result = await getSpiritsAction(searchInput);
+
+  if (!result.success) {
+    throw new Error(result.error.message);
+  }
+
+  const { spirits, total, hasMore } = result.data;
 
   return (
     <SpiritsPageClient
       initialSpirits={spirits}
+      initialTotal={total}
+      initialHasMore={hasMore}
       initialFilters={{
         page,
         pageSize,

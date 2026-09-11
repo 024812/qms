@@ -2,8 +2,15 @@
 
 import { useState, useTransition } from 'react';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
-import type { AntiqueItem } from '@/modules/antiques/schema';
+import { useTranslations } from 'next-intl';
+import { Plus } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { ModuleItemDialog } from '@/modules/core/ui/ModuleItemDialog';
+import { antiqueModule } from '@/modules/antiques/config';
+import { createAntiqueAction } from '@/app/actions/antiques';
+import type { AntiqueItem, CreateAntiqueInput } from '@/modules/antiques/schema';
 import { AntiqueCard } from '@/modules/antiques/ui/AntiqueCard';
+import { useLocalizedFields } from '@/hooks/useLocalizedFields';
 
 interface AntiquesPageClientProps {
   initialAntiques: AntiqueItem[];
@@ -15,6 +22,10 @@ interface AntiquesPageClientProps {
   initialStatus?: string;
 }
 
+const CATEGORY_VALUES = ['JADE', 'WOOD', 'CERAMIC', 'METAL', 'STONE', 'PAPER', 'OTHER'] as const;
+
+const STATUS_VALUES = ['COLLECTION', 'FOR_SALE', 'SOLD', 'DISPLAY', 'APPRAISAL'] as const;
+
 export function AntiquesPageClient({
   initialAntiques,
   initialTotal,
@@ -24,10 +35,16 @@ export function AntiquesPageClient({
   initialCategory,
   initialStatus,
 }: AntiquesPageClientProps) {
+  const t = useTranslations('antiques');
+  const tc = useTranslations('common');
+  const ta = useTranslations('actions');
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const [isPending, startTransition] = useTransition();
+  const [createDialogOpen, setCreateDialogOpen] = useState(false);
+
+  const formFields = useLocalizedFields('antiques', antiqueModule.formFields);
 
   const [search, setSearch] = useState(initialSearch || '');
   const [category, setCategory] = useState(initialCategory || '');
@@ -70,40 +87,27 @@ export function AntiquesPageClient({
     updateUrl({ page: page.toString() });
   };
 
-  const categoryOptions = [
-    { label: '全部类别', value: '' },
-    { label: '玉器', value: 'JADE' },
-    { label: '木器', value: 'WOOD' },
-    { label: '陶瓷', value: 'CERAMIC' },
-    { label: '金属', value: 'METAL' },
-    { label: '石器', value: 'STONE' },
-    { label: '纸品', value: 'PAPER' },
-    { label: '其他', value: 'OTHER' },
-  ];
-
-  const statusOptions = [
-    { label: '全部状态', value: '' },
-    { label: '收藏中', value: 'COLLECTION' },
-    { label: '待售', value: 'FOR_SALE' },
-    { label: '已售出', value: 'SOLD' },
-    { label: '展示中', value: 'DISPLAY' },
-    { label: '鉴定中', value: 'APPRAISAL' },
-  ];
+  const handleCreate = async (values: Record<string, unknown>) => {
+    const result = await createAntiqueAction(values as CreateAntiqueInput);
+    if (!result.success) {
+      return { success: false, error: result.error };
+    }
+    router.refresh();
+    return { success: true };
+  };
 
   return (
     <div className="container mx-auto space-y-6 py-8">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold">文玩管理</h1>
-          <p className="text-muted-foreground">共 {initialTotal} 件藏品</p>
+          <h1 className="text-3xl font-bold">{t('title')}</h1>
+          <p className="text-muted-foreground">{t('count', { count: initialTotal })}</p>
         </div>
-        <button
-          className="rounded-md bg-primary px-4 py-2 text-primary-foreground hover:bg-primary/90"
-          onClick={() => router.push(`${pathname}/new`)}
-        >
-          添加文玩
-        </button>
+        <Button onClick={() => setCreateDialogOpen(true)}>
+          <Plus className="mr-2 h-4 w-4" />
+          {t('actions.add')}
+        </Button>
       </div>
 
       {/* Filters */}
@@ -111,48 +115,46 @@ export function AntiquesPageClient({
         <form onSubmit={handleSearchSubmit} className="flex gap-2">
           <input
             type="text"
-            placeholder="搜索名称、材质、备注..."
+            placeholder={t('searchPlaceholder')}
             value={search}
             onChange={e => setSearch(e.target.value)}
             className="flex-1 rounded-md border bg-background px-3 py-2"
           />
-          <button
-            type="submit"
-            className="rounded-md bg-primary px-4 py-2 text-primary-foreground hover:bg-primary/90"
-            disabled={isPending}
-          >
-            搜索
-          </button>
+          <Button type="submit" disabled={isPending}>
+            {tc('search')}
+          </Button>
         </form>
 
         <div className="flex gap-4">
           <div className="flex-1">
-            <label className="mb-1 block text-sm font-medium">类别</label>
+            <label className="mb-1 block text-sm font-medium">{t('fields.category.label')}</label>
             <select
               value={category}
               onChange={e => handleCategoryChange(e.target.value)}
               className="w-full rounded-md border bg-background px-3 py-2"
               disabled={isPending}
             >
-              {categoryOptions.map(opt => (
-                <option key={opt.value} value={opt.value}>
-                  {opt.label}
+              <option value="">{tc('all')}</option>
+              {CATEGORY_VALUES.map(value => (
+                <option key={value} value={value}>
+                  {t(`enums.category.${value}`)}
                 </option>
               ))}
             </select>
           </div>
 
           <div className="flex-1">
-            <label className="mb-1 block text-sm font-medium">状态</label>
+            <label className="mb-1 block text-sm font-medium">{t('fields.status.label')}</label>
             <select
               value={status}
               onChange={e => handleStatusChange(e.target.value)}
               className="w-full rounded-md border bg-background px-3 py-2"
               disabled={isPending}
             >
-              {statusOptions.map(opt => (
-                <option key={opt.value} value={opt.value}>
-                  {opt.label}
+              <option value="">{tc('all')}</option>
+              {STATUS_VALUES.map(value => (
+                <option key={value} value={value}>
+                  {t(`enums.status.${value}`)}
                 </option>
               ))}
             </select>
@@ -163,14 +165,14 @@ export function AntiquesPageClient({
       {/* Loading Indicator */}
       {isPending && (
         <div className="rounded-lg border bg-muted p-4 text-center text-muted-foreground">
-          加载中...
+          {tc('loading')}
         </div>
       )}
 
       {/* Antiques Grid */}
       {initialAntiques.length === 0 ? (
         <div className="rounded-lg border bg-card p-8 text-center text-muted-foreground">
-          暂无文玩记录
+          {t('empty.title')}
         </div>
       ) : (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
@@ -194,11 +196,11 @@ export function AntiquesPageClient({
             disabled={initialPage <= 1 || isPending}
             className="rounded-md border bg-card px-3 py-1 disabled:opacity-50"
           >
-            上一页
+            {tc('pagination.prev')}
           </button>
 
           <span className="text-sm text-muted-foreground">
-            第 {initialPage} / {totalPages} 页
+            {tc('pagination.pageInfo', { page: initialPage, totalPages })}
           </span>
 
           <button
@@ -206,10 +208,23 @@ export function AntiquesPageClient({
             disabled={initialPage >= totalPages || isPending}
             className="rounded-md border bg-card px-3 py-1 disabled:opacity-50"
           >
-            下一页
+            {tc('pagination.next')}
           </button>
         </div>
       )}
+
+      {/* Create Dialog */}
+      <ModuleItemDialog
+        open={createDialogOpen}
+        onOpenChange={setCreateDialogOpen}
+        title={t('dialogs.createTitle')}
+        description={t('dialogs.createDesc')}
+        fields={formFields}
+        onSubmit={handleCreate}
+        successMessage={ta('createdSuccessfully')}
+        errorMessage={ta('failedToCreate')}
+        submitLabel={tc('create')}
+      />
     </div>
   );
 }

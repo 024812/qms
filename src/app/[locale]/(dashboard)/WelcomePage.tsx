@@ -8,6 +8,10 @@ import {
   Calendar,
   CreditCard,
   Bed,
+  Wine,
+  Disc3,
+  Gem,
+  Map,
   ArrowRight,
   type LucideIcon,
 } from 'lucide-react';
@@ -21,6 +25,10 @@ const moduleIcons: Record<string, LucideIcon> = {
   Bed,
   CreditCard,
   Package,
+  Wine,
+  Disc3,
+  Gem,
+  Map,
 };
 
 interface SubNavItem {
@@ -55,6 +63,14 @@ export function WelcomePage({ initialSession }: { initialSession: AppSession }) 
           { name: t('sidebar.cardsList'), href: '/cards', icon: CreditCard },
           { name: t('sidebar.soldCards'), href: '/cards/sold', icon: CreditCard },
         ];
+      case 'spirits':
+        return [{ name: t('navigation.spirits'), href: '/spirits', icon: Wine }];
+      case 'paddles':
+        return [{ name: t('navigation.paddles'), href: '/paddles', icon: Disc3 }];
+      case 'antiques':
+        return [{ name: t('navigation.antiques'), href: '/antiques', icon: Gem }];
+      case 'maps':
+        return [{ name: t('navigation.maps'), href: '/maps', icon: Map }];
       default:
         return [];
     }
@@ -99,7 +115,9 @@ export function WelcomePage({ initialSession }: { initialSession: AppSession }) 
                       <IconComponent className={`w-5 h-5 ${colors.text}`} />
                     </div>
                     <div>
-                      <CardTitle className="text-lg font-heading">{module.name}</CardTitle>
+                      <CardTitle className="text-lg font-heading">
+                        {t(`users.modules.${module.id}`)}
+                      </CardTitle>
                       <CardDescription className="text-xs">{module.description}</CardDescription>
                     </div>
                   </div>

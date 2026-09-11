@@ -71,6 +71,54 @@ function logSpiritDataError(message: string, error: unknown, meta?: Record<strin
   });
 }
 
+/**
+ * Convert a raw database row to a Spirit domain object.
+ *
+ * Numeric columns come back as strings and `date` columns as 'YYYY-MM-DD'
+ * strings, so both are normalized here instead of relying on casts.
+ */
+function rowToSpirit(row: typeof spirits.$inferSelect): Spirit {
+  return {
+    id: row.id,
+    itemNumber: row.itemNumber,
+    name: row.name,
+    spiritType: row.spiritType,
+    brand: row.brand ?? null,
+    distillery: row.distillery ?? null,
+    region: row.region ?? null,
+    country: row.country ?? null,
+    vintage: row.vintage ?? null,
+    age: row.age ?? null,
+    abv: row.abv !== null && row.abv !== undefined ? Number(row.abv) : null,
+    volumeMl: row.volumeMl ?? null,
+    bottleNumber: row.bottleNumber ?? null,
+    limitedEdition: row.limitedEdition,
+    caskType: row.caskType ?? null,
+    bottlingDate: row.bottlingDate ? new Date(row.bottlingDate) : null,
+    acquiredDate: row.acquiredDate ? new Date(row.acquiredDate) : null,
+    purchasePrice:
+      row.purchasePrice !== null && row.purchasePrice !== undefined
+        ? Number(row.purchasePrice)
+        : null,
+    currentValue:
+      row.currentValue !== null && row.currentValue !== undefined ? Number(row.currentValue) : null,
+    estimatedValue:
+      row.estimatedValue !== null && row.estimatedValue !== undefined
+        ? Number(row.estimatedValue)
+        : null,
+    status: row.status,
+    bottleStatus: row.bottleStatus,
+    storageCondition: row.storageCondition ?? null,
+    location: row.location ?? null,
+    tastingNotes: row.tastingNotes ?? null,
+    notes: row.notes ?? null,
+    mainImage: row.mainImage ?? null,
+    attachmentImages: row.attachmentImages ?? null,
+    createdAt: row.createdAt,
+    updatedAt: row.updatedAt,
+  };
+}
+
 // ============================================================================
 // READ OPERATIONS (with caching)
 // ============================================================================
@@ -91,17 +139,7 @@ export async function getSpiritById(id: string): Promise<Spirit | null> {
 
     if (!result[0]) return null;
 
-    const row = result[0];
-    return {
-      ...row,
-      abv: row.abv ? Number(row.abv) : null,
-      purchasePrice: row.purchasePrice ? Number(row.purchasePrice) : null,
-      currentValue: row.currentValue ? Number(row.currentValue) : null,
-      estimatedValue: row.estimatedValue ? Number(row.estimatedValue) : null,
-      bottlingDate: row.bottlingDate ?? null,
-      acquiredDate: row.acquiredDate ?? null,
-      attachmentImages: row.attachmentImages ?? null,
-    } as Spirit;
+    return rowToSpirit(result[0]);
   } catch (error) {
     logSpiritDataError('Error fetching spirit by ID', error, { id });
     throw error;
@@ -186,16 +224,7 @@ export async function getSpirits(filters: SpiritFilters = {}): Promise<Spirit[]>
       .limit(limit)
       .offset(offset);
 
-    return result.map(row => ({
-      ...row,
-      abv: row.abv ? Number(row.abv) : null,
-      purchasePrice: row.purchasePrice ? Number(row.purchasePrice) : null,
-      currentValue: row.currentValue ? Number(row.currentValue) : null,
-      estimatedValue: row.estimatedValue ? Number(row.estimatedValue) : null,
-      bottlingDate: row.bottlingDate ?? null,
-      acquiredDate: row.acquiredDate ?? null,
-      attachmentImages: row.attachmentImages ?? null,
-    })) as Spirit[];
+    return result.map(row => rowToSpirit(row));
   } catch (error) {
     logSpiritDataError('Error fetching spirits', error, { filters });
     throw error;
@@ -324,16 +353,7 @@ export async function createSpirit(data: CreateSpiritInput): Promise<Spirit> {
     revalidateTag(spiritsCacheTags.slice('bottleStatus', insertData.bottleStatus), 'max');
 
     const row = result[0];
-    return {
-      ...row,
-      abv: row.abv ? Number(row.abv) : null,
-      purchasePrice: row.purchasePrice ? Number(row.purchasePrice) : null,
-      currentValue: row.currentValue ? Number(row.currentValue) : null,
-      estimatedValue: row.estimatedValue ? Number(row.estimatedValue) : null,
-      bottlingDate: row.bottlingDate ?? null,
-      acquiredDate: row.acquiredDate ?? null,
-      attachmentImages: row.attachmentImages ?? null,
-    } as Spirit;
+    return rowToSpirit(row);
   } catch (error) {
     logSpiritDataError('Error creating spirit', error, { data });
     throw error;
@@ -347,11 +367,14 @@ export async function createSpirit(data: CreateSpiritInput): Promise<Spirit> {
  */
 export async function updateSpirit(id: string, data: UpdateSpiritInput): Promise<Spirit> {
   try {
-    // Fetch existing spirit for old status/type
-    const existing = await getSpiritById(id);
-    if (!existing) {
+    // Fetch existing spirit for old status/type via a direct query — the cached
+    // read may be stale and slice invalidation must use the persisted values.
+    const existingRows = await db.select().from(spirits).where(eq(spirits.id, id)).limit(1);
+    const existingRow = existingRows[0];
+    if (!existingRow) {
       throw new Error('Spirit not found');
     }
+    const existing = rowToSpirit(existingRow);
 
     const updateData: Record<string, unknown> = {
       updatedAt: new Date(),
@@ -432,16 +455,7 @@ export async function updateSpirit(id: string, data: UpdateSpiritInput): Promise
     }
 
     const row = result[0];
-    return {
-      ...row,
-      abv: row.abv ? Number(row.abv) : null,
-      purchasePrice: row.purchasePrice ? Number(row.purchasePrice) : null,
-      currentValue: row.currentValue ? Number(row.currentValue) : null,
-      estimatedValue: row.estimatedValue ? Number(row.estimatedValue) : null,
-      bottlingDate: row.bottlingDate ?? null,
-      acquiredDate: row.acquiredDate ?? null,
-      attachmentImages: row.attachmentImages ?? null,
-    } as Spirit;
+    return rowToSpirit(row);
   } catch (error) {
     logSpiritDataError('Error updating spirit', error, { id, data });
     throw error;
@@ -455,11 +469,14 @@ export async function updateSpirit(id: string, data: UpdateSpiritInput): Promise
  */
 export async function deleteSpirit(id: string): Promise<void> {
   try {
-    // Fetch existing spirit for cache invalidation
-    const existing = await getSpiritById(id);
-    if (!existing) {
+    // Fetch existing spirit for cache invalidation via a direct query — the
+    // cached read may be stale and slice invalidation must use persisted values.
+    const existingRows = await db.select().from(spirits).where(eq(spirits.id, id)).limit(1);
+    const existingRow = existingRows[0];
+    if (!existingRow) {
       throw new Error('Spirit not found');
     }
+    const existing = rowToSpirit(existingRow);
 
     await db.delete(spirits).where(eq(spirits.id, id));
 

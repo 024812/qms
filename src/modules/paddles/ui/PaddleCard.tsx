@@ -4,6 +4,7 @@
  * Display component for paddle items in list view
  */
 
+import { useTranslations } from 'next-intl';
 import type { PaddleItem } from '../schema';
 
 export interface PaddleCardProps {
@@ -12,20 +13,7 @@ export interface PaddleCardProps {
 }
 
 export function PaddleCard({ item, onClick }: PaddleCardProps) {
-  const statusMap: Record<string, string> = {
-    ACTIVE: '使用中',
-    RETIRED: '已退役',
-    FOR_SALE: '待售',
-    SOLD: '已售出',
-    DISPLAY: '展示',
-  };
-
-  const handleMap: Record<string, string> = {
-    FL: '横拍',
-    ST: '直拍',
-    CS: '中式直拍',
-    AN: '解剖',
-  };
+  const t = useTranslations('paddles');
 
   return (
     <div
@@ -47,23 +35,26 @@ export function PaddleCard({ item, onClick }: PaddleCardProps) {
       <div className="grid grid-cols-2 gap-2 mt-3 text-sm">
         {item.bladeWeightG && (
           <div>
-            <span className="text-gray-500">重量:</span> {item.bladeWeightG}g
+            <span className="text-gray-500">{t('fields.bladeWeightG.label')}:</span>{' '}
+            {item.bladeWeightG}g
           </div>
         )}
         {item.handleType && (
           <div>
-            <span className="text-gray-500">握拍:</span>{' '}
-            {handleMap[item.handleType] || item.handleType}
+            <span className="text-gray-500">{t('fields.handleType.label')}:</span>{' '}
+            {t(`enums.handleType.${item.handleType}`)}
           </div>
         )}
         {item.bladeSpeed && (
           <div>
-            <span className="text-gray-500">速度:</span> {item.bladeSpeed}/10
+            <span className="text-gray-500">{t('fields.bladeSpeed.label')}:</span> {item.bladeSpeed}
+            /10
           </div>
         )}
         {item.bladeControl && (
           <div>
-            <span className="text-gray-500">控制:</span> {item.bladeControl}/10
+            <span className="text-gray-500">{t('fields.bladeControl.label')}:</span>{' '}
+            {item.bladeControl}/10
           </div>
         )}
       </div>
@@ -72,12 +63,14 @@ export function PaddleCard({ item, onClick }: PaddleCardProps) {
         <div className="mt-3 text-sm">
           {item.forehandRubber && (
             <div>
-              <span className="text-gray-500">正手:</span> {item.forehandRubber}
+              <span className="text-gray-500">{t('fields.forehandRubber.label')}:</span>{' '}
+              {item.forehandRubber}
             </div>
           )}
           {item.backhandRubber && (
             <div>
-              <span className="text-gray-500">反手:</span> {item.backhandRubber}
+              <span className="text-gray-500">{t('fields.backhandRubber.label')}:</span>{' '}
+              {item.backhandRubber}
             </div>
           )}
         </div>
@@ -97,7 +90,7 @@ export function PaddleCard({ item, onClick }: PaddleCardProps) {
                     : 'bg-purple-100 text-purple-800'
           }`}
         >
-          {statusMap[item.status] || item.status}
+          {t(`enums.status.${item.status}`)}
         </span>
         {item.location && <span className="text-xs text-gray-500">{item.location}</span>}
       </div>

@@ -514,6 +514,11 @@ export async function updateMap(data: UpdateMapData): Promise<MapDTO> {
     return updatedMap;
   } catch (error) {
     logMapDataError('Failed to update map', error, { id: data.id });
+    // Preserve domain errors (e.g. "Map not found") so the actions layer can
+    // map them to NOT_FOUND instead of INTERNAL_ERROR.
+    if (error instanceof Error && error.message === 'Map not found') {
+      throw error;
+    }
     throw new Error('Failed to update map');
   }
 }
@@ -544,6 +549,11 @@ export async function deleteMap(id: string): Promise<void> {
     dbLogger.info('Map deleted', { id, itemNumber: currentMap.itemNumber });
   } catch (error) {
     logMapDataError('Failed to delete map', error, { id });
+    // Preserve domain errors (e.g. "Map not found") so the actions layer can
+    // map them to NOT_FOUND instead of INTERNAL_ERROR.
+    if (error instanceof Error && error.message === 'Map not found') {
+      throw error;
+    }
     throw new Error('Failed to delete map');
   }
 }

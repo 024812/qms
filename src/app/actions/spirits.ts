@@ -2,6 +2,7 @@
 
 import { auth } from '@/auth';
 import { ModuleAccessError, requireModuleAccess } from '@/lib/module-access';
+import { sanitizeApiInput } from '@/lib/sanitization';
 import {
   getSpirits,
   getSpiritById,
@@ -160,7 +161,8 @@ export async function getSpiritsAction(
       data: { spirits, total, hasMore },
     };
   } catch (error) {
-    return internalErrorResult(error instanceof Error ? error.message : '获取藏酒列表失败');
+    console.error('[Server Action] getSpiritsAction error:', error);
+    return internalErrorResult('获取藏酒列表失败');
   }
 }
 
@@ -188,7 +190,8 @@ export async function getSpiritAction(id: string): Promise<ActionResult<Spirit>>
       data: spirit,
     };
   } catch (error) {
-    return internalErrorResult(error instanceof Error ? error.message : '获取藏酒失败');
+    console.error('[Server Action] getSpiritAction error:', error);
+    return internalErrorResult('获取藏酒失败');
   }
 }
 
@@ -203,7 +206,7 @@ export async function createSpiritAction(input: CreateSpiritInput): Promise<Acti
     }
 
     // Validate input
-    const validation = createSpiritSchema.safeParse(input);
+    const validation = createSpiritSchema.safeParse(sanitizeApiInput(input));
     if (!validation.success) {
       return validationErrorResult(
         '输入数据无效',
@@ -218,7 +221,8 @@ export async function createSpiritAction(input: CreateSpiritInput): Promise<Acti
       data: spirit,
     };
   } catch (error) {
-    return internalErrorResult(error instanceof Error ? error.message : '创建藏酒失败');
+    console.error('[Server Action] createSpiritAction error:', error);
+    return internalErrorResult('创建藏酒失败');
   }
 }
 
@@ -240,7 +244,7 @@ export async function updateSpiritAction(
     }
 
     // Validate input
-    const validation = updateSpiritSchema.safeParse(input);
+    const validation = updateSpiritSchema.safeParse(sanitizeApiInput(input));
     if (!validation.success) {
       return validationErrorResult(
         '输入数据无效',
@@ -255,10 +259,11 @@ export async function updateSpiritAction(
       data: spirit,
     };
   } catch (error) {
+    console.error('[Server Action] updateSpiritAction error:', error);
     if (error instanceof Error && error.message === 'Spirit not found') {
       return notFoundErrorResult('藏酒不存在');
     }
-    return internalErrorResult(error instanceof Error ? error.message : '更新藏酒失败');
+    return internalErrorResult('更新藏酒失败');
   }
 }
 
@@ -283,9 +288,10 @@ export async function deleteSpiritAction(id: string): Promise<ActionResult<void>
       data: undefined,
     };
   } catch (error) {
+    console.error('[Server Action] deleteSpiritAction error:', error);
     if (error instanceof Error && error.message === 'Spirit not found') {
       return notFoundErrorResult('藏酒不存在');
     }
-    return internalErrorResult(error instanceof Error ? error.message : '删除藏酒失败');
+    return internalErrorResult('删除藏酒失败');
   }
 }

@@ -438,11 +438,13 @@ export async function updateAntique(data: UpdateAntiqueData): Promise<AntiqueIte
     const { id, ...updateData } = data;
     dbLogger.info('Updating antique', { id, ...summarizeAntiqueWriteData(updateData) });
 
-    // Get old antique for cache invalidation
-    const oldAntique = await getAntiqueById(id);
-    if (!oldAntique) {
+    // Get old antique for cache invalidation via a direct query — the cached
+    // read may be stale and slice invalidation must use persisted values.
+    const oldRows = await db.select().from(antiques).where(eq(antiques.id, id)).limit(1);
+    if (oldRows.length === 0) {
       throw new Error(`Antique with ID ${id} not found`);
     }
+    const oldAntique = rowToAntiqueItem(oldRows[0]);
 
     const updateValues = buildAntiqueUpdateValues(updateData);
 
@@ -484,11 +486,13 @@ export async function deleteAntique(id: string): Promise<void> {
   try {
     dbLogger.info('Deleting antique', { id });
 
-    // Get antique for cache invalidation
-    const antique = await getAntiqueById(id);
-    if (!antique) {
+    // Get antique for cache invalidation via a direct query — the cached read
+    // may be stale and slice invalidation must use persisted values.
+    const existingRows = await db.select().from(antiques).where(eq(antiques.id, id)).limit(1);
+    if (existingRows.length === 0) {
       throw new Error(`Antique with ID ${id} not found`);
     }
+    const antique = rowToAntiqueItem(existingRows[0]);
 
     await db.delete(antiques).where(eq(antiques.id, id));
 

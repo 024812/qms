@@ -6,6 +6,7 @@ import { Loader2, Pencil, Plus, Shield, Trash2, User, Users } from 'lucide-react
 
 import { useToast } from '@/hooks/useToast';
 import { useCreateUser, useDeleteUser, useUpdateUser, useUsers } from '@/hooks/useUsers';
+import { getAllModules } from '@/modules/registry';
 import type { UserModule, UserSummary } from '@/lib/data/users';
 import {
   AlertDialog,
@@ -91,10 +92,11 @@ export function UsersPageClient({ currentUserId, initialUsers }: UsersPageClient
   const deleteUser = useDeleteUser();
 
   const availableModules = useMemo(
-    () => [
-      { id: 'quilts' as const, name: t('users.modules.quilts') },
-      { id: 'cards' as const, name: t('users.modules.cards') },
-    ],
+    () =>
+      getAllModules().map(module => ({
+        id: module.id as UserModule,
+        name: t(`users.modules.${module.id}`),
+      })),
     [t]
   );
 

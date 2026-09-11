@@ -1,50 +1,66 @@
 import { Metadata } from 'next';
 import { notFound } from 'next/navigation';
+import Link from 'next/link';
+import { ArrowLeft } from 'lucide-react';
+import { getTranslations } from 'next-intl/server';
 import { auth } from '@/auth';
 import { requirePageModuleAccess } from '@/lib/module-access';
-import { getSpiritById } from '@/lib/data/spirits';
+import { getSpiritAction } from '@/app/actions/spirits';
 import { SpiritDetail } from '@/modules/spirits/ui/SpiritDetail';
 import { spiritToSpiritItem } from '@/modules/spirits/schema';
+import { SpiritDetailActions } from '../_components/SpiritDetailActions';
 
 interface PageProps {
   params: Promise<{ locale: string; id: string }>;
 }
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
-  const { id } = await params;
-  const spirit = await getSpiritById(id);
+  const { locale, id } = await params;
+  requirePageModuleAccess(await auth(), 'spirits');
+  const t = await getTranslations({ locale, namespace: 'spirits' });
 
-  if (!spirit) {
+  const result = await getSpiritAction(id);
+
+  if (!result.success) {
     return {
-      title: '藏酒不存在 - QMS',
+      title: `${t('notFound')} - QMS`,
     };
   }
 
   return {
-    title: `${spirit.name} - 藏酒管理 - QMS`,
-    description: `查看 ${spirit.name} 的详细信息`,
+    title: `${result.data.name} - ${t('title')} - QMS`,
   };
 }
 
 export default async function SpiritDetailPage({ params }: PageProps) {
-  // Auth check
-  const session = await auth();
-  requirePageModuleAccess(session, 'spirits');
+  const { locale, id } = await params;
+  requirePageModuleAccess(await auth(), 'spirits');
+  const t = await getTranslations({ locale, namespace: 'common' });
 
-  // Fetch spirit
-  const { id } = await params;
-  const spirit = await getSpiritById(id);
+  const result = await getSpiritAction(id);
 
-  if (!spirit) {
+  if (!result.success) {
     notFound();
   }
 
   return (
     <div className="container mx-auto p-6">
-      <div className="max-w-4xl mx-auto">
-        <div className="bg-white rounded-lg shadow p-6">
-          <SpiritDetail item={spiritToSpiritItem(spirit)} />
+      <div className="mx-auto max-w-4xl space-y-6">
+        <div>
+          <Link
+            href="/spirits"
+            className="flex items-center gap-2 text-blue-600 hover:text-blue-800"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            {t('backToList')}
+          </Link>
         </div>
+
+        <div className="rounded-lg border bg-card p-6 shadow">
+          <SpiritDetail item={spiritToSpiritItem(result.data)} />
+        </div>
+
+        <SpiritDetailActions item={result.data} />
       </div>
     </div>
   );

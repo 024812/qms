@@ -212,7 +212,7 @@ export function SettingsPageClient({
                     >
                       <div className="flex items-start justify-between">
                         <div className="flex-1">
-                          <h3 className="font-medium">{module.name}</h3>
+                          <h3 className="font-medium">{t(`users.modules.${module.id}`)}</h3>
                           <p className="mt-1 text-sm text-muted-foreground">{module.description}</p>
                         </div>
                         <Button

@@ -41,7 +41,19 @@
   },
   "modules": {
     "title": "模块管理",
-    "subtitle": "选择您想要使用的功能模块。您可以随时订阅或取消订阅模块。"
+    "subtitle": "选择您想要使用的功能模块。您可以随时订阅或取消订阅模块。",
+    "subscribe": "订阅",
+    "subscribed": "已订阅",
+    "subscribeModule": "订阅模块",
+    "processing": "处理中...",
+    "subscribeSuccess": "订阅成功",
+    "unsubscribeSuccess": "取消订阅成功",
+    "operationFailed": "操作失败",
+    "loadErrorTitle": "加载失败",
+    "loadErrorDescription": "无法加载您的模块订阅信息",
+    "updateErrorDescription": "无法更新模块订阅",
+    "aboutTitle": "关于模块订阅",
+    "aboutDescription": "订阅模块后，您可以在导航栏中访问该模块的功能。如果您只订阅了一个模块，系统会在登录后直接跳转到该模块页面。您可以随时在此页面管理您的模块订阅。当前已订阅 {count} 个模块。"
   },
   "navigation": {
     "dashboard": "仪表面板",
@@ -57,58 +69,574 @@
     "antiques": "文玩收藏",
     "maps": "地图收藏"
   },
+  "paddles": {
+    "title": "乒乓球底板管理",
+    "count": "共 {count} 个底板",
+    "notFound": "底板不存在",
+    "searchPlaceholder": "搜索底板名称、品牌、型号、胶皮...",
+    "actions": {
+      "add": "新增底板",
+      "addFirst": "添加第一个底板"
+    },
+    "empty": {
+      "title": "暂无底板数据"
+    },
+    "dialogs": {
+      "createTitle": "新增底板",
+      "createDesc": "添加一个新的乒乓球底板",
+      "editTitle": "编辑底板",
+      "editDesc": "修改底板信息",
+      "deleteConfirm": "确定要删除这个底板吗？此操作无法撤销。"
+    },
+    "sections": {
+      "basicInfo": "基本信息",
+      "rubber": "胶皮配置",
+      "performance": "性能评分",
+      "value": "购买与估值",
+      "status": "状态与存放",
+      "notes": "备注"
+    },
+    "fields": {
+      "itemNumber": { "label": "物品编号", "description": "自动生成的唯一编号" },
+      "name": { "label": "名称", "placeholder": "例如：蝴蝶王", "description": "底板的名称或描述" },
+      "bladeBrand": {
+        "label": "底板品牌",
+        "placeholder": "例如：蝴蝶、斯帝卡、红双喜",
+        "description": "底板的品牌"
+      },
+      "bladeModel": {
+        "label": "底板型号",
+        "placeholder": "例如：VISCARIA、张继科ALC",
+        "description": "底板的具体型号"
+      },
+      "bladeWeightG": {
+        "label": "底板重量（克）",
+        "placeholder": "例如：85",
+        "description": "底板重量，单位：克（通常在70-100克之间）"
+      },
+      "handleType": { "label": "握拍方式", "description": "底板的握拍方式" },
+      "forehandRubber": {
+        "label": "正手胶皮",
+        "placeholder": "例如：天极3、狂飙3",
+        "description": "正手使用的胶皮型号"
+      },
+      "backhandRubber": {
+        "label": "反手胶皮",
+        "placeholder": "例如：多尼克F1、骄猛唯佳",
+        "description": "反手使用的胶皮型号"
+      },
+      "rubberThicknessMm": {
+        "label": "海绵厚度（毫米）",
+        "placeholder": "例如：2.1",
+        "description": "胶皮海绵厚度，单位：毫米（通常在1.5-2.5mm之间）"
+      },
+      "bladeSpeed": {
+        "label": "速度评分（1-10）",
+        "placeholder": "例如：8",
+        "description": "底板速度评分，1为最慢，10为最快"
+      },
+      "bladeControl": {
+        "label": "控制评分（1-10）",
+        "placeholder": "例如：7",
+        "description": "底板控制评分，1为最低，10为最高"
+      },
+      "purchaseDate": { "label": "购买日期", "description": "购买底板的日期" },
+      "purchasePrice": {
+        "label": "购买价格（元）",
+        "placeholder": "例如：800",
+        "description": "底板的购买价格"
+      },
+      "currentValue": {
+        "label": "当前估值（元）",
+        "placeholder": "例如：600",
+        "description": "底板的当前市场估值"
+      },
+      "status": { "label": "状态", "description": "底板的当前状态" },
+      "condition": {
+        "label": "状况",
+        "placeholder": "例如：良好、轻微磨损",
+        "description": "底板的物理状况描述"
+      },
+      "location": {
+        "label": "存放位置",
+        "placeholder": "例如：球包、储物柜",
+        "description": "底板当前的存放位置"
+      },
+      "notes": {
+        "label": "备注",
+        "placeholder": "其他说明信息",
+        "description": "其他需要记录的信息"
+      },
+      "mainImage": {
+        "label": "主图片",
+        "placeholder": "主图片URL",
+        "description": "底板的主要展示图片"
+      },
+      "attachmentImages": {
+        "label": "附加图片",
+        "placeholder": "多个图片URL，每行一个",
+        "description": "底板的其他图片（细节图、配置图等）"
+      }
+    },
+    "enums": {
+      "status": {
+        "ACTIVE": "使用中",
+        "RETIRED": "已退役",
+        "FOR_SALE": "待售",
+        "SOLD": "已售出",
+        "DISPLAY": "展示"
+      },
+      "handleType": {
+        "FL": "横拍",
+        "ST": "直拍",
+        "CS": "中式直拍",
+        "AN": "解剖"
+      }
+    }
+  },
+  "antiques": {
+    "title": "文玩管理",
+    "count": "共 {count} 件藏品",
+    "notFound": "文玩不存在",
+    "searchPlaceholder": "搜索名称、材质、备注...",
+    "actions": {
+      "add": "添加文玩"
+    },
+    "empty": {
+      "title": "暂无文玩记录"
+    },
+    "dialogs": {
+      "createTitle": "添加文玩",
+      "createDesc": "录入一件新的文玩藏品",
+      "editTitle": "编辑文玩",
+      "editDesc": "修改文玩信息",
+      "deleteConfirm": "确定要删除这件文玩吗？此操作无法撤销。"
+    },
+    "sections": {
+      "basicInfo": "基本信息",
+      "dimensions": "尺寸规格",
+      "certification": "品相与鉴定",
+      "value": "价值信息",
+      "storage": "存放信息",
+      "notes": "备注"
+    },
+    "fields": {
+      "itemNumber": { "label": "物品编号", "description": "自动生成的唯一编号" },
+      "name": {
+        "label": "名称",
+        "placeholder": "例如：清代和田玉佩",
+        "description": "文玩的名称或描述"
+      },
+      "category": { "label": "类别", "description": "文玩的主要类别" },
+      "material": {
+        "label": "材质",
+        "placeholder": "例如：和田白玉、紫檀木、青花瓷",
+        "description": "文玩的具体材质"
+      },
+      "era": {
+        "label": "年代",
+        "placeholder": "例如：清代、民国、现代",
+        "description": "文玩的制作年代或时期"
+      },
+      "dynasty": {
+        "label": "朝代",
+        "placeholder": "例如：清朝、明朝",
+        "description": "文玩所属朝代（如适用）"
+      },
+      "lengthCm": {
+        "label": "长度（厘米）",
+        "placeholder": "例如：10.5",
+        "description": "文玩的长度"
+      },
+      "widthCm": {
+        "label": "宽度（厘米）",
+        "placeholder": "例如：5.2",
+        "description": "文玩的宽度"
+      },
+      "heightCm": {
+        "label": "高度（厘米）",
+        "placeholder": "例如：3.8",
+        "description": "文玩的高度"
+      },
+      "weightG": {
+        "label": "重量（克）",
+        "placeholder": "例如：125.5",
+        "description": "文玩的重量"
+      },
+      "condition": {
+        "label": "品相",
+        "placeholder": "例如：完整无损，包浆自然，有轻微使用痕迹",
+        "description": "文玩的保存状态和品相描述"
+      },
+      "certificate": {
+        "label": "证书",
+        "placeholder": "例如：国家珠宝玉石质量监督检验中心证书",
+        "description": "鉴定证书信息"
+      },
+      "appraisalDate": { "label": "鉴定日期", "description": "鉴定或评估的日期" },
+      "appraisalBy": {
+        "label": "鉴定机构/专家",
+        "placeholder": "例如：故宫博物院专家",
+        "description": "进行鉴定的机构或专家"
+      },
+      "purchasePrice": {
+        "label": "购入价格（元）",
+        "placeholder": "例如：50000",
+        "description": "购买时的价格"
+      },
+      "acquiredFrom": {
+        "label": "来源",
+        "placeholder": "例如：拍卖行、古玩市场、赠送",
+        "description": "文玩的获得来源"
+      },
+      "acquiredDate": { "label": "获得日期", "description": "购买或获得文玩的日期" },
+      "currentValue": {
+        "label": "当前价值（元）",
+        "placeholder": "例如：80000",
+        "description": "当前市场价值估计"
+      },
+      "estimatedValue": {
+        "label": "估值（元）",
+        "placeholder": "例如：100000",
+        "description": "专业评估价值"
+      },
+      "status": { "label": "状态", "description": "文玩的当前状态" },
+      "location": {
+        "label": "存放位置",
+        "placeholder": "例如：书房展柜、保险柜",
+        "description": "文玩的存放位置"
+      },
+      "notes": {
+        "label": "备注",
+        "placeholder": "其他说明信息",
+        "description": "其他需要记录的信息"
+      },
+      "mainImage": {
+        "label": "主图片",
+        "placeholder": "主图片URL",
+        "description": "文玩的主要展示图片"
+      },
+      "attachmentImages": {
+        "label": "附加图片",
+        "placeholder": "多个图片URL，每行一个",
+        "description": "文玩的其他图片（细节图等）"
+      }
+    },
+    "enums": {
+      "category": {
+        "JADE": "玉器",
+        "WOOD": "木器",
+        "CERAMIC": "陶瓷",
+        "METAL": "金属",
+        "STONE": "石器",
+        "PAPER": "纸品",
+        "OTHER": "其他"
+      },
+      "status": {
+        "COLLECTION": "收藏中",
+        "FOR_SALE": "待售",
+        "SOLD": "已售出",
+        "DISPLAY": "展示中",
+        "APPRAISAL": "鉴定中"
+      }
+    }
+  },
+  "maps": {
+    "title": "地图管理",
+    "count": "共 {count} 张地图",
+    "selectedInfo": "已选择 {count} 项",
+    "notFound": "地图不存在",
+    "searchPlaceholder": "搜索地图...",
+    "actions": {
+      "add": "添加地图",
+      "selectAll": "全选",
+      "clearSelection": "取消选择",
+      "batchDelete": "批量删除"
+    },
+    "empty": {
+      "title": "暂无地图",
+      "description": "点击\"添加地图\"按钮开始添加"
+    },
+    "dialogs": {
+      "createTitle": "添加地图",
+      "createDesc": "录入一张新的地图藏品",
+      "editTitle": "编辑地图",
+      "editDesc": "修改地图信息",
+      "deleteConfirm": "确定要删除这张地图吗？此操作无法撤销。",
+      "batchDeleteConfirm": "确定要删除选中的 {count} 张地图吗？此操作无法撤销。"
+    },
+    "sections": {
+      "images": "图片",
+      "basicInfo": "基本信息",
+      "geography": "地理信息",
+      "condition": "品相与版本",
+      "value": "价值信息",
+      "storage": "存储信息",
+      "notes": "备注",
+      "metadata": "元数据"
+    },
+    "fields": {
+      "itemNumber": { "label": "物品编号", "description": "自动生成的唯一编号" },
+      "name": {
+        "label": "地图名称",
+        "placeholder": "例如：北京市区地图",
+        "description": "地图的名称或标题"
+      },
+      "mapType": { "label": "地图类型", "description": "地图的类型分类" },
+      "scale": { "label": "比例尺", "placeholder": "例如：1:50000", "description": "地图的比例尺" },
+      "publishedYear": {
+        "label": "出版年份",
+        "placeholder": "例如：1980",
+        "description": "地图的出版年份"
+      },
+      "publisher": {
+        "label": "出版社/制图者",
+        "placeholder": "例如：中国地图出版社",
+        "description": "出版该地图的机构或个人"
+      },
+      "material": { "label": "材质", "description": "地图的材质" },
+      "widthCm": {
+        "label": "宽度（厘米）",
+        "placeholder": "例如：60",
+        "description": "地图的宽度，单位：厘米"
+      },
+      "heightCm": {
+        "label": "高度（厘米）",
+        "placeholder": "例如：80",
+        "description": "地图的高度，单位：厘米"
+      },
+      "region": {
+        "label": "地区",
+        "placeholder": "例如：华北地区",
+        "description": "地图所覆盖的地理区域"
+      },
+      "country": {
+        "label": "国家",
+        "placeholder": "例如：中国",
+        "description": "地图所属或覆盖的国家"
+      },
+      "language": {
+        "label": "语言",
+        "placeholder": "例如：中文",
+        "description": "地图标注使用的语言"
+      },
+      "condition": {
+        "label": "品相描述",
+        "placeholder": "例如：保存完好，边缘有轻微磨损",
+        "description": "地图的保存状态和品相"
+      },
+      "isOriginal": { "label": "是否原版", "description": "是否为原版地图（非复制品）" },
+      "edition": {
+        "label": "版次",
+        "placeholder": "例如：第一版",
+        "description": "地图的版次信息"
+      },
+      "acquiredDate": { "label": "获得日期", "description": "获得该地图的日期" },
+      "purchasePrice": {
+        "label": "购买价格",
+        "placeholder": "例如：500",
+        "description": "购买地图时的价格"
+      },
+      "currentValue": {
+        "label": "当前价值",
+        "placeholder": "例如：800",
+        "description": "地图的当前估值"
+      },
+      "status": { "label": "状态", "description": "地图的当前状态" },
+      "location": {
+        "label": "存放位置",
+        "placeholder": "例如：书房书柜",
+        "description": "地图的存放位置"
+      },
+      "notes": {
+        "label": "备注",
+        "placeholder": "其他说明信息",
+        "description": "其他需要记录的信息"
+      },
+      "mainImage": {
+        "label": "主图片",
+        "placeholder": "主图片URL",
+        "description": "地图的主要展示图片"
+      },
+      "attachmentImages": {
+        "label": "附加图片",
+        "placeholder": "多个图片URL，每行一个",
+        "description": "地图的其他图片（细节图、背面图等）"
+      }
+    },
+    "enums": {
+      "mapType": {
+        "TOPOGRAPHIC": "地形图",
+        "ROAD": "道路图",
+        "CITY": "城市图",
+        "HISTORICAL": "历史地图",
+        "THEMATIC": "专题地图",
+        "NAUTICAL": "航海图",
+        "AERONAUTICAL": "航空图",
+        "OTHER": "其他"
+      },
+      "material": {
+        "PAPER": "纸质",
+        "CLOTH": "布质",
+        "DIGITAL": "数字",
+        "OTHER": "其他"
+      },
+      "status": {
+        "COLLECTION": "收藏中",
+        "FOR_SALE": "待售",
+        "SOLD": "已售出",
+        "DISPLAY": "展示中",
+        "FRAMED": "已装裱"
+      },
+      "isOriginal": {
+        "true": "是",
+        "false": "否"
+      }
+    },
+    "labels": {
+      "valueChange": "价值变化",
+      "widthOnly": "宽 {width} cm",
+      "heightOnly": "高 {height} cm"
+    }
+  },
   "spirits": {
     "title": "藏酒管理",
-    "subtitle": "管理珍藏烈酒、葡萄酒和其他酒类收藏",
-    "success": {
-      "created": "添加成功",
-      "updated": "更新成功",
-      "deleted": "删除成功"
-    },
-    "errors": {
-      "createFailed": "添加失败",
-      "updateFailed": "更新失败",
-      "deleteFailed": "删除失败",
-      "notFound": "藏酒不存在",
-      "generic": "发生错误"
-    },
+    "count": "共 {count} 件藏酒",
+    "notFound": "藏酒不存在",
+    "searchPlaceholder": "名称、品牌、酒厂...",
     "actions": {
-      "add": "添加藏酒",
-      "edit": "编辑",
-      "delete": "删除",
-      "viewDetails": "查看详情",
-      "deleteTitle": "删除确认",
-      "deleteConfirm": "您确定要删除这件藏酒吗？此操作无法撤销。"
+      "add": "添加藏酒"
     },
     "empty": {
       "title": "暂无藏酒记录",
-      "description": "点击\"添加藏酒\"开始管理您的珍藏"
+      "description": "点击右上角\"添加藏酒\"按钮开始记录"
+    },
+    "dialogs": {
+      "createTitle": "添加藏酒",
+      "createDesc": "录入一瓶新的藏酒",
+      "editTitle": "编辑藏酒",
+      "editDesc": "修改藏酒信息",
+      "deleteConfirm": "确定要删除这瓶藏酒吗？此操作无法撤销。"
     },
     "fields": {
-      "name": "名称",
-      "spiritType": "酒类",
-      "brand": "品牌",
-      "distillery": "酒厂/酒庄",
-      "region": "产区",
-      "country": "国家",
-      "vintage": "年份",
-      "age": "陈年",
-      "abv": "酒精度",
-      "volumeMl": "容量",
-      "bottleNumber": "瓶号",
-      "limitedEdition": "限量版",
-      "caskType": "桶型",
-      "bottlingDate": "装瓶日期",
-      "acquiredDate": "获得日期",
-      "purchasePrice": "购买价格",
-      "currentValue": "当前价值",
-      "estimatedValue": "估值",
-      "status": "状态",
-      "bottleStatus": "瓶身状态",
-      "storageCondition": "储存条件",
-      "location": "存放位置",
-      "tastingNotes": "品鉴笔记",
-      "notes": "备注"
+      "itemNumber": { "label": "物品编号", "description": "自动生成的唯一编号" },
+      "name": {
+        "label": "名称",
+        "placeholder": "例如：Macallan 18 Year Old",
+        "description": "酒品的名称"
+      },
+      "spiritType": { "label": "酒类", "description": "酒的类型" },
+      "brand": {
+        "label": "品牌",
+        "placeholder": "例如：Macallan, Hennessy",
+        "description": "酒品牌"
+      },
+      "distillery": {
+        "label": "酒厂/酒庄",
+        "placeholder": "例如：The Macallan Distillery",
+        "description": "生产酒厂或酒庄"
+      },
+      "region": {
+        "label": "产区",
+        "placeholder": "例如：Speyside, Cognac",
+        "description": "产地区域"
+      },
+      "country": {
+        "label": "国家",
+        "placeholder": "例如：Scotland, France",
+        "description": "生产国家"
+      },
+      "vintage": { "label": "年份", "placeholder": "例如：2005", "description": "酿造年份" },
+      "age": { "label": "陈年（年）", "placeholder": "例如：18", "description": "陈年时间（年）" },
+      "abv": { "label": "酒精度（%）", "placeholder": "例如：43.0", "description": "酒精度百分比" },
+      "volumeMl": {
+        "label": "容量（毫升）",
+        "placeholder": "例如：700",
+        "description": "瓶装容量"
+      },
+      "bottleNumber": {
+        "label": "瓶号",
+        "placeholder": "例如：123/500",
+        "description": "限量版瓶号"
+      },
+      "limitedEdition": { "label": "限量版", "description": "是否为限量版" },
+      "caskType": {
+        "label": "桶型",
+        "placeholder": "例如：Sherry Oak, Bourbon",
+        "description": "陈酿使用的橡木桶类型"
+      },
+      "bottlingDate": { "label": "装瓶日期", "description": "装瓶日期" },
+      "acquiredDate": { "label": "获得日期", "description": "获得或购买日期" },
+      "purchasePrice": {
+        "label": "购买价格",
+        "placeholder": "例如：2500",
+        "description": "购买时的价格"
+      },
+      "currentValue": {
+        "label": "当前价值",
+        "placeholder": "例如：3500",
+        "description": "当前市场价值"
+      },
+      "estimatedValue": { "label": "估值", "placeholder": "例如：4000", "description": "专业估值" },
+      "status": { "label": "状态", "description": "酒的状态" },
+      "bottleStatus": { "label": "瓶身状态", "description": "瓶身封装状态" },
+      "storageCondition": {
+        "label": "储存条件",
+        "placeholder": "例如：恒温18-20°C，避光，湿度60%",
+        "description": "储存环境和条件"
+      },
+      "location": {
+        "label": "存放位置",
+        "placeholder": "例如：酒柜A区第2层",
+        "description": "具体存放位置"
+      },
+      "tastingNotes": {
+        "label": "品鉴笔记",
+        "placeholder": "香气、口感、余韵等品鉴记录",
+        "description": "品鉴笔记和感受"
+      },
+      "notes": {
+        "label": "备注",
+        "placeholder": "其他说明信息",
+        "description": "其他需要记录的信息"
+      },
+      "mainImage": {
+        "label": "主图片",
+        "placeholder": "主图片URL",
+        "description": "酒品的主要展示图片"
+      },
+      "attachmentImages": {
+        "label": "附加图片",
+        "placeholder": "多个图片URL，每行一个",
+        "description": "酒品的其他图片（细节图、标签图等）"
+      }
+    },
+    "enums": {
+      "spiritType": {
+        "WHISKY": "威士忌",
+        "COGNAC": "干邑",
+        "BRANDY": "白兰地",
+        "RUM": "朗姆酒",
+        "VODKA": "伏特加",
+        "GIN": "金酒",
+        "TEQUILA": "龙舌兰",
+        "BAIJIU": "白酒",
+        "WINE": "葡萄酒",
+        "OTHER": "其他"
+      },
+      "status": {
+        "COLLECTION": "收藏中",
+        "AGING": "陈化中",
+        "FOR_SALE": "待售",
+        "SOLD": "已售出",
+        "OPENED": "已开瓶",
+        "EMPTY": "已饮完"
+      },
+      "bottleStatus": {
+        "SEALED": "未开封",
+        "OPENED": "已开封",
+        "EMPTY": "已空"
+      }
     }
   },
   "cards": {
@@ -1413,7 +1941,11 @@
     },
     "modules": {
       "quilts": "被子管理",
-      "cards": "球星卡管理"
+      "cards": "球星卡管理",
+      "spirits": "藏酒管理",
+      "paddles": "乒乓球底板管理",
+      "antiques": "文玩管理",
+      "maps": "地图管理"
     },
     "dialogs": {
       "create": {
@@ -1510,6 +2042,20 @@
     "quiltManagement": "被子管理",
     "version": "版本",
     "failedToLogout": "退出登录失败。请重试。",
+    "all": "全部",
+    "saving": "保存中...",
+    "selectPlaceholder": "请选择",
+    "backToList": "返回列表",
+    "searching": "搜索中...",
+    "notRecorded": "未记录",
+    "createdAt": "创建时间",
+    "updatedAt": "更新时间",
+    "years": "年",
+    "pagination": {
+      "prev": "上一页",
+      "next": "下一页",
+      "pageInfo": "第 {page} / {totalPages} 页"
+    },
     "toggleTheme": "切换主题",
     "toggleSidebar": "切换侧边栏",
     "theme": {

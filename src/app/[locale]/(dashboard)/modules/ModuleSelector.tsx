@@ -9,6 +9,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useTranslations } from 'next-intl';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -24,8 +25,20 @@ function getModuleIcon(iconName: string): LucideIcon {
   return typeof candidate === 'function' ? (candidate as LucideIcon) : LucideIcons.Package;
 }
 
+const MODULE_COLOR_CLASSES: Record<string, { bg: string; text: string }> = {
+  blue: { bg: 'bg-blue-100', text: 'text-blue-600' },
+  purple: { bg: 'bg-purple-100', text: 'text-purple-600' },
+  green: { bg: 'bg-green-100', text: 'text-green-600' },
+  '#FF6B35': { bg: 'bg-orange-100', text: 'text-orange-600' },
+  '#722F37': { bg: 'bg-rose-100', text: 'text-rose-700' },
+  '#8B4513': { bg: 'bg-amber-100', text: 'text-amber-700' },
+  '#4A90E2': { bg: 'bg-sky-100', text: 'text-sky-600' },
+};
+
 export function ModuleSelector() {
   const { success, error: showError } = useToast();
+  const t = useTranslations('modules');
+  const tu = useTranslations('users');
   const [activeModules, setActiveModules] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [togglingModule, setTogglingModule] = useState<string | null>(null);
@@ -40,14 +53,15 @@ export function ModuleSelector() {
         setActiveModules(modules);
       } catch (error) {
         console.error('Failed to load active modules:', error);
-        showError('加载失败', '无法加载您的模块订阅信息');
+        showError(t('loadErrorTitle'), t('loadErrorDescription'));
       } finally {
         setLoading(false);
       }
     }
 
     loadActiveModules();
-  }, [showError]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleToggleModule = async (moduleId: string) => {
     setTogglingModule(moduleId);
@@ -63,7 +77,10 @@ export function ModuleSelector() {
           setActiveModules(activeModules.filter(m => m !== moduleId));
         }
 
-        success(result.subscribed ? '订阅成功' : '取消订阅成功', result.message);
+        success(
+          result.subscribed ? t('subscribeSuccess') : t('unsubscribeSuccess'),
+          result.message
+        );
 
         // Refresh the page to update session and sidebar
         setTimeout(() => {
@@ -72,7 +89,10 @@ export function ModuleSelector() {
       }
     } catch (err) {
       console.error('Failed to toggle module:', err);
-      showError('操作失败', err instanceof Error ? err.message : '无法更新模块订阅');
+      showError(
+        t('operationFailed'),
+        err instanceof Error ? err.message : t('updateErrorDescription')
+      );
     } finally {
       setTogglingModule(null);
     }
@@ -94,6 +114,7 @@ export function ModuleSelector() {
           const isSubscribed = activeModules.includes(module.id);
           const isToggling = togglingModule === module.id;
           const IconComponent = getModuleIcon(module.icon);
+          const colors = MODULE_COLOR_CLASSES[module.color] || MODULE_COLOR_CLASSES.blue;
 
           return (
             <Card
@@ -105,26 +126,18 @@ export function ModuleSelector() {
               <CardHeader>
                 <div className="flex items-start justify-between">
                   <div
-                    className={`w-12 h-12 rounded-lg flex items-center justify-center ${
-                      module.color === 'blue'
-                        ? 'bg-blue-100 text-blue-600'
-                        : module.color === 'purple'
-                          ? 'bg-purple-100 text-purple-600'
-                          : module.color === 'green'
-                            ? 'bg-green-100 text-green-600'
-                            : 'bg-gray-100 text-gray-600'
-                    }`}
+                    className={`w-12 h-12 rounded-lg flex items-center justify-center ${colors.bg} ${colors.text}`}
                   >
                     <IconComponent className="w-6 h-6" />
                   </div>
                   {isSubscribed && (
                     <Badge variant="default" className="ml-2">
                       <Check className="w-3 h-3 mr-1" />
-                      已订阅
+                      {t('subscribed')}
                     </Badge>
                   )}
                 </div>
-                <CardTitle className="mt-4">{module.name}</CardTitle>
+                <CardTitle className="mt-4">{tu(`modules.${module.id}`)}</CardTitle>
                 <CardDescription>{module.description}</CardDescription>
               </CardHeader>
               <CardContent>
@@ -137,17 +150,17 @@ export function ModuleSelector() {
                   {isToggling ? (
                     <>
                       <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                      处理中...
+                      {t('processing')}
                     </>
                   ) : isSubscribed ? (
                     <>
                       <Check className="w-4 h-4 mr-2" />
-                      已订阅
+                      {t('subscribed')}
                     </>
                   ) : (
                     <>
                       <Plus className="w-4 h-4 mr-2" />
-                      订阅模块
+                      {t('subscribeModule')}
                     </>
                   )}
                 </Button>
@@ -165,10 +178,9 @@ export function ModuleSelector() {
               <LucideIcons.Info className="w-4 h-4 text-primary" />
             </div>
             <div className="flex-1">
-              <h3 className="font-medium mb-1">关于模块订阅</h3>
+              <h3 className="font-medium mb-1">{t('aboutTitle')}</h3>
               <p className="text-sm text-muted-foreground">
-                订阅模块后，您可以在导航栏中访问该模块的功能。如果您只订阅了一个模块，系统会在登录后直接跳转到该模块页面。您可以随时在此页面管理您的模块订阅。当前已订阅{' '}
-                {activeModules.length} 个模块。
+                {t('aboutDescription', { count: activeModules.length })}
               </p>
             </div>
           </div>

@@ -41,7 +41,19 @@
   },
   "modules": {
     "title": "Module Management",
-    "subtitle": "Select the feature modules you want to use. You can subscribe or unsubscribe at any time."
+    "subtitle": "Select the feature modules you want to use. You can subscribe or unsubscribe at any time.",
+    "subscribe": "Subscribe",
+    "subscribed": "Subscribed",
+    "subscribeModule": "Subscribe Module",
+    "processing": "Processing...",
+    "subscribeSuccess": "Subscribed successfully",
+    "unsubscribeSuccess": "Unsubscribed successfully",
+    "operationFailed": "Operation failed",
+    "loadErrorTitle": "Loading failed",
+    "loadErrorDescription": "Could not load your module subscriptions",
+    "updateErrorDescription": "Could not update module subscriptions",
+    "aboutTitle": "About Module Subscriptions",
+    "aboutDescription": "After subscribing to a module, you can access its features from the navigation sidebar. If you only subscribe to one module, the system will take you directly to that module after login. You can manage your subscriptions on this page at any time. You currently have {count} active modules."
   },
   "navigation": {
     "dashboard": "Dashboard",
@@ -57,58 +69,613 @@
     "antiques": "Antiques",
     "maps": "Maps"
   },
-  "spirits": {
-    "title": "Spirits Collection",
-    "subtitle": "Manage your fine spirits, wines, and other alcoholic beverages",
-    "success": {
-      "created": "Created successfully",
-      "updated": "Updated successfully",
-      "deleted": "Deleted successfully"
-    },
-    "errors": {
-      "createFailed": "Create failed",
-      "updateFailed": "Update failed",
-      "deleteFailed": "Delete failed",
-      "notFound": "Spirit not found",
-      "generic": "Something went wrong"
-    },
+  "paddles": {
+    "title": "Table Tennis Paddles",
+    "count": "{count} paddles in total",
+    "notFound": "Paddle not found",
+    "searchPlaceholder": "Search by name, brand, model, or rubber...",
     "actions": {
-      "add": "Add Spirit",
-      "edit": "Edit",
-      "delete": "Delete",
-      "viewDetails": "View Details",
-      "deleteTitle": "Confirm deletion",
-      "deleteConfirm": "Are you sure you want to delete this spirit? This action cannot be undone."
+      "add": "Add Paddle",
+      "addFirst": "Add Your First Paddle"
     },
     "empty": {
-      "title": "No Spirits",
-      "description": "Click \"Add Spirit\" to start your collection"
+      "title": "No paddles yet"
+    },
+    "dialogs": {
+      "createTitle": "Add Paddle",
+      "createDesc": "Register a new table tennis paddle",
+      "editTitle": "Edit Paddle",
+      "editDesc": "Update paddle information",
+      "deleteConfirm": "Are you sure you want to delete this paddle? This action cannot be undone."
+    },
+    "sections": {
+      "basicInfo": "Basic Information",
+      "rubber": "Rubber Configuration",
+      "performance": "Performance Ratings",
+      "value": "Purchase & Value",
+      "status": "Status & Storage",
+      "notes": "Notes"
     },
     "fields": {
-      "name": "Name",
-      "spiritType": "Type",
-      "brand": "Brand",
-      "distillery": "Distillery",
-      "region": "Region",
-      "country": "Country",
-      "vintage": "Vintage",
-      "age": "Age",
-      "abv": "ABV",
-      "volumeMl": "Volume",
-      "bottleNumber": "Bottle Number",
-      "limitedEdition": "Limited Edition",
-      "caskType": "Cask Type",
-      "bottlingDate": "Bottling Date",
-      "acquiredDate": "Acquired Date",
-      "purchasePrice": "Purchase Price",
-      "currentValue": "Current Value",
-      "estimatedValue": "Estimated Value",
-      "status": "Status",
-      "bottleStatus": "Bottle Status",
-      "storageCondition": "Storage Condition",
-      "location": "Location",
-      "tastingNotes": "Tasting Notes",
+      "itemNumber": { "label": "Item No.", "description": "Auto-generated unique number" },
+      "name": {
+        "label": "Name",
+        "placeholder": "e.g. Butterfly King",
+        "description": "Paddle name or description"
+      },
+      "bladeBrand": {
+        "label": "Blade Brand",
+        "placeholder": "e.g. Butterfly, Stiga, DHS",
+        "description": "Brand of the blade"
+      },
+      "bladeModel": {
+        "label": "Blade Model",
+        "placeholder": "e.g. VISCARIA, Zhang Jike ALC",
+        "description": "Specific model of the blade"
+      },
+      "bladeWeightG": {
+        "label": "Blade Weight (g)",
+        "placeholder": "e.g. 85",
+        "description": "Blade weight in grams (typically 70-100g)"
+      },
+      "handleType": { "label": "Handle Type", "description": "Grip style of the paddle" },
+      "forehandRubber": {
+        "label": "Forehand Rubber",
+        "placeholder": "e.g. Skyline 3, Hurricane 3",
+        "description": "Rubber used on the forehand side"
+      },
+      "backhandRubber": {
+        "label": "Backhand Rubber",
+        "placeholder": "e.g. Donic F1, Xiom Vega",
+        "description": "Rubber used on the backhand side"
+      },
+      "rubberThicknessMm": {
+        "label": "Sponge Thickness (mm)",
+        "placeholder": "e.g. 2.1",
+        "description": "Sponge thickness in mm (typically 1.5-2.5mm)"
+      },
+      "bladeSpeed": {
+        "label": "Speed (1-10)",
+        "placeholder": "e.g. 8",
+        "description": "Blade speed rating, 1 = slowest, 10 = fastest"
+      },
+      "bladeControl": {
+        "label": "Control (1-10)",
+        "placeholder": "e.g. 7",
+        "description": "Blade control rating, 1 = lowest, 10 = highest"
+      },
+      "purchaseDate": { "label": "Purchase Date", "description": "Date the paddle was purchased" },
+      "purchasePrice": {
+        "label": "Purchase Price (¥)",
+        "placeholder": "e.g. 800",
+        "description": "Price paid for the paddle"
+      },
+      "currentValue": {
+        "label": "Current Value (¥)",
+        "placeholder": "e.g. 600",
+        "description": "Current market value of the paddle"
+      },
+      "status": { "label": "Status", "description": "Current status of the paddle" },
+      "condition": {
+        "label": "Condition",
+        "placeholder": "e.g. Good, minor wear",
+        "description": "Physical condition of the paddle"
+      },
+      "location": {
+        "label": "Location",
+        "placeholder": "e.g. Racket bag, locker",
+        "description": "Where the paddle is currently stored"
+      },
+      "notes": {
+        "label": "Notes",
+        "placeholder": "Other notes",
+        "description": "Any other information to record"
+      },
+      "mainImage": {
+        "label": "Main Image",
+        "placeholder": "Main image URL",
+        "description": "Primary display image of the paddle"
+      },
+      "attachmentImages": {
+        "label": "Attachment Images",
+        "placeholder": "One image URL per line",
+        "description": "Other images of the paddle (details, setup, etc.)"
+      }
+    },
+    "enums": {
+      "status": {
+        "ACTIVE": "In Use",
+        "RETIRED": "Retired",
+        "FOR_SALE": "For Sale",
+        "SOLD": "Sold",
+        "DISPLAY": "On Display"
+      },
+      "handleType": {
+        "FL": "Shakehand (FL)",
+        "ST": "Straight (ST)",
+        "CS": "Chinese Penhold (CS)",
+        "AN": "Anatomic (AN)"
+      }
+    }
+  },
+  "antiques": {
+    "title": "Antiques",
+    "count": "{count} pieces in total",
+    "notFound": "Antique not found",
+    "searchPlaceholder": "Search by name, material, or notes...",
+    "actions": {
+      "add": "Add Antique"
+    },
+    "empty": {
+      "title": "No antiques yet"
+    },
+    "dialogs": {
+      "createTitle": "Add Antique",
+      "createDesc": "Register a new antique piece",
+      "editTitle": "Edit Antique",
+      "editDesc": "Update antique information",
+      "deleteConfirm": "Are you sure you want to delete this antique? This action cannot be undone."
+    },
+    "sections": {
+      "basicInfo": "Basic Information",
+      "dimensions": "Dimensions",
+      "certification": "Condition & Certification",
+      "value": "Value Information",
+      "storage": "Storage",
       "notes": "Notes"
+    },
+    "fields": {
+      "itemNumber": { "label": "Item No.", "description": "Auto-generated unique number" },
+      "name": {
+        "label": "Name",
+        "placeholder": "e.g. Qing Dynasty Hetian Jade Pendant",
+        "description": "Name or description of the piece"
+      },
+      "category": { "label": "Category", "description": "Primary category of the antique" },
+      "material": {
+        "label": "Material",
+        "placeholder": "e.g. Hetian white jade, red sandalwood",
+        "description": "Specific material of the antique"
+      },
+      "era": {
+        "label": "Era",
+        "placeholder": "e.g. Qing, Republican, Modern",
+        "description": "Period when the piece was made"
+      },
+      "dynasty": {
+        "label": "Dynasty",
+        "placeholder": "e.g. Qing, Ming",
+        "description": "Dynasty the piece belongs to (if applicable)"
+      },
+      "lengthCm": {
+        "label": "Length (cm)",
+        "placeholder": "e.g. 10.5",
+        "description": "Length of the antique"
+      },
+      "widthCm": {
+        "label": "Width (cm)",
+        "placeholder": "e.g. 5.2",
+        "description": "Width of the antique"
+      },
+      "heightCm": {
+        "label": "Height (cm)",
+        "placeholder": "e.g. 3.8",
+        "description": "Height of the antique"
+      },
+      "weightG": {
+        "label": "Weight (g)",
+        "placeholder": "e.g. 125.5",
+        "description": "Weight of the antique"
+      },
+      "condition": {
+        "label": "Condition",
+        "placeholder": "e.g. Intact, natural patina, light wear",
+        "description": "Preservation state and condition"
+      },
+      "certificate": {
+        "label": "Certificate",
+        "placeholder": "e.g. NGTC certificate",
+        "description": "Certification information"
+      },
+      "appraisalDate": {
+        "label": "Appraisal Date",
+        "description": "Date of appraisal or valuation"
+      },
+      "appraisalBy": {
+        "label": "Appraiser",
+        "placeholder": "e.g. Palace Museum expert",
+        "description": "Institution or expert who appraised the piece"
+      },
+      "purchasePrice": {
+        "label": "Purchase Price (¥)",
+        "placeholder": "e.g. 50000",
+        "description": "Price paid at purchase"
+      },
+      "acquiredFrom": {
+        "label": "Acquired From",
+        "placeholder": "e.g. Auction house, antique market, gift",
+        "description": "Source of the antique"
+      },
+      "acquiredDate": {
+        "label": "Acquired Date",
+        "description": "Date the piece was purchased or acquired"
+      },
+      "currentValue": {
+        "label": "Current Value (¥)",
+        "placeholder": "e.g. 80000",
+        "description": "Estimated current market value"
+      },
+      "estimatedValue": {
+        "label": "Estimated Value (¥)",
+        "placeholder": "e.g. 100000",
+        "description": "Professionally appraised value"
+      },
+      "status": { "label": "Status", "description": "Current status of the antique" },
+      "location": {
+        "label": "Location",
+        "placeholder": "e.g. Study cabinet, safe",
+        "description": "Where the antique is stored"
+      },
+      "notes": {
+        "label": "Notes",
+        "placeholder": "Other notes",
+        "description": "Any other information to record"
+      },
+      "mainImage": {
+        "label": "Main Image",
+        "placeholder": "Main image URL",
+        "description": "Primary display image of the antique"
+      },
+      "attachmentImages": {
+        "label": "Attachment Images",
+        "placeholder": "One image URL per line",
+        "description": "Other images of the antique (details, etc.)"
+      }
+    },
+    "enums": {
+      "category": {
+        "JADE": "Jade",
+        "WOOD": "Wood",
+        "CERAMIC": "Ceramic",
+        "METAL": "Metal",
+        "STONE": "Stone",
+        "PAPER": "Paper",
+        "OTHER": "Other"
+      },
+      "status": {
+        "COLLECTION": "In Collection",
+        "FOR_SALE": "For Sale",
+        "SOLD": "Sold",
+        "DISPLAY": "On Display",
+        "APPRAISAL": "Under Appraisal"
+      }
+    }
+  },
+  "maps": {
+    "title": "Maps",
+    "count": "{count} maps in total",
+    "selectedInfo": "{count} selected",
+    "notFound": "Map not found",
+    "searchPlaceholder": "Search maps...",
+    "actions": {
+      "add": "Add Map",
+      "selectAll": "Select All",
+      "clearSelection": "Clear Selection",
+      "batchDelete": "Delete Selected"
+    },
+    "empty": {
+      "title": "No maps yet",
+      "description": "Click \"Add Map\" to get started"
+    },
+    "dialogs": {
+      "createTitle": "Add Map",
+      "createDesc": "Register a new map",
+      "editTitle": "Edit Map",
+      "editDesc": "Update map information",
+      "deleteConfirm": "Are you sure you want to delete this map? This action cannot be undone.",
+      "batchDeleteConfirm": "Are you sure you want to delete the {count} selected maps? This action cannot be undone."
+    },
+    "sections": {
+      "images": "Images",
+      "basicInfo": "Basic Information",
+      "geography": "Geographic Information",
+      "condition": "Condition & Edition",
+      "value": "Value Information",
+      "storage": "Storage",
+      "notes": "Notes",
+      "metadata": "Metadata"
+    },
+    "fields": {
+      "itemNumber": { "label": "Item No.", "description": "Auto-generated unique number" },
+      "name": {
+        "label": "Map Name",
+        "placeholder": "e.g. Beijing City Map",
+        "description": "Name or title of the map"
+      },
+      "mapType": { "label": "Map Type", "description": "Type classification of the map" },
+      "scale": {
+        "label": "Scale",
+        "placeholder": "e.g. 1:50000",
+        "description": "Scale of the map"
+      },
+      "publishedYear": {
+        "label": "Published Year",
+        "placeholder": "e.g. 1980",
+        "description": "Year the map was published"
+      },
+      "publisher": {
+        "label": "Publisher",
+        "placeholder": "e.g. SinoMaps Press",
+        "description": "Organization or person who published the map"
+      },
+      "material": { "label": "Material", "description": "Material of the map" },
+      "widthCm": {
+        "label": "Width (cm)",
+        "placeholder": "e.g. 60",
+        "description": "Width of the map in centimeters"
+      },
+      "heightCm": {
+        "label": "Height (cm)",
+        "placeholder": "e.g. 80",
+        "description": "Height of the map in centimeters"
+      },
+      "region": {
+        "label": "Region",
+        "placeholder": "e.g. North China",
+        "description": "Geographic region covered by the map"
+      },
+      "country": {
+        "label": "Country",
+        "placeholder": "e.g. China",
+        "description": "Country the map belongs to or covers"
+      },
+      "language": {
+        "label": "Language",
+        "placeholder": "e.g. Chinese",
+        "description": "Language used for map labels"
+      },
+      "condition": {
+        "label": "Condition",
+        "placeholder": "e.g. Well preserved, light edge wear",
+        "description": "Preservation state of the map"
+      },
+      "isOriginal": {
+        "label": "Original",
+        "description": "Whether the map is an original (not a reproduction)"
+      },
+      "edition": {
+        "label": "Edition",
+        "placeholder": "e.g. First edition",
+        "description": "Edition information of the map"
+      },
+      "acquiredDate": {
+        "label": "Acquired Date",
+        "description": "Date the map was acquired"
+      },
+      "purchasePrice": {
+        "label": "Purchase Price",
+        "placeholder": "e.g. 500",
+        "description": "Price paid for the map"
+      },
+      "currentValue": {
+        "label": "Current Value",
+        "placeholder": "e.g. 800",
+        "description": "Current estimated value of the map"
+      },
+      "status": { "label": "Status", "description": "Current status of the map" },
+      "location": {
+        "label": "Location",
+        "placeholder": "e.g. Study bookcase",
+        "description": "Where the map is stored"
+      },
+      "notes": {
+        "label": "Notes",
+        "placeholder": "Other notes",
+        "description": "Any other information to record"
+      },
+      "mainImage": {
+        "label": "Main Image",
+        "placeholder": "Main image URL",
+        "description": "Primary display image of the map"
+      },
+      "attachmentImages": {
+        "label": "Attachment Images",
+        "placeholder": "One image URL per line",
+        "description": "Other images of the map (details, reverse, etc.)"
+      }
+    },
+    "enums": {
+      "mapType": {
+        "TOPOGRAPHIC": "Topographic",
+        "ROAD": "Road",
+        "CITY": "City",
+        "HISTORICAL": "Historical",
+        "THEMATIC": "Thematic",
+        "NAUTICAL": "Nautical",
+        "AERONAUTICAL": "Aeronautical",
+        "OTHER": "Other"
+      },
+      "material": {
+        "PAPER": "Paper",
+        "CLOTH": "Cloth",
+        "DIGITAL": "Digital",
+        "OTHER": "Other"
+      },
+      "status": {
+        "COLLECTION": "In Collection",
+        "FOR_SALE": "For Sale",
+        "SOLD": "Sold",
+        "DISPLAY": "On Display",
+        "FRAMED": "Framed"
+      },
+      "isOriginal": {
+        "true": "Yes",
+        "false": "No"
+      }
+    },
+    "labels": {
+      "valueChange": "Value Change",
+      "widthOnly": "W {width} cm",
+      "heightOnly": "H {height} cm"
+    }
+  },
+  "spirits": {
+    "title": "Spirits Collection",
+    "count": "{count} bottles in total",
+    "notFound": "Spirit not found",
+    "searchPlaceholder": "Name, brand, distillery...",
+    "actions": {
+      "add": "Add Spirit"
+    },
+    "empty": {
+      "title": "No spirits yet",
+      "description": "Click \"Add Spirit\" in the top right to start your collection"
+    },
+    "dialogs": {
+      "createTitle": "Add Spirit",
+      "createDesc": "Register a new bottle",
+      "editTitle": "Edit Spirit",
+      "editDesc": "Update spirit information",
+      "deleteConfirm": "Are you sure you want to delete this spirit? This action cannot be undone."
+    },
+    "fields": {
+      "itemNumber": { "label": "Item No.", "description": "Auto-generated unique number" },
+      "name": {
+        "label": "Name",
+        "placeholder": "e.g. Macallan 18 Year Old",
+        "description": "Name of the bottle"
+      },
+      "spiritType": { "label": "Type", "description": "Type of the spirit" },
+      "brand": {
+        "label": "Brand",
+        "placeholder": "e.g. Macallan, Hennessy",
+        "description": "Brand of the spirit"
+      },
+      "distillery": {
+        "label": "Distillery",
+        "placeholder": "e.g. The Macallan Distillery",
+        "description": "Distillery or winery that produced it"
+      },
+      "region": {
+        "label": "Region",
+        "placeholder": "e.g. Speyside, Cognac",
+        "description": "Production region"
+      },
+      "country": {
+        "label": "Country",
+        "placeholder": "e.g. Scotland, France",
+        "description": "Country of production"
+      },
+      "vintage": {
+        "label": "Vintage",
+        "placeholder": "e.g. 2005",
+        "description": "Year of production"
+      },
+      "age": {
+        "label": "Age (years)",
+        "placeholder": "e.g. 18",
+        "description": "Aging time in years"
+      },
+      "abv": {
+        "label": "ABV (%)",
+        "placeholder": "e.g. 43.0",
+        "description": "Alcohol by volume"
+      },
+      "volumeMl": {
+        "label": "Volume (ml)",
+        "placeholder": "e.g. 700",
+        "description": "Bottle volume"
+      },
+      "bottleNumber": {
+        "label": "Bottle Number",
+        "placeholder": "e.g. 123/500",
+        "description": "Numbered bottle for limited editions"
+      },
+      "limitedEdition": {
+        "label": "Limited Edition",
+        "description": "Whether this is a limited edition"
+      },
+      "caskType": {
+        "label": "Cask Type",
+        "placeholder": "e.g. Sherry Oak, Bourbon",
+        "description": "Type of oak cask used for aging"
+      },
+      "bottlingDate": { "label": "Bottling Date", "description": "Date of bottling" },
+      "acquiredDate": { "label": "Acquired Date", "description": "Date acquired or purchased" },
+      "purchasePrice": {
+        "label": "Purchase Price",
+        "placeholder": "e.g. 2500",
+        "description": "Price paid at purchase"
+      },
+      "currentValue": {
+        "label": "Current Value",
+        "placeholder": "e.g. 3500",
+        "description": "Current market value"
+      },
+      "estimatedValue": {
+        "label": "Estimated Value",
+        "placeholder": "e.g. 4000",
+        "description": "Professionally estimated value"
+      },
+      "status": { "label": "Status", "description": "Status of the spirit" },
+      "bottleStatus": { "label": "Bottle Status", "description": "Seal state of the bottle" },
+      "storageCondition": {
+        "label": "Storage Condition",
+        "placeholder": "e.g. Constant 18-20°C, dark, 60% humidity",
+        "description": "Storage environment and conditions"
+      },
+      "location": {
+        "label": "Location",
+        "placeholder": "e.g. Cabinet A, shelf 2",
+        "description": "Exact storage location"
+      },
+      "tastingNotes": {
+        "label": "Tasting Notes",
+        "placeholder": "Aroma, palate, finish and other notes",
+        "description": "Tasting notes and impressions"
+      },
+      "notes": {
+        "label": "Notes",
+        "placeholder": "Other notes",
+        "description": "Any other information to record"
+      },
+      "mainImage": {
+        "label": "Main Image",
+        "placeholder": "Main image URL",
+        "description": "Primary display image of the bottle"
+      },
+      "attachmentImages": {
+        "label": "Attachment Images",
+        "placeholder": "One image URL per line",
+        "description": "Other images of the bottle (details, label, etc.)"
+      }
+    },
+    "enums": {
+      "spiritType": {
+        "WHISKY": "Whisky",
+        "COGNAC": "Cognac",
+        "BRANDY": "Brandy",
+        "RUM": "Rum",
+        "VODKA": "Vodka",
+        "GIN": "Gin",
+        "TEQUILA": "Tequila",
+        "BAIJIU": "Baijiu",
+        "WINE": "Wine",
+        "OTHER": "Other"
+      },
+      "status": {
+        "COLLECTION": "In Collection",
+        "AGING": "Aging",
+        "FOR_SALE": "For Sale",
+        "SOLD": "Sold",
+        "OPENED": "Opened",
+        "EMPTY": "Finished"
+      },
+      "bottleStatus": {
+        "SEALED": "Sealed",
+        "OPENED": "Opened",
+        "EMPTY": "Empty"
+      }
     }
   },
   "cards": {
@@ -1413,7 +1980,11 @@
     },
     "modules": {
       "quilts": "Quilts",
-      "cards": "Trading Cards"
+      "cards": "Trading Cards",
+      "spirits": "Spirits",
+      "paddles": "Table Tennis Paddles",
+      "antiques": "Antiques",
+      "maps": "Maps"
     },
     "dialogs": {
       "create": {
@@ -1510,6 +2081,20 @@
     "quiltManagement": "Quilt Management",
     "version": "Version",
     "failedToLogout": "Failed to logout. Please try again.",
+    "all": "All",
+    "saving": "Saving...",
+    "selectPlaceholder": "Select",
+    "backToList": "Back to list",
+    "searching": "Searching...",
+    "notRecorded": "Not recorded",
+    "createdAt": "Created",
+    "updatedAt": "Updated",
+    "years": "yrs",
+    "pagination": {
+      "prev": "Previous",
+      "next": "Next",
+      "pageInfo": "Page {page} of {totalPages}"
+    },
     "toggleTheme": "Toggle theme",
     "toggleSidebar": "Toggle Sidebar",
     "theme": {

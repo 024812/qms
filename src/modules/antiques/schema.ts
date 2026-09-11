@@ -81,74 +81,85 @@ export const antiqueAttributesSchema = z.object({
 
   category: AntiqueCategorySchema,
 
-  material: z.string().max(100, 'Material description too long').optional(),
+  material: z.string().max(100, 'Material description too long').optional().nullable(),
 
-  era: z.string().max(100, 'Era description too long').optional(),
+  era: z.string().max(100, 'Era description too long').optional().nullable(),
 
-  dynasty: z.string().max(100, 'Dynasty name too long').optional(),
+  dynasty: z.string().max(100, 'Dynasty name too long').optional().nullable(),
 
   // Dimensions (all optional as not all antiques have measurements)
   lengthCm: z
     .number()
     .positive('Length must be positive')
     .max(10000, 'Length too large')
-    .optional(),
+    .optional()
+    .nullable(),
 
-  widthCm: z.number().positive('Width must be positive').max(10000, 'Width too large').optional(),
+  widthCm: z
+    .number()
+    .positive('Width must be positive')
+    .max(10000, 'Width too large')
+    .optional()
+    .nullable(),
 
   heightCm: z
     .number()
     .positive('Height must be positive')
     .max(10000, 'Height too large')
-    .optional(),
+    .optional()
+    .nullable(),
 
   weightG: z
     .number()
     .positive('Weight must be positive')
     .max(1000000, 'Weight too large')
-    .optional(),
+    .optional()
+    .nullable(),
 
   // Condition and Certification
-  condition: z.string().max(500, 'Condition description too long').optional(),
+  condition: z.string().max(500, 'Condition description too long').optional().nullable(),
 
-  certificate: z.string().max(200, 'Certificate info too long').optional(),
+  certificate: z.string().max(200, 'Certificate info too long').optional().nullable(),
 
-  appraisalDate: z.coerce.date().optional(),
+  appraisalDate: z.coerce.date().optional().nullable(),
 
-  appraisalBy: z.string().max(200, 'Appraiser name too long').optional(),
+  appraisalBy: z.string().max(200, 'Appraiser name too long').optional().nullable(),
 
   // Value Information
   purchasePrice: z
     .number()
     .nonnegative('Purchase price cannot be negative')
     .max(100000000, 'Purchase price too large')
-    .optional(),
+    .optional()
+    .nullable(),
 
-  acquiredFrom: z.string().max(200, 'Acquisition source too long').optional(),
+  acquiredFrom: z.string().max(200, 'Acquisition source too long').optional().nullable(),
 
-  acquiredDate: z.coerce.date().optional(),
+  acquiredDate: z.coerce.date().optional().nullable(),
 
   currentValue: z
     .number()
     .nonnegative('Current value cannot be negative')
     .max(100000000, 'Current value too large')
-    .optional(),
+    .optional()
+    .nullable(),
 
   estimatedValue: z
     .number()
     .nonnegative('Estimated value cannot be negative')
     .max(100000000, 'Estimated value too large')
-    .optional(),
+    .optional()
+    .nullable(),
 
   // Storage and Status
   status: AntiqueStatusSchema.default('COLLECTION'),
 
-  location: z.string().max(200, 'Location description too long').optional(),
+  location: z.string().max(200, 'Location description too long').optional().nullable(),
 
-  notes: z.string().max(2000, 'Notes too long').optional(),
+  notes: z.string().max(2000, 'Notes too long').optional().nullable(),
 
   // Images
-  mainImage: z.string().url('Invalid image URL').optional().or(z.literal('')),
+  mainImage: z.string().url('Invalid image URL').optional().or(z.literal('')).nullable(),
 
   attachmentImages: z.array(z.string().url('Invalid image URL')).optional().default([]),
 });

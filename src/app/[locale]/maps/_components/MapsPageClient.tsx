@@ -1,7 +1,18 @@
 'use client';
 
-import React, { useState, useTransition } from 'react';
+import { useState, useTransition } from 'react';
+import { useRouter } from '@/i18n/routing';
+import { useTranslations } from 'next-intl';
+import { Loader2, Plus, Search, Trash2 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { ModuleItemDialog } from '@/modules/core/ui/ModuleItemDialog';
+import { mapsModule } from '@/modules/maps/config';
+import { createMapAction, deleteMapAction } from '@/app/actions/maps';
+import type { CreateMapInput } from '@/modules/maps/schema';
 import type { MapDTO } from '@/lib/data/maps';
+import { useLocalizedFields } from '@/hooks/useLocalizedFields';
+import { toast } from '@/lib/toast';
 
 interface MapsPageClientProps {
   initialData: {
@@ -26,43 +37,69 @@ interface MapsPageClientProps {
   initialSearchTerm: string;
 }
 
+const PAGE_SIZE = 20;
+
+const MAP_TYPE_VALUES = [
+  'TOPOGRAPHIC',
+  'ROAD',
+  'CITY',
+  'HISTORICAL',
+  'THEMATIC',
+  'NAUTICAL',
+  'AERONAUTICAL',
+  'OTHER',
+] as const;
+
+const STATUS_VALUES = ['COLLECTION', 'FOR_SALE', 'SOLD', 'DISPLAY', 'FRAMED'] as const;
+
 export function MapsPageClient({
   initialData,
   initialSearchParams,
   initialSearchTerm,
 }: MapsPageClientProps) {
+  const t = useTranslations('maps');
+  const tc = useTranslations('common');
+  const ta = useTranslations('actions');
+  const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [searchTerm, setSearchTerm] = useState(initialSearchTerm);
   const [selectedMapIds, setSelectedMapIds] = useState<Set<string>>(new Set());
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [isBatchDeleting, setIsBatchDeleting] = useState(false);
 
-  const handleSearch = (value: string) => {
-    setSearchTerm(value);
+  const formFields = useLocalizedFields('maps', mapsModule.formFields);
+
+  const currentOffset = initialSearchParams?.skip ?? 0;
+  const currentPage = Math.floor(currentOffset / PAGE_SIZE) + 1;
+  const totalPages = Math.max(1, Math.ceil(initialData.total / PAGE_SIZE));
+
+  const updateUrl = (params: Record<string, string | undefined>) => {
+    const search = new URLSearchParams();
+    const merged: Record<string, string | undefined> = {
+      search: searchTerm || undefined,
+      mapType: initialSearchParams?.filters?.mapType,
+      status: initialSearchParams?.filters?.status,
+      ...params,
+    };
+    Object.entries(merged).forEach(([key, value]) => {
+      if (value) search.set(key, value);
+    });
     startTransition(() => {
-      const params = new URLSearchParams(window.location.search);
-      if (value) {
-        params.set('search', value);
-      } else {
-        params.delete('search');
-      }
-      params.set('offset', '0'); // Reset to first page
-      window.history.pushState(null, '', `?${params.toString()}`);
-      window.location.reload();
+      router.push(`/maps?${search.toString()}`);
     });
   };
 
+  const handleSearchSubmit = (event: React.FormEvent) => {
+    event.preventDefault();
+    updateUrl({ offset: '0' });
+  };
+
   const handleFilterChange = (key: string, value: string) => {
-    startTransition(() => {
-      const params = new URLSearchParams(window.location.search);
-      if (value) {
-        params.set(key, value);
-      } else {
-        params.delete(key);
-      }
-      params.set('offset', '0'); // Reset to first page
-      window.history.pushState(null, '', `?${params.toString()}`);
-      window.location.reload();
-    });
+    updateUrl({ [key]: value || undefined, offset: '0' });
+  };
+
+  const handlePageChange = (page: number) => {
+    updateUrl({ offset: String((page - 1) * PAGE_SIZE) });
   };
 
   const toggleMapSelection = (id: string) => {
@@ -85,155 +122,212 @@ export function MapsPageClient({
     setSelectedMapIds(new Set());
   };
 
+  const handleCreate = async (values: Record<string, unknown>) => {
+    const result = await createMapAction(values as CreateMapInput);
+    if (!result.success) {
+      return { success: false, error: result.error };
+    }
+    router.refresh();
+    return { success: true };
+  };
+
+  const handleBatchDelete = async () => {
+    if (selectedMapIds.size === 0) return;
+    // eslint-disable-next-line no-alert
+    if (!window.confirm(t('dialogs.batchDeleteConfirm', { count: selectedMapIds.size }))) {
+      return;
+    }
+
+    setIsBatchDeleting(true);
+    try {
+      const results = await Promise.all(Array.from(selectedMapIds).map(id => deleteMapAction(id)));
+      const failed = results.find(result => !result.success);
+      if (failed && !failed.success) {
+        throw new Error(failed.error.message);
+      }
+      toast.success(ta('deletedSuccessfully'));
+      setSelectedMapIds(new Set());
+      router.refresh();
+    } catch (error) {
+      toast.error(ta('failedToDelete'), error instanceof Error ? error.message : undefined);
+    } finally {
+      setIsBatchDeleting(false);
+    }
+  };
+
   return (
     <div className="container mx-auto px-4 py-8">
       {/* Header */}
       <div className="mb-8">
-        <h1 className="text-3xl font-bold mb-2">地图管理</h1>
-        <p className="text-gray-600">
-          共 {initialData.total} 张地图
-          {selectedMapIds.size > 0 && ` • 已选择 ${selectedMapIds.size} 项`}
+        <h1 className="mb-2 text-3xl font-bold">{t('title')}</h1>
+        <p className="text-muted-foreground">
+          {t('count', { count: initialData.total })}
+          {selectedMapIds.size > 0 && ` • ${t('selectedInfo', { count: selectedMapIds.size })}`}
         </p>
       </div>
 
       {/* Toolbar */}
-      <div className="mb-6 flex gap-4 flex-wrap items-center">
+      <div className="mb-6 flex flex-wrap items-center gap-4">
         {/* Search */}
-        <div className="flex-1 min-w-[200px]">
-          <input
-            type="text"
-            placeholder="搜索地图..."
-            value={searchTerm}
-            onChange={e => setSearchTerm(e.target.value)}
-            onKeyDown={e => {
-              if (e.key === 'Enter') {
-                handleSearch(searchTerm);
-              }
-            }}
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
-        </div>
+        <form onSubmit={handleSearchSubmit} className="min-w-[200px] flex-1">
+          <div className="flex gap-2">
+            <Input
+              type="text"
+              placeholder={t('searchPlaceholder')}
+              value={searchTerm}
+              onChange={e => setSearchTerm(e.target.value)}
+              disabled={isPending}
+            />
+            <Button type="submit" variant="secondary" disabled={isPending}>
+              <Search className="mr-2 h-4 w-4" />
+              {tc('search')}
+            </Button>
+          </div>
+        </form>
 
         {/* Filters */}
         <select
           value={initialSearchParams?.filters?.mapType || ''}
           onChange={e => handleFilterChange('mapType', e.target.value)}
-          className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+          disabled={isPending}
+          className="rounded-md border border-input bg-background px-4 py-2 text-sm"
         >
-          <option value="">所有类型</option>
-          <option value="TOPOGRAPHIC">地形图</option>
-          <option value="ROAD">道路图</option>
-          <option value="CITY">城市图</option>
-          <option value="HISTORICAL">历史地图</option>
-          <option value="THEMATIC">专题地图</option>
-          <option value="NAUTICAL">航海图</option>
-          <option value="AERONAUTICAL">航空图</option>
-          <option value="OTHER">其他</option>
+          <option value="">{tc('all')}</option>
+          {MAP_TYPE_VALUES.map(value => (
+            <option key={value} value={value}>
+              {t(`enums.mapType.${value}`)}
+            </option>
+          ))}
         </select>
 
         <select
           value={initialSearchParams?.filters?.status || ''}
           onChange={e => handleFilterChange('status', e.target.value)}
-          className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+          disabled={isPending}
+          className="rounded-md border border-input bg-background px-4 py-2 text-sm"
         >
-          <option value="">所有状态</option>
-          <option value="COLLECTION">收藏中</option>
-          <option value="FOR_SALE">待售</option>
-          <option value="SOLD">已售出</option>
-          <option value="DISPLAY">展示中</option>
-          <option value="FRAMED">已装裱</option>
+          <option value="">{tc('all')}</option>
+          {STATUS_VALUES.map(value => (
+            <option key={value} value={value}>
+              {t(`enums.status.${value}`)}
+            </option>
+          ))}
         </select>
 
         {/* Actions */}
-        <button
-          onClick={() => setIsCreateDialogOpen(true)}
-          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-        >
-          添加地图
-        </button>
+        <Button onClick={() => setIsCreateDialogOpen(true)}>
+          <Plus className="mr-2 h-4 w-4" />
+          {t('actions.add')}
+        </Button>
 
         {selectedMapIds.size > 0 && (
           <>
-            <button
-              onClick={clearSelection}
-              className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors"
-            >
-              取消选择
-            </button>
-            <button
-              onClick={() => {
-                if (confirm(`确定要删除选中的 ${selectedMapIds.size} 张地图吗？`)) {
-                  // TODO: Implement batch delete
-                  alert('批量删除功能待实现');
-                }
-              }}
-              className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
-            >
-              批量删除
-            </button>
+            <Button variant="outline" onClick={clearSelection} disabled={isBatchDeleting}>
+              {t('actions.clearSelection')}
+            </Button>
+            <Button variant="destructive" onClick={handleBatchDelete} disabled={isBatchDeleting}>
+              {isBatchDeleting ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <Trash2 className="mr-2 h-4 w-4" />
+              )}
+              {t('actions.batchDelete')}
+            </Button>
           </>
         )}
       </div>
 
       {/* Loading State */}
-      {isPending && <div className="mb-4 p-4 bg-blue-50 text-blue-700 rounded-lg">加载中...</div>}
+      {isPending && (
+        <div className="mb-4 rounded-lg bg-muted p-4 text-center text-muted-foreground">
+          {tc('loading')}
+        </div>
+      )}
 
       {/* Map Grid */}
       {initialData.maps.length === 0 ? (
-        <div className="text-center py-12 text-gray-500">
-          <p className="text-xl mb-2">暂无地图</p>
-          <p className="text-sm">点击&quot;添加地图&quot;按钮开始添加</p>
+        <div className="py-12 text-center text-muted-foreground">
+          <p className="mb-2 text-xl">{t('empty.title')}</p>
+          <p className="text-sm">{t('empty.description')}</p>
         </div>
       ) : (
         <>
           {/* Selection Controls */}
           <div className="mb-4 flex gap-2">
             <button onClick={selectAll} className="text-sm text-blue-600 hover:underline">
-              全选
+              {t('actions.selectAll')}
             </button>
             {selectedMapIds.size > 0 && (
               <button onClick={clearSelection} className="text-sm text-gray-600 hover:underline">
-                清除选择
+                {t('actions.clearSelection')}
               </button>
             )}
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {initialData.maps.map(map => (
               <div
                 key={map.id}
-                className={`border rounded-lg p-4 hover:shadow-md transition-shadow cursor-pointer ${
-                  selectedMapIds.has(map.id) ? 'border-blue-500 bg-blue-50' : 'border-gray-200'
+                className={`relative cursor-pointer rounded-lg border p-4 transition-shadow hover:shadow-md ${
+                  selectedMapIds.has(map.id)
+                    ? 'border-blue-500 bg-blue-50 dark:bg-blue-950/20'
+                    : 'border-gray-200'
                 }`}
-                onClick={() => toggleMapSelection(map.id)}
+                onClick={() => router.push(`/maps/${map.id}`)}
               >
+                <label
+                  className="absolute right-3 top-3 z-10"
+                  onClick={event => event.stopPropagation()}
+                >
+                  <input
+                    type="checkbox"
+                    checked={selectedMapIds.has(map.id)}
+                    onChange={() => toggleMapSelection(map.id)}
+                    className="h-4 w-4 cursor-pointer rounded border-gray-300"
+                    aria-label={map.name}
+                  />
+                </label>
+
                 {/* Image */}
                 {map.mainImage && (
                   <div className="mb-3">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
                       src={map.mainImage}
                       alt={map.name}
-                      className="w-full h-48 object-cover rounded"
+                      className="h-48 w-full rounded object-cover"
                     />
                   </div>
                 )}
 
                 {/* Item Number */}
-                <div className="text-sm text-gray-500 mb-1">#{map.itemNumber}</div>
+                <div className="mb-1 text-sm text-muted-foreground">#{map.itemNumber}</div>
 
                 {/* Name */}
-                <h3 className="text-lg font-semibold mb-2 line-clamp-2">{map.name}</h3>
+                <h3 className="mb-2 line-clamp-2 text-lg font-semibold">{map.name}</h3>
 
                 {/* Details */}
-                <div className="text-sm text-gray-600 space-y-1">
-                  {map.region && <div>地区：{map.region}</div>}
-                  {map.publishedYear && <div>年份：{map.publishedYear}</div>}
-                  {map.publisher && <div className="line-clamp-1">出版社：{map.publisher}</div>}
+                <div className="space-y-1 text-sm text-muted-foreground">
+                  {map.region && (
+                    <div>
+                      {t('fields.region.label')}: {map.region}
+                    </div>
+                  )}
+                  {map.publishedYear && (
+                    <div>
+                      {t('fields.publishedYear.label')}: {map.publishedYear}
+                    </div>
+                  )}
+                  {map.publisher && (
+                    <div className="line-clamp-1">
+                      {t('fields.publisher.label')}: {map.publisher}
+                    </div>
+                  )}
                 </div>
 
                 {/* Location */}
                 {map.location && (
-                  <div className="mt-2 pt-2 border-t border-gray-200 text-xs text-gray-500">
+                  <div className="mt-2 border-t border-gray-200 pt-2 text-xs text-muted-foreground">
                     {map.location}
                   </div>
                 )}
@@ -241,39 +335,45 @@ export function MapsPageClient({
             ))}
           </div>
 
-          {/* Pagination Info */}
-          <div className="mt-6 text-center text-sm text-gray-600">
-            显示 {(initialSearchParams?.skip || 0) + 1} -{' '}
-            {Math.min(
-              (initialSearchParams?.skip || 0) + initialData.maps.length,
-              initialData.total
-            )}{' '}
-            / 共 {initialData.total} 项{initialData.hasMore && ' • 还有更多'}
-          </div>
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <div className="mt-6 flex items-center justify-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => handlePageChange(currentPage - 1)}
+                disabled={currentPage <= 1 || isPending}
+              >
+                {tc('pagination.prev')}
+              </Button>
+              <span className="text-sm text-muted-foreground">
+                {tc('pagination.pageInfo', { page: currentPage, totalPages })}
+              </span>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => handlePageChange(currentPage + 1)}
+                disabled={!initialData.hasMore || isPending}
+              >
+                {tc('pagination.next')}
+              </Button>
+            </div>
+          )}
         </>
       )}
 
-      {/* Create Dialog Placeholder */}
-      {isCreateDialogOpen && (
-        <div
-          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50"
-          onClick={() => setIsCreateDialogOpen(false)}
-        >
-          <div
-            className="bg-white rounded-lg p-6 max-w-2xl w-full"
-            onClick={e => e.stopPropagation()}
-          >
-            <h2 className="text-2xl font-bold mb-4">添加地图</h2>
-            <p className="text-gray-600 mb-4">表单功能待实现</p>
-            <button
-              onClick={() => setIsCreateDialogOpen(false)}
-              className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors"
-            >
-              关闭
-            </button>
-          </div>
-        </div>
-      )}
+      {/* Create Dialog */}
+      <ModuleItemDialog
+        open={isCreateDialogOpen}
+        onOpenChange={setIsCreateDialogOpen}
+        title={t('dialogs.createTitle')}
+        description={t('dialogs.createDesc')}
+        fields={formFields}
+        onSubmit={handleCreate}
+        successMessage={ta('createdSuccessfully')}
+        errorMessage={ta('failedToCreate')}
+        submitLabel={tc('create')}
+      />
     </div>
   );
 }

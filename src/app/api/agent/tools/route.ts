@@ -17,6 +17,28 @@ import {
 } from '@/lib/api/response';
 import { getCardById, getCards, saveCard } from '@/lib/data/cards';
 import {
+  countAntiques,
+  createAntique,
+  getAntiques,
+  getAntiqueById,
+  updateAntique,
+} from '@/lib/data/antiques';
+import { countMaps, createMap, getMapById, getMaps, updateMap } from '@/lib/data/maps';
+import {
+  countPaddles,
+  createPaddle,
+  getPaddleById,
+  getPaddles,
+  updatePaddle,
+} from '@/lib/data/paddles';
+import {
+  countSpirits,
+  createSpirit,
+  getSpiritById,
+  getSpirits,
+  updateSpirit,
+} from '@/lib/data/spirits';
+import {
   countQuilts,
   getQuiltById,
   getQuilts,
@@ -48,6 +70,22 @@ const toolSchema = z.object({
     'cards.get',
     'cards.create',
     'cards.update',
+    'paddles.search',
+    'paddles.get',
+    'paddles.create',
+    'paddles.update',
+    'antiques.search',
+    'antiques.get',
+    'antiques.create',
+    'antiques.update',
+    'maps.search',
+    'maps.get',
+    'maps.create',
+    'maps.update',
+    'spirits.search',
+    'spirits.get',
+    'spirits.create',
+    'spirits.update',
     'settings.read',
   ]),
   input: z.record(z.string(), z.unknown()).default({}),
@@ -166,6 +204,227 @@ const cardWriteSchema = z.object({
   attachmentImages: attachmentImagesSchema.nullable().optional(),
 });
 
+const paddleSearchSchema = z.object({
+  status: z.enum(['ACTIVE', 'RETIRED', 'FOR_SALE', 'SOLD', 'DISPLAY']).optional(),
+  bladeBrand: z.string().optional(),
+  handleType: z.enum(['FL', 'ST', 'CS', 'AN']).optional(),
+  search: z.string().optional(),
+  limit: z.coerce.number().int().min(1).max(100).optional(),
+  offset: z.coerce.number().int().min(0).optional(),
+  sortBy: z
+    .enum(['itemNumber', 'name', 'bladeBrand', 'bladeWeightG', 'createdAt', 'updatedAt'])
+    .optional(),
+  sortOrder: z.enum(['asc', 'desc']).optional(),
+});
+
+const paddleWriteSchema = z.object({
+  name: z.string().min(1),
+  bladeBrand: z.string().nullable().optional(),
+  bladeModel: z.string().nullable().optional(),
+  bladeWeightG: z.coerce.number().int().min(50).max(150).nullable().optional(),
+  handleType: z.enum(['FL', 'ST', 'CS', 'AN']).nullable().optional(),
+  forehandRubber: z.string().nullable().optional(),
+  backhandRubber: z.string().nullable().optional(),
+  rubberThicknessMm: z.coerce.number().min(0.5).max(4).nullable().optional(),
+  bladeSpeed: z.coerce.number().int().min(1).max(10).nullable().optional(),
+  bladeControl: z.coerce.number().int().min(1).max(10).nullable().optional(),
+  purchaseDate: z.coerce.date().nullable().optional(),
+  purchasePrice: z.coerce.number().min(0).nullable().optional(),
+  currentValue: z.coerce.number().min(0).nullable().optional(),
+  status: z.enum(['ACTIVE', 'RETIRED', 'FOR_SALE', 'SOLD', 'DISPLAY']).optional(),
+  condition: z.string().nullable().optional(),
+  location: z.string().nullable().optional(),
+  notes: z.string().nullable().optional(),
+  mainImage: imageReferenceSchema.nullable().optional(),
+  attachmentImages: attachmentImagesSchema.nullable().optional(),
+});
+
+const paddleUpdateSchema = paddleWriteSchema.partial().extend({ id: z.string().min(1) });
+
+const antiqueSearchSchema = z.object({
+  category: z.enum(['JADE', 'WOOD', 'CERAMIC', 'METAL', 'STONE', 'PAPER', 'OTHER']).optional(),
+  status: z.enum(['COLLECTION', 'FOR_SALE', 'SOLD', 'DISPLAY', 'APPRAISAL']).optional(),
+  era: z.string().optional(),
+  dynasty: z.string().optional(),
+  search: z.string().optional(),
+  minValue: z.coerce.number().min(0).optional(),
+  maxValue: z.coerce.number().min(0).optional(),
+  limit: z.coerce.number().int().min(1).max(100).optional(),
+  offset: z.coerce.number().int().min(0).optional(),
+  sortBy: z
+    .enum(['itemNumber', 'name', 'category', 'currentValue', 'createdAt', 'updatedAt'])
+    .optional(),
+  sortOrder: z.enum(['asc', 'desc']).optional(),
+});
+
+const antiqueWriteSchema = z.object({
+  name: z.string().min(1),
+  category: z.enum(['JADE', 'WOOD', 'CERAMIC', 'METAL', 'STONE', 'PAPER', 'OTHER']),
+  material: z.string().nullable().optional(),
+  era: z.string().nullable().optional(),
+  dynasty: z.string().nullable().optional(),
+  lengthCm: z.coerce.number().positive().nullable().optional(),
+  widthCm: z.coerce.number().positive().nullable().optional(),
+  heightCm: z.coerce.number().positive().nullable().optional(),
+  weightG: z.coerce.number().positive().nullable().optional(),
+  condition: z.string().nullable().optional(),
+  certificate: z.string().nullable().optional(),
+  appraisalDate: z.coerce.date().nullable().optional(),
+  appraisalBy: z.string().nullable().optional(),
+  purchasePrice: z.coerce.number().min(0).nullable().optional(),
+  acquiredFrom: z.string().nullable().optional(),
+  acquiredDate: z.coerce.date().nullable().optional(),
+  currentValue: z.coerce.number().min(0).nullable().optional(),
+  estimatedValue: z.coerce.number().min(0).nullable().optional(),
+  status: z.enum(['COLLECTION', 'FOR_SALE', 'SOLD', 'DISPLAY', 'APPRAISAL']).optional(),
+  location: z.string().nullable().optional(),
+  notes: z.string().nullable().optional(),
+  mainImage: imageReferenceSchema.nullable().optional(),
+  attachmentImages: attachmentImagesSchema.nullable().optional(),
+});
+
+const antiqueUpdateSchema = antiqueWriteSchema.partial().extend({ id: z.string().min(1) });
+
+const mapSearchSchema = z.object({
+  mapType: z
+    .enum([
+      'TOPOGRAPHIC',
+      'ROAD',
+      'CITY',
+      'HISTORICAL',
+      'THEMATIC',
+      'NAUTICAL',
+      'AERONAUTICAL',
+      'OTHER',
+    ])
+    .optional(),
+  status: z.enum(['COLLECTION', 'FOR_SALE', 'SOLD', 'DISPLAY', 'FRAMED']).optional(),
+  material: z.enum(['PAPER', 'CLOTH', 'DIGITAL', 'OTHER']).optional(),
+  region: z.string().optional(),
+  country: z.string().optional(),
+  search: z.string().optional(),
+  limit: z.coerce.number().int().min(1).max(100).optional(),
+  offset: z.coerce.number().int().min(0).optional(),
+  sortBy: z
+    .enum(['itemNumber', 'name', 'mapType', 'publishedYear', 'createdAt', 'updatedAt'])
+    .optional(),
+  sortOrder: z.enum(['asc', 'desc']).optional(),
+});
+
+const mapWriteSchema = z.object({
+  name: z.string().min(1),
+  mapType: z.enum([
+    'TOPOGRAPHIC',
+    'ROAD',
+    'CITY',
+    'HISTORICAL',
+    'THEMATIC',
+    'NAUTICAL',
+    'AERONAUTICAL',
+    'OTHER',
+  ]),
+  scale: z.string().nullable().optional(),
+  publishedYear: z.coerce
+    .number()
+    .int()
+    .min(1400)
+    .max(new Date().getFullYear())
+    .nullable()
+    .optional(),
+  publisher: z.string().nullable().optional(),
+  material: z.enum(['PAPER', 'CLOTH', 'DIGITAL', 'OTHER']).optional(),
+  widthCm: z.coerce.number().positive().nullable().optional(),
+  heightCm: z.coerce.number().positive().nullable().optional(),
+  region: z.string().nullable().optional(),
+  country: z.string().nullable().optional(),
+  language: z.string().nullable().optional(),
+  condition: z.string().nullable().optional(),
+  isOriginal: z.boolean().optional(),
+  edition: z.string().nullable().optional(),
+  acquiredDate: z.coerce.date().nullable().optional(),
+  purchasePrice: z.coerce.number().min(0).nullable().optional(),
+  currentValue: z.coerce.number().min(0).nullable().optional(),
+  status: z.enum(['COLLECTION', 'FOR_SALE', 'SOLD', 'DISPLAY', 'FRAMED']).optional(),
+  location: z.string().nullable().optional(),
+  notes: z.string().nullable().optional(),
+  mainImage: imageReferenceSchema.nullable().optional(),
+  attachmentImages: attachmentImagesSchema.nullable().optional(),
+});
+
+const mapUpdateSchema = mapWriteSchema.partial().extend({ id: z.string().min(1) });
+
+const spiritSearchSchema = z.object({
+  spiritType: z
+    .enum([
+      'WHISKY',
+      'COGNAC',
+      'BRANDY',
+      'RUM',
+      'VODKA',
+      'GIN',
+      'TEQUILA',
+      'BAIJIU',
+      'WINE',
+      'OTHER',
+    ])
+    .optional(),
+  status: z.enum(['COLLECTION', 'AGING', 'FOR_SALE', 'SOLD', 'OPENED', 'EMPTY']).optional(),
+  bottleStatus: z.enum(['SEALED', 'OPENED', 'EMPTY']).optional(),
+  brand: z.string().optional(),
+  country: z.string().optional(),
+  region: z.string().optional(),
+  limitedEdition: z.boolean().optional(),
+  search: z.string().optional(),
+  limit: z.coerce.number().int().min(1).max(100).optional(),
+  offset: z.coerce.number().int().min(0).optional(),
+  sortBy: z
+    .enum(['itemNumber', 'name', 'spiritType', 'vintage', 'age', 'createdAt', 'updatedAt'])
+    .optional(),
+  sortOrder: z.enum(['asc', 'desc']).optional(),
+});
+
+const spiritWriteSchema = z.object({
+  name: z.string().min(1),
+  spiritType: z.enum([
+    'WHISKY',
+    'COGNAC',
+    'BRANDY',
+    'RUM',
+    'VODKA',
+    'GIN',
+    'TEQUILA',
+    'BAIJIU',
+    'WINE',
+    'OTHER',
+  ]),
+  brand: z.string().nullable().optional(),
+  distillery: z.string().nullable().optional(),
+  region: z.string().nullable().optional(),
+  country: z.string().nullable().optional(),
+  vintage: z.coerce.number().int().min(1800).max(2100).nullable().optional(),
+  age: z.coerce.number().int().min(0).max(200).nullable().optional(),
+  abv: z.coerce.number().min(0).max(100).nullable().optional(),
+  volumeMl: z.coerce.number().int().min(1).nullable().optional(),
+  bottleNumber: z.string().nullable().optional(),
+  limitedEdition: z.boolean().optional(),
+  caskType: z.string().nullable().optional(),
+  bottlingDate: z.coerce.date().nullable().optional(),
+  acquiredDate: z.coerce.date().nullable().optional(),
+  purchasePrice: z.coerce.number().min(0).nullable().optional(),
+  currentValue: z.coerce.number().min(0).nullable().optional(),
+  estimatedValue: z.coerce.number().min(0).nullable().optional(),
+  status: z.enum(['COLLECTION', 'AGING', 'FOR_SALE', 'SOLD', 'OPENED', 'EMPTY']).optional(),
+  bottleStatus: z.enum(['SEALED', 'OPENED', 'EMPTY']).optional(),
+  storageCondition: z.string().nullable().optional(),
+  location: z.string().nullable().optional(),
+  tastingNotes: z.string().nullable().optional(),
+  notes: z.string().nullable().optional(),
+  mainImage: imageReferenceSchema.nullable().optional(),
+  attachmentImages: attachmentImagesSchema.nullable().optional(),
+});
+
+const spiritUpdateSchema = spiritWriteSchema.partial().extend({ id: z.string().min(1) });
+
 const scopeByTool: Record<z.infer<typeof toolSchema>['tool'], AgentScope> = {
   'quilts.search': 'read:quilts',
   'quilts.get': 'read:quilts',
@@ -179,6 +438,22 @@ const scopeByTool: Record<z.infer<typeof toolSchema>['tool'], AgentScope> = {
   'cards.get': 'read:cards',
   'cards.create': 'write:cards',
   'cards.update': 'write:cards',
+  'paddles.search': 'read:paddles',
+  'paddles.get': 'read:paddles',
+  'paddles.create': 'write:paddles',
+  'paddles.update': 'write:paddles',
+  'antiques.search': 'read:antiques',
+  'antiques.get': 'read:antiques',
+  'antiques.create': 'write:antiques',
+  'antiques.update': 'write:antiques',
+  'maps.search': 'read:maps',
+  'maps.get': 'read:maps',
+  'maps.create': 'write:maps',
+  'maps.update': 'write:maps',
+  'spirits.search': 'read:spirits',
+  'spirits.get': 'read:spirits',
+  'spirits.create': 'write:spirits',
+  'spirits.update': 'write:spirits',
   'settings.read': 'read:settings',
 };
 
@@ -190,6 +465,14 @@ const writeTools = new Set([
   'usage.end',
   'cards.create',
   'cards.update',
+  'paddles.create',
+  'paddles.update',
+  'antiques.create',
+  'antiques.update',
+  'maps.create',
+  'maps.update',
+  'spirits.create',
+  'spirits.update',
 ]);
 
 type ToolRequest = z.infer<typeof toolSchema>;
@@ -235,6 +518,22 @@ function parseAuditInput(request: ToolRequest): unknown {
     'cards.get': idSchema,
     'cards.create': cardWriteSchema,
     'cards.update': cardWriteSchema,
+    'paddles.search': paddleSearchSchema,
+    'paddles.get': idSchema,
+    'paddles.create': paddleWriteSchema,
+    'paddles.update': paddleUpdateSchema,
+    'antiques.search': antiqueSearchSchema,
+    'antiques.get': idSchema,
+    'antiques.create': antiqueWriteSchema,
+    'antiques.update': antiqueUpdateSchema,
+    'maps.search': mapSearchSchema,
+    'maps.get': idSchema,
+    'maps.create': mapWriteSchema,
+    'maps.update': mapUpdateSchema,
+    'spirits.search': spiritSearchSchema,
+    'spirits.get': idSchema,
+    'spirits.create': spiritWriteSchema,
+    'spirits.update': spiritUpdateSchema,
   };
   const schema = schemas[request.tool];
   if (!schema) return {};
@@ -579,6 +878,84 @@ async function callTool(request: z.infer<typeof toolSchema>, agent: AgentIdentit
           ...(request.tool === 'cards.create' ? { userId: agent.userId } : {}),
         }),
       };
+    }
+    case 'paddles.search': {
+      const input = paddleSearchSchema.parse(request.input);
+      const [paddles, total] = await Promise.all([getPaddles(input), countPaddles(input)]);
+      return { paddles, total };
+    }
+    case 'paddles.get': {
+      const { id } = idSchema.parse(request.input);
+      return { paddle: await getPaddleById(id) };
+    }
+    case 'paddles.create': {
+      const input = paddleWriteSchema.parse(request.input);
+      if (request.dryRun) return { planned: input };
+      return { paddle: await createPaddle(input) };
+    }
+    case 'paddles.update': {
+      const input = paddleUpdateSchema.parse(request.input);
+      if (request.dryRun) return { planned: input };
+      const { id, ...changes } = input;
+      return { paddle: await updatePaddle(id, changes) };
+    }
+    case 'antiques.search': {
+      const input = antiqueSearchSchema.parse(request.input);
+      const [antiques, total] = await Promise.all([getAntiques(input), countAntiques(input)]);
+      return { antiques, total };
+    }
+    case 'antiques.get': {
+      const { id } = idSchema.parse(request.input);
+      return { antique: await getAntiqueById(id) };
+    }
+    case 'antiques.create': {
+      const input = antiqueWriteSchema.parse(request.input);
+      if (request.dryRun) return { planned: input };
+      return { antique: await createAntique(input) };
+    }
+    case 'antiques.update': {
+      const input = antiqueUpdateSchema.parse(request.input);
+      if (request.dryRun) return { planned: input };
+      return { antique: await updateAntique(input) };
+    }
+    case 'maps.search': {
+      const input = mapSearchSchema.parse(request.input);
+      const [maps, total] = await Promise.all([getMaps(input), countMaps(input)]);
+      return { maps, total };
+    }
+    case 'maps.get': {
+      const { id } = idSchema.parse(request.input);
+      return { map: await getMapById(id) };
+    }
+    case 'maps.create': {
+      const input = mapWriteSchema.parse(request.input);
+      if (request.dryRun) return { planned: input };
+      return { map: await createMap(input) };
+    }
+    case 'maps.update': {
+      const input = mapUpdateSchema.parse(request.input);
+      if (request.dryRun) return { planned: input };
+      return { map: await updateMap(input) };
+    }
+    case 'spirits.search': {
+      const input = spiritSearchSchema.parse(request.input);
+      const [spirits, total] = await Promise.all([getSpirits(input), countSpirits(input)]);
+      return { spirits, total };
+    }
+    case 'spirits.get': {
+      const { id } = idSchema.parse(request.input);
+      return { spirit: await getSpiritById(id) };
+    }
+    case 'spirits.create': {
+      const input = spiritWriteSchema.parse(request.input);
+      if (request.dryRun) return { planned: input };
+      return { spirit: await createSpirit(input) };
+    }
+    case 'spirits.update': {
+      const input = spiritUpdateSchema.parse(request.input);
+      if (request.dryRun) return { planned: input };
+      const { id, ...changes } = input;
+      return { spirit: await updateSpirit(id, changes) };
     }
     case 'settings.read': {
       const [settings, databaseStats, systemInfo] = await Promise.all([

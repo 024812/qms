@@ -9,3 +9,4 @@ export { ItemCard } from './ItemCard';
 export { ItemList } from './ItemList';
 export { ItemForm } from './ItemForm';
 export { StatusBadge } from './StatusBadge';
+export { ModuleItemDialog } from './ModuleItemDialog';

@@ -40,6 +40,10 @@ API keys inherit the same subsystem permissions as the user who created them:
 - Admin users can access all agent tools.
 - Users subscribed to `quilts` can access quilt and usage tools.
 - Users subscribed to `cards` can access card tools.
+- Users subscribed to `paddles` can access table tennis paddle tools.
+- Users subscribed to `antiques` can access antique tools.
+- Users subscribed to `maps` can access map tools.
+- Users subscribed to `spirits` can access spirits tools.
 - Revoked keys stop working immediately.
 
 ## Request Shape
@@ -93,6 +97,14 @@ Read tools:
 - `usage.search`
 - `cards.search`
 - `cards.get`
+- `paddles.search`
+- `paddles.get`
+- `antiques.search`
+- `antiques.get`
+- `maps.search`
+- `maps.get`
+- `spirits.search`
+- `spirits.get`
 - `settings.read`
 
 Write tools:
@@ -104,6 +116,21 @@ Write tools:
 - `usage.end`
 - `cards.create`
 - `cards.update`
+- `paddles.create`
+- `paddles.update`
+- `antiques.create`
+- `antiques.update`
+- `maps.create`
+- `maps.update`
+- `spirits.create`
+- `spirits.update`
+
+Collection modules (`paddles`, `antiques`, `maps`, `spirits`) share the same tool shape:
+
+- `<module>.search` — filterable, paginated list (e.g. `status`, `search`, `limit`, `offset`).
+- `<module>.get` — fetch one item by `id`.
+- `<module>.create` — required fields per module: `paddles` needs `name`; `antiques` needs `name` and `category`; `maps` needs `name` and `mapType`; `spirits` needs `name` and `spiritType`.
+- `<module>.update` — partial update, requires `id`. Send `null` to clear an optional field.
 
 ## Examples
 
@@ -123,6 +150,24 @@ curl https://qms.414080.xyz/api/agent/tools \
   -H "Authorization: Bearer $QMS_AGENT_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{"tool":"cards.get","input":{"id":"card-id"}}'
+```
+
+Search spirits by type:
+
+```bash
+curl https://qms.414080.xyz/api/agent/tools \
+  -H "Authorization: Bearer $QMS_AGENT_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"tool":"spirits.search","input":{"spiritType":"WHISKY","limit":10}}'
+```
+
+Preview a map creation:
+
+```bash
+curl https://qms.414080.xyz/api/agent/tools \
+  -H "Authorization: Bearer $QMS_AGENT_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"tool":"maps.create","input":{"name":"Shanghai City Map 1998","mapType":"CITY","publishedYear":1998},"dryRun":true}'
 ```
 
 Preview a quilt status change:

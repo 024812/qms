@@ -1,6 +1,6 @@
 # 认证系统测试指南 / Authentication Testing Guide
 
-本文对应当前 Better Auth 实现（QMS `2026.7.17`）。公开注册已关闭；测试账号必须由受控 bootstrap 流程准备，或由管理员在用户管理页面创建。
+本文对应当前 Better Auth 实现（QMS `2026.9.11`）。公开注册已关闭；测试账号必须由受控 bootstrap 流程准备，或由管理员在用户管理页面创建。
 
 ## 测试前提
 

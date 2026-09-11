@@ -2,19 +2,20 @@
 
 QMS is a modular family item management system built with Next.js 16, React 19, Better Auth, Neon Serverless PostgreSQL, Drizzle ORM, and Vercel.
 
-Current release: `2026.7.17`
+Current release: `2026.9.11`
 
 ## What Is Standardized
 
 - `quilts` and `cards` are the first copyable module blueprints.
 - Each module keeps one canonical data layer in `src/lib/data/<module>.ts`.
 - Each module keeps one canonical server action surface in `src/app/actions/<module>.ts`.
-- Each module page follows a `Server Page -> private client shell` split under `src/app/[locale]/<module>`.
-- Route Handlers remain compatibility or external HTTP surfaces, not the internal source of truth.
-- Route protection follows the Next.js 16 `src/proxy.ts` convention.
+- Each module exposes both a versioned API surface and a `Server Page -> private client shell` Web UI under `src/app/[locale]/<module>`.
+- API and Web UI share the same schema, authorization, DAL, transactions, cache tags, and response contract.
+- Route Handlers are the formal external API surface for module data; they do not contain a second data-access implementation.
+- Route protection follows the Next.js 16 `src/proxy.ts` convention, with explicit authorization in every Page, Action, API, and Agent entry.
 - External AI agents can use the restricted Agent OpenAPI surface instead of general-purpose database access.
 
-For the module blueprint rules, see `docs/architecture/MODULE_BLUEPRINT_V2.md`.
+For the module blueprint rules, see `docs/architecture/MODULE_BLUEPRINT_V3.md`.
 
 ## Current Modules
 

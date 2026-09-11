@@ -4,7 +4,7 @@
 >
 > 发布日期：`2026-09-11`
 >
-> 适用基线：QMS `2026.7.17`，Next.js 16 App Router、React 19、Drizzle ORM、Better Auth、Zod 4。
+> 适用基线：QMS `2026.9.11`，Next.js 16 App Router、React 19、Drizzle ORM、Better Auth、Zod 4。
 >
 > 本文是新增子模块的唯一当前蓝图。`MODULE_BLUEPRINT_V2.md` 保留作迁移历史，不再作为新模块模板。
 
@@ -13,10 +13,10 @@
 V3 的目标是让新增模块拥有一条可验证的、类型安全的业务路径：
 
 ```text
-URL -> Server Page -> typed DAL -> database
-Client Shell -> Server Action -> typed DAL -> database
-External HTTP -> Route Handler -> typed Action/DAL contract
-Agent API -> fixed tool dispatcher -> typed Action/DAL contract
+Web UI Server Page -> typed DAL -> database
+Web UI Client Shell -> Server Action -> typed DAL -> database
+External REST API -> Route Handler -> typed module contract -> typed DAL -> database
+Agent API -> fixed tool dispatcher -> typed module contract -> typed DAL -> database
 ```
 
 V3 不要求所有现有模块立即完成迁移。现有代码中的 `items.ts`、旧 repository、通用 `[category]` 页面和旧缓存标签均属于 legacy，不能复制到新模块。
@@ -40,12 +40,12 @@ V3 不要求所有现有模块立即完成迁移。现有代码中的 `items.ts`
 2. 每个业务模块只有一个 typed Action contract：`src/app/actions/<module>.ts`。
 3. 页面使用显式路由：`src/app/[locale]/<module>/...`，不使用通用 `[category]` 作为新模块入口。
 4. Server Page 可以直接读取 DAL，但必须执行认证和模块授权；Client Shell 的读取和所有 mutation 必须通过 Server Action。
-5. Route Handler 是外部 HTTP、Webhook 或兼容面，不是内部页面和 Hook 的数据库读写层。
+5. 模块 REST API 是正式外部管理入口；Route Handler 负责 HTTP contract，不得成为数据库访问实现。
 6. Agent API 只能调用固定工具，不提供通用表名、SQL、repository 或动态字段写入能力。
 7. 只有 DAL 可以直接访问模块业务表；Action、Page、Client、Route Handler 不得自行拼接业务 SQL。
 8. 跨表写入必须在同一个 Drizzle transaction 中完成，事务成功后才失效缓存。
 9. 服务端负责搜索、筛选、排序和分页；Client Shell 不得对当前页数据重实现主查询。
-10. 新模块不得增加 repository、cached repository 或第二套 REST 真相层。
+10. 新模块不得增加 repository、cached repository 或第二套业务真相层；API 和 Web UI 必须共享同一 typed contract。
 
 ## 3. 目录契约
 
@@ -64,6 +64,8 @@ src/
 │  └─ module-access.ts                   # 统一 auth + activeModules 检查
 ├─ app/
 │  ├─ actions/<module>.ts                # auth、授权、校验、ActionResult
+│  ├─ api/<module>/route.ts              # 正式 REST API：GET/POST
+│  ├─ api/<module>/[id]/route.ts         # 正式 REST API：GET/PATCH/DELETE
 │  └─ [locale]/<module>/
 │     ├─ page.tsx                        # Server Page
 │     ├─ _components/<Module>PageClient.tsx
@@ -228,11 +230,34 @@ Cache tag 与 React Query key 是两套不同的标识，不得互相拼接或�
 
 ### 10.1 Route Handler
 
-Route Handler 必须声明其性质：external、webhook 或 compatibility。必须复用模块 schema、response envelope、统一认证、`no-store` 策略和错误码。
+Route Handler 必须声明其性质：正式 module API、webhook 或 compatibility。新模块的 `/api/<module>` 和 `/api/<module>/<id>` 是正式 API，不得只实现为页面的附属接口。必须复用模块 schema、response envelope、统一认证、`no-store` 策略和错误码。
 
-Route Handler 不得成为内部 Client Hook、Page 或 Action 的调用目标。不得重新实现 DAL 查询或通过旧 repository 绕过 canonical DAL。
+正式 API 的输入、输出、错误码、分页参数和状态码必须记录在 OpenAPI/contract 文档中。Route Handler 不得重新实现 DAL 查询、通过旧 repository 绕过 canonical DAL，或被内部 Client Hook、Page、Action 作为 HTTP 自调用目标。Web UI 使用 Server Action 是性能和边界选择，但 Server Action 必须调用同一个 typed DAL/业务 contract。
 
-### 10.2 Agent tool
+### 10.2 API contract
+
+每个新模块至少提供：
+
+- `GET /api/<module>`：服务端筛选、排序、分页。
+- `POST /api/<module>`：创建资源，返回 `201`。
+- `GET /api/<module>/<id>`：详情。
+- `PATCH /api/<module>/<id>`：部分更新。
+- `DELETE /api/<module>/<id>`：删除或归档，并返回稳定结果。
+- OpenAPI schema、认证方式、权限、限流、幂等和错误码说明。
+
+列表参数必须使用共享 parser，建议格式为 `page`、`pageSize`、`search`、`status`、`sort`。写入请求必须拒绝未知字段，使用幂等 key 的接口必须明确重复请求返回的语义。破坏性 API 变更使用新的 API 版本，不静默改变现有字段含义。
+
+### 10.3 Web UI contract
+
+每个新模块同时提供可用的 Web UI：
+
+- list、detail、create、edit 页面按模块显式路由提供。
+- Web UI 必须支持与 API 相同的字段、状态和权限语义。
+- Web UI 的首屏由 Server Page 获取，交互由 Client Shell 管理。
+- Web UI mutation 使用 Server Action；不得在内部通过 HTTP 请求调用自己的 `/api/<module>`。
+- API 和 Web UI 的差异只允许存在于展示、批量操作和交互体验层，不允许存在两套业务校验或数据写入逻辑。
+
+### 10.4 Agent tool
 
 Agent tool 必须是固定的 typed dispatcher：
 
@@ -271,7 +296,9 @@ Agent tool 必须是固定的 typed dispatcher：
 - [ ] 创建 `src/lib/data/<module>.ts`，只让它访问模块业务表。
 - [ ] 使用统一 `cache-tags.ts`，实现读 cache 和写失效。
 - [ ] 创建 `src/app/actions/<module>.ts`，统一 auth、授权、schema 和 ActionResult。
+- [ ] 创建正式 `/api/<module>`、`/<id>` Route Handler 和 OpenAPI/contract 文档。
 - [ ] 创建显式 Server Page、Client Shell、detail/edit 页面。
+- [ ] 验证 Web UI 与 API 使用相同 schema、权限、状态和错误语义。
 - [ ] 让 URL 驱动搜索、筛选、排序和分页。
 - [ ] 仅在规定场景使用 React Query。
 
@@ -281,7 +308,7 @@ Agent tool 必须是固定的 typed dispatcher：
 - [ ] Sidebar、单模块自动跳转和 settings 链接。
 - [ ] `messages/en.json`、`messages/zh.json`。
 - [ ] Agent scope 和 OpenAPI（若开放）。
-- [ ] 外部 API 仅作为明确声明的 compatibility surface。
+- [ ] 正式 API、兼容 API、Webhook 和 Agent API 的边界已分别声明。
 
 ## 13. 验收矩阵
 
@@ -302,7 +329,8 @@ npm run build
 - create/update/delete、状态转移、事务回滚。
 - cache tags 的读绑定和写失效。
 - registry、导航、i18n、单模块自动跳转。
-- Route Handler envelope、限流和 Agent 幂等/审计。
+- API contract/OpenAPI、Route Handler envelope、限流和 Agent 幂等/审计。
+- Web UI 与 API 的列表、详情、创建、更新、删除行为一致。
 - legacy 调用方扫描和禁止导入规则。
 
 数据库 migration 只能在确认过的 Neon 环境执行；本地验证使用 staging 或专用测试数据库，不得连接 `localhost:5432`。
@@ -332,6 +360,6 @@ npm run build
 - `npm ci`、lint、type-check、test、build 的完整结果。
 - lockfile 的审计结果和生产运行时兼容性。
 
-本次基线验证记录：隔离副本 `C:\temp\qms-review` 中 `npm ci` 成功且 `0 vulnerabilities`；`lint:check`、`type-check`、16 个测试文件/139 个测试和 `build` 均通过。`npm outdated` 显示仍可在后续独立变更中升级 `openai`、`zod`，而 ESLint 10、TypeScript 7 等 major 升级必须先完成兼容性评估，不能作为新模块开发的隐含前置条件。
+本次基线验证记录：隔离副本 `C:\temp\qms-review` 中 `npm ci` 成功且 `0 vulnerabilities`；`lint:check`、`type-check`、18 个测试文件/148 个测试和 `build` 均通过。`npm outdated` 显示仍可在后续独立变更中升级 `openai`、`zod`，而 ESLint 10、TypeScript 7 等 major 升级必须先完成兼容性评估，不能作为新模块开发的隐含前置条件。
 
 构建仍报告 Better Auth 未设置显式 `BETTER_AUTH_URL`/`baseURL`，生产部署必须配置受信任的 canonical origin。Vitest 还报告未来将默认使用 native config loader；升级 Vite/Vitest 时应将配置迁移到 ESM（或显式设置 package module type）并补充 CI 验证。

@@ -9,6 +9,14 @@ and this project uses npm-compatible date-based semantic versions in `YYYY.M.D` 
 
 No unreleased changes.
 
+## [2026.9.11] - 2026-09-11
+
+### Changed
+
+- Merged the architecture and security hardening release into `main`.
+- Established API-first module development with a supported Web UI channel sharing the same schema, authorization, DAL, transactions, cache tags, and response contracts.
+- Updated the active module blueprint for the upcoming `paddles`, `antiques`, `maps`, and `spirits` modules.
+
 ## [2026.7.17] - 2026-07-17
 
 ### Added

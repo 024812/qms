@@ -1,6 +1,6 @@
 # Usage Tracking Implementation
 
-> 文档状态：`historical`（实现记录，当前架构说明已按 QMS `2026.7.17` / MODULE_BLUEPRINT_V3 校正）。本文不是独立的当前 API 规范。
+> 文档状态：`historical`（实现记录，当前架构说明已按 QMS `2026.9.11` / MODULE_BLUEPRINT_V3 校正）。本文不是独立的当前 API 规范。
 
 ## 当前架构
 

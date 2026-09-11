@@ -2,19 +2,20 @@
 
 QMS 是一个模块化的家庭物品管理系统，基于 Next.js 16、React 19、Better Auth、Neon Serverless PostgreSQL、Drizzle ORM 和 Vercel 构建。
 
-当前版本：`2026.7.17`
+当前版本：`2026.9.11`
 
 ## 当前标准
 
 - `quilts` 和 `cards` 是第一批可复制的业务模块蓝图。
 - 每个模块保留一个 canonical data layer：`src/lib/data/<module>.ts`。
 - 每个模块保留一个 canonical server action surface：`src/app/actions/<module>.ts`。
-- 页面采用 `Server Page -> private client shell` 结构，位于 `src/app/[locale]/<module>`。
-- Route Handlers 主要作为兼容层或外部 HTTP 表面，不作为内部业务真相源。
-- 路由保护遵循 Next.js 16 的 `src/proxy.ts` 约定。
+- 每个模块同时提供正式 API 和 Web UI；Web UI 位于 `src/app/[locale]/<module>`，采用 `Server Page -> private client shell` 结构。
+- API 与 Web UI 共享同一套 schema、授权、DAL、事务、缓存标签和响应契约。
+- Route Handlers 是模块数据的正式外部 API 表面，但不得包含第二套数据访问实现。
+- 路由保护遵循 Next.js 16 的 `src/proxy.ts` 约定，同时要求 Page、Action、API、Agent 入口显式鉴权。
 - 外部 AI agent 使用受限 Agent OpenAPI，不直接访问数据库通用接口。
 
-模块蓝图规则见 `docs/architecture/MODULE_BLUEPRINT_V2.md`。
+模块蓝图规则见 `docs/architecture/MODULE_BLUEPRINT_V3.md`。
 
 ## 当前模块
 

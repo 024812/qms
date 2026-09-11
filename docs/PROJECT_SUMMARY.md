@@ -1,6 +1,6 @@
 # QMS Project Summary
 
-当前版本：`2026.7.17`
+当前版本：`2026.9.11`
 
 ## 当前定位
 
@@ -18,6 +18,13 @@ QMS 是一个面向家庭共享使用的物品管理系统。系统刻意采用�
 - 首屏数据优先在 Server Component 中获取。
 - 交互状态下沉到模块私有 `_components/*`。
 - 内部 UI 主要通过 Server Actions 和 canonical data layer 读写数据。
+
+### API-first 与 Web UI
+
+- 新模块必须同时提供正式 `/api/<module>`、`/api/<module>/<id>` 数据管理 API 和可用的 Web UI。
+- API 与 Web UI 共享同一套 schema、授权、canonical DAL、事务、缓存标签和业务错误语义。
+- Web UI 的 Server Page 负责首屏读取，Client Shell 负责交互，mutation 使用 Server Action；Web UI 不通过 HTTP 自调用自己的 API。
+- API 负责稳定的 JSON envelope、HTTP 状态码、分页/筛选/排序契约、限流、幂等和 OpenAPI 文档。
 
 ### 数据真相源
 
@@ -54,7 +61,10 @@ QMS 是一个面向家庭共享使用的物品管理系统。系统刻意采用�
 - Agent API keys 存为数据库哈希，继承创建者的角色和模块权限，不暴露通用数据库访问能力。
 - 每次 Agent 调用都绑定 API key 所属 `userId`；审计日志的 `userId` 和 metadata 中的 `actorUserId` 用于追踪责任主体。该绑定用于权限继承和审计，不改变家庭业务数据共享模型。
 
-## 2026.7.17 收口重点
+## 2026.9.11 收口重点
+
+- 将新模块标准明确为 API-first + Web UI：计划中的 `paddles`、`antiques`、`maps`、`spirits` 必须同时提供 API 和管理界面。
+- API、Web UI、Server Actions、Agent tools 共享模块 schema、权限、DAL 和数据不变量。
 
 - 关闭公开注册页面、Server Action 和 `/api/auth/sign-up/*` 服务端入口，仅保留管理员创建账号。
 - 为 AI、天气、旧 items actions 和兼容 API 补齐会话校验、限流、输入边界与错误脱敏。

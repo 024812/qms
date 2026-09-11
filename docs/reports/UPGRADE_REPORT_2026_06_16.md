@@ -2,7 +2,7 @@
 
 > 文档状态：`historical`（执行日期 `2026-06-16`）。这是当日升级记录，不是当前版本的完整发布说明。
 >
-> 版本差异：本文记录的目标依赖版本低于当前 QMS `2026.7.17` 基线；当前版本以 `package.json`/lockfile 为准，例如 Next.js `16.2.10`、Better Auth `1.6.23`、Drizzle ORM `0.45.2`。新增模块和数据库变更应遵循 [MODULE_BLUEPRINT_V3.md](../architecture/MODULE_BLUEPRINT_V3.md)。
+> 版本差异：本文记录的目标依赖版本低于当前 QMS `2026.9.11` 基线；当前版本以 `package.json`/lockfile 为准，例如 Next.js `16.2.10`、Better Auth `1.6.23`、Drizzle ORM `0.45.2`。新增模块和数据库变更应遵循 [MODULE_BLUEPRINT_V3.md](../architecture/MODULE_BLUEPRINT_V3.md)。
 
 ## 执行日期：2026-06-16
 

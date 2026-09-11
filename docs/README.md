@@ -2,7 +2,7 @@
 
 This directory contains both active documentation and historical implementation records. Each document is marked `active` or `historical`; historical reports describe a past state and must not override the current code, package versions, or V3 blueprint.
 
-Current release: `2026.7.17`
+Current release: `2026.9.11`
 
 ## Start Here
 

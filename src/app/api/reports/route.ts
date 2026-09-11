@@ -6,17 +6,24 @@
  * Requirements: 1.2, 1.3 - REST API for reports
  * Requirements: 5.3 - Consistent API response format
  * Requirements: 5.4 - Zod validation for all inputs
- * Requirements: 6.1, 6.2 - Repository pattern for database operations
+ * Report reads use the canonical reports data layer; aggregate statistics are
+ * composed there from the canonical stats data layer.
  */
 
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
-import { statsRepository } from '@/lib/repositories/stats.repository';
+import {
+  getAnalyticsReport,
+  getInventoryReport,
+  getStatusReport,
+  getUsageReport,
+} from '@/lib/data/reports';
 import type {
   InventoryReport,
   UsageReport,
   StatusReport,
-} from '@/lib/repositories/stats.repository';
+  AnalyticsReport,
+} from '@/lib/data/reports';
 import {
   createSuccessResponse,
   createValidationErrorResponse,
@@ -31,7 +38,6 @@ const reportQuerySchema = z.object({
 });
 
 type ReportType = z.infer<typeof reportQuerySchema>['type'];
-type AnalyticsReport = Awaited<ReturnType<typeof statsRepository.getAnalyticsReport>>;
 type ReportDataByType = {
   inventory: InventoryReport;
   usage: UsageReport;
@@ -65,19 +71,18 @@ export async function GET(request: NextRequest) {
 
     let reportData: ReportDataByType[ReportType];
 
-    // Use repository for all database operations (Requirements: 6.1, 6.2)
     switch (reportType) {
       case 'inventory':
-        reportData = await statsRepository.getInventoryReport();
+        reportData = await getInventoryReport();
         break;
       case 'usage':
-        reportData = await statsRepository.getUsageReport();
+        reportData = await getUsageReport();
         break;
       case 'analytics':
-        reportData = await statsRepository.getAnalyticsReport();
+        reportData = await getAnalyticsReport();
         break;
       case 'status':
-        reportData = await statsRepository.getStatusReport();
+        reportData = await getStatusReport();
         break;
     }
 

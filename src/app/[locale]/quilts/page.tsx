@@ -4,6 +4,8 @@ import type { QuiltSortField, SortOrder } from '@/lib/data/quilts';
 import type { QuiltSearchInput } from '@/types/quilt';
 import type { FilterCriteria } from '@/components/quilts/AdvancedFilters';
 import { QuiltsPageClient } from './_components/QuiltsPageClient';
+import { auth } from '@/auth';
+import { requirePageModuleAccess } from '@/lib/module-access';
 
 type RawSearchParams = Record<string, string | string[] | undefined>;
 
@@ -93,6 +95,7 @@ export default async function QuiltsPage({
   searchParams?: Promise<RawSearchParams>;
 }) {
   const resolvedSearchParams = (await searchParams) ?? {};
+  requirePageModuleAccess(await auth(), 'quilts');
   const { searchInput, initialSearchTerm, initialFilters } =
     parseQuiltSearchParams(resolvedSearchParams);
 

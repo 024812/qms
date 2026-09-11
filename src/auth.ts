@@ -52,6 +52,7 @@ async function findAppUserForSession(user: { id: string; email: string }) {
 
 export const betterAuthInstance = betterAuth({
   appName: 'QMS',
+  ...(process.env.BETTER_AUTH_URL ? { baseURL: process.env.BETTER_AUTH_URL } : {}),
   basePath: '/api/auth',
   secret: process.env.BETTER_AUTH_SECRET ?? process.env.AUTH_SECRET ?? process.env.NEXTAUTH_SECRET,
   database: drizzleAdapter(db, {
@@ -85,7 +86,7 @@ export const betterAuthInstance = betterAuth({
   emailAndPassword: {
     enabled: true,
     disableSignUp: true,
-    minPasswordLength: 6,
+    minPasswordLength: 12,
     password: {
       hash: password => bcrypt.hash(password, 10),
       verify: ({ hash, password }) => bcrypt.compare(password, hash),

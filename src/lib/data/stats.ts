@@ -2,7 +2,7 @@
  * Stats Data Access Layer
  *
  * Functional data access layer following Next.js 16 best practices.
- * Replaces the class-based StatsRepository pattern.
+ * Provides the canonical functional stats data layer.
  *
  * Architecture:
  * - Standalone async functions (not classes)
@@ -18,10 +18,27 @@
  * Requirements: 2.1-2.6, 3.1-3.6 from Next.js 16 Best Practices Migration spec
  */
 
-import { cache } from 'react';
+import { cacheLife, cacheTag } from 'next/cache';
 import { db } from '@/db';
 import { quilts, usageRecords } from '@/db/schema';
 import { sql, eq, desc, isNull } from 'drizzle-orm';
+import {
+  globalCacheTags,
+  quiltsCacheTags,
+  statsCacheTags,
+  usageCacheTags,
+} from '@/modules/core/cache-tags';
+
+function tagStats(...tags: string[]) {
+  cacheTag(
+    statsCacheTags.root,
+    statsCacheTags.list,
+    quiltsCacheTags.root,
+    usageCacheTags.root,
+    globalCacheTags.dashboard,
+    ...tags
+  );
+}
 
 // ============================================================================
 // Types
@@ -135,6 +152,10 @@ interface UsageByMonthRow {
  * Tags: 'stats', 'stats-dashboard'
  */
 export async function getStatusCounts(): Promise<StatusCounts> {
+  'use cache';
+  cacheLife('minutes');
+  tagStats(statsCacheTags.slice('dashboard', 'main'), quiltsCacheTags.slice('status', 'all'));
+
   const result = await db
     .select({
       status: quilts.currentStatus,
@@ -161,6 +182,10 @@ export async function getStatusCounts(): Promise<StatusCounts> {
  * Tags: 'stats', 'stats-dashboard'
  */
 export async function getSeasonalCounts(): Promise<SeasonalCounts> {
+  'use cache';
+  cacheLife('minutes');
+  tagStats(statsCacheTags.slice('dashboard', 'main'), quiltsCacheTags.slice('season', 'all'));
+
   const result = await db
     .select({
       season: quilts.season,
@@ -186,6 +211,10 @@ export async function getSeasonalCounts(): Promise<SeasonalCounts> {
  * Tags: 'stats', 'stats-dashboard'
  */
 export async function getInUseQuilts(): Promise<InUseQuilt[]> {
+  'use cache';
+  cacheLife('minutes');
+  tagStats(statsCacheTags.slice('dashboard', 'main'), quiltsCacheTags.slice('status', 'IN_USE'));
+
   const result = await db
     .select({
       id: quilts.id,
@@ -220,6 +249,10 @@ export async function getHistoricalUsage(
   currentMonth: number,
   currentDay: number
 ): Promise<HistoricalUsage[]> {
+  'use cache';
+  cacheLife('minutes');
+  tagStats(statsCacheTags.slice('dashboard', 'main'), usageCacheTags.list, quiltsCacheTags.list);
+
   // Complex date logic is best kept as raw SQL for now, using Drizzle's sql template
   const result = await db.execute(sql`
     SELECT 
@@ -270,6 +303,10 @@ export async function getHistoricalUsage(
  * Tags: 'stats', 'stats-dashboard'
  */
 export async function getDashboardStats(): Promise<DashboardStats> {
+  'use cache';
+  cacheLife('minutes');
+  tagStats(statsCacheTags.slice('dashboard', 'main'));
+
   const today = new Date();
   const currentMonth = today.getMonth() + 1;
   const currentDay = today.getDate();
@@ -302,6 +339,10 @@ export async function getDashboardStats(): Promise<DashboardStats> {
  * Tags: 'stats', 'stats-analytics'
  */
 export async function getUsageStats(): Promise<UsageStats> {
+  'use cache';
+  cacheLife('minutes');
+  tagStats(statsCacheTags.slice('analytics', 'main'), usageCacheTags.list, quiltsCacheTags.list);
+
   const result = await db
     .select({
       totalPeriods: sql<number>`COUNT(*)::int`,
@@ -336,6 +377,10 @@ export async function getUsageStats(): Promise<UsageStats> {
  * Tags: 'stats', 'stats-analytics'
  */
 export async function getUsageBySeason(): Promise<SeasonalCounts> {
+  'use cache';
+  cacheLife('minutes');
+  tagStats(statsCacheTags.slice('analytics', 'main'), usageCacheTags.list, quiltsCacheTags.list);
+
   const result = await db
     .select({
       season: quilts.season,
@@ -362,6 +407,10 @@ export async function getUsageBySeason(): Promise<SeasonalCounts> {
  * Tags: 'stats', 'stats-analytics'
  */
 export async function getMostUsedQuilts(limit: number = 5): Promise<MostUsedQuilt[]> {
+  'use cache';
+  cacheLife('minutes');
+  tagStats(statsCacheTags.slice('analytics', 'main'), usageCacheTags.list, quiltsCacheTags.list);
+
   const result = await db
     .select({
       quiltId: usageRecords.quiltId,
@@ -397,6 +446,10 @@ export async function getMostUsedQuilts(limit: number = 5): Promise<MostUsedQuil
  * Tags: 'stats', 'stats-analytics'
  */
 export async function getUsageByYear(): Promise<UsageByPeriod[]> {
+  'use cache';
+  cacheLife('minutes');
+  tagStats(statsCacheTags.slice('analytics', 'main'), usageCacheTags.list);
+
   const result = await db.execute(sql`
     SELECT 
       EXTRACT(YEAR FROM start_date)::int as year,
@@ -419,6 +472,10 @@ export async function getUsageByYear(): Promise<UsageByPeriod[]> {
  * Tags: 'stats', 'stats-analytics'
  */
 export async function getUsageByMonth(): Promise<UsageByPeriod[]> {
+  'use cache';
+  cacheLife('minutes');
+  tagStats(statsCacheTags.slice('analytics', 'main'), usageCacheTags.list);
+
   const result = await db.execute(sql`
     SELECT 
       TO_CHAR(start_date, 'YYYY-MM') as month,
@@ -456,6 +513,10 @@ export async function getUsageByMonth(): Promise<UsageByPeriod[]> {
  * Tags: 'stats', 'stats-analytics'
  */
 export async function getCurrentUsageCount(): Promise<number> {
+  'use cache';
+  cacheLife('minutes');
+  tagStats(statsCacheTags.slice('analytics', 'main'), usageCacheTags.slice('active', 'true'));
+
   const result = await db
     .select({ count: sql<number>`count(*)::int` })
     .from(usageRecords)
@@ -471,6 +532,10 @@ export async function getCurrentUsageCount(): Promise<number> {
  * Tags: 'stats', 'stats-analytics'
  */
 export async function getAnalyticsData(): Promise<AnalyticsData> {
+  'use cache';
+  cacheLife('minutes');
+  tagStats(statsCacheTags.slice('analytics', 'main'));
+
   const [
     statusCounts,
     seasonalCounts,
@@ -519,6 +584,10 @@ export async function getSimpleUsageStats(): Promise<{
   active: number;
   completed: number;
 }> {
+  'use cache';
+  cacheLife('minutes');
+  tagStats(statsCacheTags.slice('analytics', 'main'), usageCacheTags.list);
+
   const [totalResult, activeResult] = await Promise.all([
     db.select({ count: sql<number>`count(*)::int` }).from(usageRecords),
     db
@@ -538,19 +607,19 @@ export async function getSimpleUsageStats(): Promise<{
 }
 
 // ============================================================================
-// REQUEST DEDUPLICATION (React cache wrappers)
+// Compatibility exports. The primary functions use Next.js persistent caching.
 // ============================================================================
 
-export const getStatusCountsCached = cache(getStatusCounts);
-export const getSeasonalCountsCached = cache(getSeasonalCounts);
-export const getInUseQuiltsCached = cache(getInUseQuilts);
-export const getHistoricalUsageCached = cache(getHistoricalUsage);
-export const getDashboardStatsCached = cache(getDashboardStats);
-export const getUsageStatsCached = cache(getUsageStats);
-export const getUsageBySeasonCached = cache(getUsageBySeason);
-export const getMostUsedQuiltsCached = cache(getMostUsedQuilts);
-export const getUsageByYearCached = cache(getUsageByYear);
-export const getUsageByMonthCached = cache(getUsageByMonth);
-export const getCurrentUsageCountCached = cache(getCurrentUsageCount);
-export const getAnalyticsDataCached = cache(getAnalyticsData);
-export const getSimpleUsageStatsCached = cache(getSimpleUsageStats);
+export const getStatusCountsCached = getStatusCounts;
+export const getSeasonalCountsCached = getSeasonalCounts;
+export const getInUseQuiltsCached = getInUseQuilts;
+export const getHistoricalUsageCached = getHistoricalUsage;
+export const getDashboardStatsCached = getDashboardStats;
+export const getUsageStatsCached = getUsageStats;
+export const getUsageBySeasonCached = getUsageBySeason;
+export const getMostUsedQuiltsCached = getMostUsedQuilts;
+export const getUsageByYearCached = getUsageByYear;
+export const getUsageByMonthCached = getUsageByMonth;
+export const getCurrentUsageCountCached = getCurrentUsageCount;
+export const getAnalyticsDataCached = getAnalyticsData;
+export const getSimpleUsageStatsCached = getSimpleUsageStats;

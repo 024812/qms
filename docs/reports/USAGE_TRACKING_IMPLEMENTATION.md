@@ -1,170 +1,32 @@
-# Usage Tracking System Implementation
+# Usage Tracking Implementation
 
-## 🎯 Overview
+> 文档状态：`historical`（实现记录，当前架构说明已按 QMS `2026.7.17` / MODULE_BLUEPRINT_V3 校正）。本文不是独立的当前 API 规范。
 
-The Usage Tracking system has been successfully implemented as a comprehensive solution for monitoring and analyzing quilt usage patterns. This document outlines the complete implementation details, features, and technical architecture.
+## 当前架构
 
-## ✅ Completed Features
+- 权威数据表是 `usage_records`，同时保存 active 和 completed usage records；active 记录通过 `endDate IS NULL` 判断。
+- 唯一业务数据访问层是 `src/lib/data/usage.ts`，负责查询、事务、Quilt 状态同步和 cache tag 失效。
+- 应用内页面通过 typed Server Actions `src/app/actions/usage.ts` 读取和修改 usage 数据；Action 负责 session、`quilts` 模块授权、Zod 校验和稳定错误结果。
+- `current_usage` 和 `usage_periods` 不是当前实现，不能作为当前表名、数据流或 API 合约引用。
+- 跨表 usage/Quilt 状态变更在同一个 Drizzle transaction 中完成；数据库约束确保每个 Quilt 至多一个 active usage record。
 
-### 📊 Core Functionality
+## 当前能力
 
-- **Complete Usage History**: View all quilt usage records sorted chronologically
-- **Individual Quilt Tracking**: Click any record to see detailed usage history for specific quilts
-- **Real-time Status Tracking**: Monitor active usage periods and completed usage cycles
-- **Duration Calculations**: Automatic calculation of usage days and patterns
-- **Usage Statistics**: Comprehensive metrics including total records, active periods, and completion data
+`usage.ts` 提供按 Quilt、active 状态和列表读取 usage records，支持关联 Quilt 信息、时长与统计，以及 create/update/end/delete。usage 变更会失效 usage、受影响 Quilt、stats、analytics 和 dashboard 的相关 cache tags。
 
-### 🌐 User Interface
+`actions/usage.ts` 提供列表、详情、按 Quilt 查询、active 查询、统计和写操作的 typed Action contract。所有入口需要登录并具备 `quilts` 模块访问权；业务数据按产品设计为家庭共享，不按登录用户做行级隔离。
 
-- **List View**: Chronological display of all usage records with key information
-- **Detail View**: Comprehensive usage history for individual quilts
-- **Interactive Navigation**: Seamless switching between views with back button
-- **Responsive Design**: Optimized for desktop, tablet, and mobile devices
-- **Multilingual Support**: Complete Chinese/English interface localization
+## 外部 HTTP 兼容面
 
-### 🔧 Technical Implementation
+仓库中仍可能存在 `/api/usage` 兼容或外部 HTTP route，但它不是内部页面和 Hook 的数据库真相层。新增内部读写应遵循 V3：Server Page/Client Shell -> typed Action/DAL；Route Handler 仅作为明确声明的 external/compatibility surface。
 
-#### API Endpoints
+## 历史差异
 
-- **`GET /api/usage`** - Retrieve all usage history sorted by time
-- **`GET /api/usage/[quiltId]`** - Get detailed usage history for specific quilt
-- **`POST /api/usage`** - Start using a quilt (creates current_usage record)
-- **`POST /api/usage/end`** - End current usage (moves to usage_periods)
+旧实现记录曾描述 `current_usage` 与 `usage_periods` 的拆分、移动数据的 POST endpoint，以及“完整部署”的状态。这些描述已不适用于当前仓库。后续实现或测试应覆盖 Page、Action、Route Handler 的认证/模块授权、schema 边界、事务回滚、状态同步和 cache tags。
 
-#### Database Schema
+## 参考
 
-The system utilizes existing database tables:
-
-- **`current_usage`** - Active usage periods
-  - `id`, `quilt_id`, `started_at`, `usage_type`, `notes`, `created_at`
-- **`usage_periods`** - Completed usage history
-  - `id`, `quilt_id`, `started_at`, `ended_at`, `usage_type`, `notes`, `created_at`
-
-#### Data Flow
-
-1. **Start Usage**: Creates record in `current_usage`, updates quilt status to `IN_USE`
-2. **End Usage**: Moves record from `current_usage` to `usage_periods`, updates quilt status to `AVAILABLE`
-3. **View History**: Combines current and historical data for comprehensive display
-
-## 📱 User Experience
-
-### Main Usage History View
-
-- **Chronological List**: All usage records sorted by most recent first
-- **Record Cards**: Display quilt name, item number, season, status, and duration
-- **Status Indicators**: Visual badges for active vs completed usage
-- **Click Interaction**: Tap any record to view detailed history
-
-### Individual Quilt Detail View
-
-- **Complete History**: All usage periods for selected quilt
-- **Numbered Periods**: Sequential numbering of usage periods
-- **Detailed Information**: Start/end dates, duration, usage type, and notes
-- **Statistics**: Usage patterns and frequency analysis
-- **Navigation**: Back button to return to main list
-
-### Statistics Dashboard
-
-- **Total Records**: Count of all usage history entries
-- **Currently Active**: Number of quilts being used now
-- **Completed Periods**: Number of finished usage cycles
-
-## 🌍 Internationalization
-
-### Language Support
-
-- **Chinese Interface**: Complete localization for Chinese users
-- **English Interface**: Full English language support
-- **Dynamic Switching**: Real-time language switching capability
-- **Localized Formatting**: Date/time formatting based on user language
-
-### Translated Elements
-
-- Page titles and descriptions
-- Status indicators and badges
-- Duration calculations and labels
-- Navigation elements and buttons
-- Error messages and loading states
-
-## 🔄 Data Management
-
-### Usage Lifecycle
-
-1. **Initiation**: User starts using a quilt via API or future UI controls
-2. **Tracking**: System monitors active usage with real-time status
-3. **Completion**: User ends usage, system calculates duration and archives
-4. **Analysis**: Historical data available for pattern analysis and insights
-
-### Data Integrity
-
-- **Validation**: Input validation for all API endpoints
-- **Error Handling**: Comprehensive error handling with user-friendly messages
-- **Consistency**: Automatic status synchronization between quilts and usage records
-- **Audit Trail**: Complete history preservation for all usage activities
-
-## 🚀 Performance Optimizations
-
-### Frontend Performance
-
-- **Efficient Rendering**: Optimized React components with proper state management
-- **Responsive Loading**: Loading states and error boundaries for better UX
-- **Memory Management**: Proper cleanup and state management
-- **Mobile Optimization**: Touch-friendly interface with gesture support
-
-### Backend Performance
-
-- **Database Optimization**: Efficient queries with proper indexing
-- **Caching Strategy**: Optimized data retrieval and caching
-- **Error Recovery**: Robust error handling and recovery mechanisms
-- **Scalability**: Architecture designed for future growth
-
-## 📈 Future Enhancements
-
-### Planned Features
-
-- **Usage Controls**: Direct start/end usage buttons in the interface
-- **Analytics Dashboard**: Advanced usage pattern analysis and insights
-- **Notifications**: Usage reminders and maintenance alerts
-- **Export Functionality**: Usage data export for external analysis
-- **Reporting**: Comprehensive usage reports and statistics
-
-### Technical Improvements
-
-- **Real-time Updates**: WebSocket integration for live usage updates
-- **Advanced Filtering**: Filter usage history by date ranges, quilts, or patterns
-- **Bulk Operations**: Batch operations for multiple usage records
-- **API Enhancements**: Additional endpoints for advanced functionality
-
-## 🛠️ Development Notes
-
-### Code Organization
-
-- **API Routes**: Clean separation of concerns with dedicated route handlers
-- **Component Structure**: Modular React components with proper prop interfaces
-- **Type Safety**: Full TypeScript support with comprehensive type definitions
-- **Error Handling**: Consistent error handling patterns across all components
-
-### Testing Considerations
-
-- **API Testing**: Comprehensive testing of all usage tracking endpoints
-- **Component Testing**: React component testing with proper mocking
-- **Integration Testing**: End-to-end testing of complete usage workflows
-- **Performance Testing**: Load testing for large datasets and concurrent usage
-
-## 📋 Deployment Status
-
-- **Production Ready**: Fully deployed and operational
-- **Database Integration**: Successfully integrated with Neon PostgreSQL
-- **API Endpoints**: All endpoints tested and functional
-- **User Interface**: Complete UI implementation with multilingual support
-- **Performance**: Optimized for production workloads
-
-## 🎉 Success Metrics
-
-- **Functionality**: 100% of planned features implemented
-- **Performance**: Fast loading times and responsive interface
-- **Usability**: Intuitive navigation and clear information display
-- **Reliability**: Robust error handling and data consistency
-- **Accessibility**: Multilingual support and responsive design
-
-The Usage Tracking system represents a significant enhancement to the QMS application, providing users with comprehensive tools for monitoring and analyzing their quilt usage patterns. The implementation follows best practices for modern web development and provides a solid foundation for future enhancements.
+- [MODULE_BLUEPRINT_V3.md](../architecture/MODULE_BLUEPRINT_V3.md)
+- `src/db/schema.ts`
+- `src/lib/data/usage.ts`
+- `src/app/actions/usage.ts`

@@ -7,6 +7,7 @@ import { db } from '@/db';
 import { agentIdempotencyKeys } from '@/db/schema';
 import { requireAgent, type AgentIdentity, type AgentScope } from '@/lib/agent/auth';
 import { recordAgentAudit } from '@/lib/agent/audit';
+import { rateLimiters } from '@/lib/rate-limit';
 import {
   createBadRequestResponse,
   createConflictResponse,
@@ -204,6 +205,43 @@ type IdempotencyReservation =
   | { kind: 'reserved'; inputHash: string }
   | { kind: 'response'; response: ReturnType<typeof createSuccessResponse> };
 
+function safeAuditInput(value: unknown, depth = 0): unknown {
+  if (depth > 3 || value === null || typeof value === 'boolean' || typeof value === 'number') {
+    return value;
+  }
+  if (typeof value === 'string') return value.slice(0, 128);
+  if (Array.isArray(value)) return value.slice(0, 20).map(item => safeAuditInput(item, depth + 1));
+  if (typeof value === 'object') {
+    return Object.fromEntries(
+      Object.entries(value as Record<string, unknown>)
+        .slice(0, 50)
+        .map(([key, item]) => [key, safeAuditInput(item, depth + 1)])
+    );
+  }
+  return undefined;
+}
+
+function parseAuditInput(request: ToolRequest): unknown {
+  const schemas: Partial<Record<ToolRequest['tool'], z.ZodType>> = {
+    'quilts.search': quiltSearchSchema,
+    'quilts.get': idSchema,
+    'quilts.create': quiltWriteSchema,
+    'quilts.update': quiltWriteSchema,
+    'quilts.changeStatus': quiltStatusSchema,
+    'usage.search': usageSearchSchema,
+    'usage.create': usageCreateSchema,
+    'usage.end': usageEndSchema,
+    'cards.search': cardSearchSchema,
+    'cards.get': idSchema,
+    'cards.create': cardWriteSchema,
+    'cards.update': cardWriteSchema,
+  };
+  const schema = schemas[request.tool];
+  if (!schema) return {};
+  const parsed = schema.safeParse(request.input);
+  return parsed.success ? safeAuditInput(parsed.data) : {};
+}
+
 function validationResponse(error: z.ZodError) {
   return createValidationErrorResponse(
     'Agent tool input validation failed',
@@ -361,6 +399,17 @@ async function markIdempotencyFailed(
 }
 
 export async function POST(request: NextRequest) {
+  const rateLimit = await rateLimiters.agent.check(request);
+  if (!rateLimit.allowed) {
+    return new Response(JSON.stringify({ error: 'Too Many Requests' }), {
+      status: 429,
+      headers: {
+        'Content-Type': 'application/json',
+        'Retry-After': String(rateLimit.retryAfter ?? 60),
+      },
+    });
+  }
+
   let body: unknown;
 
   try {
@@ -396,7 +445,7 @@ export async function POST(request: NextRequest) {
       toolName: toolRequest.tool,
       action: 'replay',
       success: true,
-      metadata: { idempotencyKey: toolRequest.idempotencyKey, input: toolRequest.input },
+      metadata: { idempotencyKey: toolRequest.idempotencyKey, input: parseAuditInput(toolRequest) },
     });
 
     return idempotencyReservation.response;
@@ -419,7 +468,7 @@ export async function POST(request: NextRequest) {
       toolName: toolRequest.tool,
       action: toolRequest.dryRun ? 'dryRun' : 'execute',
       success: true,
-      metadata: { idempotencyKey: toolRequest.idempotencyKey, input: toolRequest.input },
+      metadata: { idempotencyKey: toolRequest.idempotencyKey, input: parseAuditInput(toolRequest) },
     });
 
     return createSuccessResponse(payload);

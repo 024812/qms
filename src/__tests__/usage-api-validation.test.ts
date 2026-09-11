@@ -12,7 +12,11 @@ const dataMocks = vi.hoisted(() => ({
 vi.mock('@/lib/api/route-auth', () => ({
   requireApiSession: vi.fn(async () => ({
     ok: true,
-    session: { user: { id: 'user-1' } },
+    session: { user: { id: 'user-1', role: 'member', activeModules: ['quilts'] } },
+  })),
+  requireApiModule: vi.fn(async () => ({
+    ok: true,
+    session: { user: { id: 'user-1', role: 'member', activeModules: ['quilts'] } },
   })),
 }));
 

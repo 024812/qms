@@ -85,84 +85,9 @@ export function QuiltsPageClient({
     return Array.from(materials).sort();
   }, [quilts]);
 
-  const filteredQuilts = useMemo(() => {
-    let result = [...quilts];
-
-    if (searchTerm.trim()) {
-      const term = searchTerm.toLowerCase();
-      result = result.filter(
-        quilt =>
-          quilt.name?.toLowerCase().includes(term) ||
-          quilt.itemNumber?.toString().includes(term) ||
-          quilt.fillMaterial?.toLowerCase().includes(term) ||
-          quilt.location?.toLowerCase().includes(term) ||
-          quilt.season?.toLowerCase().includes(term) ||
-          quilt.currentStatus?.toLowerCase().includes(term)
-      );
-    }
-
-    if (filters.seasons.length > 0) {
-      result = result.filter(quilt => filters.seasons.includes(quilt.season));
-    }
-    if (filters.statuses.length > 0) {
-      result = result.filter(quilt => filters.statuses.includes(quilt.currentStatus));
-    }
-    if (filters.colors.length > 0) {
-      result = result.filter(quilt => filters.colors.includes(quilt.color));
-    }
-    if (filters.materials.length > 0) {
-      result = result.filter(quilt => filters.materials.includes(quilt.fillMaterial));
-    }
-    if (filters.minWeight !== undefined) {
-      result = result.filter(quilt => (quilt.weightGrams ?? 0) >= filters.minWeight!);
-    }
-    if (filters.maxWeight !== undefined) {
-      result = result.filter(quilt => (quilt.weightGrams ?? 0) <= filters.maxWeight!);
-    }
-    if (filters.minLength !== undefined) {
-      result = result.filter(quilt => (quilt.lengthCm ?? 0) >= filters.minLength!);
-    }
-    if (filters.maxLength !== undefined) {
-      result = result.filter(quilt => (quilt.lengthCm ?? 0) <= filters.maxLength!);
-    }
-    if (filters.minWidth !== undefined) {
-      result = result.filter(quilt => (quilt.widthCm ?? 0) >= filters.minWidth!);
-    }
-    if (filters.maxWidth !== undefined) {
-      result = result.filter(quilt => (quilt.widthCm ?? 0) <= filters.maxWidth!);
-    }
-
-    if (sortField) {
-      result.sort((a, b) => {
-        if (sortField === 'weight') {
-          const aWeight = a.weightGrams ?? 0;
-          const bWeight = b.weightGrams ?? 0;
-          return sortDirection === 'asc' ? aWeight - bWeight : bWeight - aWeight;
-        }
-
-        if (sortField === 'size') {
-          const aArea = a.lengthCm && a.widthCm ? a.lengthCm * a.widthCm : 0;
-          const bArea = b.lengthCm && b.widthCm ? b.lengthCm * b.widthCm : 0;
-          return sortDirection === 'asc' ? aArea - bArea : bArea - aArea;
-        }
-
-        const aValue = a[sortField];
-        const bValue = b[sortField];
-
-        if (aValue == null) return 1;
-        if (bValue == null) return -1;
-
-        const aStr = String(aValue).toLowerCase();
-        const bStr = String(bValue).toLowerCase();
-
-        if (aStr < bStr) return sortDirection === 'asc' ? -1 : 1;
-        if (aStr > bStr) return sortDirection === 'asc' ? 1 : -1;
-        return 0;
-      });
-    }
-
-    return result;
-  }, [filters, quilts, searchTerm, sortDirection, sortField]);
+  // Filtering, sorting, and pagination are performed by the server DAL. The
+  // client must render the returned page as-is so totals remain meaningful.
+  const filteredQuilts = quilts;
 
   const handleSort = (field: SortField) => {
     if (sortField === field) {

@@ -1,6 +1,6 @@
 # QMS Documentation
 
-This directory contains the active documentation for QMS.
+This directory contains both active documentation and historical implementation records. Each document is marked `active` or `historical`; historical reports describe a past state and must not override the current code, package versions, or V3 blueprint.
 
 Current release: `2026.7.17`
 
@@ -11,27 +11,28 @@ Current release: `2026.7.17`
 
 ## Architecture
 
-- [Module blueprint](architecture/MODULE_BLUEPRINT_V2.md) - active copyable module blueprint.
+- [Module blueprint](architecture/MODULE_BLUEPRINT_V3.md) - active copyable module blueprint.
+- [Module blueprint V2](architecture/MODULE_BLUEPRINT_V2.md) - historical migration reference; do not use for new modules.
 - [Authentication implementation](architecture/AUTH_IMPLEMENTATION_SUMMARY.md) - Better Auth architecture and account lifecycle.
 - [Legacy module standard](archive/MODULE_STANDARD.md) - deprecated standard retained for historical context.
 
 ## Guides
 
-- [Authentication test guide](guides/AUTH_TEST_GUIDE.md)
-- [Database migrations](guides/DATABASE_MIGRATIONS.md)
+- [Authentication test guide](guides/AUTH_TEST_GUIDE.md) - active, Better Auth and module authorization tests.
+- [Database migrations](guides/DATABASE_MIGRATIONS.md) - active, Neon and `db:migrate` workflow.
 - [Database initialization](guides/INITIALIZE-DATABASE.md)
 - [Vercel environment setup](guides/VERCEL-ENV-SETUP.md)
 - [Vercel deployment](guides/VERCEL_DEPLOYMENT_GUIDE.md)
-- [Backup quick start](guides/BACKUP_QUICK_START.md)
-- [Backup and restore](guides/BACKUP_RESTORE_GUIDE.md)
+- [Backup quick start](guides/BACKUP_QUICK_START.md) - active operational guidance; npm backup scripts are not present.
+- [Backup and restore](guides/BACKUP_RESTORE_GUIDE.md) - active operational guidance; automation is planned.
 - [Legacy password migration](guides/PASSWORD-MIGRATION-GUIDE.md)
 
 ## Reports
 
-- [Security audit](reports/SECURITY_AUDIT_SUMMARY.md)
-- [Usage tracking implementation](reports/USAGE_TRACKING_IMPLEMENTATION.md)
-- [Card market-data implementation](reports/MARKET_DATA_IMPLEMENTATION.md)
-- [Dependency and schema upgrade report](reports/UPGRADE_REPORT_2026_06_16.md)
+- [Security audit](reports/SECURITY_AUDIT_SUMMARY.md) - active current report, dated `2026-07-17`.
+- [Usage tracking implementation](reports/USAGE_TRACKING_IMPLEMENTATION.md) - historical record, corrected to the current DAL/Action architecture.
+- [Card market-data implementation](reports/MARKET_DATA_IMPLEMENTATION.md) - historical/partial implementation; real provider is not complete.
+- [Dependency and schema upgrade report](reports/UPGRADE_REPORT_2026_06_16.md) - historical report; current versions are defined by `package.json`.
 
 ## Conventions
 
@@ -40,6 +41,7 @@ Current release: `2026.7.17`
 - `/api/**` routes are compatibility, external HTTP, or third-party integration surfaces.
 - `/api/agent/**` is the restricted OpenAPI/tool surface for AI agents.
 - Database migrations target Neon Postgres. Do not run QMS migrations against `localhost:5432`.
+- Install, test, build, and run commands in this OneDrive workspace must be executed from a `C:\temp\<project>` copy.
 
 ## Related Files
 

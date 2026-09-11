@@ -12,7 +12,7 @@ import { connection } from 'next/server';
 
 import { getDashboardStats } from '@/lib/data/stats';
 import { createSuccessResponse, createInternalErrorResponse } from '@/lib/api/response';
-import { requireApiSession } from '@/lib/api/route-auth';
+import { requireApiModule } from '@/lib/api/route-auth';
 
 /**
  * GET /api/dashboard
@@ -25,7 +25,7 @@ import { requireApiSession } from '@/lib/api/route-auth';
  */
 export async function GET() {
   try {
-    const authResult = await requireApiSession();
+    const authResult = await requireApiModule('quilts');
     if (!authResult.ok) return authResult.response;
 
     await connection();

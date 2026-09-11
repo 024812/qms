@@ -9,6 +9,7 @@ import { authAccount, authSession, db, type Tx, users } from '@/db';
 import { hashPassword, verifyPassword } from '@/lib/auth/password';
 import { cacheLife, cacheTag, revalidateTag } from 'next/cache';
 import { and, eq } from 'drizzle-orm';
+import { settingsCacheTags } from '@/modules/core/cache-tags';
 
 import type {
   AppSettings,
@@ -22,7 +23,7 @@ import type {
 export async function getAppSettings(): Promise<AppSettings> {
   'use cache';
   cacheLife('minutes');
-  cacheTag('settings', 'settings-app');
+  cacheTag(settingsCacheTags.root, settingsCacheTags.slice('scope', 'app'));
 
   return readAppSettings();
 }
@@ -62,9 +63,9 @@ export async function updateAppSettings(input: UpdateAppSettingsInput): Promise<
     return readAppSettings(tx);
   });
 
-  revalidateTag('settings', 'max');
-  revalidateTag('settings-app', 'max');
-  revalidateTag('settings-system-info', 'max');
+  revalidateTag(settingsCacheTags.root, 'max');
+  revalidateTag(settingsCacheTags.slice('scope', 'app'), 'max');
+  revalidateTag(settingsCacheTags.slice('scope', 'system-info'), 'max');
 
   return settings;
 }
@@ -84,7 +85,7 @@ export async function getDatabaseStats(): Promise<DatabaseStats> {
 export async function getSystemInfo(): Promise<SystemInfo> {
   'use cache';
   cacheLife('hours');
-  cacheTag('settings', 'settings-system-info');
+  cacheTag(settingsCacheTags.root, settingsCacheTags.slice('scope', 'system-info'));
 
   return {
     version: packageJson.version,

@@ -59,6 +59,8 @@ export class ErrorBoundary extends Component<Props, State> {
   };
 
   handleGoHome = () => {
+    // React 树已崩溃，router 可能不可用，硬导航以彻底重置应用状态
+    // eslint-disable-next-line @next/next/no-location-assign-relative-destination
     window.location.href = '/';
   };
 

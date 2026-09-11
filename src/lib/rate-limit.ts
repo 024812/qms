@@ -236,6 +236,12 @@ export const rateLimiters = {
     maxRequests: 20,
   }),
 
+  // Authenticated but externally reachable and potentially expensive.
+  agent: new RateLimiter({
+    windowMs: 60 * 1000,
+    maxRequests: 60,
+  }),
+
   // Health check - 30 requests per minute
   health: new RateLimiter({
     windowMs: 60 * 1000,

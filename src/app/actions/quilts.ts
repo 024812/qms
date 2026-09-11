@@ -1,9 +1,9 @@
 'use server';
 
-import { updateTag } from 'next/cache';
 import { z } from 'zod';
 
 import { auth } from '@/auth';
+import { ModuleAccessError, requireModuleAccess } from '@/lib/module-access';
 import {
   countQuilts,
   deleteQuilt as deleteQuiltData,
@@ -118,21 +118,11 @@ async function requireAuthenticatedUser() {
     return null;
   }
 
-  return session;
-}
-
-function refreshQuiltActionCaches(id?: string) {
-  updateTag('quilts');
-  updateTag('quilts-list');
-  updateTag('stats');
-  updateTag('stats-dashboard');
-  updateTag('usage');
-  updateTag('usage-list');
-  updateTag('usage-active');
-
-  if (id) {
-    updateTag(`quilts-${id}`);
-    updateTag(`usage-quilt-${id}`);
+  try {
+    return requireModuleAccess(session, 'quilts');
+  } catch (error) {
+    if (error instanceof ModuleAccessError) return null;
+    throw error;
   }
 }
 
@@ -176,7 +166,6 @@ export async function saveQuiltAction(
     }
 
     const result = await saveQuilt(validationResult.data as CreateQuiltInput | UpdateQuiltInput);
-    refreshQuiltActionCaches(result.quilt.id);
 
     return {
       success: true,
@@ -218,8 +207,6 @@ export async function deleteQuiltAction(id: string): Promise<ActionResult<{ dele
       return notFoundErrorResult('被子不存在');
     }
 
-    refreshQuiltActionCaches(id);
-
     return {
       success: true,
       data: { deleted: true },
@@ -260,7 +247,6 @@ export async function changeQuiltStatusAction(input: {
       startDate,
       endDate,
     });
-    refreshQuiltActionCaches(quiltId);
 
     return {
       success: true,

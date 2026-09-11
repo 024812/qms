@@ -55,6 +55,8 @@ export const quiltsCacheTags = createModuleCacheTags('quilts');
 export const cardsCacheTags = createModuleCacheTags('cards');
 export const usageCacheTags = createModuleCacheTags('usage');
 export const statsCacheTags = createModuleCacheTags('stats');
+export const usersCacheTags = createModuleCacheTags('users');
+export const settingsCacheTags = createModuleCacheTags('settings');
 
 /**
  * Special cache tags for cross-module concerns

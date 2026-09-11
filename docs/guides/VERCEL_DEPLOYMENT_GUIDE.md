@@ -4,6 +4,8 @@
 
 ## 部署前本地检查
 
+先将仓库复制到 `C:\temp\<project>`。由于 OneDrive 同步限制，`npm install`/`npm ci`、测试和构建不得在 OneDrive 工作区执行。
+
 推送代码前先执行：
 
 ```bash
@@ -38,6 +40,8 @@ npm run db:migrate
 ```
 
 当前 Neon 数据库已应用到 `0007_gifted_morlocks`。后续迁移继续通过 Drizzle migration 文件推进。
+
+生产迁移只能使用 `npm run db:migrate`；`db:push` 仅限明确的本地原型，不得用于生产 schema。
 
 ## 3. 触发部署
 

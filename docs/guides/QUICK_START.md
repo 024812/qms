@@ -1,5 +1,7 @@
 # Quick Start
 
+> 环境约束：本仓库位于 OneDrive。必须先复制到 `C:\temp\<project>`，再执行 `npm install`/`npm ci`、测试、构建或启动服务；不要在 OneDrive 工作区生成 `node_modules`、`.next` 等目录。
+
 ## 1. Install Dependencies
 
 ```bash
@@ -51,7 +53,10 @@ Open `http://localhost:3000`.
 npm run lint:check
 npm run type-check
 npm test
+npm run build
 ```
+
+以上命令必须在 `C:\temp\<project>` 副本中执行。生产数据库变更使用 `npm run db:migrate`，不要使用 `db:push`。
 
 ## Current Project Shape
 

@@ -16,7 +16,7 @@ import {
   createNotFoundResponse,
   createInternalErrorResponse,
 } from '@/lib/api/response';
-import { requireApiSession } from '@/lib/api/route-auth';
+import { requireApiModule } from '@/lib/api/route-auth';
 
 // Input validation schema for updates
 const updateUsageRecordSchema = z.object({
@@ -36,7 +36,7 @@ interface RouteParams {
  */
 export async function GET(request: NextRequest, { params }: RouteParams) {
   try {
-    const authResult = await requireApiSession();
+    const authResult = await requireApiModule('quilts');
     if (!authResult.ok) return authResult.response;
 
     const { id } = await params;
@@ -65,7 +65,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
  */
 export async function PUT(request: NextRequest, { params }: RouteParams) {
   try {
-    const authResult = await requireApiSession();
+    const authResult = await requireApiModule('quilts');
     if (!authResult.ok) return authResult.response;
 
     const { id } = await params;
@@ -125,7 +125,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
  */
 export async function DELETE(request: NextRequest, { params }: RouteParams) {
   try {
-    const authResult = await requireApiSession();
+    const authResult = await requireApiModule('quilts');
     if (!authResult.ok) return authResult.response;
 
     const { id } = await params;

@@ -8,7 +8,7 @@
 import { NextRequest } from 'next/server';
 import { getUsageHistory, getActiveUsageRecord, getUsageStats } from '@/lib/data/usage';
 import { createSuccessResponse, createInternalErrorResponse } from '@/lib/api/response';
-import { requireApiSession } from '@/lib/api/route-auth';
+import { requireApiModule } from '@/lib/api/route-auth';
 
 interface RouteParams {
   params: Promise<{ quiltId: string }>;
@@ -24,7 +24,7 @@ interface RouteParams {
  */
 export async function GET(request: NextRequest, { params }: RouteParams) {
   try {
-    const authResult = await requireApiSession();
+    const authResult = await requireApiModule('quilts');
     if (!authResult.ok) return authResult.response;
 
     const { quiltId } = await params;

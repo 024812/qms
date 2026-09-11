@@ -2,6 +2,8 @@ import { notFound } from 'next/navigation';
 import { getQuiltById } from '@/lib/data/quilts';
 import { QuiltDetail } from '@/modules/quilts/ui/QuiltDetail';
 import type { QuiltItem } from '@/modules/quilts/schema';
+import { auth } from '@/auth';
+import { requirePageModuleAccess } from '@/lib/module-access';
 
 interface QuiltPageProps {
   params: Promise<{
@@ -11,6 +13,7 @@ interface QuiltPageProps {
 }
 
 export default async function QuiltPage({ params }: QuiltPageProps) {
+  requirePageModuleAccess(await auth(), 'quilts');
   const { id } = await params;
   const quilt = await getQuiltById(id);
 

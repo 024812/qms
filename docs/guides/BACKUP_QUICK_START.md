@@ -1,89 +1,40 @@
 # 备份快速开始指南
 
-## 🚀 5分钟快速备份
+## 当前状态
 
-### 1. 立即备份
+当前仓库的 `package.json` **没有** `backup`、`backup:compress` 或 `restore` scripts，也没有随仓库提供可直接调用的备份/恢复脚本。因此以下命令不存在，不能执行：
 
-```bash
+```text
 npm run backup
-```
-
-备份文件将保存在 `backups/` 目录。
-
-### 2. 压缩备份（推荐）
-
-```bash
 npm run backup:compress
-```
-
-节省存储空间，适合长期保存。
-
-### 3. 恢复备份
-
-```bash
 npm run restore
 ```
 
-然后输入备份文件路径。
+自动化备份脚本仍是 planned；生产备份应使用 Neon 提供的备份/分支能力，或由运维系统调用 PostgreSQL 客户端工具。
 
----
+## 5 分钟手工备份
 
-## 📋 常用命令
+前提：安装 PostgreSQL client，并使用 Neon 的 `DATABASE_URL`。不要把连接字符串提交到 Git，也不要把含凭据的备份文件放在 OneDrive 工作区。
 
-| 命令                      | 说明           |
-| ------------------------- | -------------- |
-| `npm run backup`          | 创建数据库备份 |
-| `npm run backup:compress` | 创建压缩备份   |
-| `npm run restore`         | 从备份恢复     |
-
----
-
-## 💡 最佳实践
-
-### 每日备份
-
-在 Windows 任务计划程序中设置：
-
-- 时间：每天凌晨 2:00
-- 程序：`powershell.exe`
-- 参数：`-File "C:\path\to\qms\scripts\backup-database.ps1" -Compress`
-
-### 备份前检查
-
-- [ ] 确保 `.env.local` 文件存在
-- [ ] 确认 `DATABASE_URL` 配置正确
-- [ ] 检查磁盘空间是否充足
-
-### 备份后验证
-
-```bash
-# 查看备份文件
-ls backups/
-
-# 检查文件大小
-Get-Item backups/qms_backup_*.sql | Select-Object Name, Length, CreationTime
+```powershell
+$env:DATABASE_URL = "postgresql://...neon.tech/...?...sslmode=require"
+New-Item -ItemType Directory -Force -Path "C:\temp\qms-backups"
+pg_dump $env:DATABASE_URL > "C:\temp\qms-backups\qms_backup_$(Get-Date -Format yyyyMMdd_HHmmss).sql"
 ```
 
----
+压缩、加密并复制到受控的异地存储。生产优先在 Neon Console 使用项目的备份或分支功能，并定期演练恢复。
 
-## 🆘 紧急恢复
+## 手工恢复
 
-如果数据丢失：
+恢复前暂停应用、确认目标 Neon 数据库和备份文件，并先为当前状态创建快照。建议先恢复到 staging 或临时 Neon 分支：
 
-1. **停止应用**
-2. **找到最近的备份**
-   ```bash
-   ls backups/ | Sort-Object -Descending | Select-Object -First 1
-   ```
-3. **执行恢复**
-   ```bash
-   .\scripts\restore-database.ps1 -BackupFile "backups/qms_backup_YYYYMMDD_HHMMSS.sql"
-   ```
-4. **验证数据**
-5. **重启应用**
+```powershell
+$env:DATABASE_URL = "postgresql://...neon.tech/...?...sslmode=require"
+psql $env:DATABASE_URL < "C:\temp\qms-backups\qms_backup_YYYYMMDD_HHMMSS.sql"
+```
 
----
+恢复后验证关键表（至少 `quilts`、`usage_records`、`users`），再按发布流程启动应用。完整说明见 [BACKUP_RESTORE_GUIDE.md](./BACKUP_RESTORE_GUIDE.md)。
 
-## 📞 需要帮助？
+## 运行环境约束
 
-查看完整文档：[BACKUP_RESTORE_GUIDE.md](./BACKUP_RESTORE_GUIDE.md)
+如果需要安装 PostgreSQL client、运行项目命令或执行恢复验证，先将仓库复制到 `C:\temp\<project>`；禁止在 OneDrive 下执行 `npm install`、测试、构建或启动服务。

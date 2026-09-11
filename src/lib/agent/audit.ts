@@ -22,6 +22,12 @@ const REDACTED_FIELDS = new Set([
   'thumbnailUrl',
   'imageUrl',
   'base64Data',
+  'password',
+  'secret',
+  'apiKey',
+  'accessToken',
+  'refreshToken',
+  'token',
 ]);
 
 const MAX_STRING_LENGTH = 512;
@@ -31,7 +37,11 @@ const MAX_STRING_LENGTH = 512;
  * any oversized strings (e.g. inline base64) so audit entries stay compact.
  */
 function sanitizeAuditValue(value: unknown, key?: string): unknown {
-  if (key && REDACTED_FIELDS.has(key)) {
+  if (
+    key &&
+    (REDACTED_FIELDS.has(key) ||
+      /(?:password|secret|api[_-]?key|access[_-]?token|refresh[_-]?token|token)/i.test(key))
+  ) {
     return '[redacted]';
   }
 

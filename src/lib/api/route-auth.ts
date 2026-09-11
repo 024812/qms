@@ -1,6 +1,7 @@
 import { auth } from '@/auth';
 import type { Session } from '@/auth';
 import { createForbiddenResponse, createUnauthorizedResponse } from '@/lib/api/response';
+import { hasModuleAccess } from '@/lib/module-access';
 
 type RouteAuthResult =
   | { ok: true; session: Session }
@@ -31,6 +32,17 @@ export async function requireApiAdmin(): Promise<RouteAdminResult> {
   }
 
   if (sessionResult.session.user.role !== 'admin') {
+    return { ok: false, response: createForbiddenResponse() };
+  }
+
+  return sessionResult;
+}
+
+export async function requireApiModule(moduleId: string): Promise<RouteAdminResult> {
+  const sessionResult = await requireApiSession();
+
+  if (!sessionResult.ok) return sessionResult;
+  if (!hasModuleAccess(sessionResult.session, moduleId)) {
     return { ok: false, response: createForbiddenResponse() };
   }
 

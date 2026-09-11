@@ -13,10 +13,9 @@ import {
   listUsers,
   type UserSummary,
   updateUser,
-  usersCacheTag,
 } from '@/lib/data/users';
-
-const MODULE_IDS = ['quilts', 'cards'] as const;
+import { MODULE_IDS } from '@/modules/registry';
+import { usersCacheTags } from '@/modules/core/cache-tags';
 
 interface ActionSuccess<T> {
   success: true;
@@ -41,7 +40,7 @@ const createUserSchema = z.object({
     .trim()
     .email('Invalid email address')
     .transform(value => value.toLowerCase()),
-  password: z.string().min(6, 'Password must be at least 6 characters'),
+  password: z.string().min(12, 'Password must be at least 12 characters'),
   role: z.enum(['admin', 'member']).default('member'),
   activeModules: z.array(z.enum(MODULE_IDS)).default([]),
 });
@@ -201,7 +200,8 @@ export async function createUserAction(
       hashedPassword: await hashPassword(data.password),
     });
 
-    updateTag(usersCacheTag);
+    updateTag(usersCacheTags.root);
+    updateTag(usersCacheTags.list);
 
     return {
       success: true,
@@ -247,7 +247,8 @@ export async function updateUserAction(
       return notFoundResult('User not found');
     }
 
-    updateTag(usersCacheTag);
+    updateTag(usersCacheTags.root);
+    updateTag(usersCacheTags.list);
 
     return {
       success: true,
@@ -286,7 +287,8 @@ export async function deleteUserAction(
       return notFoundResult('User not found');
     }
 
-    updateTag(usersCacheTag);
+    updateTag(usersCacheTags.root);
+    updateTag(usersCacheTags.list);
 
     return {
       success: true,

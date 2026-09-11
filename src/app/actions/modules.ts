@@ -13,11 +13,12 @@ import { db } from '@/db';
 import { users } from '@/db/schema';
 import { eq } from 'drizzle-orm';
 import { auth } from '@/auth';
-import { getModuleIds } from '@/modules/registry';
+import { isRegisteredModuleId } from '@/modules/registry';
 
 /**
  * Subscribe to a module
- * Adds the module to user's activeModules array
+ * Adds the module to the user's UI/data access list. This is deliberately not
+ * an Agent write grant; Agent write authorization is reserved for admins.
  */
 export async function subscribeToModule(moduleId: string) {
   // Verify authentication
@@ -27,8 +28,7 @@ export async function subscribeToModule(moduleId: string) {
   }
 
   // Validate module exists
-  const validModules = getModuleIds();
-  if (!validModules.includes(moduleId)) {
+  if (!isRegisteredModuleId(moduleId)) {
     throw new Error(`Invalid module: ${moduleId}`);
   }
 
@@ -78,6 +78,10 @@ export async function unsubscribeFromModule(moduleId: string) {
     throw new Error('You must be signed in to perform this action');
   }
 
+  if (!isRegisteredModuleId(moduleId)) {
+    throw new Error(`Invalid module: ${moduleId}`);
+  }
+
   // Get current user
   const [user] = await db.select().from(users).where(eq(users.id, session.user.id)).limit(1);
 
@@ -120,8 +124,7 @@ export async function toggleModuleSubscription(moduleId: string) {
   }
 
   // Validate module exists
-  const validModules = getModuleIds();
-  if (!validModules.includes(moduleId)) {
+  if (!isRegisteredModuleId(moduleId)) {
     throw new Error(`Invalid module: ${moduleId}`);
   }
 

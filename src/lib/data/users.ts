@@ -5,11 +5,13 @@ import { and, asc, eq, ne } from 'drizzle-orm';
 
 import { db } from '@/db';
 import { authAccount, authSession, authUser, users, type User } from '@/db/schema';
+import { normalizeModuleIds, type RegisteredModuleId } from '@/modules/registry';
+import { usersCacheTags } from '@/modules/core/cache-tags';
 
-export const usersCacheTag = 'users';
+export const usersCacheTag = usersCacheTags.root;
 
 export type UserRole = 'admin' | 'member';
-export type UserModule = 'quilts' | 'cards';
+export type UserModule = RegisteredModuleId;
 
 export interface UserSummary {
   id: string;
@@ -42,13 +44,7 @@ function normalizeRole(value: unknown): UserRole {
   return value === 'admin' ? 'admin' : 'member';
 }
 
-function normalizeModules(value: unknown): UserModule[] {
-  if (!Array.isArray(value)) {
-    return [];
-  }
-
-  return value.filter((module): module is UserModule => module === 'quilts' || module === 'cards');
-}
+export const normalizeModules = normalizeModuleIds;
 
 function toUserSummary(user: User): UserSummary {
   const preferences = user.preferences ?? {};
@@ -72,7 +68,7 @@ async function findUserRecordById(id: string): Promise<User | null> {
 export async function listUsers(): Promise<UserSummary[]> {
   'use cache';
   cacheLife('minutes');
-  cacheTag(usersCacheTag);
+  cacheTag(usersCacheTags.root, usersCacheTags.list);
 
   const result = await db.select().from(users).orderBy(asc(users.createdAt));
   return result.map(toUserSummary);

@@ -4,7 +4,7 @@ import { and, asc, count, desc, eq, ilike, isNotNull, ne, or, sql, type SQL } fr
 import { db } from '@/db';
 import { cards, type Card, type NewCard } from '@/db/schema';
 import { dbLogger } from '@/lib/logger';
-import { cardsCacheTags } from '@/modules/cards/blueprint';
+import { cardsCacheTags } from '@/modules/core/cache-tags';
 import type { CardItem } from '@/modules/cards/schema';
 import { systemSettingsRepository } from '@/lib/repositories/system-settings.repository';
 

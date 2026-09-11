@@ -15,14 +15,19 @@
  * - Server-side writes invalidate related tags for any cached consumers
  */
 
-import { cache } from 'react';
-import { revalidateTag } from 'next/cache';
+import { cacheLife, cacheTag, revalidateTag } from 'next/cache';
 import { db, type Tx } from '@/db';
 import { usageRecords, quilts } from '@/db/schema';
 import { eq, desc, and, isNull, sql } from 'drizzle-orm';
 import { dbLogger } from '@/lib/logger';
 import { type UsageRecord } from '@/lib/database/types';
 import { UsageType } from '@/lib/validations/quilt';
+import {
+  globalCacheTags,
+  quiltsCacheTags,
+  statsCacheTags,
+  usageCacheTags,
+} from '@/modules/core/cache-tags';
 
 // ============================================================================
 // Types
@@ -74,6 +79,30 @@ async function syncQuiltStatusForUsage(tx: Tx, quiltId: string) {
     .where(and(eq(quilts.id, quiltId), eq(quilts.currentStatus, 'IN_USE')));
 }
 
+function invalidateUsageTags(id: string | undefined, quiltId: string, active?: boolean) {
+  const tags = [
+    usageCacheTags.root,
+    usageCacheTags.list,
+    usageCacheTags.slice('quilt', quiltId),
+    statsCacheTags.root,
+    statsCacheTags.slice('usage', 'all'),
+    statsCacheTags.slice('analytics', 'main'),
+    statsCacheTags.slice('dashboard', 'main'),
+    globalCacheTags.dashboard,
+    quiltsCacheTags.root,
+    quiltsCacheTags.list,
+    quiltsCacheTags.item(quiltId),
+  ];
+
+  if (id) tags.push(usageCacheTags.item(id));
+  if (active !== undefined) {
+    tags.push(usageCacheTags.slice('active', String(active)));
+    tags.push(usageCacheTags.slice('active', String(!active)));
+  }
+
+  for (const tag of tags) revalidateTag(tag, 'max');
+}
+
 // ============================================================================
 // READ OPERATIONS
 // ============================================================================
@@ -85,6 +114,10 @@ async function syncQuiltStatusForUsage(tx: Tx, quiltId: string) {
  * Tags: 'usage', 'usage-{id}'
  */
 export async function getUsageRecordById(id: string): Promise<UsageRecord | null> {
+  'use cache';
+  cacheLife('minutes');
+  cacheTag(usageCacheTags.root, usageCacheTags.item(id));
+
   try {
     const result = await db.select().from(usageRecords).where(eq(usageRecords.id, id));
     return result[0] ? (result[0] as unknown as UsageRecord) : null;
@@ -101,6 +134,10 @@ export async function getUsageRecordById(id: string): Promise<UsageRecord | null
  * Tags: 'usage', 'usage-quilt-{quiltId}'
  */
 export async function getUsageHistory(quiltId: string): Promise<UsageRecord[]> {
+  'use cache';
+  cacheLife('seconds');
+  cacheTag(usageCacheTags.root, usageCacheTags.list, usageCacheTags.slice('quilt', quiltId));
+
   try {
     const result = await db
       .select()
@@ -122,6 +159,14 @@ export async function getUsageHistory(quiltId: string): Promise<UsageRecord[]> {
  * Tags: 'usage', 'usage-quilt-{quiltId}'
  */
 export async function getActiveUsageRecord(quiltId: string): Promise<UsageRecord | null> {
+  'use cache';
+  cacheLife('seconds');
+  cacheTag(
+    usageCacheTags.root,
+    usageCacheTags.slice('active', 'true'),
+    usageCacheTags.slice('quilt', quiltId)
+  );
+
   try {
     const result = await db
       .select()
@@ -142,6 +187,10 @@ export async function getActiveUsageRecord(quiltId: string): Promise<UsageRecord
  * Tags: 'usage', 'usage-active'
  */
 export async function getAllActiveUsageRecords(): Promise<UsageRecord[]> {
+  'use cache';
+  cacheLife('seconds');
+  cacheTag(usageCacheTags.root, usageCacheTags.list, usageCacheTags.slice('active', 'true'));
+
   try {
     const result = await db
       .select()
@@ -163,6 +212,10 @@ export async function getAllActiveUsageRecords(): Promise<UsageRecord[]> {
  * Tags: 'usage', 'usage-list'
  */
 export async function getUsageRecords(): Promise<UsageRecord[]> {
+  'use cache';
+  cacheLife('seconds');
+  cacheTag(usageCacheTags.root, usageCacheTags.list);
+
   try {
     const result = await db.select().from(usageRecords).orderBy(desc(usageRecords.startDate));
 
@@ -201,6 +254,12 @@ export interface UsageRecordWithQuilt {
 export async function getUsageRecordsWithQuilts(
   filters: { quiltId?: string; limit?: number; offset?: number } = {}
 ): Promise<UsageRecordWithQuilt[]> {
+  'use cache';
+  cacheLife('seconds');
+  const tags = [usageCacheTags.root, usageCacheTags.list];
+  if (filters.quiltId) tags.push(usageCacheTags.slice('quilt', filters.quiltId));
+  cacheTag(...tags);
+
   try {
     const { quiltId, limit = 50, offset = 0 } = filters;
 
@@ -272,6 +331,10 @@ export async function getUsageRecordsWithQuilts(
 export async function getUsageStats(
   quiltId: string
 ): Promise<{ totalDays: number; usageCount: number }> {
+  'use cache';
+  cacheLife('seconds');
+  cacheTag(usageCacheTags.root, usageCacheTags.slice('quilt', quiltId), statsCacheTags.root);
+
   try {
     const result = await db
       .select({
@@ -327,11 +390,7 @@ export async function createUsageRecord(data: CreateUsageRecordData): Promise<Us
       return created as unknown as UsageRecord;
     });
 
-    revalidateTag('usage', 'max');
-    revalidateTag(`usage-quilt-${data.quiltId}`, 'max');
-
-    // Also invalidate stats as they change
-    revalidateTag('stats', 'max');
+    invalidateUsageTags(record.id, data.quiltId, data.endDate == null);
 
     dbLogger.info('Usage record created', { id: record.id });
     return record;
@@ -364,10 +423,10 @@ export async function updateUsageRecord(
       const [record] = await tx
         .update(usageRecords)
         .set({
-          startDate: data.startDate,
-          endDate: data.endDate,
-          usageType: data.usageType,
-          notes: data.notes,
+          ...(data.startDate !== undefined ? { startDate: data.startDate } : {}),
+          ...(data.endDate !== undefined ? { endDate: data.endDate } : {}),
+          ...(data.usageType !== undefined ? { usageType: data.usageType } : {}),
+          ...(data.notes !== undefined ? { notes: data.notes } : {}),
           updatedAt: new Date(),
         })
         .where(eq(usageRecords.id, id))
@@ -380,10 +439,7 @@ export async function updateUsageRecord(
 
     if (!updated) return null;
 
-    revalidateTag('usage', 'max');
-    revalidateTag(`usage-${id}`, 'max');
-    revalidateTag(`usage-quilt-${current.quiltId}`, 'max');
-    revalidateTag('stats', 'max');
+    invalidateUsageTags(updated.id, current.quiltId, updated.endDate == null);
 
     dbLogger.info('Usage record updated', { id });
     return updated;
@@ -425,10 +481,7 @@ export async function endUsageRecord(
 
     if (!updated) return null;
 
-    revalidateTag('usage', 'max');
-    revalidateTag(`usage-${id}`, 'max');
-    revalidateTag(`usage-quilt-${current.quiltId}`, 'max');
-    revalidateTag('stats', 'max');
+    invalidateUsageTags(updated.id, current.quiltId, false);
 
     dbLogger.info('Usage record ended', { id });
     return updated;
@@ -453,10 +506,7 @@ export async function deleteUsageRecord(id: string): Promise<boolean> {
       await syncQuiltStatusForUsage(tx, current.quiltId);
     });
 
-    revalidateTag('usage', 'max');
-    revalidateTag(`usage-${id}`, 'max');
-    revalidateTag(`usage-quilt-${current.quiltId}`, 'max');
-    revalidateTag('stats', 'max');
+    invalidateUsageTags(id, current.quiltId, current.endDate == null);
 
     return true;
   } catch (error) {
@@ -466,12 +516,12 @@ export async function deleteUsageRecord(id: string): Promise<boolean> {
 }
 
 // ============================================================================
-// REQUEST DEDUPLICATION
+// Compatibility exports. The primary functions use Next.js persistent caching.
 // ============================================================================
 
-export const getUsageRecordByIdCached = cache(getUsageRecordById);
-export const getUsageHistoryCached = cache(getUsageHistory);
-export const getActiveUsageRecordCached = cache(getActiveUsageRecord);
-export const getAllActiveUsageRecordsCached = cache(getAllActiveUsageRecords);
-export const getUsageRecordsCached = cache(getUsageRecords);
-export const getUsageStatsCached = cache(getUsageStats);
+export const getUsageRecordByIdCached = getUsageRecordById;
+export const getUsageHistoryCached = getUsageHistory;
+export const getActiveUsageRecordCached = getActiveUsageRecord;
+export const getAllActiveUsageRecordsCached = getAllActiveUsageRecords;
+export const getUsageRecordsCached = getUsageRecords;
+export const getUsageStatsCached = getUsageStats;

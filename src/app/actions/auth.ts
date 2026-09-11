@@ -10,22 +10,15 @@ import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { isRedirectError } from 'next/dist/client/components/redirect-error';
 import { z } from 'zod';
+import { normalizeInternalRedirect } from '@/lib/redirect-validation';
 
 const loginSchema = z.object({
   email: z.string().email('Invalid email address'),
-  password: z.string().min(1, 'Password is required'),
+  password: z.string().min(12, 'Password must be at least 12 characters'),
 });
 
 function normalizeCallbackUrl(value: FormDataEntryValue | null): string {
-  if (typeof value !== 'string' || value.length === 0) {
-    return '/';
-  }
-
-  if (!value.startsWith('/') || value.startsWith('//')) {
-    return '/';
-  }
-
-  return value;
+  return normalizeInternalRedirect(value, '/');
 }
 
 async function ensureBetterAuthTables() {

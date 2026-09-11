@@ -19,7 +19,7 @@ import {
   createSuccessResponse,
   createCreatedResponse,
 } from '@/lib/api/response';
-import { requireApiSession } from '@/lib/api/route-auth';
+import { requireApiModule } from '@/lib/api/route-auth';
 
 // Input validation schemas
 const createUsageRecordSchema = z
@@ -49,7 +49,7 @@ const createUsageRecordSchema = z
  */
 export async function GET(request: NextRequest) {
   try {
-    const authResult = await requireApiSession();
+    const authResult = await requireApiModule('quilts');
     if (!authResult.ok) return authResult.response;
 
     const { searchParams } = new URL(request.url);
@@ -97,7 +97,7 @@ export async function GET(request: NextRequest) {
  */
 export async function POST(request: NextRequest) {
   try {
-    const authResult = await requireApiSession();
+    const authResult = await requireApiModule('quilts');
     if (!authResult.ok) return authResult.response;
 
     const rawBody = await request.json();

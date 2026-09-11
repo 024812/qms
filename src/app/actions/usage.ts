@@ -1,9 +1,9 @@
 'use server';
 
-import { updateTag } from 'next/cache';
 import { z } from 'zod';
 
 import { auth } from '@/auth';
+import { ModuleAccessError, requireModuleAccess } from '@/lib/module-access';
 import {
   createUsageRecord as createUsageRecordData,
   deleteUsageRecord as deleteUsageRecordData,
@@ -99,26 +99,6 @@ const endUsageRecordSchema = z.object({
   notes: z.string().max(500, 'Notes must be 500 characters or less').nullable().optional(),
 });
 
-function refreshUsageActionCaches(options?: { quiltId?: string; usageRecordId?: string }) {
-  updateTag('usage');
-  updateTag('usage-list');
-  updateTag('usage-active');
-  updateTag('stats');
-  updateTag('stats-dashboard');
-  updateTag('stats-analytics');
-  updateTag('quilts');
-  updateTag('quilts-list');
-
-  if (options?.quiltId) {
-    updateTag(`usage-quilt-${options.quiltId}`);
-    updateTag(`quilts-${options.quiltId}`);
-  }
-
-  if (options?.usageRecordId) {
-    updateTag(`usage-${options.usageRecordId}`);
-  }
-}
-
 function toQuiltUsageStats(records: UsageRecord[]): QuiltUsageStats {
   const totalUsages = records.length;
   const totalDays = records.reduce((sum, record) => {
@@ -179,7 +159,13 @@ function unauthorizedResult(): ActionResult<never> {
 
 async function requireAuthenticatedUser() {
   const session = await auth();
-  return session?.user?.id ? session : null;
+  if (!session?.user?.id) return null;
+  try {
+    return requireModuleAccess(session, 'quilts');
+  } catch (error) {
+    if (error instanceof ModuleAccessError) return null;
+    throw error;
+  }
 }
 
 export async function getUsageRecordsAction(
@@ -419,7 +405,6 @@ export async function createUsageRecordAction(input: {
     }
 
     const record = await createUsageRecordData(validationResult.data);
-    refreshUsageActionCaches({ quiltId: record.quiltId, usageRecordId: record.id });
 
     return {
       success: true,
@@ -490,8 +475,6 @@ export async function updateUsageRecordAction(input: {
       };
     }
 
-    refreshUsageActionCaches({ quiltId: currentRecord.quiltId, usageRecordId: record.id });
-
     return {
       success: true,
       data: record,
@@ -555,11 +538,6 @@ export async function endUsageRecordAction(input: {
       };
     }
 
-    refreshUsageActionCaches({
-      quiltId: validationResult.data.quiltId,
-      usageRecordId: record.id,
-    });
-
     return {
       success: true,
       data: record,
@@ -611,11 +589,6 @@ export async function deleteUsageRecordAction(
         },
       };
     }
-
-    refreshUsageActionCaches({
-      quiltId: currentRecord.quiltId,
-      usageRecordId: validationResult.data,
-    });
 
     return {
       success: true,

@@ -4,6 +4,7 @@ import { z } from 'zod';
 
 import type { CardSettings, GetCardsActionInput, GetCardsActionResult } from './cards.types';
 import { auth } from '@/auth';
+import { ModuleAccessError, requireModuleAccess } from '@/lib/module-access';
 import {
   deleteCard as deleteCardData,
   getCardById,
@@ -147,7 +148,12 @@ async function requireAdmin() {
     return null;
   }
 
-  return session;
+  try {
+    return requireModuleAccess(session, 'cards');
+  } catch (error) {
+    if (error instanceof ModuleAccessError) return null;
+    throw error;
+  }
 }
 
 async function requireAuthenticatedUser() {
@@ -157,7 +163,12 @@ async function requireAuthenticatedUser() {
     return null;
   }
 
-  return session;
+  try {
+    return requireModuleAccess(session, 'cards');
+  } catch (error) {
+    if (error instanceof ModuleAccessError) return null;
+    throw error;
+  }
 }
 
 function maskCardSettings(settings: CardSettingsData): CardSettings {

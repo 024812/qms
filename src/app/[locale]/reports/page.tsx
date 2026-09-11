@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -64,6 +65,7 @@ interface ImportData {
 
 export default function ImportExportPage() {
   const t = useTranslations();
+  const router = useRouter();
   const { data: session } = useSession();
   const isAdmin = session?.user?.role === 'admin';
   const [activeTab, setActiveTab] = useState<'import' | 'export'>('export');
@@ -185,7 +187,7 @@ export default function ImportExportPage() {
                 results={importData.results}
                 fileName={importData.fileName}
                 onStartOver={handleStartOver}
-                onGoToDashboard={() => (window.location.href = '/')}
+                onGoToDashboard={() => router.push('/')}
               />
             )}
           </TabsContent>

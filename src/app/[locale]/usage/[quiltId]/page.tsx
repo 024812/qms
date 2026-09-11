@@ -2,6 +2,8 @@ import { getQuiltById } from '@/lib/data/quilts';
 import { getUsageHistory } from '@/lib/data/usage';
 import { connection } from 'next/server';
 import { QuiltUsageDetailPageClient } from './_components/QuiltUsageDetailPageClient';
+import { auth } from '@/auth';
+import { requirePageModuleAccess } from '@/lib/module-access';
 
 type RawSearchParams = Record<string, string | string[] | undefined>;
 
@@ -26,6 +28,7 @@ export default async function QuiltUsageDetailPage({
   searchParams,
 }: QuiltUsageDetailPageProps) {
   await connection();
+  requirePageModuleAccess(await auth(), 'quilts');
 
   const [{ quiltId }, resolvedSearchParams] = await Promise.all([params, searchParams]);
   const from = getParam(resolvedSearchParams ?? {}, 'from') === 'quilts' ? 'quilts' : 'usage';

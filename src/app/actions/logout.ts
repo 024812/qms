@@ -3,13 +3,10 @@
 import { betterAuthInstance } from '@/auth';
 import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
+import { normalizeInternalRedirect } from '@/lib/redirect-validation';
 
 function normalizeRedirectPath(redirectTo?: string): string {
-  if (!redirectTo || !redirectTo.startsWith('/') || redirectTo.startsWith('//')) {
-    return '/login';
-  }
-
-  return redirectTo;
+  return normalizeInternalRedirect(redirectTo, '/login');
 }
 
 export async function logoutUser(redirectTo?: string) {

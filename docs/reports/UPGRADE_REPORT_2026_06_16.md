@@ -1,5 +1,9 @@
 # QMS 优化升级完成报告
 
+> 文档状态：`historical`（执行日期 `2026-06-16`）。这是当日升级记录，不是当前版本的完整发布说明。
+>
+> 版本差异：本文记录的目标依赖版本低于当前 QMS `2026.7.17` 基线；当前版本以 `package.json`/lockfile 为准，例如 Next.js `16.2.10`、Better Auth `1.6.23`、Drizzle ORM `0.45.2`。新增模块和数据库变更应遵循 [MODULE_BLUEPRINT_V3.md](../architecture/MODULE_BLUEPRINT_V3.md)。
+
 ## 执行日期：2026-06-16
 
 ## ✅ 已完成的优化任务
@@ -169,8 +173,10 @@ psql $DATABASE_URL -c "SELECT COUNT(*) FROM quilts;"
 psql $DATABASE_URL -c "SELECT COUNT(*) FROM usage_records;"
 
 # 4. 更新 schema
-npm run db:push
+npm run db:migrate
 ```
+
+**强警告：`npm run db:push` 不是生产迁移流程。** 它只允许用于明确的本地原型实验；生产必须提交 migration 文件并使用 `npm run db:migrate`。本文早期版本中的 `db:push` 步骤已废弃。
 
 **预计停机时间：**
 
@@ -221,7 +227,7 @@ psql $DATABASE_URL -f drizzle/migrate-quilts-to-uuid.sql
 ### 本地验证
 
 ```bash
-# 1. 安装依赖
+# 1. 将项目复制到 C:\temp\<project> 后安装依赖（OneDrive 下禁止安装）
 npm install
 
 # 2. 运行测试
@@ -233,7 +239,7 @@ npm run type-check
 # 4. Lint 检查
 npm run lint:check
 
-# 5. 本地构建
+# 5. 本地构建（仍在 C:\temp\<project> 中执行）
 npm run build
 
 # 6. 本地运行

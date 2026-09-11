@@ -2,6 +2,8 @@ import { notFound } from 'next/navigation';
 import { getCardAction } from '@/app/actions/cards';
 import { formatDateForInput, parseBackImage } from '@/modules/cards/utils';
 import { UnifiedCardDashboard } from '../components/UnifiedCardDashboard';
+import { auth } from '@/auth';
+import { requirePageModuleAccess } from '@/lib/module-access';
 
 interface CardPageProps {
   params: Promise<{
@@ -11,6 +13,7 @@ interface CardPageProps {
 }
 
 export default async function CardPage({ params }: CardPageProps) {
+  requirePageModuleAccess(await auth(), 'cards');
   const { id } = await params;
   const result = await getCardAction(id);
 

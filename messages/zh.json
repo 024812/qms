@@ -97,8 +97,15 @@
       "notes": "备注"
     },
     "fields": {
-      "itemNumber": { "label": "物品编号", "description": "自动生成的唯一编号" },
-      "name": { "label": "名称", "placeholder": "例如：蝴蝶王", "description": "底板的名称或描述" },
+      "itemNumber": {
+        "label": "物品编号",
+        "description": "自动生成的唯一编号"
+      },
+      "name": {
+        "label": "名称",
+        "placeholder": "例如：蝴蝶王",
+        "description": "底板的名称或描述"
+      },
       "bladeBrand": {
         "label": "底板品牌",
         "placeholder": "例如：蝴蝶、斯帝卡、红双喜",
@@ -114,7 +121,10 @@
         "placeholder": "例如：85",
         "description": "底板重量，单位：克（通常在70-100克之间）"
       },
-      "handleType": { "label": "握拍方式", "description": "底板的握拍方式" },
+      "handleType": {
+        "label": "握拍方式",
+        "description": "底板的握拍方式"
+      },
       "forehandRubber": {
         "label": "正手胶皮",
         "placeholder": "例如：天极3、狂飙3",
@@ -140,7 +150,10 @@
         "placeholder": "例如：7",
         "description": "底板控制评分，1为最低，10为最高"
       },
-      "purchaseDate": { "label": "购买日期", "description": "购买底板的日期" },
+      "purchaseDate": {
+        "label": "购买日期",
+        "description": "购买底板的日期"
+      },
       "purchasePrice": {
         "label": "购买价格（元）",
         "placeholder": "例如：800",
@@ -151,7 +164,10 @@
         "placeholder": "例如：600",
         "description": "底板的当前市场估值"
       },
-      "status": { "label": "状态", "description": "底板的当前状态" },
+      "status": {
+        "label": "状态",
+        "description": "底板的当前状态"
+      },
       "condition": {
         "label": "状况",
         "placeholder": "例如：良好、轻微磨损",
@@ -176,6 +192,25 @@
         "label": "附加图片",
         "placeholder": "多个图片URL，每行一个",
         "description": "底板的其他图片（细节图、配置图等）"
+      },
+      "thicknessMm": {
+        "label": "底板厚度（毫米）",
+        "placeholder": "例如：5.7",
+        "description": "底板厚度，单位：毫米"
+      },
+      "acquiredFrom": {
+        "label": "来源渠道",
+        "placeholder": "例如：精英二手、Taobao、Ebay",
+        "description": "底板的购买或获取渠道"
+      },
+      "soldPrice": {
+        "label": "卖出价格（元）",
+        "placeholder": "例如：950",
+        "description": "底板转让卖出的价格"
+      },
+      "soldDate": {
+        "label": "卖出日期",
+        "description": "底板转让卖出的日期"
       }
     },
     "enums": {
@@ -221,13 +256,19 @@
       "notes": "备注"
     },
     "fields": {
-      "itemNumber": { "label": "物品编号", "description": "自动生成的唯一编号" },
+      "itemNumber": {
+        "label": "物品编号",
+        "description": "自动生成的唯一编号"
+      },
       "name": {
         "label": "名称",
         "placeholder": "例如：清代和田玉佩",
         "description": "文玩的名称或描述"
       },
-      "category": { "label": "类别", "description": "文玩的主要类别" },
+      "category": {
+        "label": "类别",
+        "description": "文玩的主要类别"
+      },
       "material": {
         "label": "材质",
         "placeholder": "例如：和田白玉、紫檀木、青花瓷",
@@ -273,7 +314,10 @@
         "placeholder": "例如：国家珠宝玉石质量监督检验中心证书",
         "description": "鉴定证书信息"
       },
-      "appraisalDate": { "label": "鉴定日期", "description": "鉴定或评估的日期" },
+      "appraisalDate": {
+        "label": "鉴定日期",
+        "description": "鉴定或评估的日期"
+      },
       "appraisalBy": {
         "label": "鉴定机构/专家",
         "placeholder": "例如：故宫博物院专家",
@@ -289,7 +333,10 @@
         "placeholder": "例如：拍卖行、古玩市场、赠送",
         "description": "文玩的获得来源"
       },
-      "acquiredDate": { "label": "获得日期", "description": "购买或获得文玩的日期" },
+      "acquiredDate": {
+        "label": "获得日期",
+        "description": "购买或获得文玩的日期"
+      },
       "currentValue": {
         "label": "当前价值（元）",
         "placeholder": "例如：80000",
@@ -300,7 +347,10 @@
         "placeholder": "例如：100000",
         "description": "专业评估价值"
       },
-      "status": { "label": "状态", "description": "文玩的当前状态" },
+      "status": {
+        "label": "状态",
+        "description": "文玩的当前状态"
+      },
       "location": {
         "label": "存放位置",
         "placeholder": "例如：书房展柜、保险柜",
@@ -320,6 +370,50 @@
         "label": "附加图片",
         "placeholder": "多个图片URL，每行一个",
         "description": "文玩的其他图片（细节图等）"
+      },
+      "brand": {
+        "label": "品牌",
+        "placeholder": "例如：Maratac, Atwood, 三刃木",
+        "description": "厂牌或品牌（主要用于工具/现代文玩）"
+      },
+      "model": {
+        "label": "型号",
+        "placeholder": "例如：AAA TPF, Bugout",
+        "description": "具体型号或编号"
+      },
+      "subCategory": {
+        "label": "器型/细类",
+        "placeholder": "例如：108佛珠, 三通, 吊坠, 桶珠",
+        "description": "具体器型或细分分类"
+      },
+      "bladeSteel": {
+        "label": "刃材/刀钢",
+        "placeholder": "例如：D2, S35VN, M390, 粉末钢",
+        "description": "刀具/工具的主体钢材"
+      },
+      "handleMaterial": {
+        "label": "柄材/配料",
+        "placeholder": "例如：钛合金(Ti), G10, 黄铜, 酸枝木",
+        "description": "手柄或主框架材质"
+      },
+      "lockType": {
+        "label": "锁定方式",
+        "placeholder": "例如：线锁, 背锁, 按钮锁, 一体锁, 无锁",
+        "description": "折刀或工具的锁定结构"
+      },
+      "setGroup": {
+        "label": "配套分组",
+        "placeholder": "例如：Group1, Group2",
+        "description": "所属套装或串珠配件分组编号"
+      },
+      "soldPrice": {
+        "label": "卖出价格（元）",
+        "placeholder": "例如：240",
+        "description": "转让出清的价格"
+      },
+      "soldDate": {
+        "label": "卖出日期",
+        "description": "转让卖出的日期"
       }
     },
     "enums": {
@@ -330,7 +424,8 @@
         "METAL": "金属",
         "STONE": "石器",
         "PAPER": "纸品",
-        "OTHER": "其他"
+        "OTHER": "其他",
+        "TOOL": "工具/折刀"
       },
       "status": {
         "COLLECTION": "收藏中",
@@ -376,14 +471,24 @@
       "metadata": "元数据"
     },
     "fields": {
-      "itemNumber": { "label": "物品编号", "description": "自动生成的唯一编号" },
+      "itemNumber": {
+        "label": "物品编号",
+        "description": "自动生成的唯一编号"
+      },
       "name": {
         "label": "地图名称",
         "placeholder": "例如：北京市区地图",
         "description": "地图的名称或标题"
       },
-      "mapType": { "label": "地图类型", "description": "地图的类型分类" },
-      "scale": { "label": "比例尺", "placeholder": "例如：1:50000", "description": "地图的比例尺" },
+      "mapType": {
+        "label": "地图类型",
+        "description": "地图的类型分类"
+      },
+      "scale": {
+        "label": "比例尺",
+        "placeholder": "例如：1:50000",
+        "description": "地图的比例尺"
+      },
       "publishedYear": {
         "label": "出版年份",
         "placeholder": "例如：1980",
@@ -394,7 +499,10 @@
         "placeholder": "例如：中国地图出版社",
         "description": "出版该地图的机构或个人"
       },
-      "material": { "label": "材质", "description": "地图的材质" },
+      "material": {
+        "label": "材质",
+        "description": "地图的材质"
+      },
       "widthCm": {
         "label": "宽度（厘米）",
         "placeholder": "例如：60",
@@ -425,13 +533,19 @@
         "placeholder": "例如：保存完好，边缘有轻微磨损",
         "description": "地图的保存状态和品相"
       },
-      "isOriginal": { "label": "是否原版", "description": "是否为原版地图（非复制品）" },
+      "isOriginal": {
+        "label": "是否原版",
+        "description": "是否为原版地图（非复制品）"
+      },
       "edition": {
         "label": "版次",
         "placeholder": "例如：第一版",
         "description": "地图的版次信息"
       },
-      "acquiredDate": { "label": "获得日期", "description": "获得该地图的日期" },
+      "acquiredDate": {
+        "label": "获得日期",
+        "description": "获得该地图的日期"
+      },
       "purchasePrice": {
         "label": "购买价格",
         "placeholder": "例如：500",
@@ -442,7 +556,10 @@
         "placeholder": "例如：800",
         "description": "地图的当前估值"
       },
-      "status": { "label": "状态", "description": "地图的当前状态" },
+      "status": {
+        "label": "状态",
+        "description": "地图的当前状态"
+      },
       "location": {
         "label": "存放位置",
         "placeholder": "例如：书房书柜",
@@ -462,6 +579,46 @@
         "label": "附加图片",
         "placeholder": "多个图片URL，每行一个",
         "description": "地图的其他图片（细节图、背面图等）"
+      },
+      "publishedMonth": {
+        "label": "出版月份",
+        "placeholder": "例如：7",
+        "description": "出版月份 (1-12)"
+      },
+      "printYear": {
+        "label": "印刷年份",
+        "placeholder": "例如：1981",
+        "description": "实际印刷年份"
+      },
+      "printMonth": {
+        "label": "印刷月份",
+        "placeholder": "例如：8",
+        "description": "实际印刷月份 (1-12)"
+      },
+      "series": {
+        "label": "系列",
+        "placeholder": "例如：中国分省系列",
+        "description": "所属地图系列"
+      },
+      "isbn": {
+        "label": "ISBN / 统一书号",
+        "placeholder": "例如：12100.002",
+        "description": "统一书号或国际标准书号 (ISBN)"
+      },
+      "originalPrice": {
+        "label": "原标价（元）",
+        "placeholder": "例如：0.15",
+        "description": "地图票面原始定价"
+      },
+      "province": {
+        "label": "省份",
+        "placeholder": "例如：江苏、浙江",
+        "description": "地图所属省份"
+      },
+      "city": {
+        "label": "城市",
+        "placeholder": "例如：南京、西宁",
+        "description": "地图所描绘的城市"
       }
     },
     "enums": {
@@ -473,7 +630,8 @@
         "THEMATIC": "专题地图",
         "NAUTICAL": "航海图",
         "AERONAUTICAL": "航空图",
-        "OTHER": "其他"
+        "OTHER": "其他",
+        "ATLAS": "地图集"
       },
       "material": {
         "PAPER": "纸质",
@@ -519,13 +677,19 @@
       "deleteConfirm": "确定要删除这瓶藏酒吗？此操作无法撤销。"
     },
     "fields": {
-      "itemNumber": { "label": "物品编号", "description": "自动生成的唯一编号" },
+      "itemNumber": {
+        "label": "物品编号",
+        "description": "自动生成的唯一编号"
+      },
       "name": {
         "label": "名称",
         "placeholder": "例如：Macallan 18 Year Old",
         "description": "酒品的名称"
       },
-      "spiritType": { "label": "酒类", "description": "酒的类型" },
+      "spiritType": {
+        "label": "酒类",
+        "description": "酒的类型"
+      },
       "brand": {
         "label": "品牌",
         "placeholder": "例如：Macallan, Hennessy",
@@ -546,9 +710,21 @@
         "placeholder": "例如：Scotland, France",
         "description": "生产国家"
       },
-      "vintage": { "label": "年份", "placeholder": "例如：2005", "description": "酿造年份" },
-      "age": { "label": "陈年（年）", "placeholder": "例如：18", "description": "陈年时间（年）" },
-      "abv": { "label": "酒精度（%）", "placeholder": "例如：43.0", "description": "酒精度百分比" },
+      "vintage": {
+        "label": "年份",
+        "placeholder": "例如：2005",
+        "description": "酿造年份"
+      },
+      "age": {
+        "label": "陈年（年）",
+        "placeholder": "例如：18",
+        "description": "陈年时间（年）"
+      },
+      "abv": {
+        "label": "酒精度（%）",
+        "placeholder": "例如：43.0",
+        "description": "酒精度百分比"
+      },
       "volumeMl": {
         "label": "容量（毫升）",
         "placeholder": "例如：700",
@@ -559,14 +735,23 @@
         "placeholder": "例如：123/500",
         "description": "限量版瓶号"
       },
-      "limitedEdition": { "label": "限量版", "description": "是否为限量版" },
+      "limitedEdition": {
+        "label": "限量版",
+        "description": "是否为限量版"
+      },
       "caskType": {
         "label": "桶型",
         "placeholder": "例如：Sherry Oak, Bourbon",
         "description": "陈酿使用的橡木桶类型"
       },
-      "bottlingDate": { "label": "装瓶日期", "description": "装瓶日期" },
-      "acquiredDate": { "label": "获得日期", "description": "获得或购买日期" },
+      "bottlingDate": {
+        "label": "装瓶日期",
+        "description": "装瓶日期"
+      },
+      "acquiredDate": {
+        "label": "获得日期",
+        "description": "获得或购买日期"
+      },
       "purchasePrice": {
         "label": "购买价格",
         "placeholder": "例如：2500",
@@ -577,9 +762,19 @@
         "placeholder": "例如：3500",
         "description": "当前市场价值"
       },
-      "estimatedValue": { "label": "估值", "placeholder": "例如：4000", "description": "专业估值" },
-      "status": { "label": "状态", "description": "酒的状态" },
-      "bottleStatus": { "label": "瓶身状态", "description": "瓶身封装状态" },
+      "estimatedValue": {
+        "label": "估值",
+        "placeholder": "例如：4000",
+        "description": "专业估值"
+      },
+      "status": {
+        "label": "状态",
+        "description": "酒的状态"
+      },
+      "bottleStatus": {
+        "label": "瓶身状态",
+        "description": "瓶身封装状态"
+      },
       "storageCondition": {
         "label": "储存条件",
         "placeholder": "例如：恒温18-20°C，避光，湿度60%",
@@ -609,6 +804,21 @@
         "label": "附加图片",
         "placeholder": "多个图片URL，每行一个",
         "description": "酒品的其他图片（细节图、标签图等）"
+      },
+      "subType": {
+        "label": "子类型/香型",
+        "placeholder": "例如：干红、小甜水、桃红、酱香型",
+        "description": "酒品分类细分"
+      },
+      "model": {
+        "label": "型号/酒款名",
+        "placeholder": "例如：普五、特曲、国窖1573",
+        "description": "酒款具体型号或系列"
+      },
+      "acquiredFrom": {
+        "label": "购买渠道/供应商",
+        "placeholder": "例如：京东、专卖店",
+        "description": "购买渠道或供应商"
       }
     },
     "enums": {

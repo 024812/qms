@@ -9,7 +9,7 @@ const enums = {
   cardStatus: ['COLLECTION', 'FOR_SALE', 'SOLD', 'GRADING', 'DISPLAY'],
   paddleStatus: ['ACTIVE', 'RETIRED', 'FOR_SALE', 'SOLD', 'DISPLAY'],
   handleType: ['FL', 'ST', 'CS', 'AN'],
-  antiqueCategory: ['JADE', 'WOOD', 'CERAMIC', 'METAL', 'STONE', 'PAPER', 'OTHER'],
+  antiqueCategory: ['JADE', 'WOOD', 'CERAMIC', 'METAL', 'STONE', 'PAPER', 'TOOL', 'OTHER'],
   antiqueStatus: ['COLLECTION', 'FOR_SALE', 'SOLD', 'DISPLAY', 'APPRAISAL'],
   mapType: [
     'TOPOGRAPHIC',
@@ -19,6 +19,7 @@ const enums = {
     'THEMATIC',
     'NAUTICAL',
     'AERONAUTICAL',
+    'ATLAS',
     'OTHER',
   ],
   mapMaterial: ['PAPER', 'CLOTH', 'DIGITAL', 'OTHER'],

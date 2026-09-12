@@ -47,6 +47,7 @@ const MAP_TYPE_VALUES = [
   'THEMATIC',
   'NAUTICAL',
   'AERONAUTICAL',
+  'ATLAS',
   'OTHER',
 ] as const;
 

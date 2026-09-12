@@ -75,6 +75,7 @@ export const antiqueCategoryEnum = pgEnum('antique_category', [
   'METAL',
   'STONE',
   'PAPER',
+  'TOOL',
   'OTHER',
 ]);
 
@@ -106,6 +107,7 @@ export const mapTypeEnum = pgEnum('map_type', [
   'THEMATIC',
   'NAUTICAL',
   'AERONAUTICAL',
+  'ATLAS',
   'OTHER',
 ]);
 
@@ -441,7 +443,14 @@ export const antiques = pgTable(
     // Basic information
     name: text('name').notNull(),
     category: antiqueCategoryEnum('category').notNull(),
+    brand: text('brand'),
+    model: text('model'),
+    subCategory: text('sub_category'),
     material: text('material'),
+    bladeSteel: text('blade_steel'),
+    handleMaterial: text('handle_material'),
+    lockType: text('lock_type'),
+    setGroup: text('set_group'),
     era: text('era'),
     dynasty: text('dynasty'),
 
@@ -463,6 +472,8 @@ export const antiques = pgTable(
     acquiredDate: date('acquired_date'),
     currentValue: numeric('current_value', { precision: 10, scale: 2 }),
     estimatedValue: numeric('estimated_value', { precision: 10, scale: 2 }),
+    soldPrice: numeric('sold_price', { precision: 10, scale: 2 }),
+    soldDate: date('sold_date'),
 
     // Storage and status
     status: antiqueStatusEnum('status').default('COLLECTION').notNull(),
@@ -504,7 +515,13 @@ export const maps = pgTable(
     mapType: mapTypeEnum('map_type').notNull(),
     scale: text('scale'),
     publishedYear: integer('published_year'),
+    publishedMonth: integer('published_month'),
+    printYear: integer('print_year'),
+    printMonth: integer('print_month'),
     publisher: text('publisher'),
+    series: text('series'),
+    isbn: text('isbn'),
+    originalPrice: numeric('original_price', { precision: 10, scale: 2 }),
 
     // Material and dimensions
     material: mapMaterialEnum('material').default('PAPER').notNull(),
@@ -512,8 +529,10 @@ export const maps = pgTable(
     heightCm: numeric('height_cm', { precision: 10, scale: 2 }),
 
     // Geographic information
-    region: text('region'),
     country: text('country'),
+    province: text('province'),
+    city: text('city'),
+    region: text('region'),
     language: text('language'),
 
     // Condition and authenticity
@@ -647,7 +666,8 @@ export const paddles = pgTable(
     bladeModel: text('blade_model'),
 
     // Physical characteristics
-    bladeWeightG: integer('blade_weight_g'),
+    bladeWeightG: numeric('blade_weight_g', { precision: 5, scale: 2 }),
+    thicknessMm: numeric('thickness_mm', { precision: 4, scale: 2 }),
     handleType: text('handle_type'), // FL/ST/CS/AN
 
     // Rubber configuration
@@ -662,7 +682,10 @@ export const paddles = pgTable(
     // Purchase and value
     purchaseDate: date('purchase_date'),
     purchasePrice: numeric('purchase_price', { precision: 10, scale: 2 }),
+    acquiredFrom: text('acquired_from'),
     currentValue: numeric('current_value', { precision: 10, scale: 2 }),
+    soldPrice: numeric('sold_price', { precision: 10, scale: 2 }),
+    soldDate: date('sold_date'),
 
     // Status and condition
     status: paddleStatusEnum('status').default('ACTIVE').notNull(),
@@ -702,7 +725,9 @@ export const spirits = pgTable(
     // Basic information
     name: text('name').notNull(),
     spiritType: spiritTypeEnum('spirit_type').notNull(),
+    subType: text('sub_type'),
     brand: text('brand'),
+    model: text('model'),
     distillery: text('distillery'),
     region: text('region'),
     country: text('country'),
@@ -721,6 +746,7 @@ export const spirits = pgTable(
 
     // Acquisition and value
     acquiredDate: date('acquired_date'),
+    acquiredFrom: text('acquired_from'),
     purchasePrice: numeric('purchase_price', { precision: 10, scale: 2 }),
     currentValue: numeric('current_value', { precision: 10, scale: 2 }),
     estimatedValue: numeric('estimated_value', { precision: 10, scale: 2 }),

@@ -68,9 +68,15 @@ export const paddleAttributesSchema = z.object({
   // Physical Characteristics
   bladeWeightG: z
     .number()
-    .int('Blade weight must be an integer')
-    .min(50, 'Blade weight too light')
+    .positive('Blade weight must be positive')
     .max(250, 'Blade weight too heavy')
+    .optional()
+    .nullable(),
+
+  thicknessMm: z
+    .number()
+    .positive('Thickness must be positive')
+    .max(20, 'Thickness too thick')
     .optional()
     .nullable(),
 
@@ -110,7 +116,13 @@ export const paddleAttributesSchema = z.object({
 
   purchasePrice: z.number().min(0, 'Purchase price cannot be negative').optional().nullable(),
 
+  acquiredFrom: z.string().max(200, 'Source too long').optional().nullable(),
+
   currentValue: z.number().min(0, 'Current value cannot be negative').optional().nullable(),
+
+  soldPrice: z.number().min(0, 'Sold price cannot be negative').optional().nullable(),
+
+  soldDate: z.coerce.date().optional().nullable(),
 
   // Status and Condition
   status: PaddleStatusSchema.default('ACTIVE'),
@@ -176,6 +188,7 @@ export interface PaddleItem {
   bladeBrand: string | null;
   bladeModel: string | null;
   bladeWeightG: number | null;
+  thicknessMm: number | null;
   handleType: HandleType | null;
   forehandRubber: string | null;
   backhandRubber: string | null;
@@ -184,7 +197,10 @@ export interface PaddleItem {
   bladeControl: number | null;
   purchaseDate: Date | null;
   purchasePrice: number | null;
+  acquiredFrom: string | null;
   currentValue: number | null;
+  soldPrice: number | null;
+  soldDate: Date | null;
   status: PaddleStatus;
   condition: string | null;
   location: string | null;
@@ -205,7 +221,10 @@ export function rowToPaddleItem(row: Record<string, unknown>): PaddleItem {
     name: row.name as string,
     bladeBrand: (row.bladeBrand as string) ?? null,
     bladeModel: (row.bladeModel as string) ?? null,
-    bladeWeightG: (row.bladeWeightG as number) ?? null,
+    bladeWeightG:
+      row.bladeWeightG !== null && row.bladeWeightG !== undefined ? Number(row.bladeWeightG) : null,
+    thicknessMm:
+      row.thicknessMm !== null && row.thicknessMm !== undefined ? Number(row.thicknessMm) : null,
     handleType: (row.handleType as HandleType) ?? null,
     forehandRubber: (row.forehandRubber as string) ?? null,
     backhandRubber: (row.backhandRubber as string) ?? null,
@@ -220,8 +239,11 @@ export function rowToPaddleItem(row: Record<string, unknown>): PaddleItem {
       row.purchasePrice !== null && row.purchasePrice !== undefined
         ? Number(row.purchasePrice)
         : null,
+    acquiredFrom: (row.acquiredFrom as string) ?? null,
     currentValue:
       row.currentValue !== null && row.currentValue !== undefined ? Number(row.currentValue) : null,
+    soldPrice: row.soldPrice !== null && row.soldPrice !== undefined ? Number(row.soldPrice) : null,
+    soldDate: row.soldDate ? new Date(row.soldDate as string) : null,
     status: (row.status as PaddleStatus) ?? 'ACTIVE',
     condition: (row.condition as string) ?? null,
     location: (row.location as string) ?? null,

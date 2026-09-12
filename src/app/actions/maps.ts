@@ -52,6 +52,7 @@ const MapSearchInputSchema = z.object({
           'THEMATIC',
           'NAUTICAL',
           'AERONAUTICAL',
+          'ATLAS',
           'OTHER',
         ])
         .optional(),

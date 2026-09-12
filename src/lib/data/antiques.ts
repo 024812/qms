@@ -52,7 +52,14 @@ export interface AntiqueFilters {
 export interface CreateAntiqueData {
   name: string;
   category: AntiqueCategory;
+  brand?: string | null;
+  model?: string | null;
+  subCategory?: string | null;
   material?: string | null;
+  bladeSteel?: string | null;
+  handleMaterial?: string | null;
+  lockType?: string | null;
+  setGroup?: string | null;
   era?: string | null;
   dynasty?: string | null;
   lengthCm?: number | null;
@@ -68,6 +75,8 @@ export interface CreateAntiqueData {
   acquiredDate?: Date | null;
   currentValue?: number | null;
   estimatedValue?: number | null;
+  soldPrice?: number | null;
+  soldDate?: Date | null;
   status?: AntiqueStatus;
   location?: string | null;
   notes?: string | null;
@@ -131,7 +140,14 @@ function buildAntiqueUpdateValues(data: Partial<CreateAntiqueData>): AntiqueMuta
 
   if (data.name !== undefined) updateValues.name = data.name;
   if (data.category !== undefined) updateValues.category = data.category;
+  if (data.brand !== undefined) updateValues.brand = data.brand;
+  if (data.model !== undefined) updateValues.model = data.model;
+  if (data.subCategory !== undefined) updateValues.subCategory = data.subCategory;
   if (data.material !== undefined) updateValues.material = data.material;
+  if (data.bladeSteel !== undefined) updateValues.bladeSteel = data.bladeSteel;
+  if (data.handleMaterial !== undefined) updateValues.handleMaterial = data.handleMaterial;
+  if (data.lockType !== undefined) updateValues.lockType = data.lockType;
+  if (data.setGroup !== undefined) updateValues.setGroup = data.setGroup;
   if (data.era !== undefined) updateValues.era = data.era;
   if (data.dynasty !== undefined) updateValues.dynasty = data.dynasty;
   if (data.lengthCm !== undefined)
@@ -159,6 +175,11 @@ function buildAntiqueUpdateValues(data: Partial<CreateAntiqueData>): AntiqueMuta
   if (data.estimatedValue !== undefined)
     updateValues.estimatedValue =
       data.estimatedValue !== null ? data.estimatedValue.toString() : null;
+  if (data.soldPrice !== undefined)
+    updateValues.soldPrice = data.soldPrice !== null ? data.soldPrice.toString() : null;
+  if (data.soldDate !== undefined)
+    updateValues.soldDate =
+      data.soldDate !== null ? data.soldDate.toISOString().split('T')[0] : null;
   if (data.status !== undefined) updateValues.status = data.status;
   if (data.location !== undefined) updateValues.location = data.location;
   if (data.notes !== undefined) updateValues.notes = data.notes;
@@ -174,7 +195,14 @@ function rowToAntiqueItem(row: typeof antiques.$inferSelect): AntiqueItem {
     itemNumber: row.itemNumber,
     name: row.name,
     category: row.category as AntiqueCategory,
+    brand: row.brand,
+    model: row.model,
+    subCategory: row.subCategory,
     material: row.material,
+    bladeSteel: row.bladeSteel,
+    handleMaterial: row.handleMaterial,
+    lockType: row.lockType,
+    setGroup: row.setGroup,
     era: row.era,
     dynasty: row.dynasty,
     lengthCm: row.lengthCm,
@@ -190,6 +218,8 @@ function rowToAntiqueItem(row: typeof antiques.$inferSelect): AntiqueItem {
     acquiredDate: row.acquiredDate,
     currentValue: row.currentValue,
     estimatedValue: row.estimatedValue,
+    soldPrice: row.soldPrice,
+    soldDate: row.soldDate,
     status: row.status as AntiqueStatus,
     location: row.location,
     notes: row.notes,
@@ -374,7 +404,14 @@ export async function createAntique(data: CreateAntiqueData): Promise<AntiqueIte
     const insertValues: typeof antiques.$inferInsert = {
       name: data.name,
       category: data.category,
+      brand: data.brand ?? null,
+      model: data.model ?? null,
+      subCategory: data.subCategory ?? null,
       material: data.material ?? null,
+      bladeSteel: data.bladeSteel ?? null,
+      handleMaterial: data.handleMaterial ?? null,
+      lockType: data.lockType ?? null,
+      setGroup: data.setGroup ?? null,
       era: data.era ?? null,
       dynasty: data.dynasty ?? null,
       lengthCm:
@@ -401,6 +438,9 @@ export async function createAntique(data: CreateAntiqueData): Promise<AntiqueIte
         data.estimatedValue !== undefined && data.estimatedValue !== null
           ? data.estimatedValue.toString()
           : null,
+      soldPrice:
+        data.soldPrice !== undefined && data.soldPrice !== null ? data.soldPrice.toString() : null,
+      soldDate: data.soldDate ? data.soldDate.toISOString().split('T')[0] : null,
       status: data.status ?? 'COLLECTION',
       location: data.location ?? null,
       notes: data.notes ?? null,

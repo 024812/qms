@@ -24,6 +24,7 @@ export const AntiqueCategory = {
   METAL: 'METAL',
   STONE: 'STONE',
   PAPER: 'PAPER',
+  TOOL: 'TOOL',
   OTHER: 'OTHER',
 } as const;
 
@@ -36,6 +37,7 @@ export const AntiqueCategorySchema = z.enum([
   'METAL',
   'STONE',
   'PAPER',
+  'TOOL',
   'OTHER',
 ]);
 
@@ -81,7 +83,21 @@ export const antiqueAttributesSchema = z.object({
 
   category: AntiqueCategorySchema,
 
+  brand: z.string().max(100, 'Brand name too long').optional().nullable(),
+
+  model: z.string().max(100, 'Model too long').optional().nullable(),
+
+  subCategory: z.string().max(100, 'Subcategory too long').optional().nullable(),
+
   material: z.string().max(100, 'Material description too long').optional().nullable(),
+
+  bladeSteel: z.string().max(100, 'Blade steel description too long').optional().nullable(),
+
+  handleMaterial: z.string().max(100, 'Handle material description too long').optional().nullable(),
+
+  lockType: z.string().max(50, 'Lock type too long').optional().nullable(),
+
+  setGroup: z.string().max(50, 'Set group too long').optional().nullable(),
 
   era: z.string().max(100, 'Era description too long').optional().nullable(),
 
@@ -151,6 +167,15 @@ export const antiqueAttributesSchema = z.object({
     .optional()
     .nullable(),
 
+  soldPrice: z
+    .number()
+    .nonnegative('Sold price cannot be negative')
+    .max(100000000, 'Sold price too large')
+    .optional()
+    .nullable(),
+
+  soldDate: z.coerce.date().optional().nullable(),
+
   // Storage and Status
   status: AntiqueStatusSchema.default('COLLECTION'),
 
@@ -208,7 +233,14 @@ export interface AntiqueItem {
   itemNumber: number;
   name: string;
   category: AntiqueCategory;
+  brand: string | null;
+  model: string | null;
+  subCategory: string | null;
   material: string | null;
+  bladeSteel: string | null;
+  handleMaterial: string | null;
+  lockType: string | null;
+  setGroup: string | null;
   era: string | null;
   dynasty: string | null;
   lengthCm: string | null; // numeric stored as string
@@ -224,6 +256,8 @@ export interface AntiqueItem {
   acquiredDate: string | null;
   currentValue: string | null;
   estimatedValue: string | null;
+  soldPrice: string | null;
+  soldDate: string | null;
   status: AntiqueStatus;
   location: string | null;
   notes: string | null;

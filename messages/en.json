@@ -97,7 +97,10 @@
       "notes": "Notes"
     },
     "fields": {
-      "itemNumber": { "label": "Item No.", "description": "Auto-generated unique number" },
+      "itemNumber": {
+        "label": "Item No.",
+        "description": "Auto-generated unique number"
+      },
       "name": {
         "label": "Name",
         "placeholder": "e.g. Butterfly King",
@@ -118,7 +121,10 @@
         "placeholder": "e.g. 85",
         "description": "Blade weight in grams (typically 70-100g)"
       },
-      "handleType": { "label": "Handle Type", "description": "Grip style of the paddle" },
+      "handleType": {
+        "label": "Handle Type",
+        "description": "Grip style of the paddle"
+      },
       "forehandRubber": {
         "label": "Forehand Rubber",
         "placeholder": "e.g. Skyline 3, Hurricane 3",
@@ -144,7 +150,10 @@
         "placeholder": "e.g. 7",
         "description": "Blade control rating, 1 = lowest, 10 = highest"
       },
-      "purchaseDate": { "label": "Purchase Date", "description": "Date the paddle was purchased" },
+      "purchaseDate": {
+        "label": "Purchase Date",
+        "description": "Date the paddle was purchased"
+      },
       "purchasePrice": {
         "label": "Purchase Price (¥)",
         "placeholder": "e.g. 800",
@@ -155,7 +164,10 @@
         "placeholder": "e.g. 600",
         "description": "Current market value of the paddle"
       },
-      "status": { "label": "Status", "description": "Current status of the paddle" },
+      "status": {
+        "label": "Status",
+        "description": "Current status of the paddle"
+      },
       "condition": {
         "label": "Condition",
         "placeholder": "e.g. Good, minor wear",
@@ -180,6 +192,25 @@
         "label": "Attachment Images",
         "placeholder": "One image URL per line",
         "description": "Other images of the paddle (details, setup, etc.)"
+      },
+      "thicknessMm": {
+        "label": "Blade Thickness (mm)",
+        "placeholder": "e.g. 5.7",
+        "description": "Blade thickness in mm"
+      },
+      "acquiredFrom": {
+        "label": "Acquired From",
+        "placeholder": "e.g. Taobao, Ebay",
+        "description": "Purchase or acquisition source"
+      },
+      "soldPrice": {
+        "label": "Sold Price (¥)",
+        "placeholder": "e.g. 950",
+        "description": "Price sold for"
+      },
+      "soldDate": {
+        "label": "Sold Date",
+        "description": "Date the paddle was sold"
       }
     },
     "enums": {
@@ -225,13 +256,19 @@
       "notes": "Notes"
     },
     "fields": {
-      "itemNumber": { "label": "Item No.", "description": "Auto-generated unique number" },
+      "itemNumber": {
+        "label": "Item No.",
+        "description": "Auto-generated unique number"
+      },
       "name": {
         "label": "Name",
         "placeholder": "e.g. Qing Dynasty Hetian Jade Pendant",
         "description": "Name or description of the piece"
       },
-      "category": { "label": "Category", "description": "Primary category of the antique" },
+      "category": {
+        "label": "Category",
+        "description": "Primary category of the antique"
+      },
       "material": {
         "label": "Material",
         "placeholder": "e.g. Hetian white jade, red sandalwood",
@@ -310,7 +347,10 @@
         "placeholder": "e.g. 100000",
         "description": "Professionally appraised value"
       },
-      "status": { "label": "Status", "description": "Current status of the antique" },
+      "status": {
+        "label": "Status",
+        "description": "Current status of the antique"
+      },
       "location": {
         "label": "Location",
         "placeholder": "e.g. Study cabinet, safe",
@@ -330,6 +370,50 @@
         "label": "Attachment Images",
         "placeholder": "One image URL per line",
         "description": "Other images of the antique (details, etc.)"
+      },
+      "brand": {
+        "label": "Brand",
+        "placeholder": "e.g. Maratac, Atwood",
+        "description": "Manufacturer or brand"
+      },
+      "model": {
+        "label": "Model",
+        "placeholder": "e.g. AAA TPF, Bugout",
+        "description": "Specific model"
+      },
+      "subCategory": {
+        "label": "Subcategory",
+        "placeholder": "e.g. 108 Mala, Guru Bead, Pendant",
+        "description": "Specific form or subcategory"
+      },
+      "bladeSteel": {
+        "label": "Blade Steel",
+        "placeholder": "e.g. D2, S35VN, M390",
+        "description": "Blade steel used"
+      },
+      "handleMaterial": {
+        "label": "Handle Material",
+        "placeholder": "e.g. Titanium (Ti), G10, Brass",
+        "description": "Handle or scale material"
+      },
+      "lockType": {
+        "label": "Lock Type",
+        "placeholder": "e.g. Liner lock, Back lock, Axis lock",
+        "description": "Lock mechanism"
+      },
+      "setGroup": {
+        "label": "Set Group",
+        "placeholder": "e.g. Group1, Group2",
+        "description": "Matching kit or group ID"
+      },
+      "soldPrice": {
+        "label": "Sold Price (¥)",
+        "placeholder": "e.g. 240",
+        "description": "Price sold for"
+      },
+      "soldDate": {
+        "label": "Sold Date",
+        "description": "Date the antique was sold"
       }
     },
     "enums": {
@@ -340,7 +424,8 @@
         "METAL": "Metal",
         "STONE": "Stone",
         "PAPER": "Paper",
-        "OTHER": "Other"
+        "OTHER": "Other",
+        "TOOL": "Tool / EDC"
       },
       "status": {
         "COLLECTION": "In Collection",
@@ -386,13 +471,19 @@
       "metadata": "Metadata"
     },
     "fields": {
-      "itemNumber": { "label": "Item No.", "description": "Auto-generated unique number" },
+      "itemNumber": {
+        "label": "Item No.",
+        "description": "Auto-generated unique number"
+      },
       "name": {
         "label": "Map Name",
         "placeholder": "e.g. Beijing City Map",
         "description": "Name or title of the map"
       },
-      "mapType": { "label": "Map Type", "description": "Type classification of the map" },
+      "mapType": {
+        "label": "Map Type",
+        "description": "Type classification of the map"
+      },
       "scale": {
         "label": "Scale",
         "placeholder": "e.g. 1:50000",
@@ -408,7 +499,10 @@
         "placeholder": "e.g. SinoMaps Press",
         "description": "Organization or person who published the map"
       },
-      "material": { "label": "Material", "description": "Material of the map" },
+      "material": {
+        "label": "Material",
+        "description": "Material of the map"
+      },
       "widthCm": {
         "label": "Width (cm)",
         "placeholder": "e.g. 60",
@@ -462,7 +556,10 @@
         "placeholder": "e.g. 800",
         "description": "Current estimated value of the map"
       },
-      "status": { "label": "Status", "description": "Current status of the map" },
+      "status": {
+        "label": "Status",
+        "description": "Current status of the map"
+      },
       "location": {
         "label": "Location",
         "placeholder": "e.g. Study bookcase",
@@ -482,6 +579,46 @@
         "label": "Attachment Images",
         "placeholder": "One image URL per line",
         "description": "Other images of the map (details, reverse, etc.)"
+      },
+      "publishedMonth": {
+        "label": "Published Month",
+        "placeholder": "e.g. 7",
+        "description": "Month of publication (1-12)"
+      },
+      "printYear": {
+        "label": "Print Year",
+        "placeholder": "e.g. 1981",
+        "description": "Actual printing year"
+      },
+      "printMonth": {
+        "label": "Print Month",
+        "placeholder": "e.g. 8",
+        "description": "Actual printing month (1-12)"
+      },
+      "series": {
+        "label": "Series",
+        "placeholder": "e.g. China Provincial Series",
+        "description": "Map series"
+      },
+      "isbn": {
+        "label": "ISBN / Book No.",
+        "placeholder": "e.g. 12100.002",
+        "description": "Unified book number or ISBN"
+      },
+      "originalPrice": {
+        "label": "Original Price (¥)",
+        "placeholder": "e.g. 0.15",
+        "description": "Original cover price"
+      },
+      "province": {
+        "label": "Province",
+        "placeholder": "e.g. Jiangsu, Zhejiang",
+        "description": "Province covered by the map"
+      },
+      "city": {
+        "label": "City",
+        "placeholder": "e.g. Nanjing, Xining",
+        "description": "City depicted on the map"
       }
     },
     "enums": {
@@ -493,7 +630,8 @@
         "THEMATIC": "Thematic",
         "NAUTICAL": "Nautical",
         "AERONAUTICAL": "Aeronautical",
-        "OTHER": "Other"
+        "OTHER": "Other",
+        "ATLAS": "Atlas"
       },
       "material": {
         "PAPER": "Paper",
@@ -539,13 +677,19 @@
       "deleteConfirm": "Are you sure you want to delete this spirit? This action cannot be undone."
     },
     "fields": {
-      "itemNumber": { "label": "Item No.", "description": "Auto-generated unique number" },
+      "itemNumber": {
+        "label": "Item No.",
+        "description": "Auto-generated unique number"
+      },
       "name": {
         "label": "Name",
         "placeholder": "e.g. Macallan 18 Year Old",
         "description": "Name of the bottle"
       },
-      "spiritType": { "label": "Type", "description": "Type of the spirit" },
+      "spiritType": {
+        "label": "Type",
+        "description": "Type of the spirit"
+      },
       "brand": {
         "label": "Brand",
         "placeholder": "e.g. Macallan, Hennessy",
@@ -600,8 +744,14 @@
         "placeholder": "e.g. Sherry Oak, Bourbon",
         "description": "Type of oak cask used for aging"
       },
-      "bottlingDate": { "label": "Bottling Date", "description": "Date of bottling" },
-      "acquiredDate": { "label": "Acquired Date", "description": "Date acquired or purchased" },
+      "bottlingDate": {
+        "label": "Bottling Date",
+        "description": "Date of bottling"
+      },
+      "acquiredDate": {
+        "label": "Acquired Date",
+        "description": "Date acquired or purchased"
+      },
       "purchasePrice": {
         "label": "Purchase Price",
         "placeholder": "e.g. 2500",
@@ -617,8 +767,14 @@
         "placeholder": "e.g. 4000",
         "description": "Professionally estimated value"
       },
-      "status": { "label": "Status", "description": "Status of the spirit" },
-      "bottleStatus": { "label": "Bottle Status", "description": "Seal state of the bottle" },
+      "status": {
+        "label": "Status",
+        "description": "Status of the spirit"
+      },
+      "bottleStatus": {
+        "label": "Bottle Status",
+        "description": "Seal state of the bottle"
+      },
       "storageCondition": {
         "label": "Storage Condition",
         "placeholder": "e.g. Constant 18-20°C, dark, 60% humidity",
@@ -648,6 +804,21 @@
         "label": "Attachment Images",
         "placeholder": "One image URL per line",
         "description": "Other images of the bottle (details, label, etc.)"
+      },
+      "subType": {
+        "label": "Subtype / Style",
+        "placeholder": "e.g. Dry Red, Moscato, Rosé",
+        "description": "Wine style or aroma classification"
+      },
+      "model": {
+        "label": "Model / Series",
+        "placeholder": "e.g. Wuliangye Puwu, 1573",
+        "description": "Specific model or bottle edition"
+      },
+      "acquiredFrom": {
+        "label": "Acquired From",
+        "placeholder": "e.g. JD.com, Winery",
+        "description": "Purchase channel or vendor"
       }
     },
     "enums": {

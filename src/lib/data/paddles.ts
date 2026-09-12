@@ -50,6 +50,7 @@ export interface CreatePaddleData {
   bladeBrand?: string | null;
   bladeModel?: string | null;
   bladeWeightG?: number | null;
+  thicknessMm?: number | null;
   handleType?: string | null;
   forehandRubber?: string | null;
   backhandRubber?: string | null;
@@ -58,7 +59,10 @@ export interface CreatePaddleData {
   bladeControl?: number | null;
   purchaseDate?: Date | null;
   purchasePrice?: number | null;
+  acquiredFrom?: string | null;
   currentValue?: number | null;
+  soldPrice?: number | null;
+  soldDate?: Date | null;
   status?: PaddleStatus;
   condition?: string | null;
   location?: string | null;
@@ -93,7 +97,10 @@ function buildPaddleUpdateValues(data: Partial<CreatePaddleData>): PaddleMutatio
   if (data.name !== undefined) updateValues.name = data.name;
   if (data.bladeBrand !== undefined) updateValues.bladeBrand = data.bladeBrand;
   if (data.bladeModel !== undefined) updateValues.bladeModel = data.bladeModel;
-  if (data.bladeWeightG !== undefined) updateValues.bladeWeightG = data.bladeWeightG;
+  if (data.bladeWeightG !== undefined)
+    updateValues.bladeWeightG = data.bladeWeightG !== null ? data.bladeWeightG.toString() : null;
+  if (data.thicknessMm !== undefined)
+    updateValues.thicknessMm = data.thicknessMm !== null ? data.thicknessMm.toString() : null;
   if (data.handleType !== undefined) updateValues.handleType = data.handleType;
   if (data.forehandRubber !== undefined) updateValues.forehandRubber = data.forehandRubber;
   if (data.backhandRubber !== undefined) updateValues.backhandRubber = data.backhandRubber;
@@ -107,8 +114,12 @@ function buildPaddleUpdateValues(data: Partial<CreatePaddleData>): PaddleMutatio
       : null;
   if (data.purchasePrice !== undefined)
     updateValues.purchasePrice = data.purchasePrice?.toString() || null;
+  if (data.acquiredFrom !== undefined) updateValues.acquiredFrom = data.acquiredFrom;
   if (data.currentValue !== undefined)
     updateValues.currentValue = data.currentValue?.toString() || null;
+  if (data.soldPrice !== undefined) updateValues.soldPrice = data.soldPrice?.toString() || null;
+  if (data.soldDate !== undefined)
+    updateValues.soldDate = data.soldDate ? data.soldDate.toISOString().split('T')[0] : null;
   if (data.status !== undefined) updateValues.status = data.status;
   if (data.condition !== undefined) updateValues.condition = data.condition;
   if (data.location !== undefined) updateValues.location = data.location;
@@ -306,7 +317,14 @@ export async function createPaddle(data: CreatePaddleData): Promise<PaddleItem> 
       name: data.name,
       bladeBrand: data.bladeBrand ?? null,
       bladeModel: data.bladeModel ?? null,
-      bladeWeightG: data.bladeWeightG ?? null,
+      bladeWeightG:
+        data.bladeWeightG !== undefined && data.bladeWeightG !== null
+          ? data.bladeWeightG.toString()
+          : null,
+      thicknessMm:
+        data.thicknessMm !== undefined && data.thicknessMm !== null
+          ? data.thicknessMm.toString()
+          : null,
       handleType: data.handleType ?? null,
       forehandRubber: data.forehandRubber ?? null,
       backhandRubber: data.backhandRubber ?? null,
@@ -315,7 +333,10 @@ export async function createPaddle(data: CreatePaddleData): Promise<PaddleItem> 
       bladeControl: data.bladeControl ?? null,
       purchaseDate: data.purchaseDate ? data.purchaseDate.toISOString().split('T')[0] : null,
       purchasePrice: data.purchasePrice?.toString() || null,
+      acquiredFrom: data.acquiredFrom ?? null,
       currentValue: data.currentValue?.toString() || null,
+      soldPrice: data.soldPrice?.toString() || null,
+      soldDate: data.soldDate ? data.soldDate.toISOString().split('T')[0] : null,
       status: data.status || 'ACTIVE',
       condition: data.condition ?? null,
       location: data.location ?? null,

@@ -24,6 +24,7 @@ export const MapType = {
   THEMATIC: 'THEMATIC',
   NAUTICAL: 'NAUTICAL',
   AERONAUTICAL: 'AERONAUTICAL',
+  ATLAS: 'ATLAS',
   OTHER: 'OTHER',
 } as const;
 
@@ -37,6 +38,7 @@ export const MapTypeSchema = z.enum([
   'THEMATIC',
   'NAUTICAL',
   'AERONAUTICAL',
+  'ATLAS',
   'OTHER',
 ]);
 
@@ -100,7 +102,25 @@ export const mapAttributesSchema = z.object({
     .optional()
     .nullable(),
 
+  publishedMonth: z.number().int().min(1).max(12).optional().nullable(),
+
+  printYear: z
+    .number()
+    .int('Year must be an integer')
+    .min(1400, 'Year too old')
+    .max(new Date().getFullYear(), 'Year cannot be in the future')
+    .optional()
+    .nullable(),
+
+  printMonth: z.number().int().min(1).max(12).optional().nullable(),
+
   publisher: z.string().max(200, 'Publisher name too long').optional().nullable(),
+
+  series: z.string().max(200, 'Series name too long').optional().nullable(),
+
+  isbn: z.string().max(100, 'ISBN too long').optional().nullable(),
+
+  originalPrice: z.number().min(0, 'Original price cannot be negative').optional().nullable(),
 
   // Material and Dimensions
   material: MapMaterialSchema.optional().default('PAPER'),
@@ -110,9 +130,13 @@ export const mapAttributesSchema = z.object({
   heightCm: z.number().positive('Height must be positive').optional().nullable(),
 
   // Geographic Information
-  region: z.string().max(200, 'Region name too long').optional().nullable(),
-
   country: z.string().max(100, 'Country name too long').optional().nullable(),
+
+  province: z.string().max(100, 'Province name too long').optional().nullable(),
+
+  city: z.string().max(100, 'City name too long').optional().nullable(),
+
+  region: z.string().max(200, 'Region name too long').optional().nullable(),
 
   language: z.string().max(100, 'Language too long').optional().nullable(),
 
@@ -166,12 +190,20 @@ export const MapSchema = z.object({
   mapType: MapTypeSchema,
   scale: z.string().nullable(),
   publishedYear: z.number().int().nullable(),
+  publishedMonth: z.number().int().nullable(),
+  printYear: z.number().int().nullable(),
+  printMonth: z.number().int().nullable(),
   publisher: z.string().nullable(),
+  series: z.string().nullable(),
+  isbn: z.string().nullable(),
+  originalPrice: z.number().nullable(),
   material: MapMaterialSchema,
   widthCm: z.number().nullable(),
   heightCm: z.number().nullable(),
-  region: z.string().nullable(),
   country: z.string().nullable(),
+  province: z.string().nullable(),
+  city: z.string().nullable(),
+  region: z.string().nullable(),
   language: z.string().nullable(),
   condition: z.string().nullable(),
   isOriginal: z.boolean(),
@@ -206,12 +238,20 @@ export interface MapItem {
   mapType: MapType;
   scale: string | null;
   publishedYear: number | null;
+  publishedMonth: number | null;
+  printYear: number | null;
+  printMonth: number | null;
   publisher: string | null;
+  series: string | null;
+  isbn: string | null;
+  originalPrice: number | null;
   material: MapMaterial;
   widthCm: number | null;
   heightCm: number | null;
-  region: string | null;
   country: string | null;
+  province: string | null;
+  city: string | null;
+  region: string | null;
   language: string | null;
   condition: string | null;
   isOriginal: boolean;
@@ -240,12 +280,20 @@ export function mapToMapItem(map: Map): MapItem {
     mapType: map.mapType,
     scale: map.scale,
     publishedYear: map.publishedYear,
+    publishedMonth: map.publishedMonth,
+    printYear: map.printYear,
+    printMonth: map.printMonth,
     publisher: map.publisher,
+    series: map.series,
+    isbn: map.isbn,
+    originalPrice: map.originalPrice,
     material: map.material,
     widthCm: map.widthCm,
     heightCm: map.heightCm,
-    region: map.region,
     country: map.country,
+    province: map.province,
+    city: map.city,
+    region: map.region,
     language: map.language,
     condition: map.condition,
     isOriginal: map.isOriginal,
@@ -274,12 +322,20 @@ export function mapItemToMap(item: MapItem): Map {
     mapType: item.mapType,
     scale: item.scale,
     publishedYear: item.publishedYear,
+    publishedMonth: item.publishedMonth,
+    printYear: item.printYear,
+    printMonth: item.printMonth,
     publisher: item.publisher,
+    series: item.series,
+    isbn: item.isbn,
+    originalPrice: item.originalPrice,
     material: item.material,
     widthCm: item.widthCm,
     heightCm: item.heightCm,
-    region: item.region,
     country: item.country,
+    province: item.province,
+    city: item.city,
+    region: item.region,
     language: item.language,
     condition: item.condition,
     isOriginal: item.isOriginal,
@@ -357,6 +413,7 @@ export function getMapTypeDisplayName(type: MapType): string {
     THEMATIC: '专题地图',
     NAUTICAL: '航海图',
     AERONAUTICAL: '航空图',
+    ATLAS: '地图集',
     OTHER: '其他',
   };
   return typeMap[type] || type;

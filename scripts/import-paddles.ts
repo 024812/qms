@@ -95,15 +95,11 @@ async function run() {
 
   console.log(`Parsed ${validRows.length} valid paddle inventory rows.`);
 
-  // Reset sequence to 1 if table is currently empty
-  const [currentCount] = await db.select({ count: sql<number>`count(*)` }).from(paddles);
-
-  if (Number(currentCount.count) === 0) {
-    await db.execute(
-      sql`SELECT setval(pg_get_serial_sequence('paddles', 'item_number'), 1, false);`
-    );
-    console.log('Reset paddles item_number serial sequence to 1.');
-  }
+  // Clear and reset sequence for clean re-import
+  console.log('Resetting paddles table for clean import...');
+  await db.delete(paddles);
+  await db.execute(sql`SELECT setval(pg_get_serial_sequence('paddles', 'item_number'), 1, false);`);
+  console.log('Reset paddles item_number serial sequence to 1.');
 
   const recordsToInsert = validRows.map((r, i) => {
     const statusStr = r[0] ? String(r[0]).trim() : null;
@@ -132,47 +128,31 @@ async function run() {
     // Determine status & handle type
     const status = parseStatus(statusStr);
     const handleType = parseHandleType(model, desc, brand);
-    const bladeWeightG =
-      typeof rawWeight === 'number' && rawWeight > 0 ? Math.round(rawWeight) : null;
+    const bladeWeightG = typeof rawWeight === 'number' && rawWeight > 0 ? String(rawWeight) : null;
+    const thicknessMm = typeof thickness === 'number' && thickness > 0 ? String(thickness) : null;
+    const acquiredFrom = vendor ? String(vendor).trim() : null;
 
-    // Preserving all extra columns in notes
+    // Preserving extra columns in notes
     const noteParts: string[] = [];
-    if (rawWeight) {
-      noteParts.push(`原表光板重: ${rawWeight}g`);
-    }
-    if (length || width || thickness || shoulder) {
+    if (length || width || shoulder) {
       const dim = [
         length ? `长${length}mm` : null,
         width ? `宽${width}mm` : null,
         shoulder ? `肩宽${shoulder}mm` : null,
-        thickness ? `厚${thickness}mm` : null,
       ]
         .filter(Boolean)
         .join('，');
       noteParts.push(`版面规格: ${dim}`);
     }
-    if (vendor) {
-      noteParts.push(`来源渠道: ${vendor}`);
-    }
-    if (sellDate || (sellPrice !== null && sellPrice !== undefined)) {
-      const sellParts: string[] = [];
-      if (sellDate) {
-        const d =
-          sellDate instanceof Date
-            ? sellDate.toISOString().slice(0, 10)
-            : String(sellDate).slice(0, 10);
-        sellParts.push(`卖出日期: ${d}`);
-      }
-      if (sellPrice !== null && sellPrice !== undefined) {
-        sellParts.push(`卖出价: ￥${sellPrice}`);
-      }
+    if ((priceDiff !== null && priceDiff !== undefined) || holdingDays) {
+      const transParts: string[] = [];
       if (priceDiff !== null && priceDiff !== undefined) {
-        sellParts.push(`盈亏: ￥${priceDiff}`);
+        transParts.push(`盈亏: ￥${priceDiff}`);
       }
       if (holdingDays) {
-        sellParts.push(`持有时间: ${holdingDays}天`);
+        transParts.push(`持有时间: ${holdingDays}天`);
       }
-      noteParts.push(`交易记录: ${sellParts.join('，')}`);
+      noteParts.push(`交易统计: ${transParts.join('，')}`);
     }
 
     const purchaseDate =
@@ -183,6 +163,14 @@ async function run() {
           : null;
 
     const purchasePrice = formatPrice(buyPrice);
+    const soldPrice = formatPrice(sellPrice);
+    const soldDate =
+      sellDate instanceof Date
+        ? sellDate.toISOString().slice(0, 10)
+        : sellDate
+          ? String(sellDate).slice(0, 10)
+          : null;
+
     const currentValue =
       typeof sellPrice === 'number' && sellPrice >= 0 ? formatPrice(sellPrice) : purchasePrice;
 
@@ -192,11 +180,15 @@ async function run() {
       bladeBrand: brand || null,
       bladeModel: model,
       bladeWeightG,
+      thicknessMm,
       handleType,
       status,
       purchaseDate,
       purchasePrice,
+      acquiredFrom,
       currentValue,
+      soldPrice,
+      soldDate,
       notes: noteParts.length > 0 ? noteParts.join('\n') : null,
     };
   });

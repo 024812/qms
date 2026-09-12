@@ -18,7 +18,16 @@ interface PageProps {
   }>;
 }
 
-const ANTIQUE_CATEGORIES = ['JADE', 'WOOD', 'CERAMIC', 'METAL', 'STONE', 'PAPER', 'OTHER'] as const;
+const ANTIQUE_CATEGORIES = [
+  'JADE',
+  'WOOD',
+  'CERAMIC',
+  'METAL',
+  'STONE',
+  'PAPER',
+  'TOOL',
+  'OTHER',
+] as const;
 
 const ANTIQUE_STATUSES = ['COLLECTION', 'FOR_SALE', 'SOLD', 'DISPLAY', 'APPRAISAL'] as const;
 

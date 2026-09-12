@@ -83,7 +83,9 @@ function rowToSpirit(row: typeof spirits.$inferSelect): Spirit {
     itemNumber: row.itemNumber,
     name: row.name,
     spiritType: row.spiritType,
+    subType: row.subType ?? null,
     brand: row.brand ?? null,
+    model: row.model ?? null,
     distillery: row.distillery ?? null,
     region: row.region ?? null,
     country: row.country ?? null,
@@ -96,6 +98,7 @@ function rowToSpirit(row: typeof spirits.$inferSelect): Spirit {
     caskType: row.caskType ?? null,
     bottlingDate: row.bottlingDate ? new Date(row.bottlingDate) : null,
     acquiredDate: row.acquiredDate ? new Date(row.acquiredDate) : null,
+    acquiredFrom: row.acquiredFrom ?? null,
     purchasePrice:
       row.purchasePrice !== null && row.purchasePrice !== undefined
         ? Number(row.purchasePrice)
@@ -296,7 +299,9 @@ export async function createSpirit(data: CreateSpiritInput): Promise<Spirit> {
     const insertData = {
       name: data.name,
       spiritType: data.spiritType,
+      subType: data.subType ?? null,
       brand: data.brand ?? null,
+      model: data.model ?? null,
       distillery: data.distillery ?? null,
       region: data.region ?? null,
       country: data.country ?? null,
@@ -317,6 +322,7 @@ export async function createSpirit(data: CreateSpiritInput): Promise<Spirit> {
           ? data.acquiredDate.toISOString().split('T')[0]
           : String(data.acquiredDate)
         : null,
+      acquiredFrom: data.acquiredFrom ?? null,
       purchasePrice:
         data.purchasePrice !== undefined && data.purchasePrice !== null
           ? String(data.purchasePrice)
@@ -383,7 +389,9 @@ export async function updateSpirit(id: string, data: UpdateSpiritInput): Promise
     // Only include defined fields
     if (data.name !== undefined) updateData.name = data.name;
     if (data.spiritType !== undefined) updateData.spiritType = data.spiritType;
+    if (data.subType !== undefined) updateData.subType = data.subType ?? null;
     if (data.brand !== undefined) updateData.brand = data.brand ?? null;
+    if (data.model !== undefined) updateData.model = data.model ?? null;
     if (data.distillery !== undefined) updateData.distillery = data.distillery ?? null;
     if (data.region !== undefined) updateData.region = data.region ?? null;
     if (data.country !== undefined) updateData.country = data.country ?? null;
@@ -406,6 +414,7 @@ export async function updateSpirit(id: string, data: UpdateSpiritInput): Promise
           ? data.acquiredDate.toISOString().split('T')[0]
           : String(data.acquiredDate)
         : null;
+    if (data.acquiredFrom !== undefined) updateData.acquiredFrom = data.acquiredFrom ?? null;
     if (data.purchasePrice !== undefined)
       updateData.purchasePrice = data.purchasePrice !== null ? String(data.purchasePrice) : null;
     if (data.currentValue !== undefined)

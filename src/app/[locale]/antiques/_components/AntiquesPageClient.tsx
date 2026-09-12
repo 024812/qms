@@ -22,7 +22,16 @@ interface AntiquesPageClientProps {
   initialStatus?: string;
 }
 
-const CATEGORY_VALUES = ['JADE', 'WOOD', 'CERAMIC', 'METAL', 'STONE', 'PAPER', 'OTHER'] as const;
+const CATEGORY_VALUES = [
+  'JADE',
+  'WOOD',
+  'CERAMIC',
+  'METAL',
+  'STONE',
+  'PAPER',
+  'TOOL',
+  'OTHER',
+] as const;
 
 const STATUS_VALUES = ['COLLECTION', 'FOR_SALE', 'SOLD', 'DISPLAY', 'APPRAISAL'] as const;
 

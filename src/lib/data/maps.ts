@@ -53,12 +53,20 @@ export interface CreateMapData {
   mapType: MapType;
   scale?: string | null;
   publishedYear?: number | null;
+  publishedMonth?: number | null;
+  printYear?: number | null;
+  printMonth?: number | null;
   publisher?: string | null;
+  series?: string | null;
+  isbn?: string | null;
+  originalPrice?: number | null;
   material?: MapMaterial;
   widthCm?: number | null;
   heightCm?: number | null;
-  region?: string | null;
   country?: string | null;
+  province?: string | null;
+  city?: string | null;
+  region?: string | null;
   language?: string | null;
   condition?: string | null;
   isOriginal?: boolean;
@@ -79,12 +87,20 @@ export interface UpdateMapData {
   mapType?: MapType;
   scale?: string | null;
   publishedYear?: number | null;
+  publishedMonth?: number | null;
+  printYear?: number | null;
+  printMonth?: number | null;
   publisher?: string | null;
+  series?: string | null;
+  isbn?: string | null;
+  originalPrice?: number | null;
   material?: MapMaterial;
   widthCm?: number | null;
   heightCm?: number | null;
-  region?: string | null;
   country?: string | null;
+  province?: string | null;
+  city?: string | null;
+  region?: string | null;
   language?: string | null;
   condition?: string | null;
   isOriginal?: boolean;
@@ -106,12 +122,20 @@ export interface MapRow {
   mapType: MapType;
   scale: string | null;
   publishedYear: number | null;
+  publishedMonth: number | null;
+  printYear: number | null;
+  printMonth: number | null;
   publisher: string | null;
+  series: string | null;
+  isbn: string | null;
+  originalPrice: string | null;
   material: MapMaterial;
   widthCm: string | null;
   heightCm: string | null;
-  region: string | null;
   country: string | null;
+  province: string | null;
+  city: string | null;
+  region: string | null;
   language: string | null;
   condition: string | null;
   isOriginal: boolean;
@@ -135,12 +159,20 @@ export interface MapDTO {
   mapType: MapType;
   scale: string | null;
   publishedYear: number | null;
+  publishedMonth: number | null;
+  printYear: number | null;
+  printMonth: number | null;
   publisher: string | null;
+  series: string | null;
+  isbn: string | null;
+  originalPrice: number | null;
   material: MapMaterial;
   widthCm: number | null;
   heightCm: number | null;
-  region: string | null;
   country: string | null;
+  province: string | null;
+  city: string | null;
+  region: string | null;
   language: string | null;
   condition: string | null;
   isOriginal: boolean;
@@ -187,12 +219,20 @@ function rowToDTO(row: MapRow): MapDTO {
     mapType: row.mapType,
     scale: row.scale,
     publishedYear: row.publishedYear,
+    publishedMonth: row.publishedMonth,
+    printYear: row.printYear,
+    printMonth: row.printMonth,
     publisher: row.publisher,
+    series: row.series,
+    isbn: row.isbn,
+    originalPrice: parseDecimal(row.originalPrice),
     material: row.material,
     widthCm: parseDecimal(row.widthCm),
     heightCm: parseDecimal(row.heightCm),
-    region: row.region,
     country: row.country,
+    province: row.province,
+    city: row.city,
+    region: row.region,
     language: row.language,
     condition: row.condition,
     isOriginal: row.isOriginal,
@@ -383,12 +423,20 @@ export async function createMap(data: CreateMapData): Promise<MapDTO> {
       mapType: data.mapType,
       scale: data.scale ?? null,
       publishedYear: data.publishedYear ?? null,
+      publishedMonth: data.publishedMonth ?? null,
+      printYear: data.printYear ?? null,
+      printMonth: data.printMonth ?? null,
       publisher: data.publisher ?? null,
+      series: data.series ?? null,
+      isbn: data.isbn ?? null,
+      originalPrice: data.originalPrice?.toString() ?? null,
       material: data.material ?? 'PAPER',
       widthCm: data.widthCm?.toString() ?? null,
       heightCm: data.heightCm?.toString() ?? null,
-      region: data.region ?? null,
       country: data.country ?? null,
+      province: data.province ?? null,
+      city: data.city ?? null,
+      region: data.region ?? null,
       language: data.language ?? null,
       condition: data.condition ?? null,
       isOriginal: data.isOriginal ?? true,
@@ -456,12 +504,21 @@ export async function updateMap(data: UpdateMapData): Promise<MapDTO> {
     if (data.mapType !== undefined) updateData.mapType = data.mapType;
     if (data.scale !== undefined) updateData.scale = data.scale;
     if (data.publishedYear !== undefined) updateData.publishedYear = data.publishedYear;
+    if (data.publishedMonth !== undefined) updateData.publishedMonth = data.publishedMonth;
+    if (data.printYear !== undefined) updateData.printYear = data.printYear;
+    if (data.printMonth !== undefined) updateData.printMonth = data.printMonth;
     if (data.publisher !== undefined) updateData.publisher = data.publisher;
+    if (data.series !== undefined) updateData.series = data.series;
+    if (data.isbn !== undefined) updateData.isbn = data.isbn;
+    if (data.originalPrice !== undefined)
+      updateData.originalPrice = data.originalPrice?.toString() ?? null;
     if (data.material !== undefined) updateData.material = data.material;
     if (data.widthCm !== undefined) updateData.widthCm = data.widthCm?.toString() ?? null;
     if (data.heightCm !== undefined) updateData.heightCm = data.heightCm?.toString() ?? null;
-    if (data.region !== undefined) updateData.region = data.region;
     if (data.country !== undefined) updateData.country = data.country;
+    if (data.province !== undefined) updateData.province = data.province;
+    if (data.city !== undefined) updateData.city = data.city;
+    if (data.region !== undefined) updateData.region = data.region;
     if (data.language !== undefined) updateData.language = data.language;
     if (data.condition !== undefined) updateData.condition = data.condition;
     if (data.isOriginal !== undefined) updateData.isOriginal = data.isOriginal;

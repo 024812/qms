@@ -14,6 +14,7 @@ import {
   getMonthlyBuySellData as getMonthlyBuySellDataData,
   getRecentActivity as getRecentActivityData,
   saveCard as saveCardData,
+  updateCard as updateCardData,
   updateCardSettings as updateCardSettingsData,
   type CardListInput,
   type CardSettingsData,
@@ -101,6 +102,10 @@ const cardInputSchema = z.object({
   frontImage: imageReferenceSchema.optional().nullable(),
   backImage: imageReferenceSchema.optional().nullable(),
   attachmentImages: attachmentImagesSchema.optional().nullable(),
+});
+
+const updateCardInputSchema = cardInputSchema.partial().extend({
+  id: z.string().min(1, 'Card ID is required'),
 });
 
 function zodFieldErrors(error: z.ZodError): Record<string, string[]> {
@@ -352,6 +357,47 @@ export async function saveCardAction(data: unknown): Promise<ActionResult<{ card
   }
 }
 
+export async function updateCardAction(data: unknown): Promise<ActionResult<{ card: CardItem }>> {
+  try {
+    const session = await requireAuthenticatedUser();
+
+    if (!session) {
+      return unauthorizedResult('Unauthorized');
+    }
+
+    const validationResult = updateCardInputSchema.safeParse(data);
+
+    if (!validationResult.success) {
+      return validationErrorResult('Validation failed', zodFieldErrors(validationResult.error));
+    }
+
+    const { id, ...updateData } = validationResult.data;
+    const card = await updateCardData(id, updateData);
+
+    return {
+      success: true,
+      data: { card },
+    };
+  } catch (error) {
+    if (error instanceof Error && error.message === 'Card not found') {
+      return {
+        success: false,
+        error: {
+          code: 'NOT_FOUND',
+          message: 'Card not found',
+        },
+      };
+    }
+    return {
+      success: false,
+      error: {
+        code: 'INTERNAL_ERROR',
+        message: 'Failed to update card',
+      },
+    };
+  }
+}
+
 export async function deleteCardAction(id: string): Promise<ActionResult<{ success: true }>> {
   try {
     const session = await requireAuthenticatedUser();
@@ -364,13 +410,32 @@ export async function deleteCardAction(id: string): Promise<ActionResult<{ succe
       return validationErrorResult('Validation failed', { id: ['Invalid card ID'] });
     }
 
-    await deleteCardData(id);
+    const deleted = await deleteCardData(id);
+
+    if (!deleted) {
+      return {
+        success: false,
+        error: {
+          code: 'NOT_FOUND',
+          message: 'Card not found',
+        },
+      };
+    }
 
     return {
       success: true,
       data: { success: true },
     };
-  } catch {
+  } catch (error) {
+    if (error instanceof Error && error.message === 'Card not found') {
+      return {
+        success: false,
+        error: {
+          code: 'NOT_FOUND',
+          message: 'Card not found',
+        },
+      };
+    }
     return {
       success: false,
       error: {

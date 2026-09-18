@@ -637,6 +637,72 @@ export async function saveCard(data: SaveCardData): Promise<CardItem> {
   }
 }
 
+export async function updateCard(id: string, data: Partial<SaveCardData>): Promise<CardItem> {
+  try {
+    const current = await findCardRecordById(id);
+    if (!current) {
+      throw new Error('Card not found');
+    }
+
+    const cleanData: Partial<NewCard> = {};
+    if (data.playerName !== undefined) cleanData.playerName = data.playerName;
+    if (data.sport !== undefined) cleanData.sport = data.sport;
+    if (data.team !== undefined) cleanData.team = data.team;
+    if (data.position !== undefined) cleanData.position = data.position;
+    if (data.year !== undefined) cleanData.year = data.year;
+    if (data.brand !== undefined) cleanData.brand = data.brand;
+    if (data.series !== undefined) cleanData.series = data.series;
+    if (data.cardNumber !== undefined) cleanData.cardNumber = data.cardNumber;
+    if (data.gradingCompany !== undefined) cleanData.gradingCompany = data.gradingCompany;
+    if (data.grade !== undefined) cleanData.grade = cleanNumericField(data.grade);
+    if (data.certificationNumber !== undefined) cleanData.certificationNumber = data.certificationNumber;
+    if (data.purchasePrice !== undefined) cleanData.purchasePrice = cleanNumericField(data.purchasePrice);
+    if (data.purchaseDate !== undefined) cleanData.purchaseDate = data.purchaseDate || null;
+    if (data.currentValue !== undefined) cleanData.currentValue = cleanNumericField(data.currentValue);
+    if (data.estimatedValue !== undefined) cleanData.estimatedValue = cleanNumericField(data.estimatedValue);
+    if (data.soldPrice !== undefined) cleanData.soldPrice = cleanNumericField(data.soldPrice);
+    if (data.soldDate !== undefined) cleanData.soldDate = data.soldDate || null;
+    if (data.valuationDate !== undefined) cleanData.valuationDate = data.valuationDate ? new Date(data.valuationDate) : null;
+    if (data.valuationConfidence !== undefined) cleanData.valuationConfidence = data.valuationConfidence;
+    if (data.valuationSources !== undefined) cleanData.valuationSources = data.valuationSources ?? [];
+    if (data.isAutographed !== undefined) cleanData.isAutographed = data.isAutographed ?? false;
+    if (data.hasMemorabilia !== undefined) cleanData.hasMemorabilia = data.hasMemorabilia ?? false;
+    if (data.memorabiliaType !== undefined) cleanData.memorabiliaType = data.memorabiliaType;
+    if (data.parallel !== undefined) cleanData.parallel = data.parallel;
+    if (data.serialNumber !== undefined) cleanData.serialNumber = data.serialNumber;
+    if (data.status !== undefined && data.status !== null) cleanData.status = data.status;
+    if (data.location !== undefined) cleanData.location = data.location;
+    if (data.storageType !== undefined) cleanData.storageType = data.storageType;
+    if (data.condition !== undefined) cleanData.condition = data.condition;
+    if (data.notes !== undefined) cleanData.notes = data.notes;
+    if (data.mainImage !== undefined || data.frontImage !== undefined) {
+      cleanData.mainImage = data.mainImage || data.frontImage || null;
+    }
+    if (data.attachmentImages !== undefined || data.backImage !== undefined) {
+      cleanData.attachmentImages = data.attachmentImages || (data.backImage ? [data.backImage] : null);
+    }
+
+    const saved = await updateCardRecord(id, cleanData);
+    if (!saved) {
+      throw new Error('Card not found');
+    }
+
+    const normalized = normalizeCardItem(saved);
+    const prevItem = normalizeCardItem(current);
+
+    invalidateCardCaches({
+      id: normalized.id,
+      statuses: [prevItem.status, normalized.status],
+      sports: [prevItem.sport, normalized.sport],
+    });
+
+    return normalized;
+  } catch (error) {
+    logCardDataError('Error updating card', error, { id, ...data });
+    throw error;
+  }
+}
+
 export async function deleteCard(id: string): Promise<boolean> {
   try {
     const current = await findCardRecordById(id);

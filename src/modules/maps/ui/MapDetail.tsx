@@ -51,7 +51,7 @@ export function MapDetail({ item }: MapDetailProps) {
               {item.attachmentImages.map((img, idx) => (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img
-                  key={idx}
+                  key={`${img}-${idx}`}
                   src={img}
                   alt={`${item.name} - ${idx + 1}`}
                   className="w-full h-32 object-cover rounded shadow-sm"

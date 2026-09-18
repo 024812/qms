@@ -43,11 +43,20 @@ export function SpiritCard({ item, onClick }: SpiritCardProps) {
 
   return (
     <div
-      className="border rounded-lg p-4 hover:shadow-md transition-shadow cursor-pointer"
+      className={`border rounded-lg p-4 hover:shadow-md transition-shadow ${onClick ? 'cursor-pointer' : ''}`}
       onClick={onClick}
+      onKeyDown={e => {
+        if (onClick && (e.key === 'Enter' || e.key === ' ')) {
+          e.preventDefault();
+          onClick();
+        }
+      }}
+      role={onClick ? 'button' : undefined}
+      tabIndex={onClick ? 0 : undefined}
     >
       {item.mainImage && (
         <div className="mb-3">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src={item.mainImage} alt={item.name} className="w-full h-48 object-cover rounded" />
         </div>
       )}

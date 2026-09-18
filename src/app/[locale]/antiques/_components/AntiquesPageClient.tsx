@@ -190,6 +190,14 @@ export function AntiquesPageClient({
               key={antique.id}
               className="cursor-pointer transition-transform hover:scale-105"
               onClick={() => router.push(`${pathname}/${antique.id}`)}
+              onKeyDown={e => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  router.push(`${pathname}/${antique.id}`);
+                }
+              }}
+              role="button"
+              tabIndex={0}
             >
               <AntiqueCard item={antique} />
             </div>

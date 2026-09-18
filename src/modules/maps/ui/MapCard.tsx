@@ -19,12 +19,21 @@ export function MapCard({ item, onSelect, isSelected }: MapCardProps) {
     <div
       className={`border rounded-lg p-4 hover:shadow-md transition-shadow ${
         isSelected ? 'border-blue-500 bg-blue-50' : 'border-gray-200'
-      }`}
+      } ${onSelect ? 'cursor-pointer' : ''}`}
       onClick={() => onSelect?.(item.id)}
+      onKeyDown={e => {
+        if (onSelect && (e.key === 'Enter' || e.key === ' ')) {
+          e.preventDefault();
+          onSelect(item.id);
+        }
+      }}
+      role={onSelect ? 'button' : undefined}
+      tabIndex={onSelect ? 0 : undefined}
     >
       {/* Image */}
       {item.mainImage && (
         <div className="mb-3">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src={item.mainImage} alt={item.name} className="w-full h-48 object-cover rounded" />
         </div>
       )}

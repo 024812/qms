@@ -67,6 +67,8 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
   );
 }
 
+export const PATCH = PUT;
+
 export async function DELETE(_request: NextRequest, { params }: RouteParams) {
   const { id } = await params;
 

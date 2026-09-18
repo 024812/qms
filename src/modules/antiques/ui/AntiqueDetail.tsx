@@ -47,7 +47,7 @@ export function AntiqueDetail({ item }: AntiqueDetailProps) {
           {item.attachmentImages && item.attachmentImages.length > 0 && (
             <div className="grid grid-cols-4 gap-2">
               {item.attachmentImages.map((img, idx) => (
-                <div key={idx} className="aspect-square overflow-hidden rounded-md bg-muted">
+                <div key={`${img}-${idx}`} className="aspect-square overflow-hidden rounded-md bg-muted">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src={img}

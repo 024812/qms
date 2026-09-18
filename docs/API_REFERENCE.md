@@ -265,6 +265,105 @@ Standard error codes:
 
 ---
 
+### 5. Quilts (`/api/quilts`)
+
+#### List Quilts
+
+- **Endpoint**: `GET /api/quilts`
+- **Query Parameters**:
+  - `search` (string): Keyword search across quilt name and notes.
+  - `season` (string): `WINTER` | `SPRING_AUTUMN` | `SUMMER`.
+  - `status` (string): `IN_USE` | `MAINTENANCE` | `STORAGE` | `LOST`.
+  - `location` (string): Physical storage location.
+  - `brand` (string): Brand or manufacturer.
+  - `sortBy` (string): `itemNumber` | `name` | `season` | `weightGrams` | `createdAt` | `updatedAt`.
+  - `sortOrder` (string): `asc` | `desc` (default: `asc`).
+  - `limit` (number): Page size, 1-100 (default: 20).
+  - `offset` (number): Pagination offset (default: 0).
+
+#### Create Quilt
+
+- **Endpoint**: `POST /api/quilts`
+- **Request Body**:
+  ```json
+  {
+    "name": "冬季加厚蚕丝被",
+    "season": "WINTER",
+    "lengthCm": 220,
+    "widthCm": 200,
+    "weightGrams": 3000,
+    "fillMaterial": "100% 桑蚕丝",
+    "color": "米白",
+    "location": "主卧衣柜上层",
+    "brand": "罗莱家纺",
+    "currentStatus": "STORAGE"
+  }
+  ```
+
+#### Get Quilt by ID
+
+- **Endpoint**: `GET /api/quilts/:id`
+
+#### Update Quilt
+
+- **Endpoint**: `PATCH /api/quilts/:id` (also accepts `PUT`)
+- **Request Body**: Partial or full update object.
+
+#### Delete Quilt
+
+- **Endpoint**: `DELETE /api/quilts/:id`
+
+---
+
+### 6. Sports Cards (`/api/cards`)
+
+#### List Cards
+
+- **Endpoint**: `GET /api/cards`
+- **Query Parameters**:
+  - `search` (string): Search player name, team, brand, notes.
+  - `sport` (string): `BASKETBALL` | `SOCCER` | `OTHER`.
+  - `status` (string): `COLLECTION` | `FOR_SALE` | `SOLD` | `GRADING` | `DISPLAY`.
+  - `gradingCompany` (string): `UNGRADED` | `PSA` | `BGS` | `SGC` | `CGC`.
+  - `includeSold` (boolean): Whether to include sold cards in results.
+  - `page` (number): Page number (1-indexed).
+  - `pageSize` (number): Items per page (default: 20).
+
+#### Create Card
+
+- **Endpoint**: `POST /api/cards`
+- **Request Body**:
+  ```json
+  {
+    "playerName": "Luka Dončić",
+    "sport": "BASKETBALL",
+    "team": "Dallas Mavericks",
+    "year": 2018,
+    "brand": "Panini Prizm",
+    "cardNumber": "280",
+    "gradingCompany": "PSA",
+    "grade": 10,
+    "status": "COLLECTION",
+    "purchasePrice": 2500,
+    "currentValue": 3200
+  }
+  ```
+
+#### Get Card by ID
+
+- **Endpoint**: `GET /api/cards/:id`
+
+#### Update Card
+
+- **Endpoint**: `PATCH /api/cards/:id`
+- **Request Body**: Partial update object with fields to change.
+
+#### Delete Card
+
+- **Endpoint**: `DELETE /api/cards/:id`
+
+---
+
 ## AI Agent API
 
 If you are building or integrating an AI agent (such as OpenClaw), do **not** call the REST endpoints directly. Use the dedicated **Agent API**:

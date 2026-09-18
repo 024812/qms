@@ -275,19 +275,32 @@ export function MapsPageClient({
                     : 'border-gray-200'
                 }`}
                 onClick={() => router.push(`/maps/${map.id}`)}
+                onKeyDown={e => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    router.push(`/maps/${map.id}`);
+                  }
+                }}
+                role="button"
+                tabIndex={0}
               >
-                <label
-                  className="absolute right-3 top-3 z-10"
-                  onClick={event => event.stopPropagation()}
+                <button
+                  type="button"
+                  className="absolute right-3 top-3 z-10 p-1 bg-transparent border-0"
+                  onClick={event => {
+                    event.stopPropagation();
+                    toggleMapSelection(map.id);
+                  }}
+                  aria-label={map.name}
                 >
                   <input
                     type="checkbox"
                     checked={selectedMapIds.has(map.id)}
-                    onChange={() => toggleMapSelection(map.id)}
-                    className="h-4 w-4 cursor-pointer rounded border-gray-300"
-                    aria-label={map.name}
+                    onChange={() => {}}
+                    className="h-4 w-4 cursor-pointer rounded border-gray-300 pointer-events-none"
+                    tabIndex={-1}
                   />
-                </label>
+                </button>
 
                 {/* Image */}
                 {map.mainImage && (

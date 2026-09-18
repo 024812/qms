@@ -194,6 +194,14 @@ export function SpiritsPageClient({
               key={spirit.id}
               className="cursor-pointer rounded-lg border bg-card p-4 shadow transition-shadow hover:shadow-lg"
               onClick={() => router.push(`/spirits/${spirit.id}`)}
+              onKeyDown={e => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  router.push(`/spirits/${spirit.id}`);
+                }
+              }}
+              role="button"
+              tabIndex={0}
             >
               {spirit.mainImage && (
                 <div className="mb-3">

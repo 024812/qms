@@ -230,7 +230,7 @@ npm run build
 
 - English docs index: `docs/README.md`
 - Legacy module standard: `docs/archive/MODULE_STANDARD.md`
-- Active module blueprint: `docs/architecture/MODULE_BLUEPRINT_V2.md`
+- Active module blueprint: `docs/architecture/MODULE_BLUEPRINT_V3.md`
 - Authentication summary: `docs/architecture/AUTH_IMPLEMENTATION_SUMMARY.md`
 - Deployment env guide: `docs/guides/VERCEL-ENV-SETUP.md`
 - Database migrations: `docs/guides/DATABASE_MIGRATIONS.md`

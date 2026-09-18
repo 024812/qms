@@ -17,8 +17,16 @@ export function PaddleCard({ item, onClick }: PaddleCardProps) {
 
   return (
     <div
-      className="border rounded-lg p-4 hover:shadow-md transition-shadow cursor-pointer"
+      className={`border rounded-lg p-4 hover:shadow-md transition-shadow ${onClick ? 'cursor-pointer' : ''}`}
       onClick={onClick}
+      onKeyDown={e => {
+        if (onClick && (e.key === 'Enter' || e.key === ' ')) {
+          e.preventDefault();
+          onClick();
+        }
+      }}
+      role={onClick ? 'button' : undefined}
+      tabIndex={onClick ? 0 : undefined}
     >
       <div className="flex justify-between items-start mb-2">
         <h3 className="font-semibold text-lg">{item.name}</h3>

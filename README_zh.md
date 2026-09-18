@@ -148,7 +148,7 @@ npm audit --omit=optional
 ## 文档入口
 
 - 文档目录：`docs/README.md`
-- 模块蓝图：`docs/architecture/MODULE_BLUEPRINT_V2.md`
+- 模块蓝图：`docs/architecture/MODULE_BLUEPRINT_V3.md`
 - 数据库迁移：`docs/guides/DATABASE_MIGRATIONS.md`
 - 认证实现：`docs/architecture/AUTH_IMPLEMENTATION_SUMMARY.md`
 - 部署环境变量：`docs/guides/VERCEL-ENV-SETUP.md`

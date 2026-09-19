@@ -14,6 +14,7 @@ import {
 } from '@/components/ui/sheet';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Filter, X } from 'lucide-react';
+import { QUILT_STATUSES } from '@/lib/validations/quilt';
 
 export interface FilterCriteria {
   seasons: string[];
@@ -177,7 +178,7 @@ export function AdvancedFilters({
           <div className="space-y-3">
             <Label className="text-base font-semibold">{t('quilts.filters.status')}</Label>
             <div className="space-y-2">
-              {['IN_USE', 'STORAGE', 'MAINTENANCE'].map(status => (
+              {QUILT_STATUSES.map(status => (
                 <div key={status} className="flex items-center space-x-2">
                   <Checkbox
                     id={`status-${status}`}

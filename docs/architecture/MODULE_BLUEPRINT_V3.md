@@ -360,6 +360,28 @@ npm run build
 - `npm ci`、lint、type-check、test、build 的完整结果。
 - lockfile 的审计结果和生产运行时兼容性。
 
-本次基线验证记录：隔离副本 `C:\temp\qms-review` 中 `npm ci` 成功且 `0 vulnerabilities`；`lint:check`、`type-check`、18 个测试文件/148 个测试和 `build` 均通过。`npm outdated` 显示仍可在后续独立变更中升级 `openai`、`zod`，而 ESLint 10、TypeScript 7 等 major 升级必须先完成兼容性评估，不能作为新模块开发的隐含前置条件。
+本次基线验证记录（2026-09-18，隔离副本 `C:\temp\qms-review-20260918`）：`npm install` 成功（654 个包）且 `npm audit --omit=optional` 为 `0 vulnerabilities`；`lint:check`（0 错误 / 0 警告）、`type-check`（0 错误）、**31 个测试文件 / 356 个测试**、`build`（`✓ Compiled successfully` + `117/117` 静态页）均通过。`src/__tests__` 已恢复纳入 `tsc --noEmit`（此前被 `tsconfig.json` 的 `exclude` 误排除，导致 9 个测试文件不参与类型检查）。`npm outdated` 显示仍可在后续独立变更中升级 `openai`、`zod`，而 ESLint 10、TypeScript 7 等 major 升级必须先完成兼容性评估，不能作为新模块开发的隐含前置条件。
 
-构建仍报告 Better Auth 未设置显式 `BETTER_AUTH_URL`/`baseURL`，生产部署必须配置受信任的 canonical origin。Vitest 还报告未来将默认使用 native config loader；升级 Vite/Vitest 时应将配置迁移到 ESM（或显式设置 package module type）并补充 CI 验证。
+缓存档案：模块 DAL 使用 `next.config.ts` 中定义的两个语义档案 —— `moduleList`（revalidate 2 分钟，用于列表/搜索/计数）与 `moduleItem`（revalidate 5 分钟，用于单条记录、单例配置与聚合统计）。**不要使用内置的 `'seconds'`/`'minutes'`**：它们分别是 revalidate 1 秒与 1 分钟，与其名称给人的印象不符。新增模块时应复用这两个档案，不要把 `cacheLife` 抽象进共享工具（Next.js 官方建议在每个 `use cache` 作用域内直接调用，以保持缓存行为就地可见）。
+
+搜索：所有模块 DAL 的搜索条件必须通过 `src/lib/data/search.ts` 构造（`searchAnyColumn` / `containsInsensitiveFilter`），以保证大小写不敏感语义一致并转义 `%`/`_` 通配符。
+
+枚举：每个模块的状态/分类枚举都必须有一个**运行时可迭代的单一清单**（如 quilts 的 `QUILT_STATUSES`，定义在 `src/lib/validations/quilt.ts`），UI 选项、筛选器、Agent 工具 schema、统计维度与 i18n 键全部从它派生，不得再手抄字面量。同时必须补一个一致性测试，断言 DB enum（Drizzle `pgEnum().enumValues`）、Zod enum（`.options`）、运行时常量、`messages/*.json` 的键集合四者相等 —— 参考 `src/lib/__tests__/quilt-status-enum.test.ts`。§4.2 的一致性要求靠这条测试兜底，而不是靠 review 时人眼比对。
+
+输入净化：入库只做归一化（trim + 剥离控制字符，保留 `\t`/`\n`），**不得在持久化前做 HTML 实体转义**。转义是渲染期职责：React 默认转义文本节点，而入库前转义会导致 `A & B` 被存成 `A &amp; B`、渲染时再转义成 `A &amp;amp; B` 的双编码，并破坏搜索词。`escapeHtml` 仅可用于拼接 HTML 字符串，其结果不得写入数据库。搜索词同理：`sanitizeSearchQuery` 只截断长度，不得删除 `&`、`'`、`"` 等字符（`AT&T` 必须保持为 `AT&T`）。
+
+模块 ID 词表：模块 ID 的**权威定义在 `src/modules/module-ids.ts`**（`MODULE_IDS` / `RegisteredModuleId` / `isRegisteredModuleId` / `normalizeModuleIds`），该文件是叶子模块、不 import 任何东西。`src/modules/registry.ts` 在其之上叠加模块实现（各模块 config 及其 UI 组件）并原样再导出词表。**纯消费方必须从 `module-ids.ts` 导入，不要穿透 registry**：registry 会经 config 拉入每个模块的 React 组件，进而拉入 App Router，把整个 UI 依赖图带进 DAL、Server Action 与测试环境（`next/navigation` 在 Vitest 中不可解析，曾因此导致测试用 `vi.mock('@/modules/registry')` 打桩、而桩又重写了被测的归一化逻辑）。需要 `getModule` / `getAllModules` 的 UI 才从 registry 导入。
+
+Agent scope：scope 词表与派生规则定义在 `src/lib/agent/scopes.ts`（同样是无 DAL、无 DB 依赖的叶子模块，供 OpenAPI 文档生成器复用）。`read:<id>` / `write:<id>` 由 `MODULE_IDS` 推导，注册新模块即自动获得其 scope 对，**不得在 `auth.ts` 里手写逐模块 `if` 链**。工具名清单的权威定义在 `src/lib/agent/tool-names.ts`，dispatcher 的 Zod enum 与 OpenAPI 的 `tool` enum 都从它读取；`scopeByTool` 被标注为 `Record<AgentToolName, AgentScope>`，因此新增工具在给定 scope 前无法通过编译，`writeTools` 亦由 `scopeByTool` 派生而非另抄一份。
+
+Action 结果契约：`ActionResult` / `ActionSuccess` / `ActionError`、错误工厂（`validationErrorResult`、`notFoundErrorResult`、`conflictErrorResult`、`badRequestErrorResult`、`unauthorizedErrorResult`、`forbiddenErrorResult`、`internalErrorResult`）、`zodFieldErrors`、`unwrapActionResult` 的**唯一来源是 `src/lib/api/action-result.ts`**。Action 与 hook 不得再声明一份，也不得内联 `error.flatten().fieldErrors as Record<string, string[]>`。`ActionError.code` 的类型是 `ActionErrorCode` 而非 `string`；新增错误码必须在 `ACTION_ERROR_STATUS`（`Record<ActionErrorCode, number>`）里补上 HTTP 状态，遗漏即编译失败（此前未知 code 会静默降级为 500）。Route Handler 侧用 `src/lib/api/action-response.ts` 的 `actionResultToApiResponse` 把同一契约转成统一 envelope，不得另立一套 code → status 映射。`src/lib/__tests__/action-result.test.ts` 扫描源码兜底，并附带正向对照，避免因「什么都没匹配到」而假通过。
+
+可点击卡片：模块卡片若需要点击，必须使用 `src/modules/core/ui/InteractiveCard.tsx`，由它按 `onClick` 是否存在渲染原生 `<button>` 或 `<div>`。**不要再写 `<div onClick={...} role={...} tabIndex={0} onKeyDown={...}>`**：原生 button 自带焦点、Enter/Space 激活与正确的 role，手写版本既要重复实现又容易被 `jsx-a11y/no-static-element-interactions` 判为静态元素交互。同理，列表渲染的 `key` 必须取业务标识（如图片引用本身），不得使用数组下标 —— 附件图列表先经 `uniqueImageRefs()`（`src/lib/image-utils.ts`）去重再渲染，以保证 key 唯一。
+
+约定即断言：凡是「新增模块时必须记得做 X」的约定，只要 X 可以从源码或配置推导，就必须写成测试而不是留在文档里。当前已固化的有：`src/__tests__/module-registry-consistency.test.ts` 断言 registry 键集合等于 `MODULE_IDS`、每个模块的 `icon` 都在 `AppSidebar.tsx` 的 `moduleIcons` 里登记（否则会静默回退到默认图标）、每个模块都有 `startsWith('/<id>')` 的激活态判断、`users.modules.<id>` 与 `navigation.<id>` 在两套目录中都存在且 en/zh 键集合逐键相等；`src/lib/__tests__/new-module-dal-writes.test.ts` 用一张数据表驱动各模块的 DAL 写契约（提交后失效、失效新旧两侧切片、缺行抛 `RecordNotFoundError` 且零失效、事务失败零失效）——**新增模块只需往表里加一行**即可获得同等覆盖。写这类断言时必须附一条正向对照，证明扫描/提取逻辑确实能命中真实样本，否则它会因「什么都没匹配到」而假通过。
+
+测试代码同样受框架保留标识符约束：**不要用 `module` 作循环变量**（`for (const module of ...)`），Next.js 的 `@next/next/no-assign-module-variable` 会直接报错，`lint:check` 是 0 警告门禁。用 `entry` 之类的名字。
+
+注意：`npm run build` 在本机（WorkBuddy 沙箱）会因 `.next` 清理动作触发 `SAFE_DELETE_BULK_CONFIRM_REQUIRED`，且当 `.next` 已存在时构建会在启动阶段静默挂起。本机复现干净构建前应先把旧目录改名（`mv .next .next-stale-$(date +%s)`），并以日志中 `✓ Compiled successfully` / `Finished TypeScript` / `✓ Generating static pages (N/N)` 三段作为通过判据，而非进程退出码。Vercel 与常规 CI 不受此影响。改名后的 `.next-stale-*` 残留已由 `eslint.config.mjs` 的 `.next*` 忽略项覆盖，不会污染 `lint:check`。
+
+构建仍报告 Better Auth 未设置显式 `BETTER_AUTH_URL`/`baseURL`；只要在环境中显式设置 `BETTER_AUTH_URL`，该告警即消失，生产部署必须配置受信任的 canonical origin。Vitest 还报告未来将默认使用 native config loader；升级 Vite/Vitest 时应将配置迁移到 ESM（或显式设置 package module type）并补充 CI 验证。

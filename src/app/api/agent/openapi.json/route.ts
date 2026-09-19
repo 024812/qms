@@ -1,8 +1,14 @@
 import { NextResponse } from 'next/server';
 
+import packageJson from '../../../../../package.json';
+
+import { MODULE_AGENT_SCOPES } from '@/lib/agent/scopes';
+import { AGENT_TOOL_NAMES } from '@/lib/agent/tool-names';
+import { QUILT_STATUSES } from '@/lib/validations/quilt';
+
 const enums = {
   quiltSeason: ['WINTER', 'SPRING_AUTUMN', 'SUMMER'],
-  quiltStatus: ['IN_USE', 'MAINTENANCE', 'STORAGE'],
+  quiltStatus: [...QUILT_STATUSES],
   usageType: ['REGULAR', 'GUEST', 'SPECIAL_OCCASION', 'SEASONAL_ROTATION'],
   cardSport: ['BASKETBALL', 'SOCCER', 'OTHER'],
   gradingCompany: ['UNGRADED', 'PSA', 'BGS', 'SGC', 'CGC'],
@@ -45,8 +51,17 @@ export async function GET() {
     openapi: '3.1.0',
     info: {
       title: 'QMS Agent API',
-      version: '2026.9.11',
-      description: 'Restricted OpenAPI surface for AI agents to query and mutate QMS subsystems.',
+      version: packageJson.version,
+      description: [
+        'Restricted OpenAPI surface for AI agents to query and mutate QMS subsystems.',
+        '',
+        'Scopes are derived from the calling API key owner’s active modules: each',
+        'registered module grants `read:<module>` and `write:<module>`. The `quilts`',
+        'module additionally grants `read:usage` / `write:usage`, and every',
+        'authenticated key receives `read:settings` (app preferences, aggregate',
+        'counters and runtime metadata — no secrets). Administrators receive the',
+        '`*` wildcard. See `components.schemas.AgentScope` for the full list.',
+      ].join('\n'),
     },
     servers: [{ url: '/api/agent' }],
     security: [{ bearerAuth: [] }],
@@ -79,47 +94,31 @@ export async function GET() {
       schemas: {
         AgentToolRequest: {
           type: 'object',
-          required: ['tool', 'input'],
+          // `input` is intentionally absent from `required`: the request schema
+          // declares `input: z.record(...).default({})`, so omitting it is valid
+          // for tools that take no arguments.
+          required: ['tool'],
           properties: {
             tool: {
               type: 'string',
-              enum: [
-                'quilts.search',
-                'quilts.get',
-                'quilts.create',
-                'quilts.update',
-                'quilts.changeStatus',
-                'usage.search',
-                'usage.create',
-                'usage.end',
-                'cards.search',
-                'cards.get',
-                'cards.create',
-                'cards.update',
-                'paddles.search',
-                'paddles.get',
-                'paddles.create',
-                'paddles.update',
-                'antiques.search',
-                'antiques.get',
-                'antiques.create',
-                'antiques.update',
-                'maps.search',
-                'maps.get',
-                'maps.create',
-                'maps.update',
-                'spirits.search',
-                'spirits.get',
-                'spirits.create',
-                'spirits.update',
-                'settings.read',
-              ],
+              enum: [...AGENT_TOOL_NAMES],
             },
-            input: { type: 'object', additionalProperties: true },
+            input: { type: 'object', additionalProperties: true, default: {} },
             dryRun: { type: 'boolean', default: false },
             confirm: { type: 'boolean', default: false },
-            idempotencyKey: { type: 'string' },
+            idempotencyKey: { type: 'string', minLength: 8 },
           },
+        },
+        AgentScope: {
+          type: 'string',
+          description: [
+            'Capability granted to an API key, derived from its owner’s modules.',
+            'Each registered module grants `read:<module>` and `write:<module>`;',
+            '`quilts` additionally grants `read:usage` / `write:usage`;',
+            '`read:settings` is granted to every authenticated key;',
+            '`*` is granted to administrators only.',
+          ].join(' '),
+          enum: ['*', ...MODULE_AGENT_SCOPES, 'read:usage', 'write:usage', 'read:settings', 'admin:settings'],
         },
         QuiltSearchInput: {
           type: 'object',

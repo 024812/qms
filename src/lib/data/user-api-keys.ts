@@ -4,6 +4,7 @@ import { and, eq, isNull } from 'drizzle-orm';
 
 import { db } from '@/db';
 import { userApiKeys, users } from '@/db/schema';
+import { normalizeModuleIds, type RegisteredModuleId } from '@/modules/module-ids';
 
 export interface UserApiKeySummary {
   id: string;
@@ -23,7 +24,12 @@ export interface ApiKeyUserIdentity {
   name: string;
   email: string;
   role: 'admin' | 'member';
-  activeModules: string[];
+  /**
+   * Registry-validated module IDs. Values in `preferences.activeModules` that
+   * no longer correspond to a registered module are dropped here, so scope
+   * derivation can never grant access to a module that has been removed.
+   */
+  activeModules: RegisteredModuleId[];
 }
 
 function hashApiKey(key: string) {
@@ -36,10 +42,6 @@ function createPlaintextApiKey() {
 
 function normalizeRole(value: unknown): 'admin' | 'member' {
   return value === 'admin' ? 'admin' : 'member';
-}
-
-function normalizeModules(value: unknown): string[] {
-  return Array.isArray(value) ? value.filter(item => typeof item === 'string') : [];
 }
 
 function toSummary(row: typeof userApiKeys.$inferSelect): UserApiKeySummary {
@@ -115,6 +117,6 @@ export async function findUserByApiKey(key: string): Promise<ApiKeyUserIdentity 
     name: row.name,
     email: row.email,
     role: normalizeRole(row.preferences.role),
-    activeModules: normalizeModules(row.preferences.activeModules),
+    activeModules: normalizeModuleIds(row.preferences.activeModules),
   };
 }

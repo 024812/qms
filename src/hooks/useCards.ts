@@ -5,26 +5,7 @@ import { useQuery } from '@tanstack/react-query';
 import { getCardsAction } from '@/app/actions/cards';
 import type { GetCardsActionInput, GetCardsActionResult } from '@/app/actions/cards.types';
 import { cardsQueryKeys } from '@/modules/cards/blueprint';
-
-function unwrapActionResult<T>(
-  result:
-    | {
-        success: true;
-        data: T;
-      }
-    | {
-        success: false;
-        error: {
-          message: string;
-        };
-      }
-): T {
-  if (!result.success) {
-    throw new Error(result.error.message);
-  }
-
-  return result.data;
-}
+import { unwrapActionResult } from '@/lib/api/action-result';
 
 function toCardsQueryParams(input: GetCardsActionInput): Record<string, unknown> {
   return {

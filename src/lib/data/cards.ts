@@ -4,6 +4,7 @@ import { and, asc, count, desc, eq, ilike, isNotNull, ne, or, sql, type SQL } fr
 import { db } from '@/db';
 import { cards, type Card, type NewCard } from '@/db/schema';
 import { dbLogger } from '@/lib/logger';
+import { RecordNotFoundError } from '@/lib/data/errors';
 import { cardsCacheTags } from '@/modules/core/cache-tags';
 import type { CardItem } from '@/modules/cards/schema';
 import { systemSettingsRepository } from '@/lib/repositories/system-settings.repository';
@@ -519,7 +520,7 @@ export async function updateCardSettings(input: UpdateCardSettingsData): Promise
 
 export async function getCardById(id: string): Promise<CardItem | null> {
   'use cache';
-  cacheLife('minutes');
+  cacheLife('moduleItem');
   cacheTag(cardsCacheTags.root, cardsCacheTags.item(id));
 
   try {
@@ -533,7 +534,7 @@ export async function getCardById(id: string): Promise<CardItem | null> {
 
 export async function getCards(input: CardListInput = {}): Promise<CardListResult> {
   'use cache';
-  cacheLife('seconds');
+  cacheLife('moduleList');
 
   const page = Math.max(1, input.page ?? 1);
   const pageSize = Math.max(1, input.pageSize ?? 20);
@@ -611,7 +612,10 @@ export async function saveCard(data: SaveCardData): Promise<CardItem> {
       : await createCardRecord(cleanData);
 
     if (!saved) {
-      throw new Error(data.id ? 'Card not found' : 'Failed to save card');
+      if (data.id) {
+        throw new RecordNotFoundError('Card', data.id);
+      }
+      throw new Error('Failed to save card');
     }
 
     const normalized = normalizeCardItem(saved);
@@ -641,7 +645,7 @@ export async function updateCard(id: string, data: Partial<SaveCardData>): Promi
   try {
     const current = await findCardRecordById(id);
     if (!current) {
-      throw new Error('Card not found');
+      throw new RecordNotFoundError('Card', id);
     }
 
     const cleanData: Partial<NewCard> = {};
@@ -684,7 +688,7 @@ export async function updateCard(id: string, data: Partial<SaveCardData>): Promi
 
     const saved = await updateCardRecord(id, cleanData);
     if (!saved) {
-      throw new Error('Card not found');
+      throw new RecordNotFoundError('Card', id);
     }
 
     const normalized = normalizeCardItem(saved);
@@ -709,7 +713,8 @@ export async function deleteCard(id: string): Promise<boolean> {
     const deleted = await deleteCardRecord(id);
 
     if (!deleted) {
-      throw new Error('Card not found');
+      dbLogger.warn('Card not found for delete', { id });
+      return false;
     }
 
     if (current) {
@@ -732,7 +737,7 @@ export async function deleteCard(id: string): Promise<boolean> {
 
 export async function getCardStats(): Promise<CardStats> {
   'use cache';
-  cacheLife('seconds');
+  cacheLife('moduleItem');
   cacheTag(cardsCacheTags.root, cardsCacheTags.slice('overview', 'stats'));
 
   const [stats] = await db
@@ -789,7 +794,7 @@ export async function getCardStats(): Promise<CardStats> {
 
 export async function getMonthlyBuySellData(): Promise<MonthlyBuySellData[]> {
   'use cache';
-  cacheLife('seconds');
+  cacheLife('moduleItem');
   cacheTag(cardsCacheTags.root, cardsCacheTags.slice('overview', 'monthly'));
 
   const now = new Date();
@@ -844,7 +849,7 @@ export async function getMonthlyBuySellData(): Promise<MonthlyBuySellData[]> {
 
 export async function getRecentActivity(limit = 10): Promise<ActivityItem[]> {
   'use cache';
-  cacheLife('seconds');
+  cacheLife('moduleItem');
   cacheTag(cardsCacheTags.root, cardsCacheTags.slice('overview', 'activity'));
 
   const [recentAdded, recentSold] = await Promise.all([

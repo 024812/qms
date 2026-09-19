@@ -55,6 +55,7 @@ const STATUS_OPTIONS = [
   { value: QuiltStatus.IN_USE, label: 'In Use', color: 'text-blue-600' },
   { value: QuiltStatus.STORAGE, label: 'Storage', color: 'text-gray-600' },
   { value: QuiltStatus.MAINTENANCE, label: 'Maintenance', color: 'text-red-600' },
+  { value: QuiltStatus.LOST, label: 'Lost', color: 'text-red-700' },
 ];
 
 const COMMON_LOCATIONS = [

@@ -1690,7 +1690,8 @@
   "status": {
     "IN_USE": "使用中",
     "STORAGE": "存储中",
-    "MAINTENANCE": "维护中"
+    "MAINTENANCE": "维护中",
+    "LOST": "已丢失"
   },
   "season": {
     "WINTER": "冬季",

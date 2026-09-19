@@ -19,6 +19,7 @@ import { useAppSettings } from '@/hooks/useSettings';
 import { useQueryClient } from '@tanstack/react-query';
 import type {
   Quilt,
+  QuiltStatus,
   SortField,
   SortDirection,
   ViewMode,
@@ -254,7 +255,7 @@ export function QuiltsPageClient({
     try {
       const result = await changeQuiltStatusAction({
         quiltId,
-        status: newStatus as 'IN_USE' | 'STORAGE' | 'MAINTENANCE',
+        status: newStatus as QuiltStatus,
         usageType: 'REGULAR',
         notes: options?.notes,
       });

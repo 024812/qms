@@ -7,6 +7,7 @@ import { db } from '@/db';
 import { agentIdempotencyKeys } from '@/db/schema';
 import { requireAgent, type AgentIdentity, type AgentScope } from '@/lib/agent/auth';
 import { recordAgentAudit } from '@/lib/agent/audit';
+import { AGENT_TOOL_NAMES } from '@/lib/agent/tool-names';
 import { rateLimiters } from '@/lib/rate-limit';
 import {
   createBadRequestResponse,
@@ -15,6 +16,7 @@ import {
   createSuccessResponse,
   createValidationErrorResponse,
 } from '@/lib/api/response';
+import { zodFieldErrors } from '@/lib/api/action-result';
 import { getCardById, getCards, saveCard } from '@/lib/data/cards';
 import {
   countAntiques,
@@ -53,41 +55,12 @@ import {
   updateUsageRecord,
 } from '@/lib/data/usage';
 import { attachmentImagesSchema, imageReferenceSchema } from '@/lib/validations/image';
+import { QUILT_STATUSES } from '@/lib/validations/quilt';
 
 const MAX_AGENT_REQUEST_CHARS = 1024 * 1024;
 
 const toolSchema = z.object({
-  tool: z.enum([
-    'quilts.search',
-    'quilts.get',
-    'quilts.create',
-    'quilts.update',
-    'quilts.changeStatus',
-    'usage.search',
-    'usage.create',
-    'usage.end',
-    'cards.search',
-    'cards.get',
-    'cards.create',
-    'cards.update',
-    'paddles.search',
-    'paddles.get',
-    'paddles.create',
-    'paddles.update',
-    'antiques.search',
-    'antiques.get',
-    'antiques.create',
-    'antiques.update',
-    'maps.search',
-    'maps.get',
-    'maps.create',
-    'maps.update',
-    'spirits.search',
-    'spirits.get',
-    'spirits.create',
-    'spirits.update',
-    'settings.read',
-  ]),
+  tool: z.enum(AGENT_TOOL_NAMES),
   input: z.record(z.string(), z.unknown()).default({}),
   dryRun: z.boolean().optional().default(false),
   confirm: z.boolean().optional().default(false),
@@ -96,7 +69,7 @@ const toolSchema = z.object({
 
 const quiltSearchSchema = z.object({
   season: z.enum(['WINTER', 'SPRING_AUTUMN', 'SUMMER']).optional(),
-  status: z.enum(['IN_USE', 'MAINTENANCE', 'STORAGE']).optional(),
+  status: z.enum(QUILT_STATUSES).optional(),
   location: z.string().optional(),
   brand: z.string().optional(),
   search: z.string().optional(),
@@ -122,7 +95,7 @@ const quiltWriteSchema = z.object({
   purchaseDate: z.coerce.date().nullable().optional(),
   location: z.string().optional(),
   packagingInfo: z.string().nullable().optional(),
-  currentStatus: z.enum(['IN_USE', 'MAINTENANCE', 'STORAGE']).optional(),
+  currentStatus: z.enum(QUILT_STATUSES).optional(),
   notes: z.string().nullable().optional(),
   mainImage: imageReferenceSchema.nullable().optional(),
   attachmentImages: attachmentImagesSchema.nullable().optional(),
@@ -130,7 +103,7 @@ const quiltWriteSchema = z.object({
 
 const quiltStatusSchema = z.object({
   quiltId: z.string().min(1),
-  status: z.enum(['IN_USE', 'MAINTENANCE', 'STORAGE']),
+  status: z.enum(QUILT_STATUSES),
   usageType: z
     .enum(['REGULAR', 'GUEST', 'SPECIAL_OCCASION', 'SEASONAL_ROTATION'])
     .optional()
@@ -487,23 +460,18 @@ const scopeByTool: Record<z.infer<typeof toolSchema>['tool'], AgentScope> = {
   'settings.read': 'read:settings',
 };
 
-const writeTools = new Set([
-  'quilts.create',
-  'quilts.update',
-  'quilts.changeStatus',
-  'usage.create',
-  'usage.end',
-  'cards.create',
-  'cards.update',
-  'paddles.create',
-  'paddles.update',
-  'antiques.create',
-  'antiques.update',
-  'maps.create',
-  'maps.update',
-  'spirits.create',
-  'spirits.update',
-]);
+/**
+ * Tools that mutate state.
+ *
+ * Derived from `scopeByTool` rather than hand-listed, so a tool can never be
+ * treated as a read while requiring a write scope (or vice versa) — the two
+ * tables cannot drift apart.
+ */
+const writeTools = new Set(
+  (Object.entries(scopeByTool) as [z.infer<typeof toolSchema>['tool'], AgentScope][]).flatMap(
+    ([tool, scope]) => (scope.startsWith('write:') ? [tool] : [])
+  )
+);
 
 type ToolRequest = z.infer<typeof toolSchema>;
 type ToolSuccessPayload = {
@@ -574,7 +542,7 @@ function parseAuditInput(request: ToolRequest): unknown {
 function validationResponse(error: z.ZodError) {
   return createValidationErrorResponse(
     'Agent tool input validation failed',
-    error.flatten().fieldErrors as Record<string, string[]>
+    zodFieldErrors(error)
   );
 }
 

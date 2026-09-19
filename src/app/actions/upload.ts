@@ -12,6 +12,7 @@
 import { auth } from '@/auth';
 import { z } from 'zod';
 import { MAX_STORED_IMAGE_BYTES } from '@/lib/validations/image';
+import { zodFieldErrors } from '@/lib/api/action-result';
 
 /**
  * Maximum file size: 5MB
@@ -58,7 +59,7 @@ export async function uploadImage(data: {
     // Validate input
     const validationResult = imageUploadSchema.safeParse(data);
     if (!validationResult.success) {
-      const errors = validationResult.error.flatten().fieldErrors;
+      const errors = zodFieldErrors(validationResult.error);
       const errorMessage = Object.values(errors).flat().join(', ');
       return { url: '', error: errorMessage };
     }

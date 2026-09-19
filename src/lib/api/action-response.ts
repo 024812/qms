@@ -1,33 +1,16 @@
+import { ACTION_ERROR_STATUS, type ActionResult } from '@/lib/api/action-result';
 import { createErrorResponse, createSuccessResponse } from '@/lib/api/response';
 
-interface ActionErrorShape {
-  code: string;
-  message: string;
-  fieldErrors?: Record<string, string[]>;
-}
-
-type RouteActionResult<T> =
-  | {
-      success: true;
-      data: T;
-    }
-  | {
-      success: false;
-      error: ActionErrorShape;
-    };
-
-const STATUS_BY_CODE: Record<string, number> = {
-  BAD_REQUEST: 400,
-  VALIDATION_FAILED: 400,
-  UNAUTHORIZED: 401,
-  FORBIDDEN: 403,
-  NOT_FOUND: 404,
-  ALREADY_EXISTS: 409,
-  INTERNAL_ERROR: 500,
-};
-
+/**
+ * Adapt a Server Action result into an HTTP response.
+ *
+ * The result shape and the code → status map both live in `@/lib/api/action-result`;
+ * this module previously re-declared the shape as its own `RouteActionResult` /
+ * `ActionErrorShape` and kept a second copy of the status map, so an error code
+ * added to the actions could silently fall through to a 500 here.
+ */
 export function actionResultToApiResponse<T, TResponse = T>(
-  result: RouteActionResult<T>,
+  result: ActionResult<T>,
   options?: {
     status?: number;
     mapData?: (data: T) => TResponse;
@@ -45,6 +28,6 @@ export function actionResultToApiResponse<T, TResponse = T>(
     result.error.code,
     result.error.message,
     result.error.fieldErrors ? { errors: result.error.fieldErrors } : undefined,
-    STATUS_BY_CODE[result.error.code] ?? 500
+    ACTION_ERROR_STATUS[result.error.code]
   );
 }

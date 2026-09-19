@@ -11,16 +11,18 @@
  * - Cache invalidation with revalidateTag(, 'max')
  *
  * Cache Strategy:
- * - Individual items: 5 minutes
- * - Lists: 2 minutes (120 seconds)
+ * - Individual items: `moduleItem` profile (revalidate 5 minutes)
+ * - Lists: `moduleList` profile (revalidate 2 minutes)
  * - Tags: 'spirits', 'spirits:item:{id}', 'spirits:status:{status}', 'spirits:type:{type}'
  */
 
 import { cacheLife, cacheTag, revalidateTag } from 'next/cache';
 import { db } from '@/db';
 import { spirits } from '@/db/schema';
-import { eq, sql, desc, and, like, or } from 'drizzle-orm';
+import { eq, sql, desc, and } from 'drizzle-orm';
 import { dbLogger } from '@/lib/logger';
+import { RecordNotFoundError } from '@/lib/data/errors';
+import { containsInsensitiveFilter, searchAnyColumn } from '@/lib/data/search';
 import { spiritsCacheTags } from '@/modules/core/cache-tags';
 import type {
   Spirit,
@@ -129,12 +131,12 @@ function rowToSpirit(row: typeof spirits.$inferSelect): Spirit {
 /**
  * Get spirit by ID
  *
- * Cache: 5 minutes
+ * Cache: `moduleItem` profile (revalidate 5 minutes)
  * Tags: 'spirits', 'spirits:item:{id}'
  */
 export async function getSpiritById(id: string): Promise<Spirit | null> {
   'use cache';
-  cacheLife('minutes'); // 5 minutes
+  cacheLife('moduleItem');
   cacheTag(spiritsCacheTags.root, spiritsCacheTags.item(id));
 
   try {
@@ -152,12 +154,12 @@ export async function getSpiritById(id: string): Promise<Spirit | null> {
 /**
  * Get all spirits with filters
  *
- * Cache: 2 minutes (120 seconds)
+ * Cache: `moduleList` profile (revalidate 2 minutes)
  * Tags: 'spirits', 'spirits:list', plus dynamic tags based on filters
  */
 export async function getSpirits(filters: SpiritFilters = {}): Promise<Spirit[]> {
   'use cache';
-  cacheLife('seconds'); // 2 minutes (120 seconds)
+  cacheLife('moduleList');
 
   // Build cache tags based on filters
   const tags = [spiritsCacheTags.root, spiritsCacheTags.list];
@@ -187,23 +189,22 @@ export async function getSpirits(filters: SpiritFilters = {}): Promise<Spirit[]>
     if (spiritType) conditions.push(eq(spirits.spiritType, spiritType));
     if (status) conditions.push(eq(spirits.status, status));
     if (bottleStatus) conditions.push(eq(spirits.bottleStatus, bottleStatus));
-    if (brand) conditions.push(like(sql`LOWER(${spirits.brand})`, `%${brand.toLowerCase()}%`));
-    if (country)
-      conditions.push(like(sql`LOWER(${spirits.country})`, `%${country.toLowerCase()}%`));
-    if (region) conditions.push(like(sql`LOWER(${spirits.region})`, `%${region.toLowerCase()}%`));
+    const brandCondition = containsInsensitiveFilter(spirits.brand, brand);
+    if (brandCondition) conditions.push(brandCondition);
+
+    const countryCondition = containsInsensitiveFilter(spirits.country, country);
+    if (countryCondition) conditions.push(countryCondition);
+
+    const regionCondition = containsInsensitiveFilter(spirits.region, region);
+    if (regionCondition) conditions.push(regionCondition);
+
     if (limitedEdition !== undefined) conditions.push(eq(spirits.limitedEdition, limitedEdition));
 
-    if (search) {
-      const searchLower = `%${search.toLowerCase()}%`;
-      conditions.push(
-        or(
-          like(sql`LOWER(${spirits.name})`, searchLower),
-          like(sql`LOWER(${spirits.brand})`, searchLower),
-          like(sql`LOWER(${spirits.distillery})`, searchLower),
-          like(sql`LOWER(${spirits.notes})`, searchLower)
-        )
-      );
-    }
+    const searchCondition = searchAnyColumn(
+      [spirits.name, spirits.brand, spirits.distillery, spirits.notes],
+      search
+    );
+    if (searchCondition) conditions.push(searchCondition);
 
     const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
 
@@ -237,12 +238,12 @@ export async function getSpirits(filters: SpiritFilters = {}): Promise<Spirit[]>
 /**
  * Get total count of spirits
  *
- * Cache: 2 minutes
+ * Cache: `moduleList` profile (revalidate 2 minutes)
  * Tags: 'spirits', 'spirits:list'
  */
 export async function countSpirits(filters: SpiritFilters = {}): Promise<number> {
   'use cache';
-  cacheLife('seconds');
+  cacheLife('moduleList');
   cacheTag(spiritsCacheTags.root, spiritsCacheTags.list);
 
   try {
@@ -253,23 +254,22 @@ export async function countSpirits(filters: SpiritFilters = {}): Promise<number>
     if (spiritType) conditions.push(eq(spirits.spiritType, spiritType));
     if (status) conditions.push(eq(spirits.status, status));
     if (bottleStatus) conditions.push(eq(spirits.bottleStatus, bottleStatus));
-    if (brand) conditions.push(like(sql`LOWER(${spirits.brand})`, `%${brand.toLowerCase()}%`));
-    if (country)
-      conditions.push(like(sql`LOWER(${spirits.country})`, `%${country.toLowerCase()}%`));
-    if (region) conditions.push(like(sql`LOWER(${spirits.region})`, `%${region.toLowerCase()}%`));
+    const brandCondition = containsInsensitiveFilter(spirits.brand, brand);
+    if (brandCondition) conditions.push(brandCondition);
+
+    const countryCondition = containsInsensitiveFilter(spirits.country, country);
+    if (countryCondition) conditions.push(countryCondition);
+
+    const regionCondition = containsInsensitiveFilter(spirits.region, region);
+    if (regionCondition) conditions.push(regionCondition);
+
     if (limitedEdition !== undefined) conditions.push(eq(spirits.limitedEdition, limitedEdition));
 
-    if (search) {
-      const searchLower = `%${search.toLowerCase()}%`;
-      conditions.push(
-        or(
-          like(sql`LOWER(${spirits.name})`, searchLower),
-          like(sql`LOWER(${spirits.brand})`, searchLower),
-          like(sql`LOWER(${spirits.distillery})`, searchLower),
-          like(sql`LOWER(${spirits.notes})`, searchLower)
-        )
-      );
-    }
+    const searchCondition = searchAnyColumn(
+      [spirits.name, spirits.brand, spirits.distillery, spirits.notes],
+      search
+    );
+    if (searchCondition) conditions.push(searchCondition);
 
     const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
 
@@ -367,104 +367,133 @@ export async function createSpirit(data: CreateSpiritInput): Promise<Spirit> {
 }
 
 /**
+ * Invalidate every cache tag affected by a spirit write.
+ *
+ * Contract: call only AFTER the surrounding transaction has committed —
+ * `revalidateTag` does not participate in rollback. Passing both the previous
+ * and the updated slice values covers "changed" and "unchanged" uniformly, so
+ * there is no branch to get wrong.
+ */
+function invalidateSpiritWriteTags(input: {
+  id: string;
+  statuses: Array<SpiritStatus | null | undefined>;
+  spiritTypes: Array<SpiritType | null | undefined>;
+  bottleStatuses: Array<BottleStatus | null | undefined>;
+}) {
+  revalidateTag(spiritsCacheTags.root, 'max');
+  revalidateTag(spiritsCacheTags.list, 'max');
+  revalidateTag(spiritsCacheTags.item(input.id), 'max');
+
+  for (const status of input.statuses) {
+    if (status) revalidateTag(spiritsCacheTags.slice('status', status), 'max');
+  }
+
+  for (const spiritType of input.spiritTypes) {
+    if (spiritType) revalidateTag(spiritsCacheTags.slice('spiritType', spiritType), 'max');
+  }
+
+  for (const bottleStatus of input.bottleStatuses) {
+    if (bottleStatus) revalidateTag(spiritsCacheTags.slice('bottleStatus', bottleStatus), 'max');
+  }
+}
+
+/**
  * Update an existing spirit
  *
- * Invalidates: 'spirits', 'spirits:list', 'spirits:item:{id}', old/new status/type slices
+ * The read-modify-write runs inside a transaction holding a `SELECT ... FOR
+ * UPDATE` row lock: the pre-read status/type/bottle-status decide which cache
+ * slices are invalidated, so without the lock two concurrent writes could both
+ * observe the old values and leave a slice stale.
+ *
+ * @throws {RecordNotFoundError} when the spirit does not exist.
  */
 export async function updateSpirit(id: string, data: UpdateSpiritInput): Promise<Spirit> {
   try {
-    // Fetch existing spirit for old status/type via a direct query — the cached
-    // read may be stale and slice invalidation must use the persisted values.
-    const existingRows = await db.select().from(spirits).where(eq(spirits.id, id)).limit(1);
-    const existingRow = existingRows[0];
-    if (!existingRow) {
-      throw new Error('Spirit not found');
-    }
-    const existing = rowToSpirit(existingRow);
+    const { previous, updated } = await db.transaction(async tx => {
+      const existingRows = await tx
+        .select()
+        .from(spirits)
+        .where(eq(spirits.id, id))
+        .limit(1)
+        .for('update');
 
-    const updateData: Record<string, unknown> = {
-      updatedAt: new Date(),
-    };
+      const existingRow = existingRows[0];
+      if (!existingRow) {
+        throw new RecordNotFoundError('Spirit', id);
+      }
 
-    // Only include defined fields
-    if (data.name !== undefined) updateData.name = data.name;
-    if (data.spiritType !== undefined) updateData.spiritType = data.spiritType;
-    if (data.subType !== undefined) updateData.subType = data.subType ?? null;
-    if (data.brand !== undefined) updateData.brand = data.brand ?? null;
-    if (data.model !== undefined) updateData.model = data.model ?? null;
-    if (data.distillery !== undefined) updateData.distillery = data.distillery ?? null;
-    if (data.region !== undefined) updateData.region = data.region ?? null;
-    if (data.country !== undefined) updateData.country = data.country ?? null;
-    if (data.vintage !== undefined) updateData.vintage = data.vintage ?? null;
-    if (data.age !== undefined) updateData.age = data.age ?? null;
-    if (data.abv !== undefined) updateData.abv = data.abv !== null ? String(data.abv) : null;
-    if (data.volumeMl !== undefined) updateData.volumeMl = data.volumeMl ?? null;
-    if (data.bottleNumber !== undefined) updateData.bottleNumber = data.bottleNumber ?? null;
-    if (data.limitedEdition !== undefined) updateData.limitedEdition = data.limitedEdition;
-    if (data.caskType !== undefined) updateData.caskType = data.caskType ?? null;
-    if (data.bottlingDate !== undefined)
-      updateData.bottlingDate = data.bottlingDate
-        ? data.bottlingDate instanceof Date
-          ? data.bottlingDate.toISOString().split('T')[0]
-          : String(data.bottlingDate)
-        : null;
-    if (data.acquiredDate !== undefined)
-      updateData.acquiredDate = data.acquiredDate
-        ? data.acquiredDate instanceof Date
-          ? data.acquiredDate.toISOString().split('T')[0]
-          : String(data.acquiredDate)
-        : null;
-    if (data.acquiredFrom !== undefined) updateData.acquiredFrom = data.acquiredFrom ?? null;
-    if (data.purchasePrice !== undefined)
-      updateData.purchasePrice = data.purchasePrice !== null ? String(data.purchasePrice) : null;
-    if (data.currentValue !== undefined)
-      updateData.currentValue = data.currentValue !== null ? String(data.currentValue) : null;
-    if (data.estimatedValue !== undefined)
-      updateData.estimatedValue = data.estimatedValue !== null ? String(data.estimatedValue) : null;
-    if (data.status !== undefined) updateData.status = data.status;
-    if (data.bottleStatus !== undefined) updateData.bottleStatus = data.bottleStatus;
-    if (data.storageCondition !== undefined)
-      updateData.storageCondition = data.storageCondition ?? null;
-    if (data.location !== undefined) updateData.location = data.location ?? null;
-    if (data.tastingNotes !== undefined) updateData.tastingNotes = data.tastingNotes ?? null;
-    if (data.notes !== undefined) updateData.notes = data.notes ?? null;
-    if (data.mainImage !== undefined) updateData.mainImage = data.mainImage ?? null;
-    if (data.attachmentImages !== undefined)
-      updateData.attachmentImages = data.attachmentImages ?? null;
+      const updateData: Record<string, unknown> = {
+        updatedAt: new Date(),
+      };
 
-    const result = await db.update(spirits).set(updateData).where(eq(spirits.id, id)).returning();
+      // Only include defined fields
+      if (data.name !== undefined) updateData.name = data.name;
+      if (data.spiritType !== undefined) updateData.spiritType = data.spiritType;
+      if (data.subType !== undefined) updateData.subType = data.subType ?? null;
+      if (data.brand !== undefined) updateData.brand = data.brand ?? null;
+      if (data.model !== undefined) updateData.model = data.model ?? null;
+      if (data.distillery !== undefined) updateData.distillery = data.distillery ?? null;
+      if (data.region !== undefined) updateData.region = data.region ?? null;
+      if (data.country !== undefined) updateData.country = data.country ?? null;
+      if (data.vintage !== undefined) updateData.vintage = data.vintage ?? null;
+      if (data.age !== undefined) updateData.age = data.age ?? null;
+      if (data.abv !== undefined) updateData.abv = data.abv !== null ? String(data.abv) : null;
+      if (data.volumeMl !== undefined) updateData.volumeMl = data.volumeMl ?? null;
+      if (data.bottleNumber !== undefined) updateData.bottleNumber = data.bottleNumber ?? null;
+      if (data.limitedEdition !== undefined) updateData.limitedEdition = data.limitedEdition;
+      if (data.caskType !== undefined) updateData.caskType = data.caskType ?? null;
+      if (data.bottlingDate !== undefined)
+        updateData.bottlingDate = data.bottlingDate
+          ? data.bottlingDate instanceof Date
+            ? data.bottlingDate.toISOString().split('T')[0]
+            : String(data.bottlingDate)
+          : null;
+      if (data.acquiredDate !== undefined)
+        updateData.acquiredDate = data.acquiredDate
+          ? data.acquiredDate instanceof Date
+            ? data.acquiredDate.toISOString().split('T')[0]
+            : String(data.acquiredDate)
+          : null;
+      if (data.acquiredFrom !== undefined) updateData.acquiredFrom = data.acquiredFrom ?? null;
+      if (data.purchasePrice !== undefined)
+        updateData.purchasePrice = data.purchasePrice !== null ? String(data.purchasePrice) : null;
+      if (data.currentValue !== undefined)
+        updateData.currentValue = data.currentValue !== null ? String(data.currentValue) : null;
+      if (data.estimatedValue !== undefined)
+        updateData.estimatedValue =
+          data.estimatedValue !== null ? String(data.estimatedValue) : null;
+      if (data.status !== undefined) updateData.status = data.status;
+      if (data.bottleStatus !== undefined) updateData.bottleStatus = data.bottleStatus;
+      if (data.storageCondition !== undefined)
+        updateData.storageCondition = data.storageCondition ?? null;
+      if (data.location !== undefined) updateData.location = data.location ?? null;
+      if (data.tastingNotes !== undefined) updateData.tastingNotes = data.tastingNotes ?? null;
+      if (data.notes !== undefined) updateData.notes = data.notes ?? null;
+      if (data.mainImage !== undefined) updateData.mainImage = data.mainImage ?? null;
+      if (data.attachmentImages !== undefined)
+        updateData.attachmentImages = data.attachmentImages ?? null;
 
-    if (!result[0]) {
-      throw new Error('Failed to update spirit');
-    }
+      const result = await tx
+        .update(spirits)
+        .set(updateData)
+        .where(eq(spirits.id, id))
+        .returning();
 
-    // Invalidate cache
-    revalidateTag(spiritsCacheTags.root, 'max');
-    revalidateTag(spiritsCacheTags.list, 'max');
-    revalidateTag(spiritsCacheTags.item(id), 'max');
+      if (!result[0]) {
+        throw new RecordNotFoundError('Spirit', id);
+      }
 
-    // Invalidate old slices
-    revalidateTag(spiritsCacheTags.slice('status', existing.status), 'max');
-    revalidateTag(spiritsCacheTags.slice('spiritType', existing.spiritType), 'max');
-    revalidateTag(spiritsCacheTags.slice('bottleStatus', existing.bottleStatus), 'max');
+      return { previous: rowToSpirit(existingRow), updated: rowToSpirit(result[0]) };
+    });
 
-    // Invalidate new slices if changed
-    const newStatus = (data.status ?? existing.status) as SpiritStatus;
-    const newType = (data.spiritType ?? existing.spiritType) as SpiritType;
-    const newBottleStatus = (data.bottleStatus ?? existing.bottleStatus) as BottleStatus;
+    invalidateSpiritWriteTags({
+      id,
+      statuses: [previous.status, updated.status],
+      spiritTypes: [previous.spiritType, updated.spiritType],
+      bottleStatuses: [previous.bottleStatus, updated.bottleStatus],
+    });
 
-    if (newStatus !== existing.status) {
-      revalidateTag(spiritsCacheTags.slice('status', newStatus), 'max');
-    }
-    if (newType !== existing.spiritType) {
-      revalidateTag(spiritsCacheTags.slice('spiritType', newType), 'max');
-    }
-    if (newBottleStatus !== existing.bottleStatus) {
-      revalidateTag(spiritsCacheTags.slice('bottleStatus', newBottleStatus), 'max');
-    }
-
-    const row = result[0];
-    return rowToSpirit(row);
+    return updated;
   } catch (error) {
     logSpiritDataError('Error updating spirit', error, { id, data });
     throw error;
@@ -472,30 +501,45 @@ export async function updateSpirit(id: string, data: UpdateSpiritInput): Promise
 }
 
 /**
- * Delete a spirit
+ * Delete a spirit.
  *
- * Invalidates: 'spirits', 'spirits:list', 'spirits:item:{id}', status/type slices
+ * @returns `true` when a row was deleted, `false` when it did not exist. This
+ * matches `deleteQuilt`: a missing row is an expected outcome the caller maps to
+ * 404, not an exception.
  */
-export async function deleteSpirit(id: string): Promise<void> {
+export async function deleteSpirit(id: string): Promise<boolean> {
   try {
-    // Fetch existing spirit for cache invalidation via a direct query — the
-    // cached read may be stale and slice invalidation must use persisted values.
-    const existingRows = await db.select().from(spirits).where(eq(spirits.id, id)).limit(1);
-    const existingRow = existingRows[0];
-    if (!existingRow) {
-      throw new Error('Spirit not found');
+    const deleted = await db.transaction(async tx => {
+      const existingRows = await tx
+        .select()
+        .from(spirits)
+        .where(eq(spirits.id, id))
+        .limit(1)
+        .for('update');
+
+      const existingRow = existingRows[0];
+      if (!existingRow) {
+        return null;
+      }
+
+      await tx.delete(spirits).where(eq(spirits.id, id));
+
+      return rowToSpirit(existingRow);
+    });
+
+    if (!deleted) {
+      dbLogger.warn('Spirit not found for delete', { id });
+      return false;
     }
-    const existing = rowToSpirit(existingRow);
 
-    await db.delete(spirits).where(eq(spirits.id, id));
+    invalidateSpiritWriteTags({
+      id,
+      statuses: [deleted.status],
+      spiritTypes: [deleted.spiritType],
+      bottleStatuses: [deleted.bottleStatus],
+    });
 
-    // Invalidate cache
-    revalidateTag(spiritsCacheTags.root, 'max');
-    revalidateTag(spiritsCacheTags.list, 'max');
-    revalidateTag(spiritsCacheTags.item(id), 'max');
-    revalidateTag(spiritsCacheTags.slice('status', existing.status), 'max');
-    revalidateTag(spiritsCacheTags.slice('spiritType', existing.spiritType), 'max');
-    revalidateTag(spiritsCacheTags.slice('bottleStatus', existing.bottleStatus), 'max');
+    return true;
   } catch (error) {
     logSpiritDataError('Error deleting spirit', error, { id });
     throw error;

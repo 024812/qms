@@ -29,7 +29,8 @@ import {
   createValidationErrorResponse,
   createInternalErrorResponse,
 } from '@/lib/api/response';
-import { requireApiSession } from '@/lib/api/route-auth';
+import { requireApiModule } from '@/lib/api/route-auth';
+import { zodFieldErrors } from '@/lib/api/action-result';
 
 // Zod schema for report query parameters
 const reportQuerySchema = z.object({
@@ -49,7 +50,7 @@ type CsvCell = string | number | Date | null | undefined;
 // GET /api/reports - Get report data
 export async function GET(request: NextRequest) {
   try {
-    const authResult = await requireApiSession();
+    const authResult = await requireApiModule('quilts');
     if (!authResult.ok) return authResult.response;
 
     const { searchParams } = new URL(request.url);
@@ -63,7 +64,7 @@ export async function GET(request: NextRequest) {
     if (!validationResult.success) {
       return createValidationErrorResponse(
         '报告参数验证失败',
-        validationResult.error.flatten().fieldErrors as Record<string, string[]>
+        zodFieldErrors(validationResult.error)
       );
     }
 

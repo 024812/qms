@@ -2,7 +2,7 @@ import { NextRequest } from 'next/server';
 
 import { createPaddleAction, getPaddlesAction } from '@/app/actions/paddles';
 import { actionResultToApiResponse } from '@/lib/api/action-response';
-import { createBadRequestResponse } from '@/lib/api/response';
+import { createBadRequestResponse, createSuccessResponse } from '@/lib/api/response';
 import { sanitizeSearchQuery } from '@/lib/sanitization';
 import type { PaddleSearchInput } from '@/app/actions/paddles';
 
@@ -77,17 +77,22 @@ export async function GET(request: NextRequest) {
     return actionResultToApiResponse(result);
   }
 
-  return actionResultToApiResponse(result, {
-    mapData: data => ({
-      paddles: data.paddles,
+  return createSuccessResponse(
+    {
+      paddles: result.data.paddles,
       pagination: {
-        total: data.total,
+        total: result.data.total,
         offset: searchInput.skip || 0,
         limit: searchInput.take || 20,
-        hasMore: data.hasMore,
+        hasMore: result.data.hasMore,
       },
-    }),
-  });
+    },
+    {
+      total: result.data.total,
+      limit: searchInput.take,
+      hasMore: result.data.hasMore,
+    }
+  );
 }
 
 export async function POST(request: NextRequest) {

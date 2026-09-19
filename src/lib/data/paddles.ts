@@ -10,8 +10,8 @@
  * - Cache invalidation with revalidateTag(, 'max')
  *
  * Cache Strategy:
- * - Individual items: 5 minutes
- * - Lists: 2 minutes (120 seconds)
+ * - Individual items: `moduleItem` profile (revalidate 5 minutes)
+ * - Lists: `moduleList` profile (revalidate 2 minutes)
  * - Tags: 'paddles', 'paddles:item:{id}', 'paddles:status:{status}'
  */
 
@@ -19,18 +19,21 @@ import { cacheLife, cacheTag, revalidateTag } from 'next/cache';
 
 import { db } from '@/db';
 import { paddles } from '@/db/schema';
-import { eq, sql, desc, and, like, or, asc } from 'drizzle-orm';
+import { eq, sql, desc, and, asc } from 'drizzle-orm';
 import { dbLogger } from '@/lib/logger';
+import { RecordNotFoundError } from '@/lib/data/errors';
+import { searchAnyColumn } from '@/lib/data/search';
 import { paddlesCacheTags } from '@/modules/core/cache-tags';
-import type { PaddleItem, PaddleStatus } from '@/modules/paddles/schema';
+import type { PaddleItem, PaddleSortField, PaddleStatus } from '@/modules/paddles/schema';
 import { rowToPaddleItem } from '@/modules/paddles/schema';
 
 // ============================================================================
 // Types
 // ============================================================================
 
-export type PaddleSortField =
-  'itemNumber' | 'name' | 'bladeBrand' | 'bladeWeightG' | 'createdAt' | 'updatedAt';
+// Sortable columns come from the module's const tuple, so the Zod enum used by the
+// action/API layer and this type cannot drift apart.
+export type { PaddleSortField };
 
 export type SortOrder = 'asc' | 'desc';
 
@@ -137,12 +140,12 @@ function buildPaddleUpdateValues(data: Partial<CreatePaddleData>): PaddleMutatio
 /**
  * Get paddle by ID
  *
- * Cache: 5 minutes
+ * Cache: `moduleItem` profile (revalidate 5 minutes)
  * Tags: 'paddles', 'paddles:item:{id}'
  */
 export async function getPaddleById(id: string): Promise<PaddleItem | null> {
   'use cache';
-  cacheLife('minutes'); // 5 minutes
+  cacheLife('moduleItem');
   cacheTag(paddlesCacheTags.root, paddlesCacheTags.item(id));
 
   try {
@@ -157,12 +160,12 @@ export async function getPaddleById(id: string): Promise<PaddleItem | null> {
 /**
  * Get all paddles with optional filters
  *
- * Cache: 2 minutes
+ * Cache: `moduleList` profile (revalidate 2 minutes)
  * Tags: 'paddles', 'paddles:list', optional status slices
  */
 export async function getPaddles(filters?: PaddleFilters): Promise<PaddleItem[]> {
   'use cache';
-  cacheLife('seconds'); // 2 minutes
+  cacheLife('moduleList');
 
   const tags = [paddlesCacheTags.root, paddlesCacheTags.list];
   if (filters?.status) {
@@ -188,17 +191,18 @@ export async function getPaddles(filters?: PaddleFilters): Promise<PaddleItem[]>
       conditions.push(eq(paddles.handleType, filters.handleType));
     }
 
-    if (filters?.search) {
-      const searchTerm = `%${filters.search}%`;
-      conditions.push(
-        or(
-          like(paddles.name, searchTerm),
-          like(paddles.bladeBrand, searchTerm),
-          like(paddles.bladeModel, searchTerm),
-          like(paddles.forehandRubber, searchTerm),
-          like(paddles.backhandRubber, searchTerm)
-        )
-      );
+    const searchCondition = searchAnyColumn(
+      [
+        paddles.name,
+        paddles.bladeBrand,
+        paddles.bladeModel,
+        paddles.forehandRubber,
+        paddles.backhandRubber,
+      ],
+      filters?.search
+    );
+    if (searchCondition) {
+      conditions.push(searchCondition);
     }
 
     if (conditions.length > 0) {
@@ -253,13 +257,13 @@ export async function getPaddles(filters?: PaddleFilters): Promise<PaddleItem[]>
 /**
  * Count paddles with optional filters
  *
- * Cache: 2 minutes
+ * Cache: `moduleList` profile (revalidate 2 minutes)
  */
 export async function countPaddles(
   filters?: Omit<PaddleFilters, 'limit' | 'offset' | 'sortBy' | 'sortOrder'>
 ): Promise<number> {
   'use cache';
-  cacheLife('seconds');
+  cacheLife('moduleList');
   cacheTag(paddlesCacheTags.root, paddlesCacheTags.list);
 
   try {
@@ -277,17 +281,18 @@ export async function countPaddles(
       conditions.push(eq(paddles.handleType, filters.handleType));
     }
 
-    if (filters?.search) {
-      const searchTerm = `%${filters.search}%`;
-      conditions.push(
-        or(
-          like(paddles.name, searchTerm),
-          like(paddles.bladeBrand, searchTerm),
-          like(paddles.bladeModel, searchTerm),
-          like(paddles.forehandRubber, searchTerm),
-          like(paddles.backhandRubber, searchTerm)
-        )
-      );
+    const searchCondition = searchAnyColumn(
+      [
+        paddles.name,
+        paddles.bladeBrand,
+        paddles.bladeModel,
+        paddles.forehandRubber,
+        paddles.backhandRubber,
+      ],
+      filters?.search
+    );
+    if (searchCondition) {
+      conditions.push(searchCondition);
     }
 
     let query = db.select({ count: sql<number>`count(*)` }).from(paddles);
@@ -368,45 +373,67 @@ export async function createPaddle(data: CreatePaddleData): Promise<PaddleItem> 
 }
 
 /**
- * Update an existing paddle
+ * Invalidate every cache tag affected by a paddle write.
+ *
+ * Contract: call only AFTER the surrounding transaction has committed —
+ * `revalidateTag` does not participate in rollback.
+ */
+function invalidatePaddleWriteTags(input: {
+  id: string;
+  statuses: Array<PaddleStatus | null | undefined>;
+}) {
+  revalidateTag(paddlesCacheTags.root, 'max');
+  revalidateTag(paddlesCacheTags.list, 'max');
+  revalidateTag(paddlesCacheTags.item(input.id), 'max');
+
+  for (const status of input.statuses) {
+    if (status) {
+      revalidateTag(paddlesCacheTags.slice('status', status), 'max');
+    }
+  }
+}
+
+/**
+ * Update an existing paddle.
+ *
+ * The read-modify-write runs inside a transaction holding a `SELECT ... FOR
+ * UPDATE` row lock. The pre-read status decides which cache slices are
+ * invalidated, so without the lock two concurrent writes could both observe the
+ * old status and leave a slice stale.
+ *
+ * @throws {RecordNotFoundError} when the paddle does not exist.
  */
 export async function updatePaddle(
   id: string,
   data: Partial<CreatePaddleData>
 ): Promise<PaddleItem> {
   try {
-    // Get current paddle to check status change
-    const current = await db.select().from(paddles).where(eq(paddles.id, id));
+    const { previous, updated } = await db.transaction(async tx => {
+      const [locked] = await tx
+        .select()
+        .from(paddles)
+        .where(eq(paddles.id, id))
+        .limit(1)
+        .for('update');
 
-    if (!current[0]) {
-      throw new Error('Paddle not found');
-    }
+      if (!locked) {
+        throw new RecordNotFoundError('Paddle', id);
+      }
 
-    const currentPaddle = rowToPaddleItem(current[0]);
-    const updateValues = buildPaddleUpdateValues(data);
+      const updateValues = buildPaddleUpdateValues(data);
 
-    const result = await db.update(paddles).set(updateValues).where(eq(paddles.id, id)).returning();
+      const rows = await tx.update(paddles).set(updateValues).where(eq(paddles.id, id)).returning();
 
-    if (!result[0]) {
-      throw new Error('Failed to update paddle');
-    }
+      if (!rows[0]) {
+        throw new RecordNotFoundError('Paddle', id);
+      }
 
-    const paddle = rowToPaddleItem(result[0]);
+      return { previous: rowToPaddleItem(locked), updated: rowToPaddleItem(rows[0]) };
+    });
 
-    // Invalidate cache
-    revalidateTag(paddlesCacheTags.root, 'max');
-    revalidateTag(paddlesCacheTags.list, 'max');
-    revalidateTag(paddlesCacheTags.item(id), 'max');
+    invalidatePaddleWriteTags({ id, statuses: [previous.status, updated.status] });
 
-    // Invalidate old and new status slices if status changed
-    if (currentPaddle.status !== paddle.status) {
-      revalidateTag(paddlesCacheTags.slice('status', currentPaddle.status), 'max');
-      revalidateTag(paddlesCacheTags.slice('status', paddle.status), 'max');
-    } else if (paddle.status) {
-      revalidateTag(paddlesCacheTags.slice('status', paddle.status), 'max');
-    }
-
-    return paddle;
+    return updated;
   } catch (error) {
     logPaddleDataError('Error updating paddle', error, { id, data });
     throw error;
@@ -414,28 +441,37 @@ export async function updatePaddle(
 }
 
 /**
- * Delete a paddle
+ * Delete a paddle.
+ *
+ * @returns `true` when a row was deleted, `false` when it did not exist. This
+ * matches `deleteQuilt`: a missing row is an expected outcome the caller maps to
+ * 404, not an exception.
  */
 export async function deletePaddle(id: string): Promise<boolean> {
   try {
-    // Get current paddle to invalidate correct status slice
-    const current = await db.select().from(paddles).where(eq(paddles.id, id));
+    const deleted = await db.transaction(async tx => {
+      const [locked] = await tx
+        .select()
+        .from(paddles)
+        .where(eq(paddles.id, id))
+        .limit(1)
+        .for('update');
 
-    if (!current[0]) {
-      throw new Error('Paddle not found');
+      if (!locked) {
+        return null;
+      }
+
+      await tx.delete(paddles).where(eq(paddles.id, id));
+
+      return rowToPaddleItem(locked);
+    });
+
+    if (!deleted) {
+      dbLogger.warn('Paddle not found for delete', { id });
+      return false;
     }
 
-    const currentPaddle = rowToPaddleItem(current[0]);
-
-    await db.delete(paddles).where(eq(paddles.id, id));
-
-    // Invalidate cache
-    revalidateTag(paddlesCacheTags.root, 'max');
-    revalidateTag(paddlesCacheTags.list, 'max');
-    revalidateTag(paddlesCacheTags.item(id), 'max');
-    if (currentPaddle.status) {
-      revalidateTag(paddlesCacheTags.slice('status', currentPaddle.status), 'max');
-    }
+    invalidatePaddleWriteTags({ id, statuses: [deleted.status] });
 
     return true;
   } catch (error) {

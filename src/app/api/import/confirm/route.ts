@@ -8,6 +8,7 @@ import {
   createValidationErrorResponse,
 } from '@/lib/api/response';
 import { importQuiltWorkbook, MAX_IMPORT_FILE_BYTES } from '@/lib/import/quilts';
+import { zodFieldErrors } from '@/lib/api/action-result';
 
 const requestSchema = z.object({
   fileName: z
@@ -31,7 +32,7 @@ export async function POST(request: Request) {
     if (!body.success) {
       return createValidationErrorResponse(
         'Invalid import request',
-        body.error.flatten().fieldErrors as Record<string, string[]>
+        zodFieldErrors(body.error)
       );
     }
 

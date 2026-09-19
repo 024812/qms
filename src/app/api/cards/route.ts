@@ -3,7 +3,7 @@ import { NextRequest } from 'next/server';
 import { getCardsAction, saveCardAction } from '@/app/actions/cards';
 import type { GetCardsActionInput } from '@/app/actions/cards.types';
 import { actionResultToApiResponse } from '@/lib/api/action-response';
-import { createBadRequestResponse } from '@/lib/api/response';
+import { createBadRequestResponse, createSuccessResponse } from '@/lib/api/response';
 
 function getStringParam(searchParams: URLSearchParams, key: string) {
   const value = searchParams.get(key);
@@ -85,15 +85,25 @@ function buildCardsActionInput(request: NextRequest): GetCardsActionInput {
 export async function GET(request: NextRequest) {
   const result = await getCardsAction(buildCardsActionInput(request));
 
-  return actionResultToApiResponse(result, {
-    mapData: data => ({
-      cards: data.items,
-      total: data.total,
-      page: data.page,
-      pageSize: data.pageSize,
-      totalPages: data.totalPages,
-    }),
-  });
+  if (!result.success) {
+    return actionResultToApiResponse(result);
+  }
+
+  return createSuccessResponse(
+    {
+      cards: result.data.items,
+      total: result.data.total,
+      page: result.data.page,
+      pageSize: result.data.pageSize,
+      totalPages: result.data.totalPages,
+    },
+    {
+      page: result.data.page,
+      limit: result.data.pageSize,
+      total: result.data.total,
+      hasMore: result.data.page < result.data.totalPages,
+    }
+  );
 }
 
 export async function POST(request: NextRequest) {

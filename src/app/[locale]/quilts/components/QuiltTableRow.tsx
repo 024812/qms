@@ -76,6 +76,8 @@ export function QuiltTableRow({
         return 'neutral';
       case 'MAINTENANCE':
         return 'warning';
+      case 'LOST':
+        return 'destructive';
       default:
         return 'neutral';
     }

@@ -193,6 +193,21 @@ export function formatFileSize(bytes: number): string {
 }
 
 /**
+ * De-duplicate image references while preserving order.
+ *
+ * An image reference is the identity of a picture, which makes it a stable
+ * React key. Detail views therefore key attachment thumbnails on the reference
+ * itself rather than on the array index — index keys break on reorder, and the
+ * lint rule `react/no-array-index-key` exists to catch exactly that.
+ *
+ * De-duplicating first is what makes the key provably unique: a repeated
+ * reference would otherwise collide and render the same picture twice.
+ */
+export function uniqueImageRefs(refs: readonly string[] | null | undefined): string[] {
+  return refs?.length ? [...new Set(refs)] : [];
+}
+
+/**
  * Create a thumbnail from Base64 image
  */
 export async function createThumbnail(base64: string, maxSize: number = 150): Promise<string> {

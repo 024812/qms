@@ -2,25 +2,14 @@ import { NextRequest } from 'next/server';
 
 import { createForbiddenResponse, createUnauthorizedResponse } from '@/lib/api/response';
 import { findUserByApiKey } from '@/lib/data/user-api-keys';
+import { scopesForUser, type AgentScope } from '@/lib/agent/scopes';
 
-export type AgentScope =
-  | '*'
-  | 'read:quilts'
-  | 'write:quilts'
-  | 'read:usage'
-  | 'write:usage'
-  | 'read:cards'
-  | 'write:cards'
-  | 'read:spirits'
-  | 'write:spirits'
-  | 'read:paddles'
-  | 'write:paddles'
-  | 'read:antiques'
-  | 'write:antiques'
-  | 'read:maps'
-  | 'write:maps'
-  | 'read:settings'
-  | 'admin:settings';
+// The scope vocabulary lives in `./scopes`, a DB-free leaf module, so that pure
+// consumers such as the OpenAPI document generator can read it without pulling
+// in `@/db`. It is re-exported here because this is the module that the tools
+// route and the auth tests already import.
+export { scopesForUser };
+export type { AgentScope, ModuleAgentScope, SystemAgentScope } from '@/lib/agent/scopes';
 
 export interface AgentIdentity {
   id: string;
@@ -45,41 +34,6 @@ function readBearerToken(request: NextRequest) {
 
 export function hasAgentScope(agent: AgentIdentity, scope: AgentScope) {
   return agent.scopes.includes('*') || agent.scopes.includes(scope);
-}
-
-function scopesForUser(user: Awaited<ReturnType<typeof findUserByApiKey>>): AgentScope[] {
-  if (!user) return [];
-  if (user.role === 'admin') return ['*'];
-
-  const scopes = new Set<AgentScope>();
-  if (user.activeModules.includes('quilts')) {
-    scopes.add('read:quilts');
-    scopes.add('write:quilts');
-    scopes.add('read:usage');
-    scopes.add('write:usage');
-  }
-  if (user.activeModules.includes('cards')) {
-    scopes.add('read:cards');
-    scopes.add('write:cards');
-  }
-  if (user.activeModules.includes('spirits')) {
-    scopes.add('read:spirits');
-    scopes.add('write:spirits');
-  }
-  if (user.activeModules.includes('paddles')) {
-    scopes.add('read:paddles');
-    scopes.add('write:paddles');
-  }
-  if (user.activeModules.includes('antiques')) {
-    scopes.add('read:antiques');
-    scopes.add('write:antiques');
-  }
-  if (user.activeModules.includes('maps')) {
-    scopes.add('read:maps');
-    scopes.add('write:maps');
-  }
-
-  return [...scopes];
 }
 
 export async function requireAgent(

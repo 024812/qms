@@ -6,6 +6,7 @@
 
 import React from 'react';
 import { useLocale, useTranslations } from 'next-intl';
+import { uniqueImageRefs } from '@/lib/image-utils';
 import type { SpiritItem } from '../schema';
 
 interface SpiritDetailProps {
@@ -17,6 +18,7 @@ export function SpiritDetail({ item }: SpiritDetailProps) {
   const tc = useTranslations('common');
   const locale = useLocale();
   const dateLocale = locale === 'zh' ? 'zh-CN' : 'en-US';
+  const attachmentImages = uniqueImageRefs(item.attachmentImages);
 
   return (
     <div className="space-y-6">
@@ -211,14 +213,14 @@ export function SpiritDetail({ item }: SpiritDetailProps) {
       )}
 
       {/* Attachment Images */}
-      {item.attachmentImages && item.attachmentImages.length > 0 && (
+      {attachmentImages.length > 0 && (
         <div className="border-t pt-4">
           <div className="text-sm text-gray-500 mb-3">{t('fields.attachmentImages.label')}</div>
           <div className="grid grid-cols-3 gap-4">
-            {item.attachmentImages.map((img, idx) => (
+            {attachmentImages.map((img, idx) => (
               // eslint-disable-next-line @next/next/no-img-element
               <img
-                key={`${img}-${idx}`}
+                key={img}
                 src={img}
                 alt={`${item.name} - ${idx + 1}`}
                 className="w-full h-48 object-cover rounded-lg"

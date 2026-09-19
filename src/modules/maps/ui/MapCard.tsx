@@ -5,6 +5,7 @@
  */
 
 import React from 'react';
+import { InteractiveCard } from '@/modules/core/ui';
 import type { MapItem } from '../schema';
 import { getMapTypeDisplayName, getStatusDisplayName, formatCurrency } from '../schema';
 
@@ -16,19 +17,11 @@ interface MapCardProps {
 
 export function MapCard({ item, onSelect, isSelected }: MapCardProps) {
   return (
-    <div
+    <InteractiveCard
+      onClick={onSelect ? () => onSelect(item.id) : undefined}
       className={`border rounded-lg p-4 hover:shadow-md transition-shadow ${
         isSelected ? 'border-blue-500 bg-blue-50' : 'border-gray-200'
-      } ${onSelect ? 'cursor-pointer' : ''}`}
-      onClick={() => onSelect?.(item.id)}
-      onKeyDown={e => {
-        if (onSelect && (e.key === 'Enter' || e.key === ' ')) {
-          e.preventDefault();
-          onSelect(item.id);
-        }
-      }}
-      role={onSelect ? 'button' : undefined}
-      tabIndex={onSelect ? 0 : undefined}
+      }`}
     >
       {/* Image */}
       {item.mainImage && (
@@ -88,6 +81,6 @@ export function MapCard({ item, onSelect, isSelected }: MapCardProps) {
           存放位置：{item.location}
         </div>
       )}
-    </div>
+    </InteractiveCard>
   );
 }

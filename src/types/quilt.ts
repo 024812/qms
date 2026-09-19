@@ -14,6 +14,7 @@
 export {
   Season,
   QuiltStatus,
+  QUILT_STATUSES,
   UsageType,
   SeasonSchema,
   QuiltStatusSchema,

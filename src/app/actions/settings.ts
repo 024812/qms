@@ -4,6 +4,7 @@ import { z } from 'zod';
 
 import {
   changePassword as changePasswordData,
+  PasswordChangeError,
   getAppSettings as getAppSettingsData,
   getDatabaseStats as getDatabaseStatsData,
   getExportData as getExportDataData,
@@ -27,22 +28,13 @@ import type {
   SystemInfo,
   UpdateAppSettingsInput,
 } from '@/lib/types/settings';
-
-interface ActionSuccess<T> {
-  success: true;
-  data: T;
-}
-
-interface ActionError {
-  success: false;
-  error: {
-    code: string;
-    message: string;
-    fieldErrors?: Record<string, string[]>;
-  };
-}
-
-type ActionResult<T> = ActionSuccess<T> | ActionError;
+import {
+  internalErrorResult,
+  unauthorizedErrorResult,
+  validationErrorResult,
+  zodFieldErrors,
+  type ActionResult,
+} from '@/lib/api/action-result';
 
 const updateAppSettingsSchema = z.object({
   appName: z.string().trim().min(1).max(100).optional(),
@@ -66,44 +58,6 @@ const revokeApiKeySchema = z.object({
   id: z.string().min(1),
 });
 
-function validationErrorResult(
-  message: string,
-  fieldErrors: Record<string, string[]>
-): ActionResult<never> {
-  return {
-    success: false,
-    error: {
-      code: 'VALIDATION_FAILED',
-      message,
-      fieldErrors,
-    },
-  };
-}
-
-function internalErrorResult(message: string): ActionResult<never> {
-  return {
-    success: false,
-    error: {
-      code: 'INTERNAL_ERROR',
-      message,
-    },
-  };
-}
-
-function zodFieldErrors(error: z.ZodError): Record<string, string[]> {
-  return error.flatten().fieldErrors as unknown as Record<string, string[]>;
-}
-
-function unauthorizedResult(message = 'Unauthorized'): ActionResult<never> {
-  return {
-    success: false,
-    error: {
-      code: 'UNAUTHORIZED',
-      message,
-    },
-  };
-}
-
 async function requireAuthenticatedUser() {
   const session = await auth();
   return session?.user?.id ? session : null;
@@ -117,7 +71,7 @@ async function requireAdmin() {
 export async function getAppSettingsAction(): Promise<ActionResult<AppSettings>> {
   try {
     const session = await requireAuthenticatedUser();
-    if (!session) return unauthorizedResult();
+    if (!session) return unauthorizedErrorResult();
 
     return {
       success: true,
@@ -133,7 +87,7 @@ export async function updateAppSettingsAction(
 ): Promise<ActionResult<AppSettings>> {
   try {
     const session = await requireAdmin();
-    if (!session) return unauthorizedResult('Requires admin privileges');
+    if (!session) return unauthorizedErrorResult('Requires admin privileges');
 
     const validationResult = updateAppSettingsSchema.safeParse(
       sanitizeApiInput(input as unknown as Record<string, unknown>)
@@ -160,7 +114,7 @@ export async function updateAppSettingsAction(
 export async function getDatabaseStatsAction(): Promise<ActionResult<DatabaseStats>> {
   try {
     const session = await requireAdmin();
-    if (!session) return unauthorizedResult('Requires admin privileges');
+    if (!session) return unauthorizedErrorResult('Requires admin privileges');
 
     return {
       success: true,
@@ -174,7 +128,7 @@ export async function getDatabaseStatsAction(): Promise<ActionResult<DatabaseSta
 export async function getSystemInfoAction(): Promise<ActionResult<SystemInfo>> {
   try {
     const session = await requireAdmin();
-    if (!session) return unauthorizedResult('Requires admin privileges');
+    if (!session) return unauthorizedErrorResult('Requires admin privileges');
 
     return {
       success: true,
@@ -189,6 +143,9 @@ export async function changePasswordAction(
   input: ChangePasswordInput
 ): Promise<ActionResult<{ changed: true; message: string }>> {
   try {
+    const session = await requireAuthenticatedUser();
+    if (!session) return unauthorizedErrorResult();
+
     const validationResult = changePasswordSchema.safeParse(
       sanitizeApiInput(input as unknown as Record<string, unknown>)
     );
@@ -202,23 +159,23 @@ export async function changePasswordAction(
 
     return {
       success: true,
-      data: await changePasswordData(validationResult.data),
+      data: await changePasswordData(session.user.id, validationResult.data),
     };
-  } catch {
-    return {
-      success: false,
-      error: {
-        code: 'BAD_REQUEST',
-        message: 'Failed to change password',
-      },
-    };
+  } catch (error) {
+    // A wrong current password is normal user input, not a system fault — say so
+    // instead of collapsing every failure into "Failed to change password".
+    if (error instanceof PasswordChangeError) {
+      return validationErrorResult(error.message, { currentPassword: [error.message] });
+    }
+
+    return internalErrorResult('Failed to change password');
   }
 }
 
 export async function getExportDataAction(): Promise<ActionResult<ExportData>> {
   try {
     const session = await requireAdmin();
-    if (!session) return unauthorizedResult('Requires admin privileges');
+    if (!session) return unauthorizedErrorResult('Requires admin privileges');
 
     return {
       success: true,
@@ -232,7 +189,7 @@ export async function getExportDataAction(): Promise<ActionResult<ExportData>> {
 export async function listUserApiKeysAction(): Promise<ActionResult<UserApiKeySummary[]>> {
   try {
     const session = await requireAuthenticatedUser();
-    if (!session) return unauthorizedResult();
+    if (!session) return unauthorizedErrorResult();
 
     return {
       success: true,
@@ -248,7 +205,7 @@ export async function createUserApiKeyAction(input: {
 }): Promise<ActionResult<CreatedUserApiKey>> {
   try {
     const session = await requireAuthenticatedUser();
-    if (!session) return unauthorizedResult();
+    if (!session) return unauthorizedErrorResult();
 
     const validationResult = createApiKeySchema.safeParse(
       sanitizeApiInput(input as unknown as Record<string, unknown>)
@@ -275,7 +232,7 @@ export async function revokeUserApiKeyAction(input: {
 }): Promise<ActionResult<boolean>> {
   try {
     const session = await requireAuthenticatedUser();
-    if (!session) return unauthorizedResult();
+    if (!session) return unauthorizedErrorResult();
 
     const validationResult = revokeApiKeySchema.safeParse(
       sanitizeApiInput(input as unknown as Record<string, unknown>)

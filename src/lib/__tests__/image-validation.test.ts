@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
+import { uniqueImageRefs } from '@/lib/image-utils';
 import {
   attachmentImagesSchema,
   imageReferenceSchema,
@@ -28,5 +29,26 @@ describe('stored image validation', () => {
       () => 'data:image/png;base64,AAAA'
     );
     expect(attachmentImagesSchema.safeParse(images).success).toBe(false);
+  });
+});
+
+describe('uniqueImageRefs', () => {
+  it('preserves order while dropping repeats', () => {
+    expect(uniqueImageRefs(['a', 'b', 'a', 'c', 'b'])).toEqual(['a', 'b', 'c']);
+  });
+
+  it('treats missing and empty input as an empty list', () => {
+    expect(uniqueImageRefs(undefined)).toEqual([]);
+    expect(uniqueImageRefs(null)).toEqual([]);
+    expect(uniqueImageRefs([])).toEqual([]);
+  });
+
+  it('returns a new array so callers cannot mutate the stored value', () => {
+    const stored = ['a', 'b'];
+    const result = uniqueImageRefs(stored);
+
+    expect(result).not.toBe(stored);
+    result.push('c');
+    expect(stored).toEqual(['a', 'b']);
   });
 });

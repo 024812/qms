@@ -5,6 +5,7 @@
  */
 
 import React from 'react';
+import { InteractiveCard } from '@/modules/core/ui';
 import type { SpiritItem } from '../schema';
 
 interface SpiritCardProps {
@@ -42,17 +43,9 @@ export function SpiritCard({ item, onClick }: SpiritCardProps) {
   };
 
   return (
-    <div
-      className={`border rounded-lg p-4 hover:shadow-md transition-shadow ${onClick ? 'cursor-pointer' : ''}`}
+    <InteractiveCard
       onClick={onClick}
-      onKeyDown={e => {
-        if (onClick && (e.key === 'Enter' || e.key === ' ')) {
-          e.preventDefault();
-          onClick();
-        }
-      }}
-      role={onClick ? 'button' : undefined}
-      tabIndex={onClick ? 0 : undefined}
+      className="border rounded-lg p-4 hover:shadow-md transition-shadow"
     >
       {item.mainImage && (
         <div className="mb-3">
@@ -90,6 +83,6 @@ export function SpiritCard({ item, onClick }: SpiritCardProps) {
         </div>
         {item.location && <div className="text-sm text-gray-500">📍 {item.location}</div>}
       </div>
-    </div>
+    </InteractiveCard>
   );
 }

@@ -1,9 +1,19 @@
 /**
- * Input sanitization and validation utilities
- * Provides protection against XSS, SQL injection, and other security threats
+ * Input normalisation utilities.
+ *
+ * Design rule: **escaping is a rendering concern, not a storage concern.**
+ *
+ * These helpers used to HTML-escape every string before it reached the
+ * database. That double-encodes business data — `A & B` was persisted as
+ * `A &amp; B`, and rendering it (React escapes text nodes automatically)
+ * produced `A &amp;amp; B` on screen — and it silently mangled search terms.
+ *
+ * So: normalise on the way in (trim, drop control characters), store the raw
+ * text, and let the renderer escape. {@link escapeHtml} is exported for the rare
+ * case where you must build an HTML *string*; never persist its output.
  */
 
-// HTML entities for escaping
+// HTML entities for escaping — render-time only, see the module doc above.
 const HTML_ENTITIES: Record<string, string> = {
   '&': '&amp;',
   '<': '&lt;',
@@ -15,21 +25,30 @@ const HTML_ENTITIES: Record<string, string> = {
   '=': '&#x3D;',
 };
 
-const IMAGE_DATA_URL_REGEX = /^data:image\/[a-z0-9.+-]+;base64,/i;
-
+/**
+ * Normalise any value into a trimmed string, dropping characters that are never
+ * legitimate in persisted business data.
+ *
+ * Keeps `\t` and `\n` because multi-line notes genuinely contain them. Does not
+ * escape HTML — see the module doc.
+ */
 function normalizeStringInput(input: unknown): string {
   if (input === null || input === undefined) {
     return '';
   }
 
-  const str = String(input).trim();
-
-  // Remove null bytes
-  return str.replace(/\0/g, '');
+  return (
+    String(input)
+      // Null bytes, C0 controls (except \t \n \r), DEL and C1 controls.
+      .replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f-\u009f]/g, '')
+      .trim()
+  );
 }
 
 /**
- * Escape HTML entities to prevent XSS attacks
+ * Escape HTML entities so a string can be embedded in an HTML document.
+ *
+ * Render-time helper only. Do NOT persist the result — see the module doc.
  */
 export function escapeHtml(input: string): string {
   if (typeof input !== 'string') {
@@ -85,28 +104,13 @@ export function sanitizeHtml(input: string): string {
 }
 
 /**
- * Sanitize string input for database operations
+ * Sanitize string input for database operations.
+ *
+ * Normalises only — no HTML escaping. Prefer {@link sanitizeApiInput} for
+ * request payloads; this remains for direct field-level normalisation.
  */
 export function sanitizeString(input: unknown): string {
-  const sanitized = normalizeStringInput(input);
-
-  // Escape HTML entities
-  return escapeHtml(sanitized);
-}
-
-function sanitizeApiStringValue(input: unknown): string {
-  const sanitized = normalizeStringInput(input);
-
-  if (!sanitized) {
-    return sanitized;
-  }
-
-  // Preserve safe URLs and image data URLs so API payloads are not corrupted
-  if (IMAGE_DATA_URL_REGEX.test(sanitized) || sanitizeUrl(sanitized) !== null) {
-    return sanitized;
-  }
-
-  return escapeHtml(sanitized);
+  return normalizeStringInput(input);
 }
 
 /**
@@ -263,24 +267,22 @@ export function sanitizeFileName(input: unknown): string | null {
 }
 
 /**
- * Sanitize search query input
+ * Sanitize search query input.
+ *
+ * A search term is business data: `AT&T` has to stay `AT&T`. The previous
+ * implementation deleted `& < > ' "` outright, so those queries silently
+ * matched the wrong rows. Only normalisation and a length cap happen here — the
+ * defence against `LIKE` wildcards lives in `src/lib/data/search.ts`, which
+ * escapes `%`, `_` and `\` before the term reaches SQL.
  */
 export function sanitizeSearchQuery(input: unknown): string {
   if (typeof input !== 'string') {
     return '';
   }
 
-  let query = input.trim();
+  const query = normalizeStringInput(input);
 
-  // Remove potentially dangerous characters
-  query = query.replace(/[<>'"&]/g, '');
-
-  // Limit length
-  if (query.length > 100) {
-    query = query.substring(0, 100);
-  }
-
-  return query;
+  return query.length > 100 ? query.substring(0, 100) : query;
 }
 
 /**
@@ -349,14 +351,14 @@ export function sanitizeRequestBody(body: unknown): Record<string, unknown> {
 
     // Sanitize value based on type
     if (typeof value === 'string') {
-      sanitized[sanitizedKey] = sanitizeApiStringValue(value);
+      sanitized[sanitizedKey] = normalizeStringInput(value);
     } else if (typeof value === 'number') {
       sanitized[sanitizedKey] = sanitizeNumber(value);
     } else if (typeof value === 'boolean') {
       sanitized[sanitizedKey] = value;
     } else if (Array.isArray(value)) {
       sanitized[sanitizedKey] = value.map(item =>
-        typeof item === 'string' ? sanitizeApiStringValue(item) : item
+        typeof item === 'string' ? normalizeStringInput(item) : item
       );
     } else if (value && typeof value === 'object') {
       sanitized[sanitizedKey] = sanitizeRequestBody(value);
@@ -376,12 +378,10 @@ export function sanitizeApiInput<T extends Record<string, unknown>>(input: T): T
 
   for (const [key, value] of Object.entries(result)) {
     if (typeof value === 'string') {
-      // Preserve safe URLs and image data URLs; escape other strings to prevent XSS
-      result[key] = sanitizeApiStringValue(value);
+      // Normalise only — escaping happens at render time (see module doc).
+      result[key] = normalizeStringInput(value);
     } else if (Array.isArray(value)) {
-      result[key] = value.map(item =>
-        typeof item === 'string' ? sanitizeApiStringValue(item) : item
-      );
+      result[key] = value.map(item => (typeof item === 'string' ? normalizeStringInput(item) : item));
     } else if (value && typeof value === 'object' && !(value instanceof Date)) {
       // Recursively sanitize nested objects (but not Date objects)
       result[key] = sanitizeApiInput(value as Record<string, unknown>);

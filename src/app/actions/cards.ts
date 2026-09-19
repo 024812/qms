@@ -23,23 +23,15 @@ import {
   type CardStats,
 } from '@/lib/data/cards';
 import type { CardItem } from '@/modules/cards/schema';
+import { RecordNotFoundError } from '@/lib/data/errors';
+import {
+  internalErrorResult,
+  unauthorizedErrorResult,
+  validationErrorResult,
+  zodFieldErrors,
+  type ActionResult,
+} from '@/lib/api/action-result';
 import { attachmentImagesSchema, imageReferenceSchema } from '@/lib/validations/image';
-
-interface ActionSuccess<T> {
-  success: true;
-  data: T;
-}
-
-interface ActionError {
-  success: false;
-  error: {
-    code: string;
-    message: string;
-    fieldErrors?: Record<string, string[]>;
-  };
-}
-
-type ActionResult<T> = ActionSuccess<T> | ActionError;
 
 const updateCardSettingsSchema = z.object({
   azureOpenAIApiKey: z.string().optional(),
@@ -108,44 +100,6 @@ const updateCardInputSchema = cardInputSchema.partial().extend({
   id: z.string().min(1, 'Card ID is required'),
 });
 
-function zodFieldErrors(error: z.ZodError): Record<string, string[]> {
-  return error.flatten().fieldErrors as unknown as Record<string, string[]>;
-}
-
-function unauthorizedResult(message = 'Requires admin privileges'): ActionResult<never> {
-  return {
-    success: false,
-    error: {
-      code: 'UNAUTHORIZED',
-      message,
-    },
-  };
-}
-
-function validationErrorResult(
-  message: string,
-  fieldErrors: Record<string, string[]>
-): ActionResult<never> {
-  return {
-    success: false,
-    error: {
-      code: 'VALIDATION_FAILED',
-      message,
-      fieldErrors,
-    },
-  };
-}
-
-function internalErrorResult(message: string): ActionResult<never> {
-  return {
-    success: false,
-    error: {
-      code: 'INTERNAL_ERROR',
-      message,
-    },
-  };
-}
-
 async function requireAdmin() {
   const session = await auth();
 
@@ -198,7 +152,7 @@ export async function getCardSettingsAction(): Promise<ActionResult<CardSettings
     const session = await requireAdmin();
 
     if (!session) {
-      return unauthorizedResult();
+      return unauthorizedErrorResult('Requires admin privileges');
     }
 
     return {
@@ -217,7 +171,7 @@ export async function updateCardSettingsAction(
     const session = await requireAdmin();
 
     if (!session) {
-      return unauthorizedResult();
+      return unauthorizedErrorResult('Requires admin privileges');
     }
 
     const validationResult = updateCardSettingsSchema.safeParse(input);
@@ -268,7 +222,7 @@ export async function getCardsAction(
     const session = await requireAuthenticatedUser();
 
     if (!session) {
-      return unauthorizedResult('Unauthorized');
+      return unauthorizedErrorResult('Unauthorized');
     }
 
     const validationResult = getCardsSchema.safeParse(input);
@@ -299,7 +253,7 @@ export async function getCardAction(id: string): Promise<ActionResult<CardItem |
     const session = await requireAuthenticatedUser();
 
     if (!session) {
-      return unauthorizedResult('Unauthorized');
+      return unauthorizedErrorResult('Unauthorized');
     }
 
     if (!id || typeof id !== 'string') {
@@ -328,7 +282,7 @@ export async function saveCardAction(data: unknown): Promise<ActionResult<{ card
     const session = await requireAuthenticatedUser();
 
     if (!session) {
-      return unauthorizedResult('Unauthorized');
+      return unauthorizedErrorResult('Unauthorized');
     }
 
     const validationResult = cardInputSchema.safeParse(data);
@@ -362,7 +316,7 @@ export async function updateCardAction(data: unknown): Promise<ActionResult<{ ca
     const session = await requireAuthenticatedUser();
 
     if (!session) {
-      return unauthorizedResult('Unauthorized');
+      return unauthorizedErrorResult('Unauthorized');
     }
 
     const validationResult = updateCardInputSchema.safeParse(data);
@@ -379,7 +333,7 @@ export async function updateCardAction(data: unknown): Promise<ActionResult<{ ca
       data: { card },
     };
   } catch (error) {
-    if (error instanceof Error && error.message === 'Card not found') {
+    if (error instanceof RecordNotFoundError) {
       return {
         success: false,
         error: {
@@ -403,7 +357,7 @@ export async function deleteCardAction(id: string): Promise<ActionResult<{ succe
     const session = await requireAuthenticatedUser();
 
     if (!session) {
-      return unauthorizedResult('Unauthorized');
+      return unauthorizedErrorResult('Unauthorized');
     }
 
     if (!id || typeof id !== 'string') {
@@ -427,7 +381,7 @@ export async function deleteCardAction(id: string): Promise<ActionResult<{ succe
       data: { success: true },
     };
   } catch (error) {
-    if (error instanceof Error && error.message === 'Card not found') {
+    if (error instanceof RecordNotFoundError) {
       return {
         success: false,
         error: {
@@ -451,7 +405,7 @@ export async function getCardStatsAction(): Promise<ActionResult<CardStats>> {
     const session = await requireAuthenticatedUser();
 
     if (!session) {
-      return unauthorizedResult('Unauthorized');
+      return unauthorizedErrorResult('Unauthorized');
     }
 
     return {
@@ -476,7 +430,7 @@ export async function getMonthlyBuySellDataAction(
     const session = await requireAuthenticatedUser();
 
     if (!session) {
-      return unauthorizedResult('Unauthorized');
+      return unauthorizedErrorResult('Unauthorized');
     }
 
     const data = await getMonthlyBuySellDataData();
@@ -501,7 +455,7 @@ export async function getRecentActivityAction(limit = 10): Promise<ActionResult<
     const session = await requireAuthenticatedUser();
 
     if (!session) {
-      return unauthorizedResult('Unauthorized');
+      return unauthorizedErrorResult('Unauthorized');
     }
 
     return {

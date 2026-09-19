@@ -5,6 +5,7 @@
  */
 
 import { useTranslations } from 'next-intl';
+import { InteractiveCard } from '@/modules/core/ui';
 import type { PaddleItem } from '../schema';
 
 export interface PaddleCardProps {
@@ -16,17 +17,9 @@ export function PaddleCard({ item, onClick }: PaddleCardProps) {
   const t = useTranslations('paddles');
 
   return (
-    <div
-      className={`border rounded-lg p-4 hover:shadow-md transition-shadow ${onClick ? 'cursor-pointer' : ''}`}
+    <InteractiveCard
       onClick={onClick}
-      onKeyDown={e => {
-        if (onClick && (e.key === 'Enter' || e.key === ' ')) {
-          e.preventDefault();
-          onClick();
-        }
-      }}
-      role={onClick ? 'button' : undefined}
-      tabIndex={onClick ? 0 : undefined}
+      className="border rounded-lg p-4 hover:shadow-md transition-shadow"
     >
       <div className="flex justify-between items-start mb-2">
         <h3 className="font-semibold text-lg">{item.name}</h3>
@@ -102,6 +95,6 @@ export function PaddleCard({ item, onClick }: PaddleCardProps) {
         </span>
         {item.location && <span className="text-xs text-gray-500">{item.location}</span>}
       </div>
-    </div>
+    </InteractiveCard>
   );
 }

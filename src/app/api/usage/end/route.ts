@@ -17,6 +17,7 @@ import {
   createInternalErrorResponse,
 } from '@/lib/api/response';
 import { requireApiModule } from '@/lib/api/route-auth';
+import { zodFieldErrors } from '@/lib/api/action-result';
 
 // Input validation schema
 const endUsageRecordSchema = z.object({
@@ -51,7 +52,7 @@ export async function POST(request: NextRequest) {
     if (!validationResult.success) {
       return createValidationErrorResponse(
         '使用记录数据验证失败',
-        validationResult.error.flatten().fieldErrors as Record<string, string[]>
+        zodFieldErrors(validationResult.error)
       );
     }
 

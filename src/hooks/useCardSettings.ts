@@ -4,28 +4,9 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { getCardSettingsAction, updateCardSettingsAction } from '@/app/actions/cards';
 import type { CardSettings, UpdateCardSettingsInput } from '@/app/actions/cards.types';
+import { unwrapActionResult } from '@/lib/api/action-result';
 
 const CARD_SETTINGS_KEY = ['card-settings'] as const;
-
-function unwrapActionResult<T>(
-  result:
-    | {
-        success: true;
-        data: T;
-      }
-    | {
-        success: false;
-        error: {
-          message: string;
-        };
-      }
-): T {
-  if (!result.success) {
-    throw new Error(result.error.message);
-  }
-
-  return result.data;
-}
 
 export type { CardSettings, UpdateCardSettingsInput };
 

@@ -37,6 +37,7 @@ import {
   type QuiltUsageStats,
 } from '@/lib/usage-statistics';
 import type { SeasonalCounts } from '@/lib/data/stats';
+import { QUILT_STATUSES } from '@/lib/validations/quilt';
 
 interface AnalyticsClientData {
   overview: {
@@ -50,6 +51,7 @@ interface AnalyticsClientData {
     IN_USE: number;
     STORAGE: number;
     MAINTENANCE: number;
+    LOST: number;
   };
   seasonDistribution: SeasonalCounts;
   usageBySeason: SeasonalCounts;
@@ -68,6 +70,14 @@ interface AnalyticsPageClientProps {
   initialAnalytics: AnalyticsClientData;
   initialUsageStats: QuiltUsageStats[];
 }
+
+/** Bar colour per quilt status — exhaustive, so a new status fails the build here. */
+const STATUS_BAR_COLORS: Record<(typeof QUILT_STATUSES)[number], string> = {
+  IN_USE: 'bg-blue-500',
+  STORAGE: 'bg-gray-500',
+  MAINTENANCE: 'bg-yellow-500',
+  LOST: 'bg-red-500',
+};
 
 export function AnalyticsPageClient({
   initialAnalytics,
@@ -231,7 +241,8 @@ export function AnalyticsPageClient({
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {Object.entries(initialAnalytics.statusDistribution).map(([status, count]) => {
+                  {QUILT_STATUSES.map(status => {
+                    const count = initialAnalytics.statusDistribution[status];
                     const total = initialAnalytics.overview.totalQuilts;
                     const percentage = total > 0 ? Math.round((count / total) * 100) : 0;
 
@@ -245,13 +256,7 @@ export function AnalyticsPageClient({
                         </div>
                         <div className="h-2 w-full rounded-full bg-gray-200">
                           <div
-                            className={`h-2 rounded-full ${
-                              status === 'IN_USE'
-                                ? 'bg-blue-500'
-                                : status === 'STORAGE'
-                                  ? 'bg-gray-500'
-                                  : 'bg-yellow-500'
-                            }`}
+                            className={`h-2 rounded-full ${STATUS_BAR_COLORS[status]}`}
                             style={{ width: `${percentage}%` }}
                           />
                         </div>

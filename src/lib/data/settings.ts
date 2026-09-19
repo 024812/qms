@@ -1,6 +1,5 @@
 import packageJson from '../../../package.json';
 
-import { auth } from '@/auth';
 import { countQuilts, getQuilts } from '@/lib/data/quilts';
 import { getSimpleUsageStats } from '@/lib/data/stats';
 import { getUsageRecords } from '@/lib/data/usage';
@@ -22,7 +21,7 @@ import type {
 
 export async function getAppSettings(): Promise<AppSettings> {
   'use cache';
-  cacheLife('minutes');
+  cacheLife('moduleItem');
   cacheTag(settingsCacheTags.root, settingsCacheTags.slice('scope', 'app'));
 
   return readAppSettings();
@@ -97,44 +96,62 @@ export async function getSystemInfo(): Promise<SystemInfo> {
   };
 }
 
+/** Why a password change was refused. */
+export type PasswordChangeFailure = 'not-configured' | 'incorrect-current';
+
+/** Expected, user-correctable password-change rejection (not a system fault). */
+export class PasswordChangeError extends Error {
+  readonly reason: PasswordChangeFailure;
+
+  constructor(reason: PasswordChangeFailure) {
+    super(
+      reason === 'incorrect-current'
+        ? 'Current password is incorrect'
+        : 'Password is not configured for this user'
+    );
+    this.name = 'PasswordChangeError';
+    this.reason = reason;
+  }
+}
+
+/**
+ * Change a user's password and revoke their other sessions.
+ *
+ * The caller passes `userId` explicitly: resolving the session is the Action
+ * layer's job (blueprint §6.1 — a DAL must not call `auth()`).
+ */
 export async function changePassword(
+  userId: string,
   input: ChangePasswordInput
 ): Promise<{ changed: true; message: string }> {
-  const session = await auth();
-  if (!session?.user?.id) {
-    throw new Error('Please sign in first');
-  }
-
   const [account] = await db
     .select({ password: authAccount.password })
     .from(authAccount)
-    .where(and(eq(authAccount.userId, session.user.id), eq(authAccount.providerId, 'credential')))
+    .where(and(eq(authAccount.userId, userId), eq(authAccount.providerId, 'credential')))
     .limit(1);
 
   if (!account?.password) {
-    throw new Error('Password is not configured for this user');
+    throw new PasswordChangeError('not-configured');
   }
 
   const isValid = await verifyPassword(input.currentPassword, account.password);
   if (!isValid) {
-    throw new Error('Current password is incorrect');
+    throw new PasswordChangeError('incorrect-current');
   }
 
   const newHash = await hashPassword(input.newPassword);
 
   await db.transaction(async tx => {
-    await tx.delete(authSession).where(eq(authSession.userId, session.user.id));
+    await tx.delete(authSession).where(eq(authSession.userId, userId));
     await tx
       .update(authAccount)
       .set({ password: newHash, updatedAt: new Date() })
-      .where(
-        and(eq(authAccount.userId, session.user.id), eq(authAccount.providerId, 'credential'))
-      );
+      .where(and(eq(authAccount.userId, userId), eq(authAccount.providerId, 'credential')));
 
     await tx
       .update(users)
       .set({ hashedPassword: newHash, updatedAt: new Date() })
-      .where(eq(users.id, session.user.id));
+      .where(eq(users.id, userId));
   });
 
   return {

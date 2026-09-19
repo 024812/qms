@@ -1690,7 +1690,8 @@
   "status": {
     "IN_USE": "In Use",
     "STORAGE": "Storage",
-    "MAINTENANCE": "Maintenance"
+    "MAINTENANCE": "Maintenance",
+    "LOST": "Lost"
   },
   "season": {
     "WINTER": "Winter",

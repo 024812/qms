@@ -48,6 +48,7 @@ export interface StatusCounts {
   inUse: number;
   storage: number;
   maintenance: number;
+  lost: number;
   total: number;
 }
 
@@ -148,12 +149,12 @@ interface UsageByMonthRow {
 /**
  * Get status counts for quilts
  *
- * Cache: 1 minute (60 seconds)
+ * Cache: `moduleItem` profile (revalidate 5 minutes)
  * Tags: 'stats', 'stats-dashboard'
  */
 export async function getStatusCounts(): Promise<StatusCounts> {
   'use cache';
-  cacheLife('minutes');
+  cacheLife('moduleItem');
   tagStats(statsCacheTags.slice('dashboard', 'main'), quiltsCacheTags.slice('status', 'all'));
 
   const result = await db
@@ -164,11 +165,12 @@ export async function getStatusCounts(): Promise<StatusCounts> {
     .from(quilts)
     .groupBy(quilts.currentStatus);
 
-  const counts: StatusCounts = { inUse: 0, storage: 0, maintenance: 0, total: 0 };
+  const counts: StatusCounts = { inUse: 0, storage: 0, maintenance: 0, lost: 0, total: 0 };
   result.forEach(row => {
     if (row.status === 'IN_USE') counts.inUse = row.count;
     else if (row.status === 'STORAGE') counts.storage = row.count;
     else if (row.status === 'MAINTENANCE') counts.maintenance = row.count;
+    else if (row.status === 'LOST') counts.lost = row.count;
     counts.total += row.count;
   });
 
@@ -178,12 +180,12 @@ export async function getStatusCounts(): Promise<StatusCounts> {
 /**
  * Get seasonal distribution counts
  *
- * Cache: 1 minute (60 seconds)
+ * Cache: `moduleItem` profile (revalidate 5 minutes)
  * Tags: 'stats', 'stats-dashboard'
  */
 export async function getSeasonalCounts(): Promise<SeasonalCounts> {
   'use cache';
-  cacheLife('minutes');
+  cacheLife('moduleItem');
   tagStats(statsCacheTags.slice('dashboard', 'main'), quiltsCacheTags.slice('season', 'all'));
 
   const result = await db
@@ -207,12 +209,12 @@ export async function getSeasonalCounts(): Promise<SeasonalCounts> {
 /**
  * Get quilts currently in use with their details
  *
- * Cache: 1 minute (60 seconds)
+ * Cache: `moduleItem` profile (revalidate 5 minutes)
  * Tags: 'stats', 'stats-dashboard'
  */
 export async function getInUseQuilts(): Promise<InUseQuilt[]> {
   'use cache';
-  cacheLife('minutes');
+  cacheLife('moduleItem');
   tagStats(statsCacheTags.slice('dashboard', 'main'), quiltsCacheTags.slice('status', 'IN_USE'));
 
   const result = await db
@@ -242,7 +244,7 @@ export async function getInUseQuilts(): Promise<InUseQuilt[]> {
 /**
  * Get historical usage data for this day in previous years
  *
- * Cache: 1 minute (60 seconds)
+ * Cache: `moduleItem` profile (revalidate 5 minutes)
  * Tags: 'stats', 'stats-dashboard'
  */
 export async function getHistoricalUsage(
@@ -250,7 +252,7 @@ export async function getHistoricalUsage(
   currentDay: number
 ): Promise<HistoricalUsage[]> {
   'use cache';
-  cacheLife('minutes');
+  cacheLife('moduleItem');
   tagStats(statsCacheTags.slice('dashboard', 'main'), usageCacheTags.list, quiltsCacheTags.list);
 
   // Complex date logic is best kept as raw SQL for now, using Drizzle's sql template
@@ -299,12 +301,12 @@ export async function getHistoricalUsage(
 /**
  * Get complete dashboard statistics
  *
- * Cache: 1 minute (60 seconds)
+ * Cache: `moduleItem` profile (revalidate 5 minutes)
  * Tags: 'stats', 'stats-dashboard'
  */
 export async function getDashboardStats(): Promise<DashboardStats> {
   'use cache';
-  cacheLife('minutes');
+  cacheLife('moduleItem');
   tagStats(statsCacheTags.slice('dashboard', 'main'));
 
   const today = new Date();
@@ -335,12 +337,12 @@ export async function getDashboardStats(): Promise<DashboardStats> {
 /**
  * Get usage statistics (total periods, total days, average days)
  *
- * Cache: 2 minutes (120 seconds)
+ * Cache: `moduleItem` profile (revalidate 5 minutes)
  * Tags: 'stats', 'stats-analytics'
  */
 export async function getUsageStats(): Promise<UsageStats> {
   'use cache';
-  cacheLife('minutes');
+  cacheLife('moduleItem');
   tagStats(statsCacheTags.slice('analytics', 'main'), usageCacheTags.list, quiltsCacheTags.list);
 
   const result = await db
@@ -373,12 +375,12 @@ export async function getUsageStats(): Promise<UsageStats> {
 /**
  * Get usage counts by season
  *
- * Cache: 2 minutes (120 seconds)
+ * Cache: `moduleItem` profile (revalidate 5 minutes)
  * Tags: 'stats', 'stats-analytics'
  */
 export async function getUsageBySeason(): Promise<SeasonalCounts> {
   'use cache';
-  cacheLife('minutes');
+  cacheLife('moduleItem');
   tagStats(statsCacheTags.slice('analytics', 'main'), usageCacheTags.list, quiltsCacheTags.list);
 
   const result = await db
@@ -403,12 +405,12 @@ export async function getUsageBySeason(): Promise<SeasonalCounts> {
 /**
  * Get most used quilts
  *
- * Cache: 2 minutes (120 seconds)
+ * Cache: `moduleItem` profile (revalidate 5 minutes)
  * Tags: 'stats', 'stats-analytics'
  */
 export async function getMostUsedQuilts(limit: number = 5): Promise<MostUsedQuilt[]> {
   'use cache';
-  cacheLife('minutes');
+  cacheLife('moduleItem');
   tagStats(statsCacheTags.slice('analytics', 'main'), usageCacheTags.list, quiltsCacheTags.list);
 
   const result = await db
@@ -442,12 +444,12 @@ export async function getMostUsedQuilts(limit: number = 5): Promise<MostUsedQuil
 /**
  * Get usage by year
  *
- * Cache: 2 minutes (120 seconds)
+ * Cache: `moduleItem` profile (revalidate 5 minutes)
  * Tags: 'stats', 'stats-analytics'
  */
 export async function getUsageByYear(): Promise<UsageByPeriod[]> {
   'use cache';
-  cacheLife('minutes');
+  cacheLife('moduleItem');
   tagStats(statsCacheTags.slice('analytics', 'main'), usageCacheTags.list);
 
   const result = await db.execute(sql`
@@ -468,12 +470,12 @@ export async function getUsageByYear(): Promise<UsageByPeriod[]> {
 /**
  * Get usage by month (last 12 months)
  *
- * Cache: 2 minutes (120 seconds)
+ * Cache: `moduleItem` profile (revalidate 5 minutes)
  * Tags: 'stats', 'stats-analytics'
  */
 export async function getUsageByMonth(): Promise<UsageByPeriod[]> {
   'use cache';
-  cacheLife('minutes');
+  cacheLife('moduleItem');
   tagStats(statsCacheTags.slice('analytics', 'main'), usageCacheTags.list);
 
   const result = await db.execute(sql`
@@ -509,12 +511,12 @@ export async function getUsageByMonth(): Promise<UsageByPeriod[]> {
 /**
  * Get current usage count (active usage records)
  *
- * Cache: 1 minute (60 seconds)
+ * Cache: `moduleItem` profile (revalidate 5 minutes)
  * Tags: 'stats', 'stats-analytics'
  */
 export async function getCurrentUsageCount(): Promise<number> {
   'use cache';
-  cacheLife('minutes');
+  cacheLife('moduleItem');
   tagStats(statsCacheTags.slice('analytics', 'main'), usageCacheTags.slice('active', 'true'));
 
   const result = await db
@@ -528,12 +530,12 @@ export async function getCurrentUsageCount(): Promise<number> {
 /**
  * Get complete analytics data
  *
- * Cache: 2 minutes (120 seconds)
+ * Cache: `moduleItem` profile (revalidate 5 minutes)
  * Tags: 'stats', 'stats-analytics'
  */
 export async function getAnalyticsData(): Promise<AnalyticsData> {
   'use cache';
-  cacheLife('minutes');
+  cacheLife('moduleItem');
   tagStats(statsCacheTags.slice('analytics', 'main'));
 
   const [
@@ -576,7 +578,7 @@ export async function getAnalyticsData(): Promise<AnalyticsData> {
 /**
  * Get simple usage stats (total and active counts)
  *
- * Cache: 1 minute (60 seconds)
+ * Cache: `moduleItem` profile (revalidate 5 minutes)
  * Tags: 'stats', 'stats-analytics'
  */
 export async function getSimpleUsageStats(): Promise<{
@@ -585,7 +587,7 @@ export async function getSimpleUsageStats(): Promise<{
   completed: number;
 }> {
   'use cache';
-  cacheLife('minutes');
+  cacheLife('moduleItem');
   tagStats(statsCacheTags.slice('analytics', 'main'), usageCacheTags.list);
 
   const [totalResult, activeResult] = await Promise.all([

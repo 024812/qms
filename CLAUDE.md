@@ -29,6 +29,7 @@ Release verification runs, in order: `lint:check`, `type-check`, `test`, `build`
 
 ## Critical constraints
 
+- **Isolated execution environment in C:\temp.** The repository working directory is inside OneDrive (`OneDrive\Projects\qms`), which syncs in real-time across devices. **NEVER execute `npm install`, `npm run build`, `npm test`, `npm run lint`, or generate `node_modules`/`.next` directly inside the OneDrive directory.** All dependency installation, build checks, and tests must be executed from an isolated copy in `C:\temp\<project>` (e.g. `C:\temp\qms-review-20260918` or `C:\temp\qms`).
 - **Database is Neon Postgres only.** `DATABASE_URL` must point at Neon in `.env.local`. Do not use a local `localhost:5432` database. Use `db:migrate` for schema changes; `db:push` is for deliberate dev experiments only, never production.
 - **Env vars are validated at build/start** via `src/lib/env.ts` (imported by `next.config.ts`). A missing/invalid required var fails the build. Required: `DATABASE_URL`, `BETTER_AUTH_SECRET` (min 32 chars). `src/lib/env.ts` also exports a `features` map that gates optional integrations (Redis, Azure OpenAI, eBay, Perplexity, RapidAPI).
 - **Data is intentionally NOT isolated per user.** This is a family-shared system by design — the data layer does not filter by `userId`, and shared inventories (quilts, cards) are visible to all authenticated users. Do not add per-user row filtering unless explicitly asked.
@@ -69,7 +70,7 @@ External AI agents use a narrow surface instead of general DB access:
 - `POST /api/agent/tools` — single endpoint dispatching a fixed set of typed tools (`quilts.*`, `usage.*`, `cards.*`, `paddles.*`, `antiques.*`, `maps.*`, `spirits.*`, `settings.read`).
 - `GET /api/agent/openapi.json` — the OpenAPI spec; public guide at `/AGENT_API.md`.
 
-Auth is via `Authorization: Bearer <key>` (`src/lib/agent/auth.ts`). Keys are user-owned (`Settings → Agent API Keys`) and **inherit the creating user's module access** — scopes are derived from `activeModules` (admins get `*`); there is no independent per-key scope narrowing. Write tools require `confirm=true` and an `idempotencyKey`; successful writes are recorded in `agent_idempotency_keys` (durable idempotency with stable input hashing and replay detection). All calls are audited via `src/lib/agent/audit.ts`.
+Auth is via `Authorization: Bearer <key>` (`src/lib/agent/auth.ts`). Keys are user-owned (`Settings → Agent API Keys`) and **inherit the creating user's module access** — `read:<id>` / `write:<id>` are derived from `MODULE_IDS` ∩ `activeModules` in `src/lib/agent/scopes.ts` (admins get `*`), so registering a module grants its scope pair automatically; `read:settings` is granted to every valid key, and `admin:settings` is reserved and never granted to a member. There is no independent per-key scope narrowing. Write tools require `confirm=true` and an `idempotencyKey`; successful writes are recorded in `agent_idempotency_keys` (durable idempotency with stable input hashing and replay detection). All calls are audited via `src/lib/agent/audit.ts`.
 
 ### API response conventions
 

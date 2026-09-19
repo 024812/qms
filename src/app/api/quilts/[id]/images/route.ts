@@ -7,6 +7,7 @@ import { createBadRequestResponse, createNotFoundResponse } from '@/lib/api/resp
 import { attachmentImagesSchema, imageReferenceSchema } from '@/lib/validations/image';
 
 import { applyQuiltCompatibilityHeaders } from '../../_shared';
+import { zodFieldErrors } from '@/lib/api/action-result';
 
 interface RouteParams {
   params: Promise<{ id: string }>;
@@ -47,7 +48,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
         error: {
           code: 'VALIDATION_FAILED',
           message: '图片数据验证失败',
-          fieldErrors: validationResult.error.flatten().fieldErrors as Record<string, string[]>,
+          fieldErrors: zodFieldErrors(validationResult.error),
         },
       })
     );
@@ -102,7 +103,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
         error: {
           code: 'VALIDATION_FAILED',
           message: '图片索引验证失败',
-          fieldErrors: validationResult.error.flatten().fieldErrors as Record<string, string[]>,
+          fieldErrors: zodFieldErrors(validationResult.error),
         },
       })
     );

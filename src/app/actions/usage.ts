@@ -19,22 +19,13 @@ import { sanitizeApiInput } from '@/lib/sanitization';
 import { UsageTypeSchema } from '@/lib/validations/quilt';
 import type { UsageRecord } from '@/lib/database/types';
 import type { UsageRecordWithQuilt } from '@/lib/data/usage';
-
-interface ActionSuccess<T> {
-  success: true;
-  data: T;
-}
-
-interface ActionError {
-  success: false;
-  error: {
-    code: string;
-    message: string;
-    fieldErrors?: Record<string, string[]>;
-  };
-}
-
-type ActionResult<T> = ActionSuccess<T> | ActionError;
+import {
+  internalErrorResult,
+  unauthorizedErrorResult,
+  validationErrorResult,
+  zodFieldErrors,
+  type ActionResult,
+} from '@/lib/api/action-result';
 
 interface UsageFilters {
   quiltId?: string;
@@ -119,44 +110,6 @@ function toQuiltUsageStats(records: UsageRecord[]): QuiltUsageStats {
   };
 }
 
-function validationErrorResult(
-  message: string,
-  fieldErrors: Record<string, string[]>
-): ActionResult<never> {
-  return {
-    success: false,
-    error: {
-      code: 'VALIDATION_FAILED',
-      message,
-      fieldErrors,
-    },
-  };
-}
-
-function zodFieldErrors(error: z.ZodError): Record<string, string[]> {
-  return error.flatten().fieldErrors as unknown as Record<string, string[]>;
-}
-
-function internalErrorResult(message: string): ActionResult<never> {
-  return {
-    success: false,
-    error: {
-      code: 'INTERNAL_ERROR',
-      message,
-    },
-  };
-}
-
-function unauthorizedResult(): ActionResult<never> {
-  return {
-    success: false,
-    error: {
-      code: 'UNAUTHORIZED',
-      message: 'Unauthorized',
-    },
-  };
-}
-
 async function requireAuthenticatedUser() {
   const session = await auth();
   if (!session?.user?.id) return null;
@@ -175,7 +128,7 @@ export async function getUsageRecordsAction(
     const session = await requireAuthenticatedUser();
 
     if (!session) {
-      return unauthorizedResult();
+      return unauthorizedErrorResult();
     }
 
     const validationResult = usageFiltersSchema.safeParse(filters ?? {});
@@ -208,7 +161,7 @@ export async function getUsageRecordAction(id: string): Promise<ActionResult<Usa
     const session = await requireAuthenticatedUser();
 
     if (!session) {
-      return unauthorizedResult();
+      return unauthorizedErrorResult();
     }
 
     const validationResult = usageRecordIdSchema.safeParse(id);
@@ -246,7 +199,7 @@ export async function getQuiltUsageRecordsAction(
     const session = await requireAuthenticatedUser();
 
     if (!session) {
-      return unauthorizedResult();
+      return unauthorizedErrorResult();
     }
 
     const validationResult = quiltIdSchema.safeParse(quiltId);
@@ -291,7 +244,7 @@ export async function getActiveUsageRecordAction(
     const session = await requireAuthenticatedUser();
 
     if (!session) {
-      return unauthorizedResult();
+      return unauthorizedErrorResult();
     }
 
     const validationResult = quiltIdSchema.safeParse(quiltId);
@@ -318,7 +271,7 @@ export async function getAllActiveUsageRecordsAction(): Promise<
     const session = await requireAuthenticatedUser();
 
     if (!session) {
-      return unauthorizedResult();
+      return unauthorizedErrorResult();
     }
 
     const records = await getAllActiveUsageRecords();
@@ -340,7 +293,7 @@ export async function getUsageStatsAction(quiltId: string): Promise<ActionResult
     const session = await requireAuthenticatedUser();
 
     if (!session) {
-      return unauthorizedResult();
+      return unauthorizedErrorResult();
     }
 
     const validationResult = quiltIdSchema.safeParse(quiltId);
@@ -367,7 +320,7 @@ export async function getOverallUsageStatsAction(): Promise<
     const session = await requireAuthenticatedUser();
 
     if (!session) {
-      return unauthorizedResult();
+      return unauthorizedErrorResult();
     }
 
     const stats = await getSimpleUsageStats();
@@ -392,7 +345,7 @@ export async function createUsageRecordAction(input: {
     const session = await requireAuthenticatedUser();
 
     if (!session) {
-      return unauthorizedResult();
+      return unauthorizedErrorResult();
     }
 
     const validationResult = createUsageRecordSchema.safeParse(sanitizeApiInput(input));
@@ -426,7 +379,7 @@ export async function updateUsageRecordAction(input: {
     const session = await requireAuthenticatedUser();
 
     if (!session) {
-      return unauthorizedResult();
+      return unauthorizedErrorResult();
     }
 
     const validationResult = updateUsageRecordSchema.safeParse(sanitizeApiInput(input));
@@ -493,7 +446,7 @@ export async function endUsageRecordAction(input: {
     const session = await requireAuthenticatedUser();
 
     if (!session) {
-      return unauthorizedResult();
+      return unauthorizedErrorResult();
     }
 
     const validationResult = endUsageRecordSchema.safeParse(sanitizeApiInput(input));
@@ -554,7 +507,7 @@ export async function deleteUsageRecordAction(
     const session = await requireAuthenticatedUser();
 
     if (!session) {
-      return unauthorizedResult();
+      return unauthorizedErrorResult();
     }
 
     const validationResult = usageRecordIdSchema.safeParse(id);

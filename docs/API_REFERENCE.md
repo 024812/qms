@@ -1,6 +1,6 @@
 # QMS REST API Reference
 
-QMS provides a standardized REST API surface for all inventory modules. All endpoints adhere to uniform response envelopes, authentication checks, Zod validation, and error contracts.
+QMS provides a standardized REST API surface for all inventory modules. All endpoints share the same `ApiResponse<T>` envelope, authentication checks, Zod validation, and error contract. The **list payload inside `data` currently has three variants** — see [List response shapes](#list-response-shapes--three-variants-in-current-code) before writing a client.
 
 ## Overview
 
@@ -38,22 +38,21 @@ All API endpoints require an active session or authenticated user context.
 
 ## Response Envelope
 
-All API endpoints return a uniform `ApiResponse<T>` JSON envelope:
+### Top-level envelope
 
-### Success Response
+All API endpoints return the `ApiResponse<T>` envelope defined in `src/lib/api/response.ts`:
 
-```json
-{
-  "success": true,
-  "data": { ... },
-  "pagination": {
-    "total": 42,
-    "offset": 0,
-    "limit": 20,
-    "hasMore": true
-  }
+```ts
+interface ApiResponse<T> {
+  success: boolean;
+  data?: T;
+  error?: { code: string; message: string; details?: Record<string, unknown> };
+  meta?: { page?: number; limit?: number; total?: number; hasMore?: boolean };
 }
 ```
+
+- `meta` is the **standard pagination carrier** and is always top-level (never nested inside `data`).
+- On failure, `data` is absent; on success, `error` is absent.
 
 ### Error Response
 
@@ -63,19 +62,48 @@ All API endpoints return a uniform `ApiResponse<T>` JSON envelope:
   "error": {
     "code": "VALIDATION_FAILED",
     "message": "输入数据校验失败",
-    "fieldErrors": {
-      "name": ["Name is required"]
+    "details": {
+      "errors": {
+        "name": ["Name is required"]
+      }
     }
   }
 }
 ```
 
-Standard error codes:
+Note the nesting: per-field validation messages live at **`error.details.errors`**, not at `error.fieldErrors`. The mapping is performed by `actionResultToApiResponse` in `src/lib/api/action-response.ts`, which reads the Action's `fieldErrors` and re-wraps it as `details.errors`.
 
-- `VALIDATION_FAILED` (400) — Input payload failed Zod validation.
-- `UNAUTHORIZED` (401) — Missing or invalid authentication.
-- `NOT_FOUND` (404) — Requested resource does not exist.
-- `INTERNAL_ERROR` (500) — Server-side error.
+Standard error codes and their HTTP status (`STATUS_BY_CODE` in `src/lib/api/action-response.ts`):
+
+| Code | Status | Meaning |
+| --- | --- | --- |
+| `BAD_REQUEST` / `INVALID_INPUT` | 400 | Malformed request |
+| `VALIDATION_FAILED` | 400 | Payload failed Zod validation |
+| `UNAUTHORIZED` | 401 | Missing or invalid authentication |
+| `FORBIDDEN` | 403 | Authenticated but lacks module access |
+| `NOT_FOUND` | 404 | Resource does not exist |
+| `ALREADY_EXISTS` | 409 | Conflict |
+| `RATE_LIMITED` | 429 | Too many requests |
+| `INTERNAL_ERROR` | 500 | Server-side error |
+
+### List response shapes and pagination
+
+All list endpoints return the standard top-level `meta` envelope (`total`, `limit`, `hasMore`, and optional `page`):
+
+```json
+{
+  "success": true,
+  "data": { "<module>": [...] },
+  "meta": { "total": 42, "limit": 20, "hasMore": true }
+}
+```
+
+For backward compatibility with existing clients:
+- **`quilts`**, **`antiques`**, **`maps`**, **`spirits`**: Standard shape — items array under `data.<module>`, pagination strictly in top-level `meta`.
+- **`cards`**: Also includes convenient flattened pagination in `data` (`total`, `page`, `pageSize`, `totalPages`), with canonical pagination mirrored to top-level `meta`.
+- **`paddles`**: Also includes convenient `data.pagination` (`total`, `offset`, `limit`, `hasMore`), with canonical pagination in top-level `meta`.
+
+Every API client can safely consume top-level `meta` uniformly across all 6 modules.
 
 ---
 
@@ -273,7 +301,8 @@ Standard error codes:
 - **Query Parameters**:
   - `search` (string): Keyword search across quilt name and notes.
   - `season` (string): `WINTER` | `SPRING_AUTUMN` | `SUMMER`.
-  - `status` (string): `IN_USE` | `MAINTENANCE` | `STORAGE` | `LOST`.
+  - `status` (string): `IN_USE` | `MAINTENANCE` | `STORAGE` | `LOST`. `LOST` records a quilt
+    that has gone missing; like `MAINTENANCE` and `STORAGE` it carries no active usage record.
   - `location` (string): Physical storage location.
   - `brand` (string): Brand or manufacturer.
   - `sortBy` (string): `itemNumber` | `name` | `season` | `weightGrams` | `createdAt` | `updatedAt`.
@@ -373,3 +402,7 @@ If you are building or integrating an AI agent (such as OpenClaw), do **not** ca
 - **Documentation**: `/AGENT_API.md`
 - **Authentication**: Bearer token created under **Settings -> Agent API Keys**.
 - Supports idempotency keys, dry runs, and audit logging.
+
+Each tool requires one scope, derived from the API key owner's active modules rather than configured per key. Every registered module grants `read:<module>` and `write:<module>`; `quilts` additionally grants `read:usage` / `write:usage`; `read:settings` is granted to every valid key; administrators receive `*`. Registering a new module therefore adds its scope pair automatically — no API change is required. A tool whose scope the key does not hold returns `403` with `Missing agent scope: <scope>`.
+
+The tool list is defined once in `src/lib/agent/tool-names.ts`; the dispatcher's Zod enum and the published OpenAPI `tool` enum both read it, and a test asserts the two sets are identical.

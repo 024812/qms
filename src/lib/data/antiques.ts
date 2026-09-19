@@ -10,8 +10,8 @@
  * - Cache invalidation with revalidateTag(, 'max')
  *
  * Cache Strategy:
- * - Individual items: 5 minutes
- * - Lists: 2 minutes (120 seconds)
+ * - Individual items: `moduleItem` profile (revalidate 5 minutes)
+ * - Lists: `moduleList` profile (revalidate 2 minutes)
  * - Tags: 'antiques', 'antiques:list', 'antiques:item:{id}', 'antiques:status:{status}', 'antiques:category:{category}'
  *
  * Requirements: V3 API-first blueprint
@@ -21,8 +21,10 @@ import { cacheLife, cacheTag, revalidateTag } from 'next/cache';
 
 import { db } from '@/db';
 import { antiques } from '@/db/schema';
-import { eq, sql, desc, and, or, like, gte, lte } from 'drizzle-orm';
+import { eq, sql, desc, and, gte, lte } from 'drizzle-orm';
 import { dbLogger } from '@/lib/logger';
+import { RecordNotFoundError } from '@/lib/data/errors';
+import { searchAnyColumn } from '@/lib/data/search';
 import { antiquesCacheTags } from '@/modules/core/cache-tags';
 import type { AntiqueItem, AntiqueCategory, AntiqueStatus } from '@/modules/antiques/schema';
 
@@ -239,7 +241,7 @@ function rowToAntiqueItem(row: typeof antiques.$inferSelect): AntiqueItem {
  */
 export async function getAntiques(filters?: AntiqueFilters): Promise<AntiqueItem[]> {
   'use cache';
-  cacheLife('minutes');
+  cacheLife('moduleList');
   cacheTag(antiquesCacheTags.root, antiquesCacheTags.list);
 
   if (filters?.status) {
@@ -264,15 +266,12 @@ export async function getAntiques(filters?: AntiqueFilters): Promise<AntiqueItem
     if (filters?.dynasty) {
       conditions.push(eq(antiques.dynasty, filters.dynasty));
     }
-    if (filters?.search) {
-      const searchPattern = `%${filters.search}%`;
-      conditions.push(
-        or(
-          like(antiques.name, searchPattern),
-          like(antiques.material, searchPattern),
-          like(antiques.notes, searchPattern)
-        )
-      );
+    const searchCondition = searchAnyColumn(
+      [antiques.name, antiques.material, antiques.notes],
+      filters?.search
+    );
+    if (searchCondition) {
+      conditions.push(searchCondition);
     }
     if (filters?.minValue !== undefined) {
       conditions.push(gte(antiques.currentValue, filters.minValue.toString()));
@@ -310,7 +309,7 @@ export async function getAntiques(filters?: AntiqueFilters): Promise<AntiqueItem
  */
 export async function getAntiqueById(id: string): Promise<AntiqueItem | null> {
   'use cache';
-  cacheLife('minutes');
+  cacheLife('moduleItem');
   cacheTag(antiquesCacheTags.root, antiquesCacheTags.item(id));
 
   try {
@@ -334,7 +333,7 @@ export async function countAntiques(
   filters?: Omit<AntiqueFilters, 'limit' | 'offset' | 'sortBy' | 'sortOrder'>
 ): Promise<number> {
   'use cache';
-  cacheLife('minutes');
+  cacheLife('moduleList');
   cacheTag(antiquesCacheTags.root, antiquesCacheTags.list);
 
   if (filters?.status) {
@@ -359,15 +358,12 @@ export async function countAntiques(
     if (filters?.dynasty) {
       conditions.push(eq(antiques.dynasty, filters.dynasty));
     }
-    if (filters?.search) {
-      const searchPattern = `%${filters.search}%`;
-      conditions.push(
-        or(
-          like(antiques.name, searchPattern),
-          like(antiques.material, searchPattern),
-          like(antiques.notes, searchPattern)
-        )
-      );
+    const searchCondition = searchAnyColumn(
+      [antiques.name, antiques.material, antiques.notes],
+      filters?.search
+    );
+    if (searchCondition) {
+      conditions.push(searchCondition);
     }
     if (filters?.minValue !== undefined) {
       conditions.push(gte(antiques.currentValue, filters.minValue.toString()));
@@ -471,79 +467,129 @@ export async function createAntique(data: CreateAntiqueData): Promise<AntiqueIte
 }
 
 /**
- * Update an existing antique
+ * Invalidate every cache tag affected by an antique write.
+ *
+ * Contract: call only AFTER the surrounding transaction has committed —
+ * `revalidateTag` does not participate in rollback.
+ */
+function invalidateAntiqueWriteTags(input: {
+  id: string;
+  statuses: Array<AntiqueItem['status'] | null | undefined>;
+  categories: Array<AntiqueItem['category'] | null | undefined>;
+}) {
+  revalidateTag(antiquesCacheTags.root, 'max');
+  revalidateTag(antiquesCacheTags.list, 'max');
+  revalidateTag(antiquesCacheTags.item(input.id), 'max');
+
+  for (const status of input.statuses) {
+    if (status) {
+      revalidateTag(antiquesCacheTags.slice('status', status), 'max');
+    }
+  }
+
+  for (const category of input.categories) {
+    if (category) {
+      revalidateTag(antiquesCacheTags.slice('category', category), 'max');
+    }
+  }
+}
+
+/**
+ * Update an existing antique.
+ *
+ * The read-modify-write runs inside a transaction holding a `SELECT ... FOR
+ * UPDATE` row lock: the pre-read status and category decide which cache slices
+ * are invalidated, so without the lock two concurrent writes could both observe
+ * the old values and leave a slice stale.
+ *
+ * @throws {RecordNotFoundError} when the antique does not exist.
  */
 export async function updateAntique(data: UpdateAntiqueData): Promise<AntiqueItem> {
+  const { id, ...updateData } = data;
+
   try {
-    const { id, ...updateData } = data;
     dbLogger.info('Updating antique', { id, ...summarizeAntiqueWriteData(updateData) });
 
-    // Get old antique for cache invalidation via a direct query — the cached
-    // read may be stale and slice invalidation must use persisted values.
-    const oldRows = await db.select().from(antiques).where(eq(antiques.id, id)).limit(1);
-    if (oldRows.length === 0) {
-      throw new Error(`Antique with ID ${id} not found`);
-    }
-    const oldAntique = rowToAntiqueItem(oldRows[0]);
+    const { previous, updated } = await db.transaction(async tx => {
+      const [locked] = await tx
+        .select()
+        .from(antiques)
+        .where(eq(antiques.id, id))
+        .limit(1)
+        .for('update');
 
-    const updateValues = buildAntiqueUpdateValues(updateData);
+      if (!locked) {
+        throw new RecordNotFoundError('Antique', id);
+      }
 
-    const rows = await db.update(antiques).set(updateValues).where(eq(antiques.id, id)).returning();
+      const updateValues = buildAntiqueUpdateValues(updateData);
 
-    if (rows.length === 0) {
-      throw new Error(`Antique with ID ${id} not found`);
-    }
+      const rows = await tx.update(antiques).set(updateValues).where(eq(antiques.id, id)).returning();
 
-    const updatedAntique = rowToAntiqueItem(rows[0]);
+      if (!rows[0]) {
+        throw new RecordNotFoundError('Antique', id);
+      }
 
-    // Invalidate cache
-    revalidateTag(antiquesCacheTags.root, 'max');
-    revalidateTag(antiquesCacheTags.list, 'max');
-    revalidateTag(antiquesCacheTags.item(id), 'max');
+      return { previous: rowToAntiqueItem(locked), updated: rowToAntiqueItem(rows[0]) };
+    });
 
-    // Invalidate old and new status/category slices
-    if (oldAntique.status !== updatedAntique.status) {
-      revalidateTag(antiquesCacheTags.slice('status', oldAntique.status), 'max');
-      revalidateTag(antiquesCacheTags.slice('status', updatedAntique.status), 'max');
-    }
-    if (oldAntique.category !== updatedAntique.category) {
-      revalidateTag(antiquesCacheTags.slice('category', oldAntique.category), 'max');
-      revalidateTag(antiquesCacheTags.slice('category', updatedAntique.category), 'max');
-    }
+    invalidateAntiqueWriteTags({
+      id,
+      statuses: [previous.status, updated.status],
+      categories: [previous.category, updated.category],
+    });
 
     dbLogger.info('Antique updated successfully', { id });
-    return updatedAntique;
+
+    return updated;
   } catch (error) {
-    logAntiqueDataError('Failed to update antique', error, { id: data.id });
+    logAntiqueDataError('Failed to update antique', error, { id });
     throw error;
   }
 }
 
 /**
- * Delete an antique
+ * Delete an antique.
+ *
+ * @returns `true` when a row was deleted, `false` when it did not exist. This
+ * matches `deleteQuilt`: a missing row is an expected outcome the caller maps to
+ * 404, not an exception.
  */
-export async function deleteAntique(id: string): Promise<void> {
+export async function deleteAntique(id: string): Promise<boolean> {
   try {
     dbLogger.info('Deleting antique', { id });
 
-    // Get antique for cache invalidation via a direct query — the cached read
-    // may be stale and slice invalidation must use persisted values.
-    const existingRows = await db.select().from(antiques).where(eq(antiques.id, id)).limit(1);
-    if (existingRows.length === 0) {
-      throw new Error(`Antique with ID ${id} not found`);
+    const deleted = await db.transaction(async tx => {
+      const [locked] = await tx
+        .select()
+        .from(antiques)
+        .where(eq(antiques.id, id))
+        .limit(1)
+        .for('update');
+
+      if (!locked) {
+        return null;
+      }
+
+      await tx.delete(antiques).where(eq(antiques.id, id));
+
+      return rowToAntiqueItem(locked);
+    });
+
+    if (!deleted) {
+      dbLogger.warn('Antique not found for delete', { id });
+      return false;
     }
-    const antique = rowToAntiqueItem(existingRows[0]);
 
-    await db.delete(antiques).where(eq(antiques.id, id));
-
-    // Invalidate cache
-    revalidateTag(antiquesCacheTags.root, 'max');
-    revalidateTag(antiquesCacheTags.list, 'max');
-    revalidateTag(antiquesCacheTags.item(id), 'max');
-    revalidateTag(antiquesCacheTags.slice('status', antique.status), 'max');
-    revalidateTag(antiquesCacheTags.slice('category', antique.category), 'max');
+    invalidateAntiqueWriteTags({
+      id,
+      statuses: [deleted.status],
+      categories: [deleted.category],
+    });
 
     dbLogger.info('Antique deleted successfully', { id });
+
+    return true;
   } catch (error) {
     logAntiqueDataError('Failed to delete antique', error, { id });
     throw error;

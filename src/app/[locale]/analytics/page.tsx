@@ -1,5 +1,7 @@
 import { connection } from 'next/server';
 
+import { auth } from '@/auth';
+import { requirePageModuleAccess } from '@/lib/module-access';
 import { countQuilts, getQuilts } from '@/lib/data/quilts';
 import { getAnalyticsData } from '@/lib/data/stats';
 import { getUsageRecords } from '@/lib/data/usage';
@@ -8,6 +10,8 @@ import { AnalyticsPageClient } from './_components/AnalyticsPageClient';
 
 export default async function AnalyticsPage() {
   await connection();
+
+  requirePageModuleAccess(await auth(), 'quilts');
 
   const [analyticsData, totalQuilts, usageRecords] = await Promise.all([
     getAnalyticsData(),
@@ -46,6 +50,7 @@ export default async function AnalyticsPage() {
           IN_USE: analyticsData.statusDistribution.inUse,
           STORAGE: analyticsData.statusDistribution.storage,
           MAINTENANCE: analyticsData.statusDistribution.maintenance,
+          LOST: analyticsData.statusDistribution.lost,
         },
         seasonDistribution: analyticsData.seasonDistribution,
         usageBySeason: analyticsData.usageBySeason,

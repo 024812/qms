@@ -19,66 +19,15 @@ import {
   type AntiqueStatus,
 } from '@/modules/antiques/schema';
 import type { AntiqueSortField, SortOrder } from '@/lib/data/antiques';
-
-interface ActionSuccess<T> {
-  success: true;
-  data: T;
-}
-
-interface ActionError {
-  success: false;
-  error: {
-    code: string;
-    message: string;
-    fieldErrors?: Record<string, string[]>;
-  };
-}
-
-export type ActionResult<T> = ActionSuccess<T> | ActionError;
-
-function validationErrorResult(
-  message: string,
-  fieldErrors?: Record<string, string[]>
-): ActionResult<never> {
-  return {
-    success: false,
-    error: {
-      code: 'VALIDATION_FAILED',
-      message,
-      ...(fieldErrors ? { fieldErrors } : {}),
-    },
-  };
-}
-
-function notFoundErrorResult(message: string): ActionResult<never> {
-  return {
-    success: false,
-    error: {
-      code: 'NOT_FOUND',
-      message,
-    },
-  };
-}
-
-function unauthorizedErrorResult(message: string): ActionResult<never> {
-  return {
-    success: false,
-    error: {
-      code: 'UNAUTHORIZED',
-      message,
-    },
-  };
-}
-
-function internalErrorResult(message: string): ActionResult<never> {
-  return {
-    success: false,
-    error: {
-      code: 'INTERNAL_ERROR',
-      message,
-    },
-  };
-}
+import { RecordNotFoundError } from '@/lib/data/errors';
+import {
+  internalErrorResult,
+  notFoundErrorResult,
+  unauthorizedErrorResult,
+  validationErrorResult,
+  zodFieldErrors,
+  type ActionResult,
+} from '@/lib/api/action-result';
 
 function normalizeAntiqueInputDates<
   T extends Record<string, unknown> & {
@@ -182,7 +131,7 @@ export async function createAntiqueAction(input: unknown): Promise<ActionResult<
     if (!parsed.success) {
       return validationErrorResult(
         '输入数据验证失败',
-        parsed.error.flatten().fieldErrors as Record<string, string[]>
+        zodFieldErrors(parsed.error)
       );
     }
 
@@ -214,16 +163,13 @@ export async function updateAntiqueAction(input: unknown): Promise<ActionResult<
     if (!parsed.success) {
       return validationErrorResult(
         '输入数据验证失败',
-        parsed.error.flatten().fieldErrors as Record<string, string[]>
+        zodFieldErrors(parsed.error)
       );
     }
 
-    // Check if antique exists
-    const existing = await getAntiqueById(parsed.data.id);
-    if (!existing) {
-      return notFoundErrorResult('文玩不存在');
-    }
-
+    // No pre-read: `updateAntique` locks the row and throws
+    // `RecordNotFoundError`, so a separate existence check would only add a
+    // round-trip and a TOCTOU window.
     const antique = await updateAntiqueData(parsed.data);
     return {
       success: true,
@@ -234,7 +180,7 @@ export async function updateAntiqueAction(input: unknown): Promise<ActionResult<
       return unauthorizedErrorResult('您没有权限更新文玩');
     }
 
-    if (error instanceof Error && error.message.includes('not found')) {
+    if (error instanceof RecordNotFoundError) {
       return notFoundErrorResult('文玩不存在');
     }
 
@@ -254,13 +200,12 @@ export async function deleteAntiqueAction(id: string): Promise<ActionResult<{ id
       return validationErrorResult('文玩 ID 无效');
     }
 
-    // Check if antique exists
-    const existing = await getAntiqueById(id);
-    if (!existing) {
+    const deleted = await deleteAntiqueData(id);
+
+    if (!deleted) {
       return notFoundErrorResult('文玩不存在');
     }
 
-    await deleteAntiqueData(id);
     return {
       success: true,
       data: { id },
@@ -270,7 +215,7 @@ export async function deleteAntiqueAction(id: string): Promise<ActionResult<{ id
       return unauthorizedErrorResult('您没有权限删除文玩');
     }
 
-    if (error instanceof Error && error.message.includes('not found')) {
+    if (error instanceof RecordNotFoundError) {
       return notFoundErrorResult('文玩不存在');
     }
 

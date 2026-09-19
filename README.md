@@ -73,16 +73,19 @@ Supported modules: `quilts`, `cards`, `paddles`, `antiques`, `maps`, `spirits`.
 
 ## Tech Stack
 
-- Next.js `16.2.10`
-- React `19.2.7`
+Versions below are the **actual resolved versions from `package-lock.json`** (the declared caret range is shown in parentheses). Per `docs/architecture/MODULE_BLUEPRINT_V3.md` §15, `package.json` + `package-lock.json` are the source of truth for dependency versions — not this list.
+
+- Next.js `16.3.4` (`^16.2.10`)
+- React / React DOM `19.3.0` (`^19.2.7`)
 - TypeScript `6.0.3`
-- next-intl `4.13.2`
-- Better Auth `1.6.23`
-- Neon Serverless PostgreSQL
+- next-intl `4.14.3` (`^4.13.2`)
+- Better Auth `1.7.4` (`^1.6.23`)
+- Neon Serverless PostgreSQL (`@neondatabase/serverless` `1.1.0`)
 - Drizzle ORM `0.45.2`
-- Zod `4.4.3`
-- Tailwind CSS `4.3.2`
-- TanStack React Query `5.101.2`
+- Zod `4.6.1` (`^4.4.3`)
+- Tailwind CSS `4.3.3`
+- TanStack React Query `5.102.8` (`^5.101.2`)
+- lucide-react `1.44.0` (`^1.24.0`)
 - Vercel deployment
 
 ## Repository Layout
@@ -90,8 +93,10 @@ Supported modules: `quilts`, `cards`, `paddles`, `antiques`, `maps`, `spirits`.
 ```text
 src/
   proxy.ts
+  auth.ts
   app/
     [locale]/
+      (dashboard)/
       quilts/
       cards/
       paddles/
@@ -103,14 +108,18 @@ src/
       admin/
       analytics/
       reports/
+      usage/
+      login/
+      register/
     actions/
     api/
   components/
   db/
   hooks/
+  i18n/
   lib/
-    data/
-    repositories/
+    data/          # one canonical DAL per module
+    repositories/  # legacy, being retired
   modules/
     core/
     quilts/
@@ -119,8 +128,11 @@ src/
     antiques/
     maps/
     spirits/
+  styles/
   types/
+  __tests__/       # API / auth / proxy suite, included in type-check
 docs/
+scripts/           # one-off data import and repair scripts (run with tsx; see each file header)
 ```
 
 ## Environment Variables
@@ -136,7 +148,7 @@ BETTER_AUTH_URL=
 NEXT_PUBLIC_BETTER_AUTH_URL=
 ```
 
-`BETTER_AUTH_URL` is required for deployed environments and recommended locally.
+`BETTER_AUTH_URL` is required for deployed environments and recommended locally. `AUTH_SECRET` is an optional fallback alias for `BETTER_AUTH_SECRET`; setting the latter is enough.
 
 ### Optional Platform And Infrastructure
 
@@ -165,7 +177,7 @@ EBAY_ENVIRONMENT=production
 
 Some card-provider settings can also be managed from the application settings UI and stored in the database. Environment variables remain useful for bootstrap and server-only fallback cases.
 
-### Agent API
+## Agent API
 
 Users create their own Agent API keys from **Settings -> Agent API Keys**. Keys inherit the same subsystem access as the user who created them, so an AI agent can only operate on modules that user can access.
 
@@ -175,7 +187,10 @@ The public agent guide is available at `/AGENT_API.md`. The Agent API exposes a 
 
 ## Local Development
 
+> **Critical constraint**: Because this workspace is synced in real-time via OneDrive across multiple devices, **never run `npm install`, `npm test`, or `npm run build` directly inside OneDrive folders**. Doing so triggers cloud sync conflicts and freezes disk I/O. Always clone/copy the workspace to `C:\temp\<project>` (e.g. `C:\temp\qms`) to install dependencies, run dev/build, or run tests.
+
 ```powershell
+# In C:\temp\qms:
 npm install
 Copy-Item .env.example .env.local
 npm run db:migrate
@@ -224,7 +239,10 @@ npm run lint:check
 npm run type-check
 npm test
 npm run build
+npm audit --omit=optional
 ```
+
+`npm audit --omit=optional` guards the dependency surface. Note that `type-check` includes `src/__tests__`, so the API/auth/proxy test suite is type-checked as well as executed.
 
 ## Documentation
 

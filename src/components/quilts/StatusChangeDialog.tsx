@@ -25,7 +25,15 @@ import { Textarea } from '@/components/ui/textarea';
 import { Loader2, Calendar, Info } from 'lucide-react';
 import { useActiveUsageRecord } from '@/hooks/useUsage';
 
-import { Quilt } from '@/types/quilt';
+import { Quilt, QUILT_STATUSES } from '@/types/quilt';
+
+/** Text colour per quilt status — exhaustive, so a new status fails the build here. */
+const STATUS_TEXT_COLORS: Record<(typeof QUILT_STATUSES)[number], string> = {
+  IN_USE: 'text-green-600',
+  STORAGE: 'text-orange-600',
+  MAINTENANCE: 'text-yellow-600',
+  LOST: 'text-red-600',
+};
 
 interface StatusChangeDialogProps {
   open: boolean;
@@ -102,18 +110,10 @@ export function StatusChangeDialog({
   const isCurrentlyInUse = quilt?.currentStatus === 'IN_USE';
   const showDateFields = isChangingToInUse || isChangingFromInUse;
 
-  const getStatusColor = (status: string | undefined) => {
-    switch (status) {
-      case 'IN_USE':
-        return 'text-green-600';
-      case 'STORAGE':
-        return 'text-orange-600';
-      case 'MAINTENANCE':
-        return 'text-yellow-600';
-      default:
-        return 'text-gray-600';
-    }
-  };
+  const getStatusColor = (status: string | undefined) =>
+    status && status in STATUS_TEXT_COLORS
+      ? STATUS_TEXT_COLORS[status as keyof typeof STATUS_TEXT_COLORS]
+      : 'text-gray-600';
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -163,15 +163,11 @@ export function StatusChangeDialog({
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="IN_USE">
-                  <span className="text-green-600">{t('status.IN_USE')}</span>
-                </SelectItem>
-                <SelectItem value="STORAGE">
-                  <span className="text-orange-600">{t('status.STORAGE')}</span>
-                </SelectItem>
-                <SelectItem value="MAINTENANCE">
-                  <span className="text-yellow-600">{t('status.MAINTENANCE')}</span>
-                </SelectItem>
+                {QUILT_STATUSES.map(status => (
+                  <SelectItem key={status} value={status}>
+                    <span className={STATUS_TEXT_COLORS[status]}>{t(`status.${status}`)}</span>
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>

@@ -13,28 +13,17 @@ import {
   updateMap,
 } from '@/lib/data/maps';
 import type { MapFilters, MapDTO } from '@/lib/data/maps';
+import { RecordNotFoundError } from '@/lib/data/errors';
+import {
+  internalErrorResult,
+  notFoundErrorResult,
+  unauthorizedErrorResult,
+  validationErrorResult,
+  zodFieldErrors,
+  type ActionResult,
+} from '@/lib/api/action-result';
 import { CreateMapInputSchema, UpdateMapInputSchema } from '@/modules/maps/schema';
 import type { CreateMapInput, UpdateMapInput } from '@/modules/maps/schema';
-
-// ============================================================================
-// Action Result Types
-// ============================================================================
-
-interface ActionSuccess<T> {
-  success: true;
-  data: T;
-}
-
-interface ActionError {
-  success: false;
-  error: {
-    code: string;
-    message: string;
-    fieldErrors?: Record<string, string[]>;
-  };
-}
-
-type ActionResult<T> = ActionSuccess<T> | ActionError;
 
 // ============================================================================
 // Search Input Schema
@@ -72,54 +61,6 @@ const MapSearchInputSchema = z.object({
 });
 
 type MapSearchInput = z.infer<typeof MapSearchInputSchema>;
-
-// ============================================================================
-// Error Helpers
-// ============================================================================
-
-function validationErrorResult(
-  message: string,
-  fieldErrors?: Record<string, string[]>
-): ActionResult<never> {
-  return {
-    success: false,
-    error: {
-      code: 'VALIDATION_FAILED',
-      message,
-      ...(fieldErrors ? { fieldErrors } : {}),
-    },
-  };
-}
-
-function notFoundErrorResult(message: string): ActionResult<never> {
-  return {
-    success: false,
-    error: {
-      code: 'NOT_FOUND',
-      message,
-    },
-  };
-}
-
-function unauthorizedErrorResult(message = 'Unauthorized'): ActionResult<never> {
-  return {
-    success: false,
-    error: {
-      code: 'UNAUTHORIZED',
-      message,
-    },
-  };
-}
-
-function internalErrorResult(message: string): ActionResult<never> {
-  return {
-    success: false,
-    error: {
-      code: 'INTERNAL_ERROR',
-      message,
-    },
-  };
-}
 
 // ============================================================================
 // Auth Helper
@@ -182,7 +123,7 @@ export async function getMapsAction(
       if (!parseResult.success) {
         return validationErrorResult(
           'Invalid search parameters',
-          parseResult.error.flatten().fieldErrors as Record<string, string[]>
+          zodFieldErrors(parseResult.error)
         );
       }
     }
@@ -256,7 +197,7 @@ export async function createMapAction(input: CreateMapInput): Promise<ActionResu
     if (!parseResult.success) {
       return validationErrorResult(
         'Invalid map data',
-        parseResult.error.flatten().fieldErrors as Record<string, string[]>
+        zodFieldErrors(parseResult.error)
       );
     }
 
@@ -291,7 +232,7 @@ export async function updateMapAction(input: UpdateMapInput): Promise<ActionResu
     if (!parseResult.success) {
       return validationErrorResult(
         'Invalid map data',
-        parseResult.error.flatten().fieldErrors as Record<string, string[]>
+        zodFieldErrors(parseResult.error)
       );
     }
 
@@ -306,7 +247,7 @@ export async function updateMapAction(input: UpdateMapInput): Promise<ActionResu
       data: map,
     };
   } catch (error) {
-    if (error instanceof Error && error.message === 'Map not found') {
+    if (error instanceof RecordNotFoundError) {
       return notFoundErrorResult('Map not found');
     }
     return internalErrorResult('Failed to update map');
@@ -328,14 +269,18 @@ export async function deleteMapAction(id: string): Promise<ActionResult<{ id: st
       return validationErrorResult('Invalid map ID');
     }
 
-    await deleteMapData(id);
+    const deleted = await deleteMapData(id);
+
+    if (!deleted) {
+      return notFoundErrorResult('Map not found');
+    }
 
     return {
       success: true,
       data: { id },
     };
   } catch (error) {
-    if (error instanceof Error && error.message === 'Map not found') {
+    if (error instanceof RecordNotFoundError) {
       return notFoundErrorResult('Map not found');
     }
     return internalErrorResult('Failed to delete map');

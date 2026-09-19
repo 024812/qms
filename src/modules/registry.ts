@@ -5,8 +5,20 @@
  * Dynamically selects module configuration based on type field.
  *
  * Requirements: 1.1, 1.2
+ *
+ * The module *ID* vocabulary lives in `./module-ids` so that pure consumers do
+ * not have to load this file — and with it every module's UI components. This
+ * module re-exports that vocabulary to keep a single import surface for callers
+ * that genuinely need the registry (i.e. `getModule` / `getAllModules`).
  */
 
+import {
+  MODULE_IDS,
+  getModuleIds,
+  isRegisteredModuleId,
+  normalizeModuleIds,
+  type RegisteredModuleId,
+} from './module-ids';
 import { quiltModule } from './quilts/config';
 import { cardModule } from './cards/config';
 import { spiritModule } from './spirits/config';
@@ -14,8 +26,9 @@ import { paddleModule } from './paddles/config';
 import { antiqueModule } from './antiques/config';
 import { mapsModule } from './maps/config';
 
-export const MODULE_IDS = ['quilts', 'cards', 'spirits', 'paddles', 'antiques', 'maps'] as const;
-export type RegisteredModuleId = (typeof MODULE_IDS)[number];
+export { MODULE_IDS, getModuleIds, isRegisteredModuleId, normalizeModuleIds };
+export type { RegisteredModuleId };
+
 export type RegisteredModule =
   | typeof quiltModule
   | typeof cardModule
@@ -55,21 +68,8 @@ export function getAllModules(): RegisteredModule[] {
  * Check if module exists
  */
 export function hasModule(type: string): boolean {
-  return type in MODULE_REGISTRY;
-}
-
-/**
- * Get module IDs
- */
-export function isRegisteredModuleId(value: unknown): value is RegisteredModuleId {
-  return typeof value === 'string' && MODULE_IDS.includes(value as RegisteredModuleId);
-}
-
-export function normalizeModuleIds(value: unknown): RegisteredModuleId[] {
-  if (!Array.isArray(value)) return [];
-  return value.filter(isRegisteredModuleId);
-}
-
-export function getModuleIds(): readonly RegisteredModuleId[] {
-  return MODULE_IDS;
+  // `in` walks the prototype chain, so `hasModule('__proto__')`,
+  // `hasModule('constructor')` and `hasModule('toString')` would all answer
+  // `true`. Only own keys count as registered modules.
+  return Object.hasOwn(MODULE_REGISTRY, type);
 }

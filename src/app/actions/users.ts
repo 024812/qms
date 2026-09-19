@@ -14,24 +14,18 @@ import {
   type UserSummary,
   updateUser,
 } from '@/lib/data/users';
-import { MODULE_IDS } from '@/modules/registry';
+import { MODULE_IDS } from '@/modules/module-ids';
 import { usersCacheTags } from '@/modules/core/cache-tags';
-
-interface ActionSuccess<T> {
-  success: true;
-  data: T;
-}
-
-interface ActionError {
-  success: false;
-  error: {
-    code: string;
-    message: string;
-    fieldErrors?: Record<string, string[]>;
-  };
-}
-
-type ActionResult<T> = ActionSuccess<T> | ActionError;
+import {
+  badRequestErrorResult,
+  conflictErrorResult,
+  internalErrorResult,
+  notFoundErrorResult,
+  unauthorizedErrorResult,
+  validationErrorResult,
+  zodFieldErrors,
+  type ActionResult,
+} from '@/lib/api/action-result';
 
 const createUserSchema = z.object({
   name: z.string().trim().min(1, 'Name is required'),
@@ -73,74 +67,6 @@ const deleteUserSchema = z.object({
   id: z.string().trim().min(1, 'User ID is required'),
 });
 
-function zodFieldErrors(error: z.ZodError): Record<string, string[]> {
-  return error.flatten().fieldErrors as Record<string, string[]>;
-}
-
-function unauthorizedResult(message = 'Requires admin privileges'): ActionResult<never> {
-  return {
-    success: false,
-    error: {
-      code: 'UNAUTHORIZED',
-      message,
-    },
-  };
-}
-
-function validationErrorResult(
-  message: string,
-  fieldErrors: Record<string, string[]>
-): ActionResult<never> {
-  return {
-    success: false,
-    error: {
-      code: 'VALIDATION_FAILED',
-      message,
-      fieldErrors,
-    },
-  };
-}
-
-function conflictErrorResult(message: string): ActionResult<never> {
-  return {
-    success: false,
-    error: {
-      code: 'ALREADY_EXISTS',
-      message,
-    },
-  };
-}
-
-function badRequestResult(message: string): ActionResult<never> {
-  return {
-    success: false,
-    error: {
-      code: 'BAD_REQUEST',
-      message,
-    },
-  };
-}
-
-function notFoundResult(message: string): ActionResult<never> {
-  return {
-    success: false,
-    error: {
-      code: 'NOT_FOUND',
-      message,
-    },
-  };
-}
-
-function internalErrorResult(message: string): ActionResult<never> {
-  return {
-    success: false,
-    error: {
-      code: 'INTERNAL_ERROR',
-      message,
-    },
-  };
-}
-
 async function requireAdmin() {
   const session = await auth();
 
@@ -156,7 +82,7 @@ export async function getUsersAction(): Promise<ActionResult<GetUsersActionData>
     const session = await requireAdmin();
 
     if (!session) {
-      return unauthorizedResult();
+      return unauthorizedErrorResult('Requires admin privileges');
     }
 
     const users = await listUsers();
@@ -180,7 +106,7 @@ export async function createUserAction(
     const session = await requireAdmin();
 
     if (!session) {
-      return unauthorizedResult();
+      return unauthorizedErrorResult('Requires admin privileges');
     }
 
     const validationResult = createUserSchema.safeParse(input);
@@ -219,7 +145,7 @@ export async function updateUserAction(
     const session = await requireAdmin();
 
     if (!session) {
-      return unauthorizedResult();
+      return unauthorizedErrorResult('Requires admin privileges');
     }
 
     const validationResult = updateUserSchema.safeParse(input);
@@ -244,7 +170,7 @@ export async function updateUserAction(
     });
 
     if (!user) {
-      return notFoundResult('User not found');
+      return notFoundErrorResult('User not found');
     }
 
     updateTag(usersCacheTags.root);
@@ -266,7 +192,7 @@ export async function deleteUserAction(
     const session = await requireAdmin();
 
     if (!session) {
-      return unauthorizedResult();
+      return unauthorizedErrorResult('Requires admin privileges');
     }
 
     const validationResult = deleteUserSchema.safeParse(input);
@@ -278,13 +204,13 @@ export async function deleteUserAction(
     const data = validationResult.data;
 
     if (session.user.id === data.id) {
-      return badRequestResult('You cannot delete your own account');
+      return badRequestErrorResult('You cannot delete your own account');
     }
 
     const deleted = await deleteUser(data.id);
 
     if (!deleted) {
-      return notFoundResult('User not found');
+      return notFoundErrorResult('User not found');
     }
 
     updateTag(usersCacheTags.root);

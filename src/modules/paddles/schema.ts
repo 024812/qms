@@ -173,6 +173,39 @@ export const paddleFiltersSchema = z.object({
 
 export type PaddleFilters = z.infer<typeof paddleFiltersSchema>;
 
+/**
+ * Sortable columns for paddle list queries.
+ *
+ * Declared as a const tuple so the Zod enum and the DAL's `PaddleSortField` type are
+ * derived from one list — adding a column here cannot leave the two out of sync.
+ */
+export const PADDLE_SORT_FIELDS = [
+  'itemNumber',
+  'name',
+  'bladeBrand',
+  'bladeWeightG',
+  'createdAt',
+  'updatedAt',
+] as const;
+
+export type PaddleSortField = (typeof PADDLE_SORT_FIELDS)[number];
+
+/**
+ * Schema for a paddle list query.
+ *
+ * Composes {@link paddleFiltersSchema} rather than re-declaring the filter enums, so
+ * the action/API layer and the module cannot drift apart (blueprint §10.3).
+ */
+export const paddleSearchSchema = z.object({
+  filters: paddleFiltersSchema.optional(),
+  sortBy: z.enum(PADDLE_SORT_FIELDS).optional(),
+  sortOrder: z.enum(['asc', 'desc']).optional(),
+  skip: z.number().int().min(0).optional(),
+  take: z.number().int().min(1).max(100).optional(),
+});
+
+export type PaddleSearchInput = z.infer<typeof paddleSearchSchema>;
+
 // ============================================================================
 // Paddle Item Type
 // ============================================================================

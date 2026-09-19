@@ -22,6 +22,7 @@ import {
   getUsageStatsAction,
   updateUsageRecordAction,
 } from '@/app/actions/usage';
+import { unwrapActionResult } from '@/lib/api/action-result';
 
 const USAGE_KEY = ['usage'] as const;
 const QUILTS_KEY = ['quilts'] as const;
@@ -93,26 +94,6 @@ interface UsageFilters {
   quiltId?: string;
   limit?: number;
   offset?: number;
-}
-
-function unwrapActionResult<T>(
-  result:
-    | {
-        success: true;
-        data: T;
-      }
-    | {
-        success: false;
-        error: {
-          message: string;
-        };
-      }
-): T {
-  if (!result.success) {
-    throw new Error(result.error.message);
-  }
-
-  return result.data;
 }
 
 export function useUsageRecords(filters?: UsageFilters) {

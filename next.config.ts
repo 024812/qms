@@ -15,6 +15,33 @@ const nextConfig: NextConfig = {
   poweredByHeader: false,
   cacheComponents: true,
 
+  // Cache profiles used by the module data-access layer.
+  //
+  // These exist because the built-in profiles do not mean what their names suggest:
+  // `'seconds'` revalidates every 1s with a 1-minute expiry, and `'minutes'` revalidates
+  // every 1 minute (its 5 minutes is the *stale* window, not the revalidate interval).
+  // Several DAL functions were annotated "2 minutes" / "5 minutes" while actually running
+  // on those profiles, so list reads were revalidating roughly once per second.
+  //
+  // Defining named profiles keeps the intent at the call site and the numbers in one place.
+  // Correctness does not depend on the revalidate interval: every DAL write path calls
+  // `revalidateTag(..., 'max')` after the transaction commits, so a mutation is visible
+  // immediately regardless of the profile.
+  cacheLife: {
+    // List, search and count queries.
+    moduleList: {
+      stale: 60, // 1 minute
+      revalidate: 120, // 2 minutes
+      expire: 3600, // 1 hour
+    },
+    // Single-record reads, singleton configuration, and aggregate statistics.
+    moduleItem: {
+      stale: 60, // 1 minute
+      revalidate: 300, // 5 minutes
+      expire: 3600, // 1 hour
+    },
+  },
+
   // Bundle optimization
   compiler: {
     removeConsole: process.env.NODE_ENV === 'production' ? { exclude: ['error', 'warn'] } : false,

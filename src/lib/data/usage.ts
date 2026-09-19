@@ -110,12 +110,12 @@ function invalidateUsageTags(id: string | undefined, quiltId: string, active?: b
 /**
  * Get usage record by ID
  *
- * Cache: 5 minutes
+ * Cache: `moduleItem` profile (revalidate 5 minutes)
  * Tags: 'usage', 'usage-{id}'
  */
 export async function getUsageRecordById(id: string): Promise<UsageRecord | null> {
   'use cache';
-  cacheLife('minutes');
+  cacheLife('moduleItem');
   cacheTag(usageCacheTags.root, usageCacheTags.item(id));
 
   try {
@@ -130,12 +130,12 @@ export async function getUsageRecordById(id: string): Promise<UsageRecord | null
 /**
  * Get usage history for a quilt
  *
- * Cache: 2 minutes
+ * Cache: `moduleList` profile (revalidate 2 minutes)
  * Tags: 'usage', 'usage-quilt-{quiltId}'
  */
 export async function getUsageHistory(quiltId: string): Promise<UsageRecord[]> {
   'use cache';
-  cacheLife('seconds');
+  cacheLife('moduleList');
   cacheTag(usageCacheTags.root, usageCacheTags.list, usageCacheTags.slice('quilt', quiltId));
 
   try {
@@ -155,12 +155,12 @@ export async function getUsageHistory(quiltId: string): Promise<UsageRecord[]> {
 /**
  * Get currently active usage record for a quilt
  *
- * Cache: 2 minutes
+ * Cache: `moduleItem` profile (revalidate 5 minutes)
  * Tags: 'usage', 'usage-quilt-{quiltId}'
  */
 export async function getActiveUsageRecord(quiltId: string): Promise<UsageRecord | null> {
   'use cache';
-  cacheLife('seconds');
+  cacheLife('moduleItem');
   cacheTag(
     usageCacheTags.root,
     usageCacheTags.slice('active', 'true'),
@@ -183,12 +183,12 @@ export async function getActiveUsageRecord(quiltId: string): Promise<UsageRecord
 /**
  * Get ALL active usage records
  *
- * Cache: 2 minutes
+ * Cache: `moduleList` profile (revalidate 2 minutes)
  * Tags: 'usage', 'usage-active'
  */
 export async function getAllActiveUsageRecords(): Promise<UsageRecord[]> {
   'use cache';
-  cacheLife('seconds');
+  cacheLife('moduleList');
   cacheTag(usageCacheTags.root, usageCacheTags.list, usageCacheTags.slice('active', 'true'));
 
   try {
@@ -208,12 +208,12 @@ export async function getAllActiveUsageRecords(): Promise<UsageRecord[]> {
 /**
  * Get ALL usage records
  *
- * Cache: 2 minutes
+ * Cache: `moduleList` profile (revalidate 2 minutes)
  * Tags: 'usage', 'usage-list'
  */
 export async function getUsageRecords(): Promise<UsageRecord[]> {
   'use cache';
-  cacheLife('seconds');
+  cacheLife('moduleList');
   cacheTag(usageCacheTags.root, usageCacheTags.list);
 
   try {
@@ -248,14 +248,14 @@ export interface UsageRecordWithQuilt {
 /**
  * Get ALL usage records with quilt information
  *
- * Cache: 2 minutes
+ * Cache: `moduleList` profile (revalidate 2 minutes)
  * Tags: 'usage', 'usage-list'
  */
 export async function getUsageRecordsWithQuilts(
   filters: { quiltId?: string; limit?: number; offset?: number } = {}
 ): Promise<UsageRecordWithQuilt[]> {
   'use cache';
-  cacheLife('seconds');
+  cacheLife('moduleList');
   const tags = [usageCacheTags.root, usageCacheTags.list];
   if (filters.quiltId) tags.push(usageCacheTags.slice('quilt', filters.quiltId));
   cacheTag(...tags);
@@ -325,14 +325,14 @@ export async function getUsageRecordsWithQuilts(
 /**
  * Get usage stats for a specific quilt
  *
- * Cache: 2 minutes
+ * Cache: `moduleItem` profile (revalidate 5 minutes)
  * Tags: 'usage', 'usage-quilt-{quiltId}'
  */
 export async function getUsageStats(
   quiltId: string
 ): Promise<{ totalDays: number; usageCount: number }> {
   'use cache';
-  cacheLife('seconds');
+  cacheLife('moduleItem');
   cacheTag(usageCacheTags.root, usageCacheTags.slice('quilt', quiltId), statsCacheTags.root);
 
   try {

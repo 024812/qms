@@ -128,7 +128,7 @@ export interface QuiltItem {
   purchaseDate: Date | null;
   location: string;
   packagingInfo: string | null;
-  currentStatus: 'IN_USE' | 'MAINTENANCE' | 'STORAGE';
+  currentStatus: import('@/lib/validations/quilt').QuiltStatus;
   notes: string | null;
   imageUrl: string | null;
   thumbnailUrl: string | null;

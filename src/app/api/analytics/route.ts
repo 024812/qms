@@ -30,6 +30,7 @@ export async function GET(_request: NextRequest) {
           IN_USE: analyticsData.statusDistribution.inUse,
           STORAGE: analyticsData.statusDistribution.storage,
           MAINTENANCE: analyticsData.statusDistribution.maintenance,
+          LOST: analyticsData.statusDistribution.lost,
         },
         seasonDistribution: analyticsData.seasonDistribution,
         usageBySeason: analyticsData.usageBySeason,

@@ -46,6 +46,31 @@ API keys inherit the same subsystem permissions as the user who created them:
 - Users subscribed to `spirits` can access spirits tools.
 - Revoked keys stop working immediately.
 
+## Scopes
+
+Each tool requires one scope. Scopes are derived from the API key owner's
+active modules — they are not configured per key:
+
+| Scope | Granted when |
+| --- | --- |
+| `read:<module>` | the owner is subscribed to `<module>` |
+| `write:<module>` | the owner is subscribed to `<module>` |
+| `read:usage` / `write:usage` | the owner is subscribed to `quilts` |
+| `read:settings` | always (any valid API key) |
+| `*` | the owner is an admin |
+
+`<module>` is one of the registered modules: `quilts`, `cards`, `spirits`,
+`paddles`, `antiques`, `maps`. Registering a new module automatically adds its
+`read:`/`write:` scopes — no API change is required.
+
+`read:settings` exposes app preferences (`appName`, double-click behaviour),
+aggregate counters and runtime metadata. It contains no secrets and no
+per-user data, so it is available to every valid key. `admin:settings` is
+reserved for future settings mutations and is never granted to members.
+
+A request whose tool requires a scope the key does not hold returns
+`403` with `Missing agent scope: <scope>`.
+
 ## Request Shape
 
 All calls use the same endpoint and select a whitelisted tool by name:

@@ -2,7 +2,16 @@
 
 import { auth } from '@/auth';
 import { ModuleAccessError, requireModuleAccess } from '@/lib/module-access';
+import {
+  internalErrorResult,
+  notFoundErrorResult,
+  unauthorizedErrorResult,
+  validationErrorResult,
+  zodFieldErrors,
+  type ActionResult,
+} from '@/lib/api/action-result';
 import { sanitizeApiInput } from '@/lib/sanitization';
+import { RecordNotFoundError } from '@/lib/data/errors';
 import {
   getSpirits,
   getSpiritById,
@@ -25,70 +34,6 @@ import {
 // ============================================================================
 // Action Result Types
 // ============================================================================
-
-interface ActionSuccess<T> {
-  success: true;
-  data: T;
-}
-
-interface ActionError {
-  success: false;
-  error: {
-    code: string;
-    message: string;
-    fieldErrors?: Record<string, string[]>;
-  };
-}
-
-type ActionResult<T> = ActionSuccess<T> | ActionError;
-
-// ============================================================================
-// Helper Functions
-// ============================================================================
-
-function validationErrorResult(
-  message: string,
-  fieldErrors?: Record<string, string[]>
-): ActionResult<never> {
-  return {
-    success: false,
-    error: {
-      code: 'VALIDATION_FAILED',
-      message,
-      ...(fieldErrors ? { fieldErrors } : {}),
-    },
-  };
-}
-
-function notFoundErrorResult(message: string): ActionResult<never> {
-  return {
-    success: false,
-    error: {
-      code: 'NOT_FOUND',
-      message,
-    },
-  };
-}
-
-function internalErrorResult(message: string): ActionResult<never> {
-  return {
-    success: false,
-    error: {
-      code: 'INTERNAL_ERROR',
-      message,
-    },
-  };
-}
-
-function unauthorizedErrorResult(message = 'Unauthorized'): ActionResult<never> {
-  return {
-    success: false,
-    error: {
-      code: 'UNAUTHORIZED',
-      message,
-    },
-  };
-}
 
 async function requireAuthenticatedUser() {
   const session = await auth();
@@ -146,7 +91,7 @@ export async function getSpiritsAction(
       if (!validation.success) {
         return validationErrorResult(
           '查询参数无效',
-          validation.error.flatten().fieldErrors as Record<string, string[]>
+          zodFieldErrors(validation.error)
         );
       }
     }
@@ -210,7 +155,7 @@ export async function createSpiritAction(input: CreateSpiritInput): Promise<Acti
     if (!validation.success) {
       return validationErrorResult(
         '输入数据无效',
-        validation.error.flatten().fieldErrors as Record<string, string[]>
+        zodFieldErrors(validation.error)
       );
     }
 
@@ -248,7 +193,7 @@ export async function updateSpiritAction(
     if (!validation.success) {
       return validationErrorResult(
         '输入数据无效',
-        validation.error.flatten().fieldErrors as Record<string, string[]>
+        zodFieldErrors(validation.error)
       );
     }
 
@@ -260,7 +205,7 @@ export async function updateSpiritAction(
     };
   } catch (error) {
     console.error('[Server Action] updateSpiritAction error:', error);
-    if (error instanceof Error && error.message === 'Spirit not found') {
+    if (error instanceof RecordNotFoundError) {
       return notFoundErrorResult('藏酒不存在');
     }
     return internalErrorResult('更新藏酒失败');
@@ -281,7 +226,11 @@ export async function deleteSpiritAction(id: string): Promise<ActionResult<void>
       return validationErrorResult('ID 无效');
     }
 
-    await deleteSpiritData(id);
+    const deleted = await deleteSpiritData(id);
+
+    if (!deleted) {
+      return notFoundErrorResult('藏酒不存在');
+    }
 
     return {
       success: true,
@@ -289,7 +238,7 @@ export async function deleteSpiritAction(id: string): Promise<ActionResult<void>
     };
   } catch (error) {
     console.error('[Server Action] deleteSpiritAction error:', error);
-    if (error instanceof Error && error.message === 'Spirit not found') {
+    if (error instanceof RecordNotFoundError) {
       return notFoundErrorResult('藏酒不存在');
     }
     return internalErrorResult('删除藏酒失败');

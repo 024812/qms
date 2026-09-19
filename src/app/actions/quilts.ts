@@ -5,6 +5,7 @@ import { z } from 'zod';
 import { auth } from '@/auth';
 import { ModuleAccessError, requireModuleAccess } from '@/lib/module-access';
 import {
+  QuiltBusinessRuleError,
   countQuilts,
   deleteQuilt as deleteQuiltData,
   getQuiltById,
@@ -12,30 +13,29 @@ import {
   saveQuilt,
 } from '@/lib/data/quilts';
 import { sanitizeApiInput } from '@/lib/sanitization';
-import { createQuiltSchema, quiltSearchSchema, updateQuiltSchema } from '@/lib/validations/quilt';
-import type { Quilt, CreateQuiltInput, UpdateQuiltInput } from '@/lib/validations/quilt';
+import { ConflictError, RecordNotFoundError } from '@/lib/data/errors';
+import {
+  QuiltStatusSchema,
+  createQuiltSchema,
+  quiltSearchSchema,
+  updateQuiltSchema,
+} from '@/lib/validations/quilt';
+import type { Quilt, CreateQuiltInput, QuiltStatus, UpdateQuiltInput } from '@/lib/validations/quilt';
 import type { QuiltSearchInput } from '@/types/quilt';
 import type { QuiltFilters } from '@/lib/data/quilts';
-
-interface ActionSuccess<T> {
-  success: true;
-  data: T;
-}
-
-interface ActionError {
-  success: false;
-  error: {
-    code: string;
-    message: string;
-    fieldErrors?: Record<string, string[]>;
-  };
-}
-
-type ActionResult<T> = ActionSuccess<T> | ActionError;
+import {
+  conflictErrorResult,
+  internalErrorResult,
+  notFoundErrorResult,
+  unauthorizedErrorResult,
+  validationErrorResult,
+  zodFieldErrors,
+  type ActionResult,
+} from '@/lib/api/action-result';
 
 const changeQuiltStatusSchema = z.object({
   quiltId: z.string().min(1, '被子 ID 无效'),
-  status: z.enum(['IN_USE', 'STORAGE', 'MAINTENANCE']),
+  status: QuiltStatusSchema,
   usageType: z
     .enum(['REGULAR', 'GUEST', 'SPECIAL_OCCASION', 'SEASONAL_ROTATION'])
     .optional()
@@ -55,60 +55,6 @@ function normalizeQuiltInputDates<T extends Record<string, unknown> & { purchase
   }
 
   return normalized;
-}
-
-function validationErrorResult(
-  message: string,
-  fieldErrors?: Record<string, string[]>
-): ActionResult<never> {
-  return {
-    success: false,
-    error: {
-      code: 'VALIDATION_FAILED',
-      message,
-      ...(fieldErrors ? { fieldErrors } : {}),
-    },
-  };
-}
-
-function notFoundErrorResult(message: string): ActionResult<never> {
-  return {
-    success: false,
-    error: {
-      code: 'NOT_FOUND',
-      message,
-    },
-  };
-}
-
-function conflictErrorResult(message: string): ActionResult<never> {
-  return {
-    success: false,
-    error: {
-      code: 'ALREADY_EXISTS',
-      message,
-    },
-  };
-}
-
-function internalErrorResult(message: string): ActionResult<never> {
-  return {
-    success: false,
-    error: {
-      code: 'INTERNAL_ERROR',
-      message,
-    },
-  };
-}
-
-function unauthorizedErrorResult(message = 'Unauthorized'): ActionResult<never> {
-  return {
-    success: false,
-    error: {
-      code: 'UNAUTHORIZED',
-      message,
-    },
-  };
 }
 
 async function requireAuthenticatedUser() {
@@ -161,7 +107,7 @@ export async function saveQuiltAction(
     if (!validationResult.success) {
       return validationErrorResult(
         '被子数据校验失败',
-        validationResult.error.flatten().fieldErrors as Record<string, string[]>
+        zodFieldErrors(validationResult.error)
       );
     }
 
@@ -173,8 +119,14 @@ export async function saveQuiltAction(
     };
   } catch (error) {
     console.error('[Server Action] saveQuiltAction error:', error);
-    if (error instanceof Error && error.message === 'Quilt not found') {
+    if (error instanceof RecordNotFoundError) {
       return notFoundErrorResult('被子不存在');
+    }
+
+    // Business rules that need the stored row are enforced in the DAL; surface them
+    // as an ordinary validation failure rather than a 500.
+    if (error instanceof QuiltBusinessRuleError) {
+      return validationErrorResult('被子数据校验失败', error.fieldErrors);
     }
 
     return internalErrorResult('保存被子失败');
@@ -219,7 +171,7 @@ export async function deleteQuiltAction(id: string): Promise<ActionResult<{ dele
 
 export async function changeQuiltStatusAction(input: {
   quiltId: string;
-  status: 'IN_USE' | 'STORAGE' | 'MAINTENANCE';
+  status: QuiltStatus;
   usageType?: 'REGULAR' | 'GUEST' | 'SPECIAL_OCCASION' | 'SEASONAL_ROTATION';
   notes?: string;
   startDate?: Date | string;
@@ -237,7 +189,7 @@ export async function changeQuiltStatusAction(input: {
     if (!validationResult.success) {
       return validationErrorResult(
         '状态数据校验失败',
-        validationResult.error.flatten().fieldErrors as Record<string, string[]>
+        zodFieldErrors(validationResult.error)
       );
     }
 
@@ -257,14 +209,12 @@ export async function changeQuiltStatusAction(input: {
     };
   } catch (error) {
     console.error('[Server Action] changeQuiltStatusAction error:', error);
-    if (error instanceof Error) {
-      if (error.message === 'Quilt not found') {
-        return notFoundErrorResult('被子不存在');
-      }
+    if (error instanceof RecordNotFoundError) {
+      return notFoundErrorResult('被子不存在');
+    }
 
-      if (error.message === 'Quilt already has an active usage record') {
-        return conflictErrorResult('该被子已有活跃的使用记录');
-      }
+    if (error instanceof ConflictError) {
+      return conflictErrorResult('该被子已有活跃的使用记录');
     }
 
     return internalErrorResult('更新被子状态失败');
@@ -311,7 +261,7 @@ export async function getQuiltsAction(
     if (!validationResult.success) {
       return validationErrorResult(
         '被子查询参数校验失败',
-        validationResult.error.flatten().fieldErrors as Record<string, string[]>
+        zodFieldErrors(validationResult.error)
       );
     }
 

@@ -12,8 +12,8 @@
  * - Cache invalidation with revalidateTag(, 'max')
  *
  * Cache Strategy:
- * - Individual items: 5 minutes
- * - Lists: 2 minutes (120 seconds)
+ * - Individual items: `moduleItem` profile (revalidate 5 minutes)
+ * - Lists: `moduleList` profile (revalidate 2 minutes)
  * - Tags: 'quilts', 'quilts-{id}', 'quilts-status-{status}', 'quilts-season-{season}'
  *
  * Requirements: 2.1-2.6, 3.1-3.6 from Next.js 16 Best Practices Migration spec
@@ -23,11 +23,50 @@ import { cacheLife, cacheTag, revalidateTag } from 'next/cache';
 
 import { db, Tx } from '@/db';
 import { quilts, usageRecords } from '@/db/schema';
-import { eq, sql, desc, and, isNull, like, or } from 'drizzle-orm';
+import { eq, sql, desc, and, isNull } from 'drizzle-orm';
 import { dbLogger } from '@/lib/logger';
+import { ConflictError, RecordNotFoundError } from '@/lib/data/errors';
+import { containsInsensitiveFilter, searchAnyColumn } from '@/lib/data/search';
 import { type Quilt } from '@/lib/database/types';
-import { QuiltStatus, Season, UsageType } from '@/lib/validations/quilt';
+import {
+  QuiltStatus,
+  Season,
+  UsageType,
+  collectQuiltBusinessRuleIssues,
+  type QuiltBusinessRuleIssue,
+} from '@/lib/validations/quilt';
 import { quiltsCacheTags, usageCacheTags, statsCacheTags } from '@/modules/core/cache-tags';
+
+// ============================================================================
+// Errors
+// ============================================================================
+
+/**
+ * Thrown when a quilt write would violate a cross-field business rule that the
+ * request-level Zod schema cannot evaluate on its own, because the rule needs the
+ * stored row (for example a PATCH that changes only `season`).
+ *
+ * Carries `fieldErrors` so the Action layer can surface it as a normal validation
+ * failure instead of a 500.
+ */
+export class QuiltBusinessRuleError extends Error {
+  readonly fieldErrors: Record<string, string[]>;
+
+  constructor(issues: QuiltBusinessRuleIssue[]) {
+    super('Quilt business rule validation failed');
+    this.name = 'QuiltBusinessRuleError';
+
+    const fieldErrors: Record<string, string[]> = {};
+    for (const issue of issues) {
+      const key = String(issue.path[0] ?? 'root');
+      if (!fieldErrors[key]) {
+        fieldErrors[key] = [];
+      }
+      fieldErrors[key].push(issue.message);
+    }
+    this.fieldErrors = fieldErrors;
+  }
+}
 
 // ============================================================================
 // Types
@@ -213,7 +252,7 @@ async function syncUsageRecordForStatusChange(
       .where(and(eq(usageRecords.quiltId, quiltId), isNull(usageRecords.endDate)));
 
     if (Number(activeCount[0].count) > 0) {
-      throw new Error('Quilt already has an active usage record');
+      throw new ConflictError('Quilt', 'Quilt already has an active usage record');
     }
 
     const createdRows = await tx
@@ -248,6 +287,46 @@ function invalidateUsageAndStatsTags(quiltId: string) {
   revalidateTag(statsCacheTags.slice('dashboard', 'main'), 'max');
 }
 
+interface QuiltInvalidationInput {
+  id: string;
+  statuses?: QuiltStatus[];
+  seasons?: Season[];
+  usageChanged?: boolean;
+}
+
+/**
+ * Invalidate every cache tag affected by a quilt write.
+ *
+ * Contract: call this only AFTER the surrounding transaction has committed.
+ * `revalidateTag` does not participate in the transaction rollback, so running
+ * it inside a transaction would clear caches for writes that never persisted.
+ */
+function invalidateQuiltWriteTags({
+  id,
+  statuses = [],
+  seasons = [],
+  usageChanged = false,
+}: QuiltInvalidationInput) {
+  revalidateTag(quiltsCacheTags.root, 'max');
+  revalidateTag(quiltsCacheTags.list, 'max');
+  revalidateTag(quiltsCacheTags.item(id), 'max');
+
+  for (const status of new Set(statuses)) {
+    revalidateTag(quiltsCacheTags.slice('status', status), 'max');
+  }
+
+  for (const season of new Set(seasons)) {
+    revalidateTag(quiltsCacheTags.slice('season', season), 'max');
+  }
+
+  revalidateTag(statsCacheTags.root, 'max');
+  revalidateTag(statsCacheTags.slice('dashboard', 'main'), 'max');
+
+  if (usageChanged) {
+    invalidateUsageAndStatsTags(id);
+  }
+}
+
 // ============================================================================
 // Helper Functions
 // ============================================================================
@@ -280,12 +359,12 @@ function generateQuiltName(data: CreateQuiltData): string {
 /**
  * Get quilt by ID
  *
- * Cache: 5 minutes
+ * Cache: `moduleItem` profile (revalidate 5 minutes)
  * Tags: 'quilts', 'quilts-{id}'
  */
 export async function getQuiltById(id: string): Promise<Quilt | null> {
   'use cache';
-  cacheLife('minutes'); // 5 minutes
+  cacheLife('moduleItem');
   cacheTag(quiltsCacheTags.root, quiltsCacheTags.item(id));
 
   try {
@@ -300,12 +379,12 @@ export async function getQuiltById(id: string): Promise<Quilt | null> {
 /**
  * Get all quilts with filters
  *
- * Cache: 2 minutes (120 seconds)
+ * Cache: `moduleList` profile (revalidate 2 minutes)
  * Tags: 'quilts', 'quilts-list', plus dynamic tags based on filters
  */
 export async function getQuilts(filters: QuiltFilters = {}): Promise<Quilt[]> {
   'use cache';
-  cacheLife('seconds'); // 2 minutes (120 seconds)
+  cacheLife('moduleList');
 
   // Build cache tags based on filters
   const tags = [quiltsCacheTags.root, quiltsCacheTags.list];
@@ -330,21 +409,17 @@ export async function getQuilts(filters: QuiltFilters = {}): Promise<Quilt[]> {
     const conditions = [];
     if (season) conditions.push(eq(quilts.season, season));
     if (status) conditions.push(eq(quilts.currentStatus, status));
-    if (location)
-      conditions.push(like(sql`LOWER(${quilts.location})`, `%${location.toLowerCase()}%`));
-    if (brand) conditions.push(like(sql`LOWER(${quilts.brand})`, `%${brand.toLowerCase()}%`));
+    const locationCondition = containsInsensitiveFilter(quilts.location, location);
+    if (locationCondition) conditions.push(locationCondition);
 
-    if (search) {
-      const searchLower = `%${search.toLowerCase()}%`;
-      conditions.push(
-        or(
-          like(sql`LOWER(${quilts.name})`, searchLower),
-          like(sql`LOWER(${quilts.color})`, searchLower),
-          like(sql`LOWER(${quilts.fillMaterial})`, searchLower),
-          like(sql`LOWER(${quilts.notes})`, searchLower)
-        )
-      );
-    }
+    const brandCondition = containsInsensitiveFilter(quilts.brand, brand);
+    if (brandCondition) conditions.push(brandCondition);
+
+    const searchCondition = searchAnyColumn(
+      [quilts.name, quilts.color, quilts.fillMaterial, quilts.notes],
+      search
+    );
+    if (searchCondition) conditions.push(searchCondition);
 
     const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
 
@@ -377,12 +452,12 @@ export async function getQuilts(filters: QuiltFilters = {}): Promise<Quilt[]> {
 /**
  * Get quilts by status
  *
- * Cache: 2 minutes (120 seconds)
+ * Cache: `moduleList` profile (revalidate 2 minutes)
  * Tags: 'quilts', 'quilts-status-{status}'
  */
 export async function getQuiltsByStatus(status: QuiltStatus): Promise<Quilt[]> {
   'use cache';
-  cacheLife('seconds'); // 2 minutes (120 seconds)
+  cacheLife('moduleList');
   cacheTag(quiltsCacheTags.root, quiltsCacheTags.slice('status', status));
 
   try {
@@ -402,12 +477,12 @@ export async function getQuiltsByStatus(status: QuiltStatus): Promise<Quilt[]> {
 /**
  * Get quilts by season
  *
- * Cache: 5 minutes
+ * Cache: `moduleList` profile (revalidate 2 minutes)
  * Tags: 'quilts', 'quilts-season-{season}'
  */
 export async function getQuiltsBySeason(season: Season): Promise<Quilt[]> {
   'use cache';
-  cacheLife('minutes'); // 5 minutes
+  cacheLife('moduleList');
   cacheTag(quiltsCacheTags.root, quiltsCacheTags.slice('season', season));
 
   try {
@@ -435,21 +510,17 @@ export async function countQuilts(filters: QuiltFilters = {}): Promise<number> {
     const conditions = [];
     if (season) conditions.push(eq(quilts.season, season));
     if (status) conditions.push(eq(quilts.currentStatus, status));
-    if (location)
-      conditions.push(like(sql`LOWER(${quilts.location})`, `%${location.toLowerCase()}%`));
-    if (brand) conditions.push(like(sql`LOWER(${quilts.brand})`, `%${brand.toLowerCase()}%`));
+    const locationCondition = containsInsensitiveFilter(quilts.location, location);
+    if (locationCondition) conditions.push(locationCondition);
 
-    if (search) {
-      const searchLower = `%${search.toLowerCase()}%`;
-      conditions.push(
-        or(
-          like(sql`LOWER(${quilts.name})`, searchLower),
-          like(sql`LOWER(${quilts.color})`, searchLower),
-          like(sql`LOWER(${quilts.fillMaterial})`, searchLower),
-          like(sql`LOWER(${quilts.notes})`, searchLower)
-        )
-      );
-    }
+    const brandCondition = containsInsensitiveFilter(quilts.brand, brand);
+    if (brandCondition) conditions.push(brandCondition);
+
+    const searchCondition = searchAnyColumn(
+      [quilts.name, quilts.color, quilts.fillMaterial, quilts.notes],
+      search
+    );
+    if (searchCondition) conditions.push(searchCondition);
 
     const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
 
@@ -492,7 +563,7 @@ export async function updateQuilt(
     const result = await saveQuilt({ id, ...data });
     return result.quilt;
   } catch (error) {
-    if (error instanceof Error && error.message === 'Quilt not found') return null;
+    if (error instanceof RecordNotFoundError) return null;
     throw error;
   }
 }
@@ -508,61 +579,87 @@ export async function saveQuilt(
 ): Promise<{ quilt: Quilt; usageRecord?: UsageRecordSyncResult }> {
   try {
     if (isQuiltUpdateData(data)) {
-      const result = await db.transaction(async tx => {
-        const currentRows = await tx.select().from(quilts).where(eq(quilts.id, data.id));
-        if (currentRows.length === 0) {
-          throw new Error('Quilt not found');
+      const { quilt, usageRecord, previousStatus, previousSeason } = await db.transaction(
+        async tx => {
+          // `FOR UPDATE` because the pre-read status and season decide which cache
+          // slices get invalidated after commit; without the lock two concurrent
+          // writes could both observe the old values and leave a slice stale.
+          const currentRows = await tx
+            .select()
+            .from(quilts)
+            .where(eq(quilts.id, data.id))
+            .limit(1)
+            .for('update');
+
+          if (currentRows.length === 0) {
+            throw new RecordNotFoundError('Quilt', data.id);
+          }
+
+          const currentQuilt = currentRows[0] as unknown as Quilt;
+
+          // Cross-field business rules are re-checked on the patch MERGED onto the
+          // stored row. The request-level `updateQuiltSchema` can only see the fields
+          // the caller supplied, so without this a record created legally could be
+          // PATCHed into a state that `createQuiltSchema` itself rejects (e.g. changing
+          // only `season` while the stored `weightGrams` is out of the new season's range).
+          // Runs before any write, inside the transaction, so a violation aborts cleanly.
+          const businessRuleIssues = collectQuiltBusinessRuleIssues({
+            season: data.season ?? currentQuilt.season,
+            weightGrams: data.weightGrams ?? currentQuilt.weightGrams,
+            lengthCm: data.lengthCm ?? currentQuilt.lengthCm,
+            widthCm: data.widthCm ?? currentQuilt.widthCm,
+          });
+
+          if (businessRuleIssues.length > 0) {
+            throw new QuiltBusinessRuleError(businessRuleIssues);
+          }
+
+          const nextStatus = data.currentStatus ?? currentQuilt.currentStatus;
+          const syncedUsageRecord = await syncUsageRecordForStatusChange(
+            tx,
+            data.id,
+            currentQuilt.currentStatus,
+            nextStatus,
+            data.usageType ?? 'REGULAR',
+            data.usageNotes
+          );
+
+          const updateValues = buildQuiltUpdateValues({
+            ...data,
+            currentStatus: nextStatus,
+          });
+
+          const updatedRows = await tx
+            .update(quilts)
+            .set(updateValues)
+            .where(eq(quilts.id, data.id))
+            .returning();
+
+          if (updatedRows.length === 0) {
+            throw new Error('Failed to update quilt');
+          }
+
+          return {
+            quilt: updatedRows[0] as unknown as Quilt,
+            usageRecord: syncedUsageRecord,
+            previousStatus: currentQuilt.currentStatus,
+            previousSeason: currentQuilt.season,
+          };
         }
+      );
 
-        const currentQuilt = currentRows[0] as unknown as Quilt;
-        const nextStatus = data.currentStatus ?? currentQuilt.currentStatus;
-        const usageRecord = await syncUsageRecordForStatusChange(
-          tx,
-          data.id,
-          currentQuilt.currentStatus,
-          nextStatus,
-          data.usageType ?? 'REGULAR',
-          data.usageNotes
-        );
-
-        const updateValues = buildQuiltUpdateValues({
-          ...data,
-          currentStatus: nextStatus,
-        });
-
-        const updatedRows = await tx
-          .update(quilts)
-          .set(updateValues)
-          .where(eq(quilts.id, data.id))
-          .returning();
-
-        if (updatedRows.length === 0) {
-          throw new Error('Failed to update quilt');
-        }
-
-        const updatedQuilt = updatedRows[0] as unknown as Quilt;
-
-        revalidateTag(quiltsCacheTags.root, 'max');
-        revalidateTag(quiltsCacheTags.list, 'max');
-        revalidateTag(quiltsCacheTags.item(data.id), 'max');
-        revalidateTag(quiltsCacheTags.slice('status', currentQuilt.currentStatus), 'max');
-        revalidateTag(quiltsCacheTags.slice('status', updatedQuilt.currentStatus), 'max');
-        revalidateTag(quiltsCacheTags.slice('season', currentQuilt.season), 'max');
-        revalidateTag(quiltsCacheTags.slice('season', updatedQuilt.season), 'max');
-        revalidateTag(statsCacheTags.root, 'max');
-        revalidateTag(statsCacheTags.slice('dashboard', 'main'), 'max');
-
-        if (currentQuilt.currentStatus !== updatedQuilt.currentStatus) {
-          invalidateUsageAndStatsTags(data.id);
-        }
-
-        return { quilt: updatedQuilt, usageRecord };
+      // Cache invalidation happens after commit: it must not be part of the transaction.
+      invalidateQuiltWriteTags({
+        id: quilt.id,
+        statuses: [previousStatus, quilt.currentStatus],
+        seasons: [previousSeason, quilt.season],
+        usageChanged: previousStatus !== quilt.currentStatus,
       });
 
-      return result;
+      return { quilt, usageRecord };
     }
 
-    return await db.transaction(async tx => {
+    const { quilt, usageRecord } = await db.transaction(async tx => {
       const name = data.name || generateQuiltName(data);
 
       const insertedRows = await tx
@@ -593,31 +690,36 @@ export async function saveQuilt(
         throw new Error('Failed to create quilt');
       }
 
-      const quilt = insertedRows[0] as unknown as Quilt;
-      const usageRecord = await syncUsageRecordForStatusChange(
+      const createdQuilt = insertedRows[0] as unknown as Quilt;
+      const syncedUsageRecord = await syncUsageRecordForStatusChange(
         tx,
-        quilt.id,
+        createdQuilt.id,
         'STORAGE',
-        quilt.currentStatus,
+        createdQuilt.currentStatus,
         data.usageType ?? 'REGULAR',
         data.usageNotes
       );
 
-      revalidateTag(quiltsCacheTags.root, 'max');
-      revalidateTag(quiltsCacheTags.list, 'max');
-      revalidateTag(quiltsCacheTags.item(quilt.id), 'max');
-      revalidateTag(quiltsCacheTags.slice('status', quilt.currentStatus), 'max');
-      revalidateTag(quiltsCacheTags.slice('season', quilt.season), 'max');
-      revalidateTag(statsCacheTags.root, 'max');
-      revalidateTag(statsCacheTags.slice('dashboard', 'main'), 'max');
-
-      if (quilt.currentStatus === 'IN_USE') {
-        invalidateUsageAndStatsTags(quilt.id);
-      }
-
-      return { quilt, usageRecord };
+      return { quilt: createdQuilt, usageRecord: syncedUsageRecord };
     });
+
+    // Cache invalidation happens after commit: it must not be part of the transaction.
+    invalidateQuiltWriteTags({
+      id: quilt.id,
+      statuses: [quilt.currentStatus],
+      seasons: [quilt.season],
+      usageChanged: quilt.currentStatus === 'IN_USE',
+    });
+
+    return { quilt, usageRecord };
   } catch (error) {
+    // A business-rule rejection is expected user input, not a data-layer failure, so it
+    // is rethrown without being logged as a database error (it would otherwise pollute
+    // error-level alerting with ordinary validation misses).
+    if (error instanceof QuiltBusinessRuleError) {
+      throw error;
+    }
+
     logQuiltDataError('Error saving quilt', error, {
       data: summarizeQuiltWriteData(data),
       id: isQuiltUpdateData(data) ? data.id : undefined,
@@ -642,22 +744,33 @@ export async function updateQuiltStatusWithUsageRecord(
   usageRecord?: { id: string; quiltId: string; startDate: Date; endDate: Date | null };
 }> {
   try {
-    return await db.transaction(async tx => {
+    const { quilt, usageRecord, previousStatus, statusChanged } = await db.transaction(async tx => {
       // Get current quilt
-      const currentRows = await tx.select().from(quilts).where(eq(quilts.id, id));
-      if (currentRows.length === 0) throw new Error('Quilt not found');
+      const currentRows = await tx
+        .select()
+        .from(quilts)
+        .where(eq(quilts.id, id))
+        .limit(1)
+        .for('update');
+
+      if (currentRows.length === 0) throw new RecordNotFoundError('Quilt', id);
 
       const currentQuilt = currentRows[0] as unknown as Quilt;
-      const previousStatus = currentQuilt.currentStatus;
+      const currentStatus = currentQuilt.currentStatus;
 
-      if (previousStatus === newStatus) {
-        return { quilt: currentQuilt };
+      if (currentStatus === newStatus) {
+        return {
+          quilt: currentQuilt,
+          usageRecord: undefined,
+          previousStatus: currentStatus,
+          statusChanged: false,
+        };
       }
 
       const usageRecordData = await syncUsageRecordForStatusChange(
         tx,
         id,
-        previousStatus,
+        currentStatus,
         newStatus,
         usageType,
         notes,
@@ -675,20 +788,25 @@ export async function updateQuiltStatusWithUsageRecord(
         .returning();
 
       if (updatedRows.length === 0) throw new Error('Failed to update quilt status');
-      const updatedQuilt = updatedRows[0] as unknown as Quilt;
 
-      // Invalidate cache tags
-      revalidateTag(quiltsCacheTags.root, 'max');
-      revalidateTag(quiltsCacheTags.list, 'max');
-      revalidateTag(quiltsCacheTags.item(id), 'max');
-      revalidateTag(quiltsCacheTags.slice('status', previousStatus), 'max');
-      revalidateTag(quiltsCacheTags.slice('status', newStatus), 'max');
-      revalidateTag(statsCacheTags.root, 'max');
-      revalidateTag(statsCacheTags.slice('dashboard', 'main'), 'max');
-      invalidateUsageAndStatsTags(id);
-
-      return { quilt: updatedQuilt, usageRecord: usageRecordData };
+      return {
+        quilt: updatedRows[0] as unknown as Quilt,
+        usageRecord: usageRecordData,
+        previousStatus: currentStatus,
+        statusChanged: true,
+      };
     });
+
+    if (statusChanged) {
+      // Cache invalidation happens after commit: it must not be part of the transaction.
+      invalidateQuiltWriteTags({
+        id,
+        statuses: [previousStatus, newStatus],
+        usageChanged: true,
+      });
+    }
+
+    return { quilt, usageRecord };
   } catch (error) {
     logQuiltDataError('Error updating quilt status with usage record', error, { id, newStatus });
     throw error;
@@ -719,17 +837,13 @@ export async function deleteQuilt(id: string): Promise<boolean> {
       await tx.delete(quilts).where(eq(quilts.id, id));
     });
 
-    // Invalidate
-    revalidateTag(quiltsCacheTags.root, 'max');
-    revalidateTag(quiltsCacheTags.list, 'max');
-    revalidateTag(quiltsCacheTags.item(id), 'max');
-    if (quilt) {
-      revalidateTag(quiltsCacheTags.slice('status', quilt.currentStatus), 'max');
-      revalidateTag(quiltsCacheTags.slice('season', quilt.season), 'max');
-    }
-    revalidateTag(statsCacheTags.root, 'max');
-    revalidateTag(statsCacheTags.slice('dashboard', 'main'), 'max');
-    invalidateUsageAndStatsTags(id);
+    // Invalidate (after the transaction committed)
+    invalidateQuiltWriteTags({
+      id,
+      statuses: [quilt.currentStatus],
+      seasons: [quilt.season],
+      usageChanged: true,
+    });
 
     dbLogger.info('Quilt deleted successfully', { id });
     return true;

@@ -1,7 +1,5 @@
 'use server';
 
-import { z } from 'zod';
-
 import { auth } from '@/auth';
 import { ModuleAccessError, requireModuleAccess } from '@/lib/module-access';
 import {
@@ -13,78 +11,30 @@ import {
   updatePaddle as updatePaddleData,
 } from '@/lib/data/paddles';
 import type { PaddleFilters } from '@/lib/data/paddles';
+import { RecordNotFoundError } from '@/lib/data/errors';
+import {
+  internalErrorResult,
+  notFoundErrorResult,
+  unauthorizedErrorResult,
+  validationErrorResult,
+  zodFieldErrors,
+  type ActionResult,
+} from '@/lib/api/action-result';
 import { sanitizeApiInput } from '@/lib/sanitization';
 import {
   createPaddleSchema,
+  paddleSearchSchema,
   updatePaddleSchema,
   type PaddleItem,
+  type PaddleSearchInput,
   type CreatePaddleInput,
   type UpdatePaddleInput,
 } from '@/modules/paddles/schema';
 
-interface ActionSuccess<T> {
-  success: true;
-  data: T;
-}
-
-interface ActionError {
-  success: false;
-  error: {
-    code: string;
-    message: string;
-    fieldErrors?: Record<string, string[]>;
-  };
-}
-
-export type ActionResult<T> = ActionSuccess<T> | ActionError;
-
-// ============================================================================
-// Helper Functions
-// ============================================================================
-
-function validationErrorResult(
-  message: string,
-  fieldErrors?: Record<string, string[]>
-): ActionResult<never> {
-  return {
-    success: false,
-    error: {
-      code: 'VALIDATION_FAILED',
-      message,
-      ...(fieldErrors ? { fieldErrors } : {}),
-    },
-  };
-}
-
-function notFoundErrorResult(message: string): ActionResult<never> {
-  return {
-    success: false,
-    error: {
-      code: 'NOT_FOUND',
-      message,
-    },
-  };
-}
-
-function internalErrorResult(message: string): ActionResult<never> {
-  return {
-    success: false,
-    error: {
-      code: 'INTERNAL_ERROR',
-      message,
-    },
-  };
-}
-
-function unauthorizedErrorResult(message = 'Unauthorized'): ActionResult<never> {
-  return {
-    success: false,
-    error: {
-      code: 'UNAUTHORIZED',
-      message,
-    },
-  };
-}
+// Re-exported so existing importers (`api/paddles/route.ts`, the paddles page and its
+// client shell) keep working. The schema itself now lives in the module, composed from
+// `paddleFiltersSchema`, so the filter enums have a single definition.
+export type { PaddleSearchInput };
 
 async function requireAuthenticatedUser() {
   const session = await auth();
@@ -117,25 +67,6 @@ function normalizePaddleInputDates<T extends Record<string, unknown> & { purchas
 // Read Actions
 // ============================================================================
 
-const paddleSearchSchema = z.object({
-  filters: z
-    .object({
-      status: z.enum(['ACTIVE', 'RETIRED', 'FOR_SALE', 'SOLD', 'DISPLAY']).optional(),
-      bladeBrand: z.string().optional(),
-      handleType: z.enum(['FL', 'ST', 'CS', 'AN']).optional(),
-      search: z.string().optional(),
-    })
-    .optional(),
-  sortBy: z
-    .enum(['itemNumber', 'name', 'bladeBrand', 'bladeWeightG', 'createdAt', 'updatedAt'])
-    .optional(),
-  sortOrder: z.enum(['asc', 'desc']).optional(),
-  skip: z.number().int().min(0).optional(),
-  take: z.number().int().min(1).max(100).optional(),
-});
-
-export type PaddleSearchInput = z.infer<typeof paddleSearchSchema>;
-
 function toDataLayerFilters(input?: PaddleSearchInput): PaddleFilters {
   return {
     ...(input?.filters?.status ? { status: input.filters.status } : {}),
@@ -159,12 +90,15 @@ export async function getPaddlesAction(
       return unauthorizedErrorResult();
     }
 
-    const validationResult = paddleSearchSchema.safeParse(input ?? {});
+    // Sanitise before validating, matching `getQuiltsAction`. Without this the search
+    // term reaches the DAL unsanitised while quilts' does not.
+    const sanitizedInput = input ? sanitizeApiInput(input) : {};
+    const validationResult = paddleSearchSchema.safeParse(sanitizedInput);
 
     if (!validationResult.success) {
       return validationErrorResult(
         '查询参数校验失败',
-        validationResult.error.flatten().fieldErrors as Record<string, string[]>
+        zodFieldErrors(validationResult.error)
       );
     }
 
@@ -244,7 +178,7 @@ export async function createPaddleAction(
     if (!validationResult.success) {
       return validationErrorResult(
         '底板数据校验失败',
-        validationResult.error.flatten().fieldErrors as Record<string, string[]>
+        zodFieldErrors(validationResult.error)
       );
     }
 
@@ -276,7 +210,7 @@ export async function updatePaddleAction(
     if (!validationResult.success) {
       return validationErrorResult(
         '底板数据校验失败',
-        validationResult.error.flatten().fieldErrors as Record<string, string[]>
+        zodFieldErrors(validationResult.error)
       );
     }
 
@@ -289,7 +223,7 @@ export async function updatePaddleAction(
     };
   } catch (error) {
     console.error('[Server Action] updatePaddleAction error:', error);
-    if (error instanceof Error && error.message === 'Paddle not found') {
+    if (error instanceof RecordNotFoundError) {
       return notFoundErrorResult('底板不存在');
     }
     return internalErrorResult('更新底板失败');
@@ -310,13 +244,17 @@ export async function deletePaddleAction(id: string): Promise<ActionResult<{ del
 
     const deleted = await deletePaddleData(id);
 
+    if (!deleted) {
+      return notFoundErrorResult('底板不存在');
+    }
+
     return {
       success: true,
-      data: { deleted },
+      data: { deleted: true },
     };
   } catch (error) {
     console.error('[Server Action] deletePaddleAction error:', error);
-    if (error instanceof Error && error.message === 'Paddle not found') {
+    if (error instanceof RecordNotFoundError) {
       return notFoundErrorResult('底板不存在');
     }
     return internalErrorResult('删除底板失败');

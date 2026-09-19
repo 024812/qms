@@ -83,7 +83,7 @@ vi.mock('@/lib/data/antiques', () => ({
   getAntiqueById: vi.fn().mockResolvedValue(mockAntique),
   createAntique: vi.fn().mockResolvedValue(mockAntique),
   updateAntique: vi.fn().mockResolvedValue(mockAntique),
-  deleteAntique: vi.fn().mockResolvedValue(undefined),
+  deleteAntique: vi.fn().mockResolvedValue(true),
 }));
 
 vi.mock('@/lib/data/maps', () => ({
@@ -92,7 +92,7 @@ vi.mock('@/lib/data/maps', () => ({
   getMapById: vi.fn().mockResolvedValue(mockMap),
   createMap: vi.fn().mockResolvedValue(mockMap),
   updateMap: vi.fn().mockResolvedValue(mockMap),
-  deleteMap: vi.fn().mockResolvedValue(undefined),
+  deleteMap: vi.fn().mockResolvedValue(true),
 }));
 
 vi.mock('@/lib/data/spirits', () => ({
@@ -101,7 +101,7 @@ vi.mock('@/lib/data/spirits', () => ({
   getSpiritById: vi.fn().mockResolvedValue(mockSpirit),
   createSpirit: vi.fn().mockResolvedValue(mockSpirit),
   updateSpirit: vi.fn().mockResolvedValue(mockSpirit),
-  deleteSpirit: vi.fn().mockResolvedValue(undefined),
+  deleteSpirit: vi.fn().mockResolvedValue(true),
 }));
 
 describe('Submodules API & Agent management', () => {

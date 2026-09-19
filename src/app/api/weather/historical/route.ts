@@ -17,6 +17,7 @@ import {
 } from '@/lib/api/response';
 import { requireApiSession } from '@/lib/api/route-auth';
 import { rateLimiters, withRateLimit } from '@/lib/rate-limit';
+import { zodFieldErrors } from '@/lib/api/action-result';
 
 // 上海坐标: 31.2304, 121.4737
 const SHANGHAI_LAT = 31.2304;
@@ -49,7 +50,7 @@ export async function GET(request: NextRequest) {
       if (!validationResult.success) {
         return createValidationErrorResponse(
           '日期参数验证失败',
-          validationResult.error.flatten().fieldErrors as Record<string, string[]>
+          zodFieldErrors(validationResult.error)
         );
       }
 

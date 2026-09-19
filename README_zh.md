@@ -73,23 +73,73 @@ Settings、dashboard、users、admin、analytics、reports、authentication 等�
 
 ## 技术栈
 
-- Next.js `16.2.10`
-- React `19.2.7`
+下列版本为 **`package-lock.json` 实际解析版本**（括号内为 `package.json` 声明的 caret 范围）。按 `docs/architecture/MODULE_BLUEPRINT_V3.md` §15，依赖版本以 `package.json` + `package-lock.json` 为准，本列表仅作速览。
+
+- Next.js `16.3.4`（`^16.2.10`）
+- React / React DOM `19.3.0`（`^19.2.7`）
 - TypeScript `6.0.3`
-- next-intl `4.13.2`
-- Better Auth `1.6.23`
-- Neon Serverless PostgreSQL
+- next-intl `4.14.3`（`^4.13.2`）
+- Better Auth `1.7.4`（`^1.6.23`）
+- Neon Serverless PostgreSQL（`@neondatabase/serverless` `1.1.0`）
 - Drizzle ORM `0.45.2`
-- Zod `4.4.3`
-- Tailwind CSS `4.3.2`
-- TanStack React Query `5.101.2`
+- Zod `4.6.1`（`^4.4.3`）
+- Tailwind CSS `4.3.3`
+- TanStack React Query `5.102.8`（`^5.101.2`）
+- lucide-react `1.44.0`（`^1.24.0`）
 - Vercel 部署
+
+## 仓库结构
+
+```text
+src/
+  proxy.ts
+  auth.ts
+  app/
+    [locale]/
+      (dashboard)/
+      quilts/
+      cards/
+      paddles/
+      antiques/
+      maps/
+      spirits/
+      settings/
+      users/
+      admin/
+      analytics/
+      reports/
+      usage/
+      login/
+      register/
+    actions/
+    api/
+  components/
+  db/
+  hooks/
+  i18n/
+  lib/
+    data/          # 每个模块唯一的 DAL
+    repositories/  # legacy，正在退役
+  modules/
+    core/
+    quilts/
+    cards/
+    paddles/
+    antiques/
+    maps/
+    spirits/
+  styles/
+  types/
+  __tests__/       # API / 鉴权 / proxy 测试套件，已纳入类型检查
+docs/
+scripts/           # 一次性数据导入与修复脚本（用 tsx 运行，用法见各文件头部）
+```
 
 ## 环境变量
 
 复制 `.env.example` 到 `.env.local`，只填写当前部署实际需要的值。
 
-必填：
+### 必填
 
 ```env
 DATABASE_URL=
@@ -98,7 +148,34 @@ BETTER_AUTH_URL=
 NEXT_PUBLIC_BETTER_AUTH_URL=
 ```
 
-`DATABASE_URL` 必须指向 Neon Postgres。这个项目不使用 `localhost:5432` 本地数据库做迁移目标。
+`BETTER_AUTH_URL` 在部署环境必填，本地也建议设置。`AUTH_SECRET` 是 `BETTER_AUTH_SECRET` 的可选兜底别名，只设置后者即可。`DATABASE_URL` 必须指向 Neon Postgres；这个项目不使用 `localhost:5432` 本地数据库做迁移目标。
+
+### 可选：平台与基础设施
+
+```env
+UPSTASH_REDIS_REST_URL=
+UPSTASH_REDIS_REST_TOKEN=
+REDIS_URL=
+VERCEL_URL=
+WEBHOOK_ERROR_URL=
+NODE_ENV=development
+```
+
+### 可选：卡片 AI 与数据提供方
+
+```env
+AZURE_OPENAI_API_KEY=
+AZURE_OPENAI_ENDPOINT=
+AZURE_OPENAI_DEPLOYMENT=gpt-5-mini
+PERPLEXITY_API_KEY=
+RAPID_API_KEY=
+EBAY_APP_ID=
+EBAY_CERT_ID=
+EBAY_DEV_ID=
+EBAY_ENVIRONMENT=production
+```
+
+部分卡片提供方配置也可以在应用设置界面中管理并存入数据库；环境变量适合作为引导值，以及仅服务端的兜底。
 
 ## Agent API
 
@@ -110,7 +187,10 @@ QMS 采用家庭共享业务数据模型：模块记录由已认证的家庭成�
 
 ## 本地开发
 
+> **环境铁律**：由于本仓库位于通过 OneDrive 实时跨设备双向同步的目录中，**严禁在 OneDrive 目录下直接执行 `npm install`、`npm test`、`npm run build`**，以免生成 `node_modules` 与 `.next` 导致碎文件风暴与云同步冲突。安装依赖、本地调试和测试**必须在 `C:\temp\<project>`（例如 `C:\temp\qms`）下进行**。
+
 ```powershell
+# 在 C:\temp\qms 中执行：
 npm install
 Copy-Item .env.example .env.local
 npm run db:migrate
@@ -122,18 +202,29 @@ npm run dev
 ## 常用脚本
 
 ```bash
+# 开发
 npm run dev
 npm run dev:turbo
+
+# 质量
+npm run lint
 npm run lint:check
+npm run format
+npm run format:check
 npm run type-check
 npm test
 npm run build
+
+# 数据库
 npm run db:generate
 npm run db:migrate
 npm run db:studio
+npm run db:drop
 ```
 
 Neon schema 变更统一使用 `npm run db:migrate`。`db:push` 只保留给明确的开发实验，不用于生产数据库。
+
+`npm run db:setup` 和 `npm run health:check` 是面向本地已启动服务的便捷命令。
 
 ## 发布前验证
 
@@ -144,6 +235,8 @@ npm test
 npm run build
 npm audit --omit=optional
 ```
+
+`npm audit --omit=optional` 用于守住依赖面。注意 `type-check` 已覆盖 `src/__tests__`，因此 API/鉴权/proxy 测试套件既参与执行也参与类型检查。
 
 ## 文档入口
 

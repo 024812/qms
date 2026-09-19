@@ -92,7 +92,10 @@ const eslintConfig = defineConfig([
   // Override default ignores of eslint-config-next
   globalIgnores([
     // Default ignores of eslint-config-next:
-    '.next/**',
+    // `.next*` rather than `.next`: the documented local build workaround
+    // renames the stale build dir to `.next-stale-<epoch>` (blueprint §15), and
+    // without the wildcard `lint:check` then walks thousands of generated files.
+    '.next*',
     'out/**',
     'build/**',
     'next-env.d.ts',

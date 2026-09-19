@@ -28,7 +28,7 @@ export default async function QuiltPage({ params }: QuiltPageProps) {
     itemNumber: quilt.itemNumber,
     name: quilt.name,
     season: quilt.season as 'WINTER' | 'SUMMER' | 'SPRING_AUTUMN',
-    currentStatus: quilt.currentStatus as 'IN_USE' | 'STORAGE' | 'MAINTENANCE',
+    currentStatus: quilt.currentStatus,
     lengthCm: quilt.lengthCm,
     widthCm: quilt.widthCm,
     weightGrams: quilt.weightGrams,

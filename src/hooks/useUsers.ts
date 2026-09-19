@@ -14,28 +14,9 @@ import {
   getUsersAction,
   updateUserAction,
 } from '@/app/actions/users';
+import { unwrapActionResult } from '@/lib/api/action-result';
 
 const USERS_KEY = ['users'] as const;
-
-function unwrapActionResult<T>(
-  result:
-    | {
-        success: true;
-        data: T;
-      }
-    | {
-        success: false;
-        error: {
-          message: string;
-        };
-      }
-): T {
-  if (!result.success) {
-    throw new Error(result.error.message);
-  }
-
-  return result.data;
-}
 
 export function useUsers(options?: { initialData?: GetUsersActionData }) {
   return useQuery({

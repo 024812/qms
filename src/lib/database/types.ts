@@ -11,6 +11,7 @@
 import {
   Season,
   QuiltStatus,
+  QUILT_STATUSES,
   UsageType,
   // Import model types from Zod schemas (single source of truth)
   type Quilt,
@@ -236,7 +237,7 @@ export function isSeason(value: unknown): value is Season {
  * Note: AVAILABLE status removed per Requirements 7.2 - use STORAGE instead
  */
 export function isQuiltStatus(value: unknown): value is QuiltStatus {
-  return typeof value === 'string' && ['IN_USE', 'STORAGE', 'MAINTENANCE'].includes(value);
+  return typeof value === 'string' && QUILT_STATUSES.includes(value as QuiltStatus);
 }
 
 /**

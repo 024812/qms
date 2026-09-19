@@ -16,6 +16,7 @@ export const QuiltStatus = {
   IN_USE: 'IN_USE',
   MAINTENANCE: 'MAINTENANCE',
   STORAGE: 'STORAGE',
+  LOST: 'LOST',
 } as const;
 
 export const UsageType = {
@@ -30,9 +31,26 @@ export type Season = (typeof Season)[keyof typeof Season];
 export type QuiltStatus = (typeof QuiltStatus)[keyof typeof QuiltStatus];
 export type UsageType = (typeof UsageType)[keyof typeof UsageType];
 
+/**
+ * Every quilt status, in display order — the runtime counterpart of
+ * {@link QuiltStatus}, typed as a tuple so it can feed `z.enum()` directly.
+ *
+ * UI option lists, filter checkboxes and Agent tool enums must iterate this
+ * instead of re-typing the literals. Blueprint §4.2 requires the DB enum, Zod
+ * enum, UI options and stats dimensions to stay in lockstep, and a hand-copied
+ * literal list is exactly how they drift. `quilt-status-enum.test.ts` asserts
+ * the parity mechanically.
+ */
+export const QUILT_STATUSES = [
+  QuiltStatus.IN_USE,
+  QuiltStatus.STORAGE,
+  QuiltStatus.MAINTENANCE,
+  QuiltStatus.LOST,
+] as const;
+
 // Zod schemas for enums
 export const SeasonSchema = z.enum(['WINTER', 'SPRING_AUTUMN', 'SUMMER']);
-export const QuiltStatusSchema = z.enum(['IN_USE', 'MAINTENANCE', 'STORAGE']);
+export const QuiltStatusSchema = z.enum(QUILT_STATUSES);
 export const UsageTypeSchema = z.enum([
   'REGULAR',
   'GUEST',
@@ -46,6 +64,76 @@ const SEASON_WEIGHT_RANGES = {
   SPRING_AUTUMN: { min: 800, max: 2000 }, // Medium weight for transitional seasons
   SUMMER: { min: 200, max: 1200 }, // Light quilts for warm weather
 } as const;
+
+/** A single cross-field business-rule violation. */
+export interface QuiltBusinessRuleIssue {
+  path: (string | number)[];
+  message: string;
+}
+
+/** The subset of quilt fields the cross-field business rules depend on. */
+export interface QuiltBusinessRuleInput {
+  season?: Season;
+  weightGrams?: number;
+  lengthCm?: number;
+  widthCm?: number;
+}
+
+/**
+ * Cross-field business rules for a quilt — the single source of truth.
+ *
+ * Every rule fires only when all the fields it needs are present, so the same
+ * function serves three call sites with different field coverage:
+ *
+ * 1. `createQuiltSchema` — full payload, every rule applies.
+ * 2. `updateQuiltSchema` — partial payload, rules apply only to supplied fields.
+ * 3. `saveQuilt` (DAL update path) — called on the patch **merged onto the stored
+ *    row**, which is what closes the "create legally, then PATCH into an illegal
+ *    state" hole: a PATCH that only changes `season` is still checked against the
+ *    already-stored `weightGrams`.
+ *
+ * Keep the rules here and nowhere else; blueprint §10.3 forbids two parallel
+ * business-validation implementations.
+ */
+export function collectQuiltBusinessRuleIssues(
+  data: QuiltBusinessRuleInput
+): QuiltBusinessRuleIssue[] {
+  const issues: QuiltBusinessRuleIssue[] = [];
+
+  // Weight must be appropriate for the season.
+  if (data.season !== undefined && data.weightGrams !== undefined) {
+    const range = SEASON_WEIGHT_RANGES[data.season];
+    if (data.weightGrams < range.min || data.weightGrams > range.max) {
+      issues.push({
+        path: ['weightGrams'],
+        message: `Weight should be between ${range.min}g and ${range.max}g for ${data.season} season`,
+      });
+    }
+  }
+
+  // Dimensions should be reasonable (length should typically be >= width).
+  if (data.lengthCm !== undefined && data.widthCm !== undefined) {
+    if (!(data.lengthCm >= data.widthCm * 0.8)) {
+      issues.push({
+        path: ['lengthCm'],
+        message: 'Length should typically be greater than or equal to width',
+      });
+    }
+  }
+
+  return issues;
+}
+
+/** Apply {@link collectQuiltBusinessRuleIssues} as a Zod refinement. */
+function refineQuiltBusinessRules(data: QuiltBusinessRuleInput, ctx: z.RefinementCtx): void {
+  for (const issue of collectQuiltBusinessRuleIssues(data)) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: issue.message,
+      path: issue.path,
+    });
+  }
+}
 
 // Base Quilt Schema object (without refinements)
 const baseQuiltSchemaObject = z.object({
@@ -102,12 +190,7 @@ const baseQuiltSchemaObject = z.object({
     .max(100, 'Location too long (max 100 characters)')
     .trim(),
   packagingInfo: z.string().max(200, 'Packaging info too long (max 200 characters)').optional(),
-  currentStatus: z
-    .enum(['IN_USE', 'MAINTENANCE', 'STORAGE'], {
-      message: 'Invalid status',
-    })
-    .optional()
-    .default('STORAGE'),
+  currentStatus: QuiltStatusSchema.optional().default('STORAGE'),
   notes: z.string().max(1000, 'Notes too long (max 1000 characters)').optional(),
   imageUrl: z.union([z.url('Invalid image URL'), z.literal('')]).optional(),
   thumbnailUrl: z.union([z.url('Invalid thumbnail URL'), z.literal('')]).optional(),
@@ -116,33 +199,20 @@ const baseQuiltSchemaObject = z.object({
 });
 
 // Create Quilt Schema with refinements
-export const createQuiltSchema = baseQuiltSchemaObject
-  .superRefine((data, ctx) => {
-    // Validate weight is appropriate for the season
-    const range = SEASON_WEIGHT_RANGES[data.season];
-    if (data.weightGrams < range.min || data.weightGrams > range.max) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: `Weight should be between ${range.min}g and ${range.max}g for ${data.season} season`,
-        path: ['weightGrams'],
-      });
-    }
-  })
-  .refine(
-    data => {
-      // Validate dimensions are reasonable (length should typically be >= width)
-      return data.lengthCm >= data.widthCm * 0.8; // Allow some flexibility
-    },
-    {
-      message: 'Length should typically be greater than or equal to width',
-      path: ['lengthCm'],
-    }
-  );
+export const createQuiltSchema = baseQuiltSchemaObject.superRefine(refineQuiltBusinessRules);
 
 // Update Quilt Schema (uses base object for partial support)
-export const updateQuiltSchema = baseQuiltSchemaObject.partial().extend({
-  id: z.string().min(1, 'Quilt ID is required'),
-});
+//
+// The same business rules are attached here. They are evaluated against whatever
+// fields the patch supplies; the merged-row check lives in `saveQuilt`, because a
+// schema alone cannot see the stored record. Both call the same rule function, so
+// there is only ever one implementation of the rules (blueprint §10.3).
+export const updateQuiltSchema = baseQuiltSchemaObject
+  .partial()
+  .extend({
+    id: z.string().min(1, 'Quilt ID is required'),
+  })
+  .superRefine(refineQuiltBusinessRules);
 
 const recordIdSchema = z.string().min(1, 'ID is required');
 
@@ -316,7 +386,7 @@ export const endCurrentUsageSchema = z.object({
 // Search and Filter Schemas
 export const quiltFiltersSchema = z.object({
   season: z.enum(['WINTER', 'SPRING_AUTUMN', 'SUMMER']).optional(),
-  status: z.enum(['IN_USE', 'MAINTENANCE', 'STORAGE']).optional(),
+  status: QuiltStatusSchema.optional(),
   location: z.string().optional(),
   brand: z.string().optional(),
   minWeight: z.number().int().positive().optional(),

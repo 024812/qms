@@ -6,6 +6,7 @@
 
 import React from 'react';
 import { useLocale, useTranslations } from 'next-intl';
+import { uniqueImageRefs } from '@/lib/image-utils';
 import type { AntiqueItem } from '../schema';
 
 interface AntiqueDetailProps {
@@ -17,6 +18,7 @@ export function AntiqueDetail({ item }: AntiqueDetailProps) {
   const tc = useTranslations('common');
   const locale = useLocale();
   const dateLocale = locale === 'zh' ? 'zh-CN' : 'en-US';
+  const attachmentImages = uniqueImageRefs(item.attachmentImages);
 
   const formatValue = (value: string | null) => {
     if (!value) return tc('notRecorded');
@@ -44,10 +46,10 @@ export function AntiqueDetail({ item }: AntiqueDetailProps) {
             <img src={item.mainImage} alt={item.name} className="h-full w-full object-contain" />
           </div>
 
-          {item.attachmentImages && item.attachmentImages.length > 0 && (
+          {attachmentImages.length > 0 && (
             <div className="grid grid-cols-4 gap-2">
-              {item.attachmentImages.map((img, idx) => (
-                <div key={`${img}-${idx}`} className="aspect-square overflow-hidden rounded-md bg-muted">
+              {attachmentImages.map((img, idx) => (
+                <div key={img} className="aspect-square overflow-hidden rounded-md bg-muted">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src={img}

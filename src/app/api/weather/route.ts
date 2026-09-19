@@ -17,6 +17,7 @@ import {
   createValidationErrorResponse,
   createInternalErrorResponse,
 } from '@/lib/api/response';
+import { zodFieldErrors } from '@/lib/api/action-result';
 
 // Default location: Shanghai, China
 const DEFAULT_LATITUDE = 31.2304;
@@ -56,7 +57,7 @@ export async function GET(request: NextRequest) {
       if (!validationResult.success) {
         return createValidationErrorResponse(
           '天气参数验证失败',
-          validationResult.error.flatten().fieldErrors as Record<string, string[]>
+          zodFieldErrors(validationResult.error)
         );
       }
 

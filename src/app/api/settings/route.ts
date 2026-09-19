@@ -10,6 +10,7 @@ import {
 import { requireApiAdmin, requireApiSession } from '@/lib/api/route-auth';
 import { getAppSettings, updateAppSettings } from '@/lib/data/settings';
 import { sanitizeApiInput } from '@/lib/sanitization';
+import { zodFieldErrors } from '@/lib/api/action-result';
 
 const updateAppSettingsSchema = z.object({
   appName: z.string().min(1).max(100).optional(),
@@ -45,7 +46,7 @@ export async function PUT(request: NextRequest) {
     if (!validationResult.success) {
       return createValidationErrorResponse(
         'Application settings are invalid',
-        validationResult.error.flatten().fieldErrors as Record<string, string[]>
+        zodFieldErrors(validationResult.error)
       );
     }
 

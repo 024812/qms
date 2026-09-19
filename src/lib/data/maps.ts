@@ -10,8 +10,8 @@
  * - Cache invalidation with revalidateTag(, 'max')
  *
  * Cache Strategy:
- * - Individual items: 5 minutes
- * - Lists: 2 minutes (120 seconds)
+ * - Individual items: `moduleItem` profile (revalidate 5 minutes)
+ * - Lists: `moduleList` profile (revalidate 2 minutes)
  * - Tags: 'maps', 'maps:item:{id}', 'maps:status:{status}', 'maps:mapType:{type}'
  *
  * Requirements: V3 API-first blueprint
@@ -21,8 +21,10 @@ import { cacheLife, cacheTag, revalidateTag } from 'next/cache';
 
 import { db } from '@/db';
 import { maps } from '@/db/schema';
-import { eq, sql, desc, and, like, or, asc } from 'drizzle-orm';
+import { eq, sql, desc, and, asc } from 'drizzle-orm';
 import { dbLogger } from '@/lib/logger';
+import { RecordNotFoundError } from '@/lib/data/errors';
+import { searchAnyColumn } from '@/lib/data/search';
 import { mapsCacheTags } from '@/modules/core/cache-tags';
 import type { MapStatus, MapType, MapMaterial } from '@/modules/maps/schema';
 
@@ -272,7 +274,7 @@ function buildSortClause(sortBy: MapSortField = 'itemNumber', sortOrder: SortOrd
  */
 export async function getMaps(filters?: MapFilters): Promise<MapDTO[]> {
   'use cache';
-  cacheLife('minutes');
+  cacheLife('moduleList');
   cacheTag(mapsCacheTags.root, mapsCacheTags.list);
 
   if (filters?.status) {
@@ -300,16 +302,12 @@ export async function getMaps(filters?: MapFilters): Promise<MapDTO[]> {
     if (filters?.country) {
       conditions.push(eq(maps.country, filters.country));
     }
-    if (filters?.search) {
-      const searchPattern = `%${filters.search}%`;
-      conditions.push(
-        or(
-          like(maps.name, searchPattern),
-          like(maps.publisher, searchPattern),
-          like(maps.region, searchPattern),
-          like(maps.notes, searchPattern)
-        )
-      );
+    const searchCondition = searchAnyColumn(
+      [maps.name, maps.publisher, maps.region, maps.notes],
+      filters?.search
+    );
+    if (searchCondition) {
+      conditions.push(searchCondition);
     }
 
     const rows = (await db
@@ -331,7 +329,7 @@ export async function getMaps(filters?: MapFilters): Promise<MapDTO[]> {
  */
 export async function getMapById(id: string): Promise<MapDTO | null> {
   'use cache';
-  cacheLife('minutes');
+  cacheLife('moduleItem');
   cacheTag(mapsCacheTags.root, mapsCacheTags.item(id));
 
   try {
@@ -355,7 +353,7 @@ export async function countMaps(
   filters?: Omit<MapFilters, 'limit' | 'offset' | 'sortBy' | 'sortOrder'>
 ): Promise<number> {
   'use cache';
-  cacheLife('minutes');
+  cacheLife('moduleList');
   cacheTag(mapsCacheTags.root, mapsCacheTags.list);
 
   if (filters?.status) {
@@ -383,16 +381,12 @@ export async function countMaps(
     if (filters?.country) {
       conditions.push(eq(maps.country, filters.country));
     }
-    if (filters?.search) {
-      const searchPattern = `%${filters.search}%`;
-      conditions.push(
-        or(
-          like(maps.name, searchPattern),
-          like(maps.publisher, searchPattern),
-          like(maps.region, searchPattern),
-          like(maps.notes, searchPattern)
-        )
-      );
+    const searchCondition = searchAnyColumn(
+      [maps.name, maps.publisher, maps.region, maps.notes],
+      filters?.search
+    );
+    if (searchCondition) {
+      conditions.push(searchCondition);
     }
 
     let query = db.select({ count: sql<number>`count(*)` }).from(maps);
@@ -481,136 +475,174 @@ export async function createMap(data: CreateMapData): Promise<MapDTO> {
 /**
  * Update an existing map
  */
+/**
+ * Invalidate every cache tag affected by a map write.
+ *
+ * Contract: call only AFTER the surrounding transaction has committed —
+ * `revalidateTag` does not participate in rollback.
+ */
+function invalidateMapWriteTags(input: {
+  id: string;
+  statuses: Array<MapStatus | null | undefined>;
+  mapTypes: Array<MapType | null | undefined>;
+}) {
+  revalidateTag(mapsCacheTags.root, 'max');
+  revalidateTag(mapsCacheTags.list, 'max');
+  revalidateTag(mapsCacheTags.item(input.id), 'max');
+
+  for (const status of input.statuses) {
+    if (status) {
+      revalidateTag(mapsCacheTags.slice('status', status), 'max');
+    }
+  }
+
+  for (const mapType of input.mapTypes) {
+    if (mapType) {
+      revalidateTag(mapsCacheTags.slice('mapType', mapType), 'max');
+    }
+  }
+}
+
+/**
+ * Update an existing map.
+ *
+ * The read-modify-write runs inside a transaction holding a `SELECT ... FOR
+ * UPDATE` row lock: the pre-read status and type decide which cache slices are
+ * invalidated, so without the lock two concurrent writes could both observe the
+ * old values and leave a slice stale.
+ *
+ * @throws {RecordNotFoundError} when the map does not exist.
+ */
 export async function updateMap(data: UpdateMapData): Promise<MapDTO> {
   try {
-    // Get current map to know old status/type for cache invalidation
-    const currentRows = (await db
-      .select()
-      .from(maps)
-      .where(eq(maps.id, data.id))
-      .limit(1)) as MapRow[];
+    const { previous: currentMap, updated: updatedMap } = await db.transaction(async tx => {
+      const currentRows = (await tx
+        .select()
+        .from(maps)
+        .where(eq(maps.id, data.id))
+        .limit(1)
+        .for('update')) as MapRow[];
 
-    if (currentRows.length === 0) {
-      throw new Error('Map not found');
-    }
+      if (currentRows.length === 0) {
+        throw new RecordNotFoundError('Map', data.id);
+      }
 
-    const currentMap = rowToDTO(currentRows[0]);
+      const updateData: Record<string, unknown> = {
+        updatedAt: new Date(),
+      };
 
-    const updateData: Record<string, unknown> = {
-      updatedAt: new Date(),
-    };
+      if (data.name !== undefined) updateData.name = data.name;
+      if (data.mapType !== undefined) updateData.mapType = data.mapType;
+      if (data.scale !== undefined) updateData.scale = data.scale;
+      if (data.publishedYear !== undefined) updateData.publishedYear = data.publishedYear;
+      if (data.publishedMonth !== undefined) updateData.publishedMonth = data.publishedMonth;
+      if (data.printYear !== undefined) updateData.printYear = data.printYear;
+      if (data.printMonth !== undefined) updateData.printMonth = data.printMonth;
+      if (data.publisher !== undefined) updateData.publisher = data.publisher;
+      if (data.series !== undefined) updateData.series = data.series;
+      if (data.isbn !== undefined) updateData.isbn = data.isbn;
+      if (data.originalPrice !== undefined)
+        updateData.originalPrice = data.originalPrice?.toString() ?? null;
+      if (data.material !== undefined) updateData.material = data.material;
+      if (data.widthCm !== undefined) updateData.widthCm = data.widthCm?.toString() ?? null;
+      if (data.heightCm !== undefined) updateData.heightCm = data.heightCm?.toString() ?? null;
+      if (data.country !== undefined) updateData.country = data.country;
+      if (data.province !== undefined) updateData.province = data.province;
+      if (data.city !== undefined) updateData.city = data.city;
+      if (data.region !== undefined) updateData.region = data.region;
+      if (data.language !== undefined) updateData.language = data.language;
+      if (data.condition !== undefined) updateData.condition = data.condition;
+      if (data.isOriginal !== undefined) updateData.isOriginal = data.isOriginal;
+      if (data.edition !== undefined) updateData.edition = data.edition;
+      if (data.acquiredDate !== undefined)
+        updateData.acquiredDate = data.acquiredDate
+          ? data.acquiredDate instanceof Date
+            ? data.acquiredDate.toISOString().split('T')[0]
+            : String(data.acquiredDate)
+          : null;
+      if (data.purchasePrice !== undefined)
+        updateData.purchasePrice = data.purchasePrice?.toString() ?? null;
+      if (data.currentValue !== undefined)
+        updateData.currentValue = data.currentValue?.toString() ?? null;
+      if (data.status !== undefined) updateData.status = data.status;
+      if (data.location !== undefined) updateData.location = data.location;
+      if (data.notes !== undefined) updateData.notes = data.notes;
+      if (data.mainImage !== undefined) updateData.mainImage = data.mainImage;
+      if (data.attachmentImages !== undefined) updateData.attachmentImages = data.attachmentImages;
 
-    if (data.name !== undefined) updateData.name = data.name;
-    if (data.mapType !== undefined) updateData.mapType = data.mapType;
-    if (data.scale !== undefined) updateData.scale = data.scale;
-    if (data.publishedYear !== undefined) updateData.publishedYear = data.publishedYear;
-    if (data.publishedMonth !== undefined) updateData.publishedMonth = data.publishedMonth;
-    if (data.printYear !== undefined) updateData.printYear = data.printYear;
-    if (data.printMonth !== undefined) updateData.printMonth = data.printMonth;
-    if (data.publisher !== undefined) updateData.publisher = data.publisher;
-    if (data.series !== undefined) updateData.series = data.series;
-    if (data.isbn !== undefined) updateData.isbn = data.isbn;
-    if (data.originalPrice !== undefined)
-      updateData.originalPrice = data.originalPrice?.toString() ?? null;
-    if (data.material !== undefined) updateData.material = data.material;
-    if (data.widthCm !== undefined) updateData.widthCm = data.widthCm?.toString() ?? null;
-    if (data.heightCm !== undefined) updateData.heightCm = data.heightCm?.toString() ?? null;
-    if (data.country !== undefined) updateData.country = data.country;
-    if (data.province !== undefined) updateData.province = data.province;
-    if (data.city !== undefined) updateData.city = data.city;
-    if (data.region !== undefined) updateData.region = data.region;
-    if (data.language !== undefined) updateData.language = data.language;
-    if (data.condition !== undefined) updateData.condition = data.condition;
-    if (data.isOriginal !== undefined) updateData.isOriginal = data.isOriginal;
-    if (data.edition !== undefined) updateData.edition = data.edition;
-    if (data.acquiredDate !== undefined)
-      updateData.acquiredDate = data.acquiredDate
-        ? data.acquiredDate instanceof Date
-          ? data.acquiredDate.toISOString().split('T')[0]
-          : String(data.acquiredDate)
-        : null;
-    if (data.purchasePrice !== undefined)
-      updateData.purchasePrice = data.purchasePrice?.toString() ?? null;
-    if (data.currentValue !== undefined)
-      updateData.currentValue = data.currentValue?.toString() ?? null;
-    if (data.status !== undefined) updateData.status = data.status;
-    if (data.location !== undefined) updateData.location = data.location;
-    if (data.notes !== undefined) updateData.notes = data.notes;
-    if (data.mainImage !== undefined) updateData.mainImage = data.mainImage;
-    if (data.attachmentImages !== undefined) updateData.attachmentImages = data.attachmentImages;
+      const rows = (await tx
+        .update(maps)
+        .set(updateData)
+        .where(eq(maps.id, data.id))
+        .returning()) as MapRow[];
 
-    const rows = (await db
-      .update(maps)
-      .set(updateData)
-      .where(eq(maps.id, data.id))
-      .returning()) as MapRow[];
+      if (rows.length === 0) {
+        throw new RecordNotFoundError('Map', data.id);
+      }
 
-    if (rows.length === 0) {
-      throw new Error('Failed to update map: no rows returned');
-    }
+      return { previous: rowToDTO(currentRows[0]), updated: rowToDTO(rows[0]) };
+    });
 
-    const updatedMap = rowToDTO(rows[0]);
-
-    // Invalidate cache
-    revalidateTag(mapsCacheTags.root, 'max');
-    revalidateTag(mapsCacheTags.list, 'max');
-    revalidateTag(mapsCacheTags.item(data.id), 'max');
-
-    // Invalidate old and new status/type slices if changed
-    if (currentMap.status !== updatedMap.status) {
-      revalidateTag(mapsCacheTags.slice('status', currentMap.status), 'max');
-      revalidateTag(mapsCacheTags.slice('status', updatedMap.status), 'max');
-    }
-    if (currentMap.mapType !== updatedMap.mapType) {
-      revalidateTag(mapsCacheTags.slice('mapType', currentMap.mapType), 'max');
-      revalidateTag(mapsCacheTags.slice('mapType', updatedMap.mapType), 'max');
-    }
+    invalidateMapWriteTags({
+      id: data.id,
+      statuses: [currentMap.status, updatedMap.status],
+      mapTypes: [currentMap.mapType, updatedMap.mapType],
+    });
 
     dbLogger.info('Map updated', { id: updatedMap.id, itemNumber: updatedMap.itemNumber });
 
     return updatedMap;
   } catch (error) {
     logMapDataError('Failed to update map', error, { id: data.id });
-    // Preserve domain errors (e.g. "Map not found") so the actions layer can
-    // map them to NOT_FOUND instead of INTERNAL_ERROR.
-    if (error instanceof Error && error.message === 'Map not found') {
-      throw error;
-    }
-    throw new Error('Failed to update map');
+    // Rethrow the original error: replacing it with a generic message would
+    // erase both the `RecordNotFoundError` the caller maps to 404 and the real
+    // database cause.
+    throw error;
   }
 }
 
 /**
- * Delete a map
+ * Delete a map.
+ *
+ * @returns `true` when a row was deleted, `false` when it did not exist. This
+ * matches `deleteQuilt`: a missing row is an expected outcome the caller maps to
+ * 404, not an exception.
  */
-export async function deleteMap(id: string): Promise<void> {
+export async function deleteMap(id: string): Promise<boolean> {
   try {
-    // Get current map for cache invalidation
-    const currentRows = (await db.select().from(maps).where(eq(maps.id, id)).limit(1)) as MapRow[];
+    const deleted = await db.transaction(async tx => {
+      const currentRows = (await tx
+        .select()
+        .from(maps)
+        .where(eq(maps.id, id))
+        .limit(1)
+        .for('update')) as MapRow[];
 
-    if (currentRows.length === 0) {
-      throw new Error('Map not found');
+      if (currentRows.length === 0) {
+        return null;
+      }
+
+      await tx.delete(maps).where(eq(maps.id, id));
+
+      return rowToDTO(currentRows[0]);
+    });
+
+    if (!deleted) {
+      dbLogger.warn('Map not found for delete', { id });
+      return false;
     }
 
-    const currentMap = rowToDTO(currentRows[0]);
+    invalidateMapWriteTags({
+      id,
+      statuses: [deleted.status],
+      mapTypes: [deleted.mapType],
+    });
 
-    await db.delete(maps).where(eq(maps.id, id));
+    dbLogger.info('Map deleted', { id, itemNumber: deleted.itemNumber });
 
-    // Invalidate cache
-    revalidateTag(mapsCacheTags.root, 'max');
-    revalidateTag(mapsCacheTags.list, 'max');
-    revalidateTag(mapsCacheTags.item(id), 'max');
-    revalidateTag(mapsCacheTags.slice('status', currentMap.status), 'max');
-    revalidateTag(mapsCacheTags.slice('mapType', currentMap.mapType), 'max');
-
-    dbLogger.info('Map deleted', { id, itemNumber: currentMap.itemNumber });
+    return true;
   } catch (error) {
     logMapDataError('Failed to delete map', error, { id });
-    // Preserve domain errors (e.g. "Map not found") so the actions layer can
-    // map them to NOT_FOUND instead of INTERNAL_ERROR.
-    if (error instanceof Error && error.message === 'Map not found') {
-      throw error;
-    }
-    throw new Error('Failed to delete map');
+    throw error;
   }
 }

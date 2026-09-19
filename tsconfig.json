@@ -44,5 +44,5 @@
     ".next/dev/types/**/*.ts",
     "**/*.mts"
   ],
-  "exclude": ["node_modules", "scripts/archive", "scripts/migrations", "src/__tests__"]
+  "exclude": ["node_modules", "scripts/archive", "scripts/migrations"]
 }

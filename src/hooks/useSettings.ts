@@ -25,31 +25,12 @@ import type {
   SystemInfo,
   UpdateAppSettingsInput,
 } from '@/lib/types/settings';
+import { unwrapActionResult } from '@/lib/api/action-result';
 
 const SETTINGS_KEY = ['settings'] as const;
 const DATABASE_STATS_KEY = ['database-stats'] as const;
 const SYSTEM_INFO_KEY = ['system-info'] as const;
 const EXPORT_KEY = ['export'] as const;
-
-function unwrapActionResult<T>(
-  result:
-    | {
-        success: true;
-        data: T;
-      }
-    | {
-        success: false;
-        error: {
-          message: string;
-        };
-      }
-): T {
-  if (!result.success) {
-    throw new Error(result.error.message);
-  }
-
-  return result.data;
-}
 
 export function useAppSettings(options?: { initialData?: AppSettings }) {
   return useQuery({

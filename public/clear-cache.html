@@ -3,6 +3,10 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- Operator-only debug page: never index it. It is intentionally excluded
+         from the proxy matcher, so it is reachable without signing in — which is
+         why no destructive action may run without a deliberate click. -->
+    <meta name="robots" content="noindex, nofollow" />
     <title>Clear QMS Cache</title>
     <style>
       body {
@@ -93,7 +97,7 @@
 
       <button onclick="unregisterServiceWorker()">⚙️ Unregister Service Worker</button>
 
-      <button onclick="clearAndReload()" class="danger">🔄 Clear Everything & Reload</button>
+      <button onclick="clearAndReload()" class="danger">🔄 Clear Everything &amp; Reload</button>
 
       <div id="status" class="status"></div>
 
@@ -151,6 +155,13 @@
       }
 
       async function clearAndReload() {
+        // Require a deliberate click. This used to run automatically when the URL
+        // carried `?clear=true`, which meant any link could wipe the visitor's
+        // Cache Storage, service workers, localStorage and sessionStorage.
+        if (!window.confirm('Clear all caches, unregister service workers and wipe local/session storage?')) {
+          return;
+        }
+
         try {
           // Clear all caches
           const cacheNames = await caches.keys();
@@ -176,11 +187,6 @@
         } catch (error) {
           showStatus(`❌ Error: ${error.message}`, 'error');
         }
-      }
-
-      // Auto-clear on load if ?clear=true
-      if (window.location.search.includes('clear=true')) {
-        clearAndReload();
       }
     </script>
   </body>

@@ -6,6 +6,7 @@
 
 import React from 'react';
 import { useLocale, useTranslations } from 'next-intl';
+import { uniqueImageRefs } from '@/lib/image-utils';
 import type { MapItem } from '../schema';
 import { formatCurrency, calculateValueChange } from '../schema';
 
@@ -18,6 +19,7 @@ export function MapDetail({ item }: MapDetailProps) {
   const tc = useTranslations('common');
   const locale = useLocale();
   const dateLocale = locale === 'zh' ? 'zh-CN' : 'en-US';
+  const attachmentImages = uniqueImageRefs(item.attachmentImages);
   const valueChange = calculateValueChange(item.currentValue, item.purchasePrice);
 
   return (
@@ -46,12 +48,12 @@ export function MapDetail({ item }: MapDetailProps) {
             alt={item.name}
             className="w-full max-w-2xl rounded-lg shadow-md"
           />
-          {item.attachmentImages && item.attachmentImages.length > 0 && (
+          {attachmentImages.length > 0 && (
             <div className="mt-4 grid grid-cols-3 gap-2">
-              {item.attachmentImages.map((img, idx) => (
+              {attachmentImages.map((img, idx) => (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img
-                  key={`${img}-${idx}`}
+                  key={img}
                   src={img}
                   alt={`${item.name} - ${idx + 1}`}
                   className="w-full h-32 object-cover rounded shadow-sm"

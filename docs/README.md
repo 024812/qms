@@ -8,6 +8,7 @@ Current release: `2026.9.11`
 
 - [Quick start](guides/QUICK_START.md) - shortest path to run the project.
 - [Project summary](PROJECT_SUMMARY.md) - product boundaries, architecture, and release overview.
+- [REST API Reference](API_REFERENCE.md) - standardized REST API across all modules and response envelopes.
 
 ## Architecture
 

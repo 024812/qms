@@ -8,15 +8,14 @@
  */
 
 import { NextRequest } from 'next/server';
-import { BaseRepositoryImpl } from '@/lib/repositories/base.repository';
+import { checkDatabaseHealth } from '@/db';
 import { withRateLimit, rateLimiters } from '@/lib/rate-limit';
 import { createSuccessResponse, createErrorResponse } from '@/lib/api/response';
 
 export async function GET(request: NextRequest) {
   return withRateLimit(request, rateLimiters.health, async () => {
     try {
-      // Check database connection using repository pattern (Requirements: 6.1, 6.2)
-      const isHealthy = await BaseRepositoryImpl.checkHealth();
+      const isHealthy = await checkDatabaseHealth();
 
       if (!isHealthy) {
         throw new Error('Database connection failed');

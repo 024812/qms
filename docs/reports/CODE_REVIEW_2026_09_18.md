@@ -730,7 +730,7 @@ i18n 部分同样从「人工比对」升级为断言：每个模块的 `users.m
 | §2.4 Server Page 鉴权 | ✅ | `/analytics`、`/reports` 已补 `requirePageModuleAccess`（§0.2） |
 | §2.5/§10.1 Route Handler 不含数据实现 | ✅ | 全部通过 Action/DAL 访问；无 HTTP 自调用 |
 | §2.6 Agent 固定工具集 | ✅ | 29 个白名单工具；工具名清单为单一来源（`src/lib/agent/tool-names.ts`），dispatcher 的 Zod enum 与 OpenAPI 的 `tool` enum 均从它读取，并有测试断言两者相等；`writeTools` 由 `scopeByTool` 派生（§0.8.3） |
-| §2.7 仅 DAL 访问业务表 | ⚠️ | `actions/modules.ts` 已下沉（§0.5）；`actions/auth.ts` 仍直连 `@/db`（本轮新增发现） |
+| §2.7 仅 DAL 访问业务表 | ✅ | `actions/modules.ts` 与 `actions/auth.ts`（旧凭证迁移辅助）均已下沉至 DAL（§0.5 / §0.12） |
 | §2.8 事务内完成后才失效缓存 | ✅ | `quilts.ts` 已改为提交后统一失效（§0.3）；`users.ts`、四个新模块的写路径同样遵守（§0.8.6） |
 | §2.9 服务端负责查询 | ✅ | Client Shell 只写 URL 参数 |
 | §2.10 不新增第二真相层 | ✅ | 无新 repository；但 legacy 未清完（P3-4） |
@@ -738,7 +738,7 @@ i18n 部分同样从「人工比对」升级为断言：每个模块的 `users.m
 | §4.2 DB/Zod/UI enum 完整对应 | ✅ | `LOST` 已全链路补齐，并由 `quilt-status-enum.test.ts` 机器校验 DB/Zod/运行时常量/i18n 四方一致（§0.6.1） |
 | §5.1 四层入口全部授权 | ✅ | Server Page 缺口已补齐；Action/Route/Agent 层原本完备 |
 | §6.1 DAL 不读 session | ✅ | `settings.ts#changePassword` 改为显式接收 `userId`，由 Action 层解析 session（§0.8.1） |
-| §6.2 Action 不直连 db | ⚠️ | `actions/modules.ts` 已下沉（§0.5）；`actions/auth.ts` 仍直连（本轮新增发现） |
+| §6.2 Action 不直连 db | ✅ | `actions/modules.ts` 与 `actions/auth.ts` 均已将直连数据库逻辑完全下沉至 `src/lib/data/users.ts` |
 | §7.1 Server Page + 私有 Client Shell | ✅ | `reports` 已改为 Server Page + `_components/ReportsPageClient`（§0.2） |
 | §8.1 唯一 tag factory | ✅ | `actions/modules.ts` 的 `revalidatePath` 已改为 `usersCacheTags`（§0.5） |
 | §8.2 写失效只由 DAL 负责 | ✅ | 同上；`users.ts` 的写路径补齐了此前缺失的失效 |

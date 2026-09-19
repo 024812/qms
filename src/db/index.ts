@@ -1,6 +1,7 @@
 import { drizzle } from 'drizzle-orm/neon-serverless';
 import { drizzle as drizzleHttp } from 'drizzle-orm/neon-http';
 import { neon, Pool, neonConfig } from '@neondatabase/serverless';
+import { sql } from 'drizzle-orm';
 import ws from 'ws';
 import * as schema from './schema';
 
@@ -73,5 +74,17 @@ function lazyClient<TClient extends object>(getter: () => TClient): TClient {
 export const db = lazyClient<Database>(getDb);
 export const dbHttp = lazyClient<DatabaseHttp>(getDbHttp);
 export type Tx = Parameters<Parameters<Database['transaction']>[0]>[0];
+
+/**
+ * Check whether the database connection is alive.
+ */
+export async function checkDatabaseHealth(): Promise<boolean> {
+  try {
+    await db.execute(sql`SELECT 1 as test`);
+    return true;
+  } catch {
+    return false;
+  }
+}
 
 export * from './schema';

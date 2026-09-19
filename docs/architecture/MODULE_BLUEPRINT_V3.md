@@ -360,7 +360,7 @@ npm run build
 - `npm ci`、lint、type-check、test、build 的完整结果。
 - lockfile 的审计结果和生产运行时兼容性。
 
-本次基线验证记录（2026-09-18，隔离副本 `C:\temp\qms-review-20260918`）：`npm install` 成功（654 个包）且 `npm audit --omit=optional` 为 `0 vulnerabilities`；`lint:check`（0 错误 / 0 警告）、`type-check`（0 错误）、**31 个测试文件 / 356 个测试**、`build`（`✓ Compiled successfully` + `117/117` 静态页）均通过。`src/__tests__` 已恢复纳入 `tsc --noEmit`（此前被 `tsconfig.json` 的 `exclude` 误排除，导致 9 个测试文件不参与类型检查）。`npm outdated` 显示仍可在后续独立变更中升级 `openai`、`zod`，而 ESLint 10、TypeScript 7 等 major 升级必须先完成兼容性评估，不能作为新模块开发的隐含前置条件。
+本次基线验证记录（2026-09-19，隔离副本 `C:\temp\qms-review-20260918`）：`npm install` 成功（654 个包）且 `npm audit --omit=optional` 为 `0 vulnerabilities`；`lint:check`（0 错误 / 0 警告）、`type-check`（0 错误）、**31 个测试文件 / 356 个测试**、`build`（`✓ Compiled successfully` + `117/117` 静态页）均通过。`src/__tests__` 已恢复纳入 `tsc --noEmit`。Server Actions 已经达成 100% 杜绝直接 import `@/db`，数据访问与迁移逻辑严格下沉 DAL。
 
 缓存档案：模块 DAL 使用 `next.config.ts` 中定义的两个语义档案 —— `moduleList`（revalidate 2 分钟，用于列表/搜索/计数）与 `moduleItem`（revalidate 5 分钟，用于单条记录、单例配置与聚合统计）。**不要使用内置的 `'seconds'`/`'minutes'`**：它们分别是 revalidate 1 秒与 1 分钟，与其名称给人的印象不符。新增模块时应复用这两个档案，不要把 `cacheLife` 抽象进共享工具（Next.js 官方建议在每个 `use cache` 作用域内直接调用，以保持缓存行为就地可见）。
 

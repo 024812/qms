@@ -187,7 +187,7 @@ The public agent guide is available at `/AGENT_API.md`. The Agent API exposes a 
 
 ## Local Development
 
-Use Node.js 22.13+ (Node.js 24 LTS recommended) and `npm ci` for reproducible installs. See the [2026-09-25 review](docs/reports/CODE_REVIEW_2026_09_25.md) for verified dependency versions, compatibility exceptions, and remaining findings.
+Use Node.js 24.x LTS and `npm ci` for reproducible installs. The Node major is pinned to prevent automatic major upgrades on Vercel. Dependency install-script approvals in `package.json#allowScripts` are version-specific; review them when upgrading dependencies. See the [2026-09-25 review](docs/reports/CODE_REVIEW_2026_09_25.md) for verified dependency versions, compatibility exceptions, and remaining findings.
 
 > **Critical constraint**: Because this workspace is synced in real-time via OneDrive across multiple devices, **never run `npm install`, `npm test`, or `npm run build` directly inside OneDrive folders**. Doing so triggers cloud sync conflicts and freezes disk I/O. Always clone/copy the workspace to `C:\temp\<project>` (e.g. `C:\temp\qms`) to install dependencies, run dev/build, or run tests.
 

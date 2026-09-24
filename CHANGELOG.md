@@ -7,6 +7,11 @@ and this project uses npm-compatible date-based semantic versions in `YYYY.M.D` 
 
 ## [Unreleased]
 
+### Deployment
+
+- Pin Node.js to `24.x` to prevent automatic major-version changes on Vercel.
+- Declare version-specific npm install-script approvals for esbuild, Parcel watcher, SWC and unrs-resolver. ESLint 9 and esbuild-kit deprecation warnings remain upstream compatibility limitations.
+
 ### Fixed
 
 - **Authorization gap on Server Pages.** `/analytics` and `/reports` read module data without any server-side module check, so an authenticated member without the `quilts` module could reach them by URL. Both now call `requirePageModuleAccess(session, 'quilts')`, matching the `requireApiModule('quilts')` check that `/api/analytics` already enforced. `GET /api/reports` was moved from `requireApiSession` to `requireApiModule('quilts')` so the API and the Web UI share one permission semantic.

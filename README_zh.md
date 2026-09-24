@@ -1,6 +1,6 @@
 # QMS
 
-开发环境使用 Node.js 22.13+（推荐 Node.js 24 LTS），通过 `npm ci` 复现 lockfile。最新审查、兼容性例外和待办见 [2026-09-25 审查报告](docs/reports/CODE_REVIEW_2026_09_25.md)。
+开发环境使用 Node.js 24.x LTS，通过 `npm ci` 复现 lockfile。Node 主版本已固定，避免 Vercel 自动跨主版本升级。`package.json#allowScripts` 按具体版本配置依赖安装脚本权限，升级依赖时需同步核对。最新审查、兼容性例外和待办见 [2026-09-25 审查报告](docs/reports/CODE_REVIEW_2026_09_25.md)。
 
 QMS 是一个模块化的家庭物品管理系统，基于 Next.js 16、React 19、Better Auth、Neon Serverless PostgreSQL、Drizzle ORM 和 Vercel 构建。
 

@@ -4,6 +4,14 @@
 
 ## 结论与范围
 
+### Vercel 部署日志后续修正
+
+提交 `22afa03` 在 Vercel 编译、类型检查、117/117 页面生成及部署均成功。随后将 Node 从开放范围固定为 `24.x`，避免平台自动跨主版本升级；按 lockfile 版本为 esbuild（0.25.12 / 0.28.2）、@parcel/watcher（2.6.0）、@swc/core（1.16.2）、unrs-resolver（1.12.2）配置 `allowScripts`。这些脚本用于构建工具的本机二进制准备、校验或源码构建。
+
+重新核对 npm registry：最新稳定 drizzle-kit 0.31.11 仍直接依赖 @esbuild-kit/esm-loader；最新 eslint-plugin-import 2.32.0 和 eslint-plugin-react 的 peer range 仍截止 ESLint 9。因此 esbuild-kit 与 ESLint 9 的弃用提示仍保留，待上游兼容升级后解决。没有隐藏日志或强制覆盖 peer 约束。
+
+修正后在 `C:\temp\qms-review-20260925` 使用 Node 24.20.0 / npm 11.19.0 完整运行 `npm ci`，返回 `No packages with unreviewed install scripts.`；lint、type-check、360 个测试和生产构建（117/117 页面）全部通过。新配置尚需下一次 Vercel 部署验证。
+
 项目总体采用 Next.js 16 Server Page / Client Shell、模块 DAL、Zod 输入校验、Neon 事务和显式模块授权，方向合理。本次审查核对了依赖、构建配置、认证、用户管理、代表性 DAL、Agent 工具入口、导出、缓存及文档，并运行全部现有测试。它不是对每个业务流程的浏览器验收，也不能据此宣称所有功能完整或没有缺陷。
 
 通过 Context7 查阅 Next.js 缓存与 Server Action、Better Auth Next.js 会话集成、Drizzle Neon 事务文档。当前 npm registry 查询用于确定实际发布版本；文档示例不替代安装兼容性验证。

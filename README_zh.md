@@ -1,5 +1,7 @@
 # QMS
 
+开发环境使用 Node.js 22.13+（推荐 Node.js 24 LTS），通过 `npm ci` 复现 lockfile。最新审查、兼容性例外和待办见 [2026-09-25 审查报告](docs/reports/CODE_REVIEW_2026_09_25.md)。
+
 QMS 是一个模块化的家庭物品管理系统，基于 Next.js 16、React 19、Better Auth、Neon Serverless PostgreSQL、Drizzle ORM 和 Vercel 构建。
 
 当前版本：`2026.9.11`
@@ -75,17 +77,17 @@ Settings、dashboard、users、admin、analytics、reports、authentication 等�
 
 下列版本为 **`package-lock.json` 实际解析版本**（括号内为 `package.json` 声明的 caret 范围）。按 `docs/architecture/MODULE_BLUEPRINT_V3.md` §15，依赖版本以 `package.json` + `package-lock.json` 为准，本列表仅作速览。
 
-- Next.js `16.3.4`（`^16.2.10`）
+- Next.js `16.3.6`（`^16.2.10`）
 - React / React DOM `19.3.0`（`^19.2.7`）
 - TypeScript `6.0.3`
-- next-intl `4.14.3`（`^4.13.2`）
-- Better Auth `1.7.4`（`^1.6.23`）
+- next-intl `4.14.7`（`^4.13.2`）
+- Better Auth `1.7.6`（`^1.6.23`）
 - Neon Serverless PostgreSQL（`@neondatabase/serverless` `1.1.0`）
-- Drizzle ORM `0.45.2`
-- Zod `4.6.1`（`^4.4.3`）
+- Drizzle ORM `0.45.3`
+- Zod `4.6.5`（`^4.4.3`）
 - Tailwind CSS `4.3.3`
-- TanStack React Query `5.102.8`（`^5.101.2`）
-- lucide-react `1.44.0`（`^1.24.0`）
+- TanStack React Query `5.103.2`（`^5.101.2`）
+- lucide-react `1.48.0`（`^1.24.0`）
 - Vercel 部署
 
 ## 仓库结构

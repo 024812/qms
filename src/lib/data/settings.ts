@@ -1,10 +1,9 @@
 import packageJson from '../../../package.json';
 
-import { countQuilts, getQuilts } from '@/lib/data/quilts';
+import { countQuilts } from '@/lib/data/quilts';
 import { getSimpleUsageStats } from '@/lib/data/stats';
-import { getUsageRecords } from '@/lib/data/usage';
 import { systemSettingsRepository } from '@/lib/repositories/system-settings.repository';
-import { authAccount, authSession, db, type Tx, users } from '@/db';
+import { authAccount, authSession, db, type Tx, users, quilts, usageRecords } from '@/db';
 import { hashPassword, verifyPassword } from '@/lib/auth/password';
 import { cacheLife, cacheTag, revalidateTag } from 'next/cache';
 import { and, eq } from 'drizzle-orm';
@@ -161,11 +160,17 @@ export async function changePassword(
 }
 
 export async function getExportData(): Promise<ExportData> {
-  const [quilts, usageRecords] = await Promise.all([getQuilts(), getUsageRecords()]);
-
-  return {
-    exportDate: new Date().toISOString(),
-    quilts,
-    usageRecords,
-  };
+  // Export the complete dataset from one snapshot, without UI pagination limits.
+  return db.transaction(
+    async tx => {
+      const quiltRows = await tx.select().from(quilts);
+      const usageRows = await tx.select().from(usageRecords);
+      return {
+        exportDate: new Date().toISOString(),
+        quilts: quiltRows,
+        usageRecords: usageRows,
+      };
+    },
+    { isolationLevel: 'repeatable read', accessMode: 'read only' }
+  );
 }

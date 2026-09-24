@@ -55,7 +55,7 @@ import {
   updateUsageRecord,
 } from '@/lib/data/usage';
 import { attachmentImagesSchema, imageReferenceSchema } from '@/lib/validations/image';
-import { QUILT_STATUSES } from '@/lib/validations/quilt';
+import { QUILT_STATUSES, createQuiltSchema, updateQuiltSchema } from '@/lib/validations/quilt';
 
 const MAX_AGENT_REQUEST_CHARS = 1024 * 1024;
 
@@ -81,7 +81,7 @@ const quiltSearchSchema = z.object({
   sortOrder: z.enum(['asc', 'desc']).optional(),
 });
 
-const quiltWriteSchema = z.object({
+const quiltWriteInputSchema = z.object({
   id: z.string().optional(),
   name: z.string().optional(),
   season: z.enum(['WINTER', 'SPRING_AUTUMN', 'SUMMER']).optional(),
@@ -100,6 +100,11 @@ const quiltWriteSchema = z.object({
   mainImage: imageReferenceSchema.nullable().optional(),
   attachmentImages: attachmentImagesSchema.nullable().optional(),
 });
+
+// Preserve the Agent transport's date/number coercion, then apply the same
+// required fields and business rules as the UI and REST mutation surfaces.
+const quiltCreateSchema = quiltWriteInputSchema.pipe(createQuiltSchema);
+const quiltUpdateSchema = quiltWriteInputSchema.pipe(updateQuiltSchema);
 
 const quiltStatusSchema = z.object({
   quiltId: z.string().min(1),
@@ -506,8 +511,8 @@ function parseAuditInput(request: ToolRequest): unknown {
   const schemas: Partial<Record<ToolRequest['tool'], z.ZodType>> = {
     'quilts.search': quiltSearchSchema,
     'quilts.get': idSchema,
-    'quilts.create': quiltWriteSchema,
-    'quilts.update': quiltWriteSchema,
+    'quilts.create': quiltCreateSchema,
+    'quilts.update': quiltUpdateSchema,
     'quilts.changeStatus': quiltStatusSchema,
     'usage.search': usageSearchSchema,
     'usage.create': usageCreateSchema,
@@ -540,10 +545,7 @@ function parseAuditInput(request: ToolRequest): unknown {
 }
 
 function validationResponse(error: z.ZodError) {
-  return createValidationErrorResponse(
-    'Agent tool input validation failed',
-    zodFieldErrors(error)
-  );
+  return createValidationErrorResponse('Agent tool input validation failed', zodFieldErrors(error));
 }
 
 function requireWriteConfirmation(request: z.infer<typeof toolSchema>) {
@@ -785,6 +787,7 @@ export async function POST(request: NextRequest) {
       },
     });
 
+    if (error instanceof z.ZodError) return validationResponse(error);
     return createInternalErrorResponse('Agent tool execution failed', error);
   }
 }
@@ -802,11 +805,12 @@ async function callTool(request: z.infer<typeof toolSchema>, agent: AgentIdentit
     }
     case 'quilts.create':
     case 'quilts.update': {
-      const input = quiltWriteSchema.parse(request.input);
-      if (request.tool === 'quilts.create' && input.id)
+      if (request.tool === 'quilts.create' && request.input.id)
         throw new Error('Create input cannot include id');
-      if (request.tool === 'quilts.update' && !input.id)
-        throw new Error('Update input requires id');
+      const input =
+        request.tool === 'quilts.create'
+          ? quiltCreateSchema.parse(request.input)
+          : quiltUpdateSchema.parse(request.input);
       if (request.dryRun) return { planned: input };
       return await saveQuilt(input as Parameters<typeof saveQuilt>[0]);
     }

@@ -43,7 +43,7 @@ export function ChangePasswordDialog() {
     }
 
     // Validate password strength
-    if (formData.newPassword.length < 8) {
+    if (formData.newPassword.length < 12) {
       toast.error(t('tooShortError'), t('tooShortDesc'));
       return;
     }
@@ -115,7 +115,7 @@ export function ChangePasswordDialog() {
                 value={formData.newPassword}
                 onChange={e => setFormData({ ...formData, newPassword: e.target.value })}
                 required
-                minLength={8}
+                minLength={12}
                 className="pr-10"
               />
               <button
@@ -138,7 +138,7 @@ export function ChangePasswordDialog() {
                 value={formData.confirmPassword}
                 onChange={e => setFormData({ ...formData, confirmPassword: e.target.value })}
                 required
-                minLength={8}
+                minLength={12}
                 className="pr-10"
               />
               <button

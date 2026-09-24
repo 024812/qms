@@ -40,7 +40,7 @@ and this project uses npm-compatible date-based semantic versions in `YYYY.M.D` 
 - `src/lib/agent/scopes.ts` — the agent scope vocabulary plus `scopesForUser`, kept free of DAL and database imports so the OpenAPI generator can read it.
 - `src/lib/agent/tool-names.ts` — the canonical tool list. The dispatcher's Zod enum and the published OpenAPI `tool` enum both read it, so the contract cannot advertise a tool the endpoint rejects; `scopeByTool` is typed `Record<AgentToolName, AgentScope>`, which makes adding a tool a compile error until it is given a scope.
 - `src/modules/core/ui/InteractiveCard.tsx` — renders a native `<button>` when `onClick` is present and a plain `<div>` otherwise. `PaddleCard`, `MapCard` and `SpiritCard` each hand-rolled `<div onClick role="button" tabIndex={0} onKeyDown>` plus Enter/Space handling; the native element supplies focus, keyboard activation and the correct role without any of it being re-implemented per module.
-- `uniqueImageRefs()` in `src/lib/image-utils.ts` — de-duplicates image references in order. The attachment galleries in `AntiqueDetail`, `MapDetail` and `SpiritDetail` used `` key={`${img}-${idx}`} ``; they now key on the reference itself, and de-duplicating first is what makes that key provably unique.
+- `uniqueImageRefs()` in `src/lib/image-utils.ts` — de-duplicates image references in order. The attachment galleries in `AntiqueDetail`, `MapDetail` and `SpiritDetail` used ``key={`${img}-${idx}`}``; they now key on the reference itself, and de-duplicating first is what makes that key provably unique.
 - Regression tests for the whole remediation cycle, `157` → `356` tests:
   - `src/lib/__tests__/quilt-status-enum.test.ts` (27) — DB/Zod/constant/i18n enum parity, plus status acceptance and rejection.
   - `src/lib/__tests__/quilt-business-rules.test.ts` (19) — the shared rule function, both schemas, and the merged-row re-check in `saveQuilt`.
@@ -781,3 +781,14 @@ This is the first stable release of the Quilt Management System (QMS)!
 
 [2026.6.2]: https://github.com/024812/qms/compare/v2026.4.2...v2026.6.2
 [2026.4.2]: https://github.com/024812/qms/compare/v2026.2.21...v2026.4.2
+
+# Review updates — 2026-09-25 (unreleased)
+
+- Refresh the dependency lockfile to current compatible releases; retain TypeScript 6 and ESLint 9 due to verified tooling incompatibilities with their new majors.
+- Require Node.js 22.13+ for the installed toolchain.
+- Disable session cookie caching for immediate database-backed session revocation.
+- Align new/reset passwords to 12 characters while allowing legacy credentials through login validation.
+- Make user mutation cache invalidation usable from REST handlers and serialize user preference updates.
+- Export all quilts and usage records from a repeatable-read snapshot instead of paginated defaults.
+- Apply canonical quilt validation to Agent writes and evaluate purchase-date limits at validation time.
+- Verification: lint, type-check, 33 test files / 360 tests, production build (117 static pages), npm audit (0 reported vulnerabilities). See `docs/reports/CODE_REVIEW_2026_09_25.md` for scope and limitations.

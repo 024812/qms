@@ -73,7 +73,7 @@ export const betterAuthInstance = betterAuth({
     expiresIn: 60 * 60 * 24 * 30,
     updateAge: 60 * 60 * 24,
     cookieCache: {
-      enabled: true,
+      enabled: false,
       maxAge: 60 * 5,
     },
   },
@@ -118,6 +118,8 @@ export const handlers = betterAuthInstance.handler;
 export async function auth(): Promise<AppSession | null> {
   const session = await betterAuthInstance.api.getSession({
     headers: await headers(),
+    // Revoked sessions must not remain usable through an existing cookie cache.
+    query: { disableCookieCache: true },
   });
 
   if (!session?.user?.id) {

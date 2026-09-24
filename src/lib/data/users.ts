@@ -76,11 +76,6 @@ function toUserSummary(user: User): UserSummary {
   };
 }
 
-async function findUserRecordById(id: string): Promise<User | null> {
-  const result = await db.select().from(users).where(eq(users.id, id)).limit(1);
-  return result[0] ?? null;
-}
-
 export async function listUsers(): Promise<UserSummary[]> {
   'use cache';
   cacheLife('moduleList');
@@ -148,15 +143,16 @@ export async function createUser(data: CreateUserData): Promise<UserSummary> {
 }
 
 export async function updateUser(data: UpdateUserData): Promise<UserSummary | null> {
-  const existingUser = await findUserRecordById(data.id);
-
-  if (!existingUser) {
-    return null;
-  }
-
-  const existingPreferences = existingUser.preferences ?? {};
-
   const [updatedUser] = await db.transaction(async tx => {
+    // Serialize preference merges with subscription changes to avoid lost updates.
+    const [existingUser] = await tx
+      .select()
+      .from(users)
+      .where(eq(users.id, data.id))
+      .limit(1)
+      .for('update');
+    if (!existingUser) return [];
+    const existingPreferences = existingUser.preferences ?? {};
     const now = new Date();
 
     await tx
@@ -403,7 +399,10 @@ async function ensureBetterAuthTables() {
  * Check whether a user exists in the legacy `users` table and migrate their credentials
  * into Better Auth's `auth_user` and `auth_account` tables on first successful password match.
  */
-export async function migrateLegacyUserToBetterAuth(email: string, password: string): Promise<boolean> {
+export async function migrateLegacyUserToBetterAuth(
+  email: string,
+  password: string
+): Promise<boolean> {
   const normalizedEmail = email.toLowerCase();
   const legacyRows = await db
     .select({

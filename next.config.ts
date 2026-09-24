@@ -25,8 +25,8 @@ const nextConfig: NextConfig = {
   //
   // Defining named profiles keeps the intent at the call site and the numbers in one place.
   // Correctness does not depend on the revalidate interval: every DAL write path calls
-  // `revalidateTag(..., 'max')` after the transaction commits, so a mutation is visible
-  // immediately regardless of the profile.
+  // `revalidateTag(..., 'max')` after the transaction commits. This uses stale-while-
+  // revalidate; it does not guarantee an immediate fresh read after a mutation.
   cacheLife: {
     // List, search and count queries.
     moduleList: {

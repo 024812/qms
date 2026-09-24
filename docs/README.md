@@ -30,6 +30,8 @@ Current release: `2026.9.11`
 
 ## Reports
 
+- [Project review 2026-09-25](reports/CODE_REVIEW_2026_09_25.md) - latest review, dependency compatibility, fixes, verification and remaining findings.
+
 - [Security audit](reports/SECURITY_AUDIT_SUMMARY.md) - active current report, dated `2026-07-17`.
 - [Full-project code review](reports/CODE_REVIEW_2026_09_18.md) - active current report, dated `2026-09-18`. Verification results, P1/P2/P3 findings, architecture-compliance matrix, and the fix log for the P1 items.
 - [Usage tracking implementation](reports/USAGE_TRACKING_IMPLEMENTATION.md) - historical record, corrected to the current DAL/Action architecture.

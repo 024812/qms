@@ -183,7 +183,10 @@ const baseQuiltSchemaObject = z.object({
     .max(30, 'Color too long (max 30 characters)')
     .trim(),
   brand: z.string().max(50, 'Brand too long (max 50 characters)').optional(),
-  purchaseDate: z.date().max(new Date(), 'Purchase date cannot be in the future').optional(),
+  purchaseDate: z
+    .date()
+    .refine(date => date <= new Date(), 'Purchase date cannot be in the future')
+    .optional(),
   location: z
     .string()
     .min(1, 'Location is required')

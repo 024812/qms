@@ -75,17 +75,17 @@ Supported modules: `quilts`, `cards`, `paddles`, `antiques`, `maps`, `spirits`.
 
 Versions below are the **actual resolved versions from `package-lock.json`** (the declared caret range is shown in parentheses). Per `docs/architecture/MODULE_BLUEPRINT_V3.md` §15, `package.json` + `package-lock.json` are the source of truth for dependency versions — not this list.
 
-- Next.js `16.3.4` (`^16.2.10`)
+- Next.js `16.3.6` (`^16.2.10`)
 - React / React DOM `19.3.0` (`^19.2.7`)
 - TypeScript `6.0.3`
-- next-intl `4.14.3` (`^4.13.2`)
-- Better Auth `1.7.4` (`^1.6.23`)
+- next-intl `4.14.7` (`^4.13.2`)
+- Better Auth `1.7.6` (`^1.6.23`)
 - Neon Serverless PostgreSQL (`@neondatabase/serverless` `1.1.0`)
-- Drizzle ORM `0.45.2`
-- Zod `4.6.1` (`^4.4.3`)
+- Drizzle ORM `0.45.3`
+- Zod `4.6.5` (`^4.4.3`)
 - Tailwind CSS `4.3.3`
-- TanStack React Query `5.102.8` (`^5.101.2`)
-- lucide-react `1.44.0` (`^1.24.0`)
+- TanStack React Query `5.103.2` (`^5.101.2`)
+- lucide-react `1.48.0` (`^1.24.0`)
 - Vercel deployment
 
 ## Repository Layout
@@ -186,6 +186,8 @@ QMS uses a household-shared business data model: module records are shared by au
 The public agent guide is available at `/AGENT_API.md`. The Agent API exposes a narrow OpenAPI surface at `/api/agent/openapi.json` and a single tool endpoint at `/api/agent/tools`. Write tools require `confirm=true` and an `idempotencyKey`; successful writes are recorded in `agent_idempotency_keys` so repeated requests can be safely replayed.
 
 ## Local Development
+
+Use Node.js 22.13+ (Node.js 24 LTS recommended) and `npm ci` for reproducible installs. See the [2026-09-25 review](docs/reports/CODE_REVIEW_2026_09_25.md) for verified dependency versions, compatibility exceptions, and remaining findings.
 
 > **Critical constraint**: Because this workspace is synced in real-time via OneDrive across multiple devices, **never run `npm install`, `npm test`, or `npm run build` directly inside OneDrive folders**. Doing so triggers cloud sync conflicts and freezes disk I/O. Always clone/copy the workspace to `C:\temp\<project>` (e.g. `C:\temp\qms`) to install dependencies, run dev/build, or run tests.
 

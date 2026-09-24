@@ -11,7 +11,8 @@ import { normalizeInternalRedirect } from '@/lib/redirect-validation';
 
 const loginSchema = z.object({
   email: z.string().email('Invalid email address'),
-  password: z.string().min(12, 'Password must be at least 12 characters'),
+  // Existing credentials may predate the current password creation policy.
+  password: z.string().min(1, 'Password is required'),
 });
 
 function normalizeCallbackUrl(value: FormDataEntryValue | null): string {
@@ -65,14 +66,12 @@ export async function loginUser(
       throw error;
     }
 
-    const migrated = await migrateLegacyUserToBetterAuth(normalizedEmail, password).catch(
-      error => {
-        if (process.env.NODE_ENV === 'development') {
-          console.error('Legacy auth migration error:', error);
-        }
-        return false;
+    const migrated = await migrateLegacyUserToBetterAuth(normalizedEmail, password).catch(error => {
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Legacy auth migration error:', error);
       }
-    );
+      return false;
+    });
 
     if (migrated) {
       try {

@@ -1,6 +1,6 @@
 'use server';
 
-import { updateTag } from 'next/cache';
+import { revalidateTag } from 'next/cache';
 import { z } from 'zod';
 
 import type { GetUsersActionData } from './users.types';
@@ -54,11 +54,11 @@ const updateUserSchema = z
     activeModules: z.array(z.enum(MODULE_IDS)).optional(),
   })
   .superRefine((value, ctx) => {
-    if (value.password !== undefined && value.password !== '' && value.password.length < 6) {
+    if (value.password !== undefined && value.password !== '' && value.password.length < 12) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         path: ['password'],
-        message: 'Password must be at least 6 characters',
+        message: 'Password must be at least 12 characters',
       });
     }
   });
@@ -126,8 +126,8 @@ export async function createUserAction(
       hashedPassword: await hashPassword(data.password),
     });
 
-    updateTag(usersCacheTags.root);
-    updateTag(usersCacheTags.list);
+    revalidateTag(usersCacheTags.root, { expire: 0 });
+    revalidateTag(usersCacheTags.list, { expire: 0 });
 
     return {
       success: true,
@@ -173,8 +173,8 @@ export async function updateUserAction(
       return notFoundErrorResult('User not found');
     }
 
-    updateTag(usersCacheTags.root);
-    updateTag(usersCacheTags.list);
+    revalidateTag(usersCacheTags.root, { expire: 0 });
+    revalidateTag(usersCacheTags.list, { expire: 0 });
 
     return {
       success: true,
@@ -213,8 +213,8 @@ export async function deleteUserAction(
       return notFoundErrorResult('User not found');
     }
 
-    updateTag(usersCacheTags.root);
-    updateTag(usersCacheTags.list);
+    revalidateTag(usersCacheTags.root, { expire: 0 });
+    revalidateTag(usersCacheTags.list, { expire: 0 });
 
     return {
       success: true,

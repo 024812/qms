@@ -16,7 +16,7 @@ NEXT_PUBLIC_BETTER_AUTH_URL=
 说明：
 
 - `DATABASE_URL`：Neon Postgres 连接串。生产、预览和开发环境都应指向对应的 Neon 数据库或分支，不要配置成本地 `localhost:5432`。
-- `BETTER_AUTH_SECRET`：Better Auth 会话签名密钥。生产环境必须使用独立强随机值。
+- `BETTER_AUTH_SECRET`：Better Auth 会话签名密钥，至少 32 个字符。生产环境必须使用独立强随机值。`AUTH_SECRET` 仅作为兼容旧部署的可选兜底别名，新的部署只配置 `BETTER_AUTH_SECRET`；`NEXTAUTH_SECRET` 不应再配置。
 - `BETTER_AUTH_URL`：当前环境实际访问域名，例如 `https://your-app.vercel.app`。
 - `NEXT_PUBLIC_BETTER_AUTH_URL`：浏览器端 Better Auth client URL，通常与 `BETTER_AUTH_URL` 相同。
 

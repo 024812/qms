@@ -1,11 +1,11 @@
 # Quick Start
 
-> 环境约束：本仓库位于 OneDrive。必须先复制到 `C:\temp\<project>`，再执行 `npm install`/`npm ci`、测试、构建或启动服务；不要在 OneDrive 工作区生成 `node_modules`、`.next` 等目录。
+> 环境约束：本仓库位于 OneDrive。必须先复制到 `C:\temp\<project>`，再执行 `npm ci`、测试、构建或启动服务；不要在 OneDrive 工作区生成 `node_modules`、`.next` 等目录。
 
 ## 1. Install Dependencies
 
 ```bash
-npm install
+npm ci
 ```
 
 ## 2. Create Your Local Environment File

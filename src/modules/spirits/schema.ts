@@ -121,14 +121,14 @@ export const createSpiritSchema = z.object({
   notes: z.string().max(1000, '备注不能超过 1000 个字符').nullable().optional(),
   mainImage: z.string().nullable().optional(),
   attachmentImages: z.array(z.string()).nullable().optional(),
-});
+}).strict();
 
 export type CreateSpiritInput = z.infer<typeof createSpiritSchema>;
 
 /**
  * Schema for updating an existing spirit
  */
-export const updateSpiritSchema = createSpiritSchema.partial();
+export const updateSpiritSchema = createSpiritSchema.partial().strict();
 
 export type UpdateSpiritInput = z.infer<typeof updateSpiritSchema>;
 

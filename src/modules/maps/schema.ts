@@ -98,7 +98,7 @@ export const mapAttributesSchema = z.object({
     .number()
     .int('Year must be an integer')
     .min(1400, 'Year too old')
-    .max(new Date().getFullYear(), 'Year cannot be in the future')
+    .refine(value => value <= new Date().getFullYear(), 'Year cannot be in the future')
     .optional()
     .nullable(),
 
@@ -108,7 +108,7 @@ export const mapAttributesSchema = z.object({
     .number()
     .int('Year must be an integer')
     .min(1400, 'Year too old')
-    .max(new Date().getFullYear(), 'Year cannot be in the future')
+    .refine(value => value <= new Date().getFullYear(), 'Year cannot be in the future')
     .optional()
     .nullable(),
 
@@ -150,7 +150,7 @@ export const mapAttributesSchema = z.object({
   // Acquisition Information
   acquiredDate: z.coerce
     .date()
-    .max(new Date(), 'Acquired date cannot be in the future')
+    .refine(value => value <= new Date(), 'Acquired date cannot be in the future')
     .optional()
     .nullable(),
 
@@ -358,16 +358,19 @@ export function mapItemToMap(item: MapItem): Map {
 /**
  * Schema for creating a new map
  */
-export const CreateMapInputSchema = mapAttributesSchema;
+export const CreateMapInputSchema = mapAttributesSchema.strict();
 
 export type CreateMapInput = z.infer<typeof CreateMapInputSchema>;
 
 /**
  * Schema for updating an existing map
  */
-export const UpdateMapInputSchema = mapAttributesSchema.partial().extend({
-  id: z.string().uuid(),
-});
+export const UpdateMapInputSchema = mapAttributesSchema
+  .partial()
+  .extend({
+    id: z.string().uuid(),
+  })
+  .strict();
 
 export type UpdateMapInput = z.infer<typeof UpdateMapInputSchema>;
 

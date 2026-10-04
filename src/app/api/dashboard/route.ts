@@ -47,11 +47,7 @@ export async function GET() {
       },
       distribution: {
         seasonal: dashboardStats.seasonalCounts,
-        location: {},
-        brand: {},
       },
-      topUsedQuilts: [],
-      recentActivity: [],
       inUseQuilts: dashboardStats.inUseQuilts,
       historicalUsage: dashboardStats.historicalUsage,
       date: {

@@ -26,11 +26,7 @@ function buildDashboardStatsView(): Promise<DashboardStatsView> {
       },
       distribution: {
         seasonal: dashboardStats.seasonalCounts,
-        location: {},
-        brand: {},
       },
-      topUsedQuilts: [],
-      recentActivity: [],
       inUseQuilts: dashboardStats.inUseQuilts.map(quilt => ({
         ...quilt,
         itemNumber: quilt.itemNumber,

@@ -224,7 +224,10 @@ export async function getSpirits(filters: SpiritFilters = {}): Promise<Spirit[]>
       .select()
       .from(spirits)
       .where(whereClause)
-      .orderBy(sortOrder === 'asc' ? sortColumn : desc(sortColumn))
+      .orderBy(
+        sortOrder === 'asc' ? sortColumn : desc(sortColumn),
+        sortOrder === 'asc' ? spirits.id : desc(spirits.id)
+      )
       .limit(limit)
       .offset(offset);
 

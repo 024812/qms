@@ -438,7 +438,10 @@ export async function getQuilts(filters: QuiltFilters = {}): Promise<Quilt[]> {
       .select()
       .from(quilts)
       .where(whereClause)
-      .orderBy(sortOrder === 'asc' ? sortColumn : desc(sortColumn))
+      .orderBy(
+        sortOrder === 'asc' ? sortColumn : desc(sortColumn),
+        sortOrder === 'asc' ? quilts.id : desc(quilts.id)
+      )
       .limit(limit)
       .offset(offset);
 

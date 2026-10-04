@@ -27,7 +27,7 @@ BETTER_AUTH_URL=
 NEXT_PUBLIC_BETTER_AUTH_URL=
 ```
 
-`DATABASE_URL` 必须指向 Neon Postgres。不要在 Vercel 或本地迁移流程中使用 `localhost:5432`。
+`DATABASE_URL` 必须指向 Neon Postgres。不要在 Vercel 或本地迁移流程中使用 `localhost:5432`。Better Auth 新部署只配置至少 32 个字符的 `BETTER_AUTH_SECRET`；`AUTH_SECRET` 仅是旧部署兼容兜底，`NEXTAUTH_SECRET` 不应配置。
 
 如果使用 cards 模块的 AI 或第三方数据源，再补充对应可选变量。详细变量列表见 `VERCEL-ENV-SETUP.md`。
 
@@ -86,7 +86,7 @@ vercel --prod
 - Next.js 16 路由保护文件是 `src/proxy.ts`。
 - 不要再检查 `middleware.ts`。
 - 内部 UI 的主读写路径是 `src/app/actions/*.ts` 和 `src/lib/data/*.ts`。
-- `/api/**` 是兼容或外部 HTTP surface，新增内部功能时不要默认走 API route。
+- `/api/**` 面向外部 HTTP 或第三方集成；只有 `GET /api/quilts` 额外承担 legacy compatibility surface，并返回 `X-QMS-API-Surface: compatibility`。新增内部功能应优先遵循 Server Page/Action/DAL 链路，不要默认新增 Route Handler。
 
 ## 6. 新环境初始化建议
 

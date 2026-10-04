@@ -401,7 +401,7 @@ If you are building or integrating an AI agent (such as OpenClaw), do **not** ca
 - **OpenAPI Document**: `GET /api/agent/openapi.json`
 - **Documentation**: `/AGENT_API.md`
 - **Authentication**: Bearer token created under **Settings -> Agent API Keys**.
-- Supports idempotency keys, dry runs, and audit logging.
+- Supports idempotency keys, dry runs, and audit logging. A successful response can be replayed for the same key and request, but reservation, business write, and success recording are separate commits; exactly-once execution and crash-proof recovery are not guaranteed.
 
 Each tool requires one scope, derived from the API key owner's active modules rather than configured per key. Every registered module grants `read:<module>` and `write:<module>`; `quilts` additionally grants `read:usage` / `write:usage`; `read:settings` is granted to every valid key; administrators receive `*`. Registering a new module therefore adds its scope pair automatically — no API change is required. A tool whose scope the key does not hold returns `403` with `Missing agent scope: <scope>`.
 

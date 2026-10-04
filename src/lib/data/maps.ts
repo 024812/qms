@@ -262,7 +262,7 @@ function buildSortClause(sortBy: MapSortField = 'itemNumber', sortOrder: SortOrd
     updatedAt: maps.updatedAt,
   }[sortBy];
 
-  return sortOrder === 'desc' ? desc(column) : asc(column);
+  return sortOrder === 'desc' ? [desc(column), desc(maps.id)] : [asc(column), asc(maps.id)];
 }
 
 // ============================================================================
@@ -314,7 +314,7 @@ export async function getMaps(filters?: MapFilters): Promise<MapDTO[]> {
       .select()
       .from(maps)
       .where(conditions.length > 0 ? and(...conditions) : undefined)
-      .orderBy(buildSortClause(filters?.sortBy, filters?.sortOrder))
+      .orderBy(...buildSortClause(filters?.sortBy, filters?.sortOrder))
       .limit(filters?.limit ?? 50)
       .offset(filters?.offset ?? 0)) as MapRow[];
     return rows.map(rowToDTO);

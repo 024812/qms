@@ -81,7 +81,7 @@ export async function listUsers(): Promise<UserSummary[]> {
   cacheLife('moduleList');
   cacheTag(usersCacheTags.root, usersCacheTags.list);
 
-  const result = await db.select().from(users).orderBy(asc(users.createdAt));
+  const result = await db.select().from(users).orderBy(asc(users.createdAt), asc(users.id));
   return result.map(toUserSummary);
 }
 

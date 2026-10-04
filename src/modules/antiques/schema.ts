@@ -197,16 +197,19 @@ export type AntiqueAttributes = z.infer<typeof antiqueAttributesSchema>;
 /**
  * Create antique input schema
  */
-export const createAntiqueSchema = antiqueAttributesSchema;
+export const createAntiqueSchema = antiqueAttributesSchema.strict();
 
 export type CreateAntiqueInput = z.infer<typeof createAntiqueSchema>;
 
 /**
  * Update antique input schema (all fields optional except constraints)
  */
-export const updateAntiqueSchema = antiqueAttributesSchema.partial().extend({
-  id: z.string().uuid('Invalid antique ID'),
-});
+export const updateAntiqueSchema = antiqueAttributesSchema
+  .partial()
+  .extend({
+    id: z.string().uuid('Invalid antique ID'),
+  })
+  .strict();
 
 export type UpdateAntiqueInput = z.infer<typeof updateAntiqueSchema>;
 

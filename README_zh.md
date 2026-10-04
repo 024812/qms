@@ -63,7 +63,7 @@ Settings、dashboard、users、admin、analytics、reports、authentication 等�
 
 ## REST API
 
-每个业务模块均提供统一格式的外部 REST API，遵循规范的 JSON envelope、参数校验与错误码。完整参考见 [docs/API_REFERENCE.md](docs/API_REFERENCE.md)。
+每个业务模块均提供统一的外部 REST API 响应 envelope：成功数据放在 `data`，失败信息放在 `error`，分页统一放在顶层 `meta`。字段校验错误位于 `error.details.errors`；`cards` 和 `paddles` 为兼容旧客户端，仍在 `data` 中保留额外分页字段。完整参考见 [docs/API_REFERENCE.md](docs/API_REFERENCE.md)。
 
 - `GET /api/<module>` — 列表查询（支持 search、筛选、排序、分页）
 - `POST /api/<module>` — 创建记录
@@ -185,15 +185,15 @@ EBAY_ENVIRONMENT=production
 
 QMS 采用家庭共享业务数据模型：模块记录由已认证的家庭成员共享，不按登录用户隔离。记录或 Agent 的 `userId` 用于来源追踪和审计归属。完整 review 决策和安全边界见 `docs/PROJECT_SUMMARY.md`。
 
-写入工具必须提供 `confirm=true` 和 `idempotencyKey`；成功写入会记录到 `agent_idempotency_keys`，重复请求可以安全重放。
+写入工具必须提供 `confirm=true` 和 `idempotencyKey`；成功响应会记录到 `agent_idempotency_keys`，相同请求可以重放已记录的响应。幂等键预留、业务写入和成功状态记录分属独立提交，因此不承诺 exactly-once 或进程崩溃后的完整恢复。
 
 ## 本地开发
 
-> **环境铁律**：由于本仓库位于通过 OneDrive 实时跨设备双向同步的目录中，**严禁在 OneDrive 目录下直接执行 `npm install`、`npm test`、`npm run build`**，以免生成 `node_modules` 与 `.next` 导致碎文件风暴与云同步冲突。安装依赖、本地调试和测试**必须在 `C:\temp\<project>`（例如 `C:\temp\qms`）下进行**。
+> **环境铁律**：由于本仓库位于通过 OneDrive 实时跨设备双向同步的目录中，**严禁在 OneDrive 目录下直接执行 `npm install`、`npm ci`、`npm test`、`npm run build`**，以免生成 `node_modules` 与 `.next` 导致碎文件风暴与云同步冲突。安装依赖、本地调试和测试**必须在 `C:\temp\<project>`（例如 `C:\temp\qms`）下进行**。
 
 ```powershell
 # 在 C:\temp\qms 中执行：
-npm install
+npm ci
 Copy-Item .env.example .env.local
 npm run db:migrate
 npm run dev

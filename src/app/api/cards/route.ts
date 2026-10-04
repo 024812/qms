@@ -15,6 +15,10 @@ function parsePositiveInt(value: string | undefined) {
     return undefined;
   }
 
+  if (!/^\d+$/.test(value)) {
+    return undefined;
+  }
+
   const parsed = Number.parseInt(value, 10);
   return Number.isFinite(parsed) && parsed > 0 ? parsed : undefined;
 }

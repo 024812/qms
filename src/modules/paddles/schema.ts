@@ -148,16 +148,19 @@ export type PaddleAttributes = z.infer<typeof paddleAttributesSchema>;
 /**
  * Schema for creating a new paddle
  */
-export const createPaddleSchema = paddleAttributesSchema.omit({ itemNumber: true });
+export const createPaddleSchema = paddleAttributesSchema.omit({ itemNumber: true }).strict();
 
 export type CreatePaddleInput = z.infer<typeof createPaddleSchema>;
 
 /**
  * Schema for updating an existing paddle
  */
-export const updatePaddleSchema = paddleAttributesSchema.partial().extend({
-  id: z.string().uuid('Invalid paddle ID'),
-});
+export const updatePaddleSchema = paddleAttributesSchema
+  .partial()
+  .extend({
+    id: z.string().uuid('Invalid paddle ID'),
+  })
+  .strict();
 
 export type UpdatePaddleInput = z.infer<typeof updatePaddleSchema>;
 

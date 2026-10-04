@@ -12,25 +12,38 @@ npm run db:migrate
 
 The project does not use a local `localhost:5432` database as its migration target.
 
-## 2. Seed Starter Data
+## 2. Create the First Administrator
 
-If the deployment needs starter quilts, call the setup endpoint after migrations have completed.
+Migration success does not create an account. The `/api/setup` endpoint is intentionally admin-only, and the user-management actions also require an existing administrator. Before the first login, create one administrator through your controlled operations process (for example, a reviewed one-time SQL/bootstrap script against the intended Neon branch). Do not put an initial password in this document or commit it to the repository.
 
-Using curl:
+Verify that the account has:
+
+- a unique email address;
+- the `admin` role;
+- a credential password stored using the application's password hashing flow; and
+- access only to the intended database environment.
+
+After the first administrator signs in, rotate the temporary password and remove or disable any bootstrap credential/script. If your deployment process does not provide a reviewed bootstrap path, stop here: do not assume that migration or `/api/setup` can create the first account.
+
+## 3. Seed Starter Data
+
+If the deployment needs starter quilts, sign in as the administrator and call the setup endpoint after migrations have completed.
+
+Using curl with the authenticated session:
 
 ```bash
-curl -X POST https://your-app-domain.vercel.app/api/setup
+curl -X POST --cookie "<admin-session-cookie>" https://your-app-domain.vercel.app/api/setup
 ```
 
-Using PowerShell:
+Using PowerShell with the authenticated session:
 
 ```powershell
-Invoke-WebRequest -Uri "https://your-app-domain.vercel.app/api/setup" -Method POST
+Invoke-WebRequest -Uri "https://your-app-domain.vercel.app/api/setup" -Method POST -WebSession $adminSession
 ```
 
-The endpoint is intended for starter data only. It should not be treated as the canonical schema migration mechanism.
+The endpoint is intended for starter data only. It does not create users or tables and should not be treated as the canonical schema migration mechanism.
 
-## 3. Verify It Worked
+## 4. Verify It Worked
 
 After initialization, visit:
 
@@ -38,7 +51,7 @@ After initialization, visit:
 
 You should see starter quilt records instead of an empty state.
 
-## Troubleshooting
+## 5. Troubleshooting
 
 ### "Database already has data"
 
@@ -58,7 +71,7 @@ Check that the `DATABASE_URL` environment variable is set correctly in Vercel an
 2. Check Vercel runtime logs for database or auth errors.
 3. Confirm the setup endpoint was called after migrations completed.
 
-## Next Steps
+## 6. Next Steps
 
 After initializing data:
 

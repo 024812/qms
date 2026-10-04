@@ -10,6 +10,8 @@ and this project uses npm-compatible date-based semantic versions in `YYYY.M.D` 
 ### Deployment
 
 - Pin Node.js to `24.x` to prevent automatic major-version changes on Vercel.
+- Pin npm via `packageManager`, add the explicit `lint:fix` command, and keep `lint` as the non-mutating check.
+- Use `npm ci` in setup documentation and remove the broad Vercel `Cache-Control` rule so route-specific cache policies are not overwritten.
 - Declare version-specific npm install-script approvals for esbuild, Parcel watcher, SWC and unrs-resolver. ESLint 9 and esbuild-kit deprecation warnings remain upstream compatibility limitations.
 
 ### Fixed
@@ -79,6 +81,7 @@ and this project uses npm-compatible date-based semantic versions in `YYYY.M.D` 
 
 ### Documentation
 
+- Align API envelope and Agent idempotency documentation with the current top-level `meta`, nested validation errors, legacy list fields, and separate idempotency commits; update `BETTER_AUTH_SECRET` guidance and `.env.example` comments.
 - `README.md` / `README_zh.md` now list the **resolved** `package-lock.json` versions (with the declared caret range in parentheses) instead of stale declared versions; the Chinese README gained the repository-layout, scripts, and release-verification sections it was missing.
 - `docs/API_REFERENCE.md` corrected the response envelope: pagination lives at top-level `meta`, validation messages live at `error.details.errors` (not `error.fieldErrors`), and the three currently-divergent list payload shapes (`quilts` / `cards` / the four new modules) are now documented explicitly.
 - `docs/architecture/MODULE_BLUEPRINT_V3.md` §15 baseline refreshed to `31` test files / `356` tests, and now records the local `next build` sandbox caveat plus eight standing rules: reuse the `moduleList`/`moduleItem` cache profiles, route search through `src/lib/data/search.ts`, give every module enum a single runtime list with a parity test, never HTML-escape before persisting, import the module-ID vocabulary from `src/modules/module-ids.ts` rather than through the registry, derive agent scopes from the registry while using `InteractiveCard` and `uniqueImageRefs` in module UI, keep the action-result contract (`src/lib/api/action-result.ts`) as its only declaration, and turn every "remember to do X for a new module" convention into a test — with a positive control, and without using `module` as a loop variable (`@next/next/no-assign-module-variable`).
@@ -91,6 +94,7 @@ and this project uses npm-compatible date-based semantic versions in `YYYY.M.D` 
 
 ### Verification
 
+- Review updates for 2026-09-25 are recorded under this `Unreleased` section; see `docs/reports/CODE_REVIEW_2026_09_25.md` for scope, limitations, and verification details.
 - `npm audit --omit=optional` (`0` vulnerabilities)
 - `npm run lint:check` (`0` errors, `0` warnings)
 - `npm run type-check` (`0` errors, `src/__tests__` now included)
@@ -787,13 +791,3 @@ This is the first stable release of the Quilt Management System (QMS)!
 [2026.6.2]: https://github.com/024812/qms/compare/v2026.4.2...v2026.6.2
 [2026.4.2]: https://github.com/024812/qms/compare/v2026.2.21...v2026.4.2
 
-# Review updates — 2026-09-25 (unreleased)
-
-- Refresh the dependency lockfile to current compatible releases; retain TypeScript 6 and ESLint 9 due to verified tooling incompatibilities with their new majors.
-- Require Node.js 22.13+ for the installed toolchain.
-- Disable session cookie caching for immediate database-backed session revocation.
-- Align new/reset passwords to 12 characters while allowing legacy credentials through login validation.
-- Make user mutation cache invalidation usable from REST handlers and serialize user preference updates.
-- Export all quilts and usage records from a repeatable-read snapshot instead of paginated defaults.
-- Apply canonical quilt validation to Agent writes and evaluate purchase-date limits at validation time.
-- Verification: lint, type-check, 33 test files / 360 tests, production build (117 static pages), npm audit (0 reported vulnerabilities). See `docs/reports/CODE_REVIEW_2026_09_25.md` for scope and limitations.

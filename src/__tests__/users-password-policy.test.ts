@@ -1,7 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('@/auth', () => ({ auth: vi.fn(async () => ({ user: { id: 'admin', role: 'admin' } })) }));
-vi.mock('next/cache', () => ({ revalidateTag: vi.fn() }));
 vi.mock('@/lib/auth/password', () => ({ hashPassword: vi.fn(async () => 'hashed') }));
 vi.mock('@/lib/data/users', () => ({
   createUser: vi.fn(),
@@ -13,7 +12,6 @@ vi.mock('@/lib/data/users', () => ({
 
 import { updateUserAction } from '@/app/actions/users';
 import { updateUser } from '@/lib/data/users';
-import { revalidateTag } from 'next/cache';
 
 describe('administrator password updates', () => {
   beforeEach(() => vi.clearAllMocks());
@@ -30,8 +28,6 @@ describe('administrator password updates', () => {
     expect(updateUser).toHaveBeenCalledWith(
       expect.not.objectContaining({ hashedPassword: expect.anything() })
     );
-    // This invalidation also works when the entry is called by a REST handler.
-    expect(revalidateTag).toHaveBeenCalledWith('users', { expire: 0 });
   });
 
   it('hashes an accepted replacement password', async () => {

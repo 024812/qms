@@ -61,7 +61,7 @@ For the module blueprint rules, see `docs/architecture/MODULE_BLUEPRINT_V3.md`.
 
 ## REST API
 
-All modules provide a uniform external REST API with standard `ApiResponse<T>` envelopes, Zod validation, and error contracts. See [docs/API_REFERENCE.md](docs/API_REFERENCE.md) for full documentation and curl examples.
+All modules provide a uniform external REST API with an `ApiResponse<T>` envelope: successful payloads use `data`, failures use `error`, and pagination is carried by top-level `meta`. Validation field errors are nested under `error.details.errors`; `cards` and `paddles` retain additional legacy pagination fields inside `data`. See [docs/API_REFERENCE.md](docs/API_REFERENCE.md) for full documentation and curl examples.
 
 - `GET /api/<module>` — List records with filtering, search, sorting, and pagination
 - `POST /api/<module>` — Create a record
@@ -183,17 +183,17 @@ Users create their own Agent API keys from **Settings -> Agent API Keys**. Keys 
 
 QMS uses a household-shared business data model: module records are shared by authenticated household members rather than isolated per login. A record or Agent `userId` is retained for provenance and audit attribution. See `docs/PROJECT_SUMMARY.md` for the review decision and security boundaries.
 
-The public agent guide is available at `/AGENT_API.md`. The Agent API exposes a narrow OpenAPI surface at `/api/agent/openapi.json` and a single tool endpoint at `/api/agent/tools`. Write tools require `confirm=true` and an `idempotencyKey`; successful writes are recorded in `agent_idempotency_keys` so repeated requests can be safely replayed.
+The public agent guide is available at `/AGENT_API.md`. The Agent API exposes a narrow OpenAPI surface at `/api/agent/openapi.json` and a single tool endpoint at `/api/agent/tools`. Write tools require `confirm=true` and an `idempotencyKey`; successful responses are recorded in `agent_idempotency_keys` so a repeated request can replay the recorded response. Reservation, business write, and success recording are separate commits, so this is not an exactly-once or crash-proof transaction guarantee.
 
 ## Local Development
 
 Use Node.js 24.x LTS and `npm ci` for reproducible installs. The Node major is pinned to prevent automatic major upgrades on Vercel. Dependency install-script approvals in `package.json#allowScripts` are version-specific; review them when upgrading dependencies. See the [2026-09-25 review](docs/reports/CODE_REVIEW_2026_09_25.md) for verified dependency versions, compatibility exceptions, and remaining findings.
 
-> **Critical constraint**: Because this workspace is synced in real-time via OneDrive across multiple devices, **never run `npm install`, `npm test`, or `npm run build` directly inside OneDrive folders**. Doing so triggers cloud sync conflicts and freezes disk I/O. Always clone/copy the workspace to `C:\temp\<project>` (e.g. `C:\temp\qms`) to install dependencies, run dev/build, or run tests.
+> **Critical constraint**: Because this workspace is synced in real-time via OneDrive across multiple devices, **never run `npm install`, `npm ci`, `npm test`, or `npm run build` directly inside OneDrive folders**. Doing so triggers cloud sync conflicts and freezes disk I/O. Always clone/copy the workspace to `C:\temp\<project>` (e.g. `C:\temp\qms`) to install dependencies, run dev/build, or run tests.
 
 ```powershell
 # In C:\temp\qms:
-npm install
+npm ci
 Copy-Item .env.example .env.local
 npm run db:migrate
 npm run dev

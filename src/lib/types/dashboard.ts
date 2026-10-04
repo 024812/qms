@@ -11,8 +11,8 @@ export interface DashboardDistribution {
     SPRING_AUTUMN: number;
     SUMMER: number;
   };
-  location: Record<string, number>;
-  brand: Record<string, number>;
+  location?: Record<string, number>;
+  brand?: Record<string, number>;
 }
 
 export interface DashboardTopUsedQuilt {
@@ -52,8 +52,8 @@ export interface DashboardHistoricalUsage {
 export interface DashboardStatsView {
   overview: DashboardOverview;
   distribution: DashboardDistribution;
-  topUsedQuilts: DashboardTopUsedQuilt[];
-  recentActivity: DashboardRecentActivity[];
+  topUsedQuilts?: DashboardTopUsedQuilt[];
+  recentActivity?: DashboardRecentActivity[];
   inUseQuilts: DashboardInUseQuilt[];
   historicalUsage: DashboardHistoricalUsage[];
   date: {

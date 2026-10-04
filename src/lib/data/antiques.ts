@@ -21,7 +21,7 @@ import { cacheLife, cacheTag, revalidateTag } from 'next/cache';
 
 import { db } from '@/db';
 import { antiques } from '@/db/schema';
-import { eq, sql, desc, and, gte, lte } from 'drizzle-orm';
+import { eq, sql, desc, asc, and, gte, lte } from 'drizzle-orm';
 import { dbLogger } from '@/lib/logger';
 import { RecordNotFoundError } from '@/lib/data/errors';
 import { searchAnyColumn } from '@/lib/data/search';
@@ -285,9 +285,10 @@ export async function getAntiques(filters?: AntiqueFilters): Promise<AntiqueItem
     const sortBy = filters?.sortBy || 'itemNumber';
     const sortOrder = filters?.sortOrder || 'desc';
     const sortColumn = antiques[sortBy];
-    const orderClause = sortOrder === 'desc' ? desc(sortColumn) : sortColumn;
+    const orderClause = sortOrder === 'desc' ? desc(sortColumn) : asc(sortColumn);
+    const tieBreaker = sortOrder === 'desc' ? desc(antiques.id) : asc(antiques.id);
 
-    let query = db.select().from(antiques).where(whereClause).orderBy(orderClause);
+    let query = db.select().from(antiques).where(whereClause).orderBy(orderClause, tieBreaker);
 
     if (filters?.limit !== undefined) {
       query = query.limit(filters.limit) as typeof query;

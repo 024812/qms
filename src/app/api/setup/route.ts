@@ -20,7 +20,7 @@ export async function POST(request: NextRequest) {
       const authResult = await requireApiAdmin();
       if (!authResult.ok) return authResult.response;
 
-      // Schema is managed by Drizzle Kit (npm run db:push), so we skip table creation here.
+      // Schema is managed by Drizzle Kit (npm run db:migrate), so we skip table creation here.
       // We only handle seeding if the database is empty.
 
       // Check if database is already set up

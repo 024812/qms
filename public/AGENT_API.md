@@ -84,7 +84,7 @@ All calls use the same endpoint and select a whitelisted tool by name:
 }
 ```
 
-Write tools must include either `dryRun: true` or both `confirm: true` and an `idempotencyKey`:
+Write tools must include either `dryRun: true` or both `confirm: true` and an `idempotencyKey`. A successful response can be replayed for the same key and request, but reservation, business write, and success recording are separate commits; the API does not promise exactly-once execution or crash-proof recovery:
 
 ```json
 {

@@ -143,7 +143,7 @@ export async function getUsageHistory(quiltId: string): Promise<UsageRecord[]> {
       .select()
       .from(usageRecords)
       .where(eq(usageRecords.quiltId, quiltId))
-      .orderBy(desc(usageRecords.startDate));
+      .orderBy(desc(usageRecords.startDate), desc(usageRecords.id));
 
     return result as unknown as UsageRecord[];
   } catch (error) {
@@ -196,7 +196,7 @@ export async function getAllActiveUsageRecords(): Promise<UsageRecord[]> {
       .select()
       .from(usageRecords)
       .where(isNull(usageRecords.endDate))
-      .orderBy(desc(usageRecords.startDate));
+      .orderBy(desc(usageRecords.startDate), desc(usageRecords.id));
 
     return result as unknown as UsageRecord[];
   } catch (error) {
@@ -217,7 +217,7 @@ export async function getUsageRecords(): Promise<UsageRecord[]> {
   cacheTag(usageCacheTags.root, usageCacheTags.list);
 
   try {
-    const result = await db.select().from(usageRecords).orderBy(desc(usageRecords.startDate));
+    const result = await db.select().from(usageRecords).orderBy(desc(usageRecords.startDate), desc(usageRecords.id));
 
     return result as unknown as UsageRecord[];
   } catch (error) {
@@ -279,7 +279,7 @@ export async function getUsageRecordsWithQuilts(
       })
       .from(usageRecords)
       .leftJoin(quilts, sql`${usageRecords.quiltId} = ${quilts.id}`)
-      .orderBy(desc(usageRecords.startDate))
+      .orderBy(desc(usageRecords.startDate), desc(usageRecords.id))
       .limit(limit)
       .offset(offset);
 

@@ -86,7 +86,7 @@ export const cardAttributesSchema = z.object({
     .number()
     .int('Year must be an integer')
     .min(1800, 'Year too old')
-    .max(new Date().getFullYear() + 1, 'Year cannot be in the future'),
+    .refine(value => value <= new Date().getFullYear() + 1, 'Year cannot be in the future'),
 
   brand: z.string().min(1, 'Brand is required').max(100, 'Brand name too long').trim(),
 
@@ -104,7 +104,10 @@ export const cardAttributesSchema = z.object({
   // Value Information
   purchasePrice: z.number().min(0, 'Purchase price cannot be negative').optional(),
 
-  purchaseDate: z.date().max(new Date(), 'Purchase date cannot be in the future').optional(),
+  purchaseDate: z
+    .date()
+    .refine(value => value <= new Date(), 'Purchase date cannot be in the future')
+    .optional(),
 
   currentValue: z.number().min(0, 'Current value cannot be negative').optional(),
 
@@ -126,7 +129,10 @@ export const cardAttributesSchema = z.object({
   // Sold Information
   soldPrice: z.number().min(0, 'Sold price cannot be negative').optional(),
 
-  soldDate: z.date().max(new Date(), 'Sold date cannot be in the future').optional(),
+  soldDate: z
+    .date()
+    .refine(value => value <= new Date(), 'Sold date cannot be in the future')
+    .optional(),
 
   // Storage and Condition
   status: CardStatusSchema.optional().default('COLLECTION'),

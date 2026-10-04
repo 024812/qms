@@ -7,7 +7,6 @@ import { dbLogger } from '@/lib/logger';
 import { RecordNotFoundError } from '@/lib/data/errors';
 import { cardsCacheTags } from '@/modules/core/cache-tags';
 import type { CardItem } from '@/modules/cards/schema';
-import { systemSettingsRepository } from '@/lib/repositories/system-settings.repository';
 
 export interface CardListInput {
   search?: string;
@@ -92,27 +91,6 @@ export interface ActivityItem {
   year: number;
 }
 
-export interface CardSettingsData {
-  azureOpenAIApiKey: string;
-  azureOpenAIEndpoint: string;
-  azureOpenAIDeployment: string;
-  ebayAppId: string;
-  ebayCertId: string;
-  ebayDevId: string;
-  rapidApiKey: string;
-  tavilyApiKey: string;
-}
-
-export interface UpdateCardSettingsData {
-  azureOpenAIApiKey: string;
-  azureOpenAIEndpoint: string;
-  azureOpenAIDeployment: string;
-  ebayAppId: string;
-  ebayCertId: string;
-  ebayDevId: string;
-  rapidApiKey: string;
-  tavilyApiKey: string;
-}
 
 const VALID_SPORTS = ['BASKETBALL', 'SOCCER', 'OTHER'] as const;
 const VALID_GRADING_COMPANIES = ['UNGRADED', 'PSA', 'BGS', 'SGC', 'CGC'] as const;
@@ -348,6 +326,7 @@ async function findCardRecords(filters: CardQueryFilters): Promise<Card[]> {
   const sortField = filters.sortBy ?? 'itemNumber';
   const sortOrder = filters.sortOrder ?? 'desc';
   const orderBy = sortOrder === 'asc' ? asc(cards[sortField]) : desc(cards[sortField]);
+  const tieBreaker = sortOrder === 'asc' ? asc(cards.id) : desc(cards.id);
 
   let query = db.select().from(cards);
 
@@ -355,7 +334,7 @@ async function findCardRecords(filters: CardQueryFilters): Promise<Card[]> {
     query = query.where(whereClause) as typeof query;
   }
 
-  query = query.orderBy(orderBy) as typeof query;
+  query = query.orderBy(orderBy, tieBreaker) as typeof query;
 
   if (typeof filters.limit === 'number') {
     query = query.limit(filters.limit) as typeof query;
@@ -455,68 +434,12 @@ function invalidateCardCaches(params: {
   }
 }
 
-export async function getCardSettings(): Promise<CardSettingsData> {
-  const [azureConfig, ebayConfig, rapidApiKey, tavilyApiKey] = await Promise.all([
-    systemSettingsRepository.getAzureOpenAIConfig(),
-    systemSettingsRepository.getEbayApiConfig(),
-    systemSettingsRepository.getRapidApiKey(),
-    systemSettingsRepository.getTavilyApiKey(),
-  ]);
-
-  return {
-    azureOpenAIApiKey: azureConfig.apiKey || '',
-    azureOpenAIEndpoint: azureConfig.endpoint || '',
-    azureOpenAIDeployment: azureConfig.deployment || '',
-    ebayAppId: ebayConfig.appId || '',
-    ebayCertId: ebayConfig.certId || '',
-    ebayDevId: ebayConfig.devId || '',
-    rapidApiKey: rapidApiKey || '',
-    tavilyApiKey: tavilyApiKey || '',
-  };
-}
-
-export async function updateCardSettings(input: UpdateCardSettingsData): Promise<CardSettingsData> {
-  return db.transaction(async tx => {
-    await Promise.all([
-      systemSettingsRepository.updateAzureOpenAIConfig(
-        {
-          apiKey: input.azureOpenAIApiKey,
-          endpoint: input.azureOpenAIEndpoint,
-          deployment: input.azureOpenAIDeployment,
-        },
-        tx
-      ),
-      systemSettingsRepository.updateEbayApiConfig(
-        {
-          appId: input.ebayAppId,
-          certId: input.ebayCertId,
-          devId: input.ebayDevId,
-        },
-        tx
-      ),
-      systemSettingsRepository.updateRapidApiKey(input.rapidApiKey, tx),
-      systemSettingsRepository.updateTavilyApiKey(input.tavilyApiKey, tx),
-    ]);
-
-    const [azureConfig, ebayConfig, rapidApiKey, tavilyApiKey] = await Promise.all([
-      systemSettingsRepository.getAzureOpenAIConfig(tx),
-      systemSettingsRepository.getEbayApiConfig(tx),
-      systemSettingsRepository.getRapidApiKey(tx),
-      systemSettingsRepository.getTavilyApiKey(tx),
-    ]);
-
-    return {
-      azureOpenAIApiKey: azureConfig.apiKey || '',
-      azureOpenAIEndpoint: azureConfig.endpoint || '',
-      azureOpenAIDeployment: azureConfig.deployment || '',
-      ebayAppId: ebayConfig.appId || '',
-      ebayCertId: ebayConfig.certId || '',
-      ebayDevId: ebayConfig.devId || '',
-      rapidApiKey: rapidApiKey || '',
-      tavilyApiKey: tavilyApiKey || '',
-    };
-  });
-}
+export {
+  getCardSettings,
+  updateCardSettings,
+  type CardSettingsData,
+  type UpdateCardSettingsData,
+} from '@/lib/data/settings';
 
 export async function getCardById(id: string): Promise<CardItem | null> {
   'use cache';
@@ -863,7 +786,7 @@ export async function getRecentActivity(limit = 10): Promise<ActivityItem[]> {
         year: cards.year,
       })
       .from(cards)
-      .orderBy(desc(cards.createdAt))
+      .orderBy(desc(cards.createdAt), desc(cards.id))
       .limit(limit),
     db
       .select({
@@ -876,7 +799,7 @@ export async function getRecentActivity(limit = 10): Promise<ActivityItem[]> {
       })
       .from(cards)
       .where(and(eq(cards.status, 'SOLD'), isNotNull(cards.soldDate)))
-      .orderBy(desc(cards.soldDate))
+      .orderBy(desc(cards.soldDate), desc(cards.id))
       .limit(limit),
   ]);
 

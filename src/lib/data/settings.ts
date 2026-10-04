@@ -18,6 +18,19 @@ import type {
   UpdateAppSettingsInput,
 } from '@/lib/types/settings';
 
+export interface CardSettingsData {
+  azureOpenAIApiKey: string;
+  azureOpenAIEndpoint: string;
+  azureOpenAIDeployment: string;
+  ebayAppId: string;
+  ebayCertId: string;
+  ebayDevId: string;
+  rapidApiKey: string;
+  tavilyApiKey: string;
+}
+
+export type UpdateCardSettingsData = CardSettingsData;
+
 export async function getAppSettings(): Promise<AppSettings> {
   'use cache';
   cacheLife('moduleItem');
@@ -42,6 +55,68 @@ async function readAppSettings(tx?: Tx): Promise<AppSettings> {
     usageDoubleClickAction:
       (usageDoubleClickAction as AppSettings['usageDoubleClickAction']) || 'view',
   };
+}
+
+export async function getCardSettings(): Promise<CardSettingsData> {
+  const [azureConfig, ebayConfig, rapidApiKey, tavilyApiKey] = await Promise.all([
+    systemSettingsRepository.getAzureOpenAIConfig(),
+    systemSettingsRepository.getEbayApiConfig(),
+    systemSettingsRepository.getRapidApiKey(),
+    systemSettingsRepository.getTavilyApiKey(),
+  ]);
+
+  return {
+    azureOpenAIApiKey: azureConfig.apiKey || '',
+    azureOpenAIEndpoint: azureConfig.endpoint || '',
+    azureOpenAIDeployment: azureConfig.deployment || '',
+    ebayAppId: ebayConfig.appId || '',
+    ebayCertId: ebayConfig.certId || '',
+    ebayDevId: ebayConfig.devId || '',
+    rapidApiKey: rapidApiKey || '',
+    tavilyApiKey: tavilyApiKey || '',
+  };
+}
+
+export async function updateCardSettings(input: UpdateCardSettingsData): Promise<CardSettingsData> {
+  const settings = await db.transaction(async tx => {
+    await Promise.all([
+      systemSettingsRepository.updateAzureOpenAIConfig(
+        {
+          apiKey: input.azureOpenAIApiKey,
+          endpoint: input.azureOpenAIEndpoint,
+          deployment: input.azureOpenAIDeployment,
+        },
+        tx
+      ),
+      systemSettingsRepository.updateEbayApiConfig(
+        { appId: input.ebayAppId, certId: input.ebayCertId, devId: input.ebayDevId },
+        tx
+      ),
+      systemSettingsRepository.updateRapidApiKey(input.rapidApiKey, tx),
+      systemSettingsRepository.updateTavilyApiKey(input.tavilyApiKey, tx),
+    ]);
+
+    const [azureConfig, ebayConfig, rapidApiKey, tavilyApiKey] = await Promise.all([
+      systemSettingsRepository.getAzureOpenAIConfig(tx),
+      systemSettingsRepository.getEbayApiConfig(tx),
+      systemSettingsRepository.getRapidApiKey(tx),
+      systemSettingsRepository.getTavilyApiKey(tx),
+    ]);
+
+    return {
+      azureOpenAIApiKey: azureConfig.apiKey || '',
+      azureOpenAIEndpoint: azureConfig.endpoint || '',
+      azureOpenAIDeployment: azureConfig.deployment || '',
+      ebayAppId: ebayConfig.appId || '',
+      ebayCertId: ebayConfig.certId || '',
+      ebayDevId: ebayConfig.devId || '',
+      rapidApiKey: rapidApiKey || '',
+      tavilyApiKey: tavilyApiKey || '',
+    };
+  });
+
+  revalidateTag(settingsCacheTags.root, 'max');
+  return settings;
 }
 
 export async function updateAppSettings(input: UpdateAppSettingsInput): Promise<AppSettings> {
@@ -82,7 +157,7 @@ export async function getDatabaseStats(): Promise<DatabaseStats> {
 
 export async function getSystemInfo(): Promise<SystemInfo> {
   'use cache';
-  cacheLife('hours');
+  cacheLife('moduleItem');
   cacheTag(settingsCacheTags.root, settingsCacheTags.slice('scope', 'system-info'));
 
   return {

@@ -1,6 +1,5 @@
 'use server';
 
-import { revalidateTag } from 'next/cache';
 import { z } from 'zod';
 
 import type { GetUsersActionData } from './users.types';
@@ -15,7 +14,6 @@ import {
   updateUser,
 } from '@/lib/data/users';
 import { MODULE_IDS } from '@/modules/module-ids';
-import { usersCacheTags } from '@/modules/core/cache-tags';
 import {
   badRequestErrorResult,
   conflictErrorResult,
@@ -126,9 +124,6 @@ export async function createUserAction(
       hashedPassword: await hashPassword(data.password),
     });
 
-    revalidateTag(usersCacheTags.root, { expire: 0 });
-    revalidateTag(usersCacheTags.list, { expire: 0 });
-
     return {
       success: true,
       data: { user },
@@ -173,9 +168,6 @@ export async function updateUserAction(
       return notFoundErrorResult('User not found');
     }
 
-    revalidateTag(usersCacheTags.root, { expire: 0 });
-    revalidateTag(usersCacheTags.list, { expire: 0 });
-
     return {
       success: true,
       data: { user },
@@ -212,9 +204,6 @@ export async function deleteUserAction(
     if (!deleted) {
       return notFoundErrorResult('User not found');
     }
-
-    revalidateTag(usersCacheTags.root, { expire: 0 });
-    revalidateTag(usersCacheTags.list, { expire: 0 });
 
     return {
       success: true,

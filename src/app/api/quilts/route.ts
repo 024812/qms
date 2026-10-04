@@ -18,6 +18,10 @@ function parseNonNegativeInt(value: string | undefined, fallback: number) {
     return fallback;
   }
 
+  if (!/^\d+$/.test(value)) {
+    return fallback;
+  }
+
   const parsed = Number.parseInt(value, 10);
   return Number.isFinite(parsed) && parsed >= 0 ? parsed : fallback;
 }

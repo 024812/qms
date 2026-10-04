@@ -66,7 +66,7 @@ BETTER_AUTH_URL=
 NEXT_PUBLIC_BETTER_AUTH_URL=
 ```
 
-`AUTH_SECRET` is supported as a fallback alias. `NEXTAUTH_SECRET` is only accepted as a last-resort legacy fallback and should not be used for new deployments.
+`BETTER_AUTH_SECRET` must be at least 32 characters. `AUTH_SECRET` is supported only as a fallback alias for older deployments; new deployments should not configure it. `NEXTAUTH_SECRET` is accepted only as a last-resort legacy fallback and should not be used for new deployments.
 
 ## Route Protection
 

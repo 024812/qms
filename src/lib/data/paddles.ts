@@ -213,28 +213,29 @@ export async function getPaddles(filters?: PaddleFilters): Promise<PaddleItem[]>
     const sortField = filters?.sortBy || 'itemNumber';
     const sortOrder = filters?.sortOrder || 'asc';
     const orderFn = sortOrder === 'desc' ? desc : asc;
+    const tieBreaker = sortOrder === 'desc' ? desc(paddles.id) : asc(paddles.id);
 
     switch (sortField) {
       case 'itemNumber':
-        query = query.orderBy(orderFn(paddles.itemNumber)) as typeof query;
+        query = query.orderBy(orderFn(paddles.itemNumber), tieBreaker) as typeof query;
         break;
       case 'name':
-        query = query.orderBy(orderFn(paddles.name)) as typeof query;
+        query = query.orderBy(orderFn(paddles.name), tieBreaker) as typeof query;
         break;
       case 'bladeBrand':
-        query = query.orderBy(orderFn(paddles.bladeBrand)) as typeof query;
+        query = query.orderBy(orderFn(paddles.bladeBrand), tieBreaker) as typeof query;
         break;
       case 'bladeWeightG':
-        query = query.orderBy(orderFn(paddles.bladeWeightG)) as typeof query;
+        query = query.orderBy(orderFn(paddles.bladeWeightG), tieBreaker) as typeof query;
         break;
       case 'createdAt':
-        query = query.orderBy(orderFn(paddles.createdAt)) as typeof query;
+        query = query.orderBy(orderFn(paddles.createdAt), tieBreaker) as typeof query;
         break;
       case 'updatedAt':
-        query = query.orderBy(orderFn(paddles.updatedAt)) as typeof query;
+        query = query.orderBy(orderFn(paddles.updatedAt), tieBreaker) as typeof query;
         break;
       default:
-        query = query.orderBy(orderFn(paddles.itemNumber)) as typeof query;
+        query = query.orderBy(orderFn(paddles.itemNumber), tieBreaker) as typeof query;
     }
 
     // Apply pagination
